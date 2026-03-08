@@ -3,18 +3,29 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Lock, Trash2, RefreshCw } from "lucide-react";
+import { Lock, Trash2, RefreshCw, Sparkles, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { calculateSaju, getSajuTarotCrossKeywords, getSajuForQuestion } from "@/lib/saju";
+import { calculateNatalChart, getAstrologyForQuestion, getCurrentTransits } from "@/lib/astrology";
+import { calculateZiWei, getZiWeiForQuestion } from "@/lib/ziwei";
+import { getCombinationSummary } from "@/data/tarotCombinations";
 
 const READER_PIN = "1234";
 
 type QuestionType = "love" | "career" | "money" | "general";
 
-const questionTypeLabels: Record<QuestionType, string> = {
+const questionTypeLabels: Record<string, string> = {
   love: "💕 연애",
   career: "💼 직업/사업",
   money: "💰 금전",
   general: "🔮 종합",
+  feelings: "💭 기持ち",
+  reunion: "🔄 復縁",
+  relationship: "💫 관계",
+  contact: "📱 연락",
+  life: "🌟 인생",
+  spiritual: "✨ 영적",
+  jobchange: "🔀 전직",
 };
 
 interface ReadingSession {
@@ -68,6 +79,11 @@ export default function ReaderPage() {
     if (selectedSession?.id === id) setSelectedSession(null);
   };
 
+  const updateSession = (updated: ReadingSession) => {
+    setSessions((prev) => prev.map((s) => s.id === updated.id ? updated : s));
+    setSelectedSession(updated);
+  };
+
   if (!authed) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -94,6 +110,8 @@ export default function ReaderPage() {
     );
   }
 
+  const pendingCount = sessions.filter(s => s.status === "pending").length;
+
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
@@ -101,6 +119,9 @@ export default function ReaderPage() {
           <div>
             <span className="font-display text-sm italic tracking-widest text-gold">reader dashboard</span>
             <h1 className="mt-1 font-display text-2xl font-semibold text-foreground">상담사 리딩 화면</h1>
+            {pendingCount > 0 && (
+              <p className="mt-1 text-sm text-gold">새 상담 요청 {pendingCount}건</p>
+            )}
           </div>
           <Button variant="secondary" className="rounded-full" onClick={loadSessions}>
             <RefreshCw className="mr-2 h-4 w-4" /> 새로고침
@@ -133,6 +154,16 @@ export default function ReaderPage() {
                         <div className="truncate text-sm font-medium text-foreground">
                           {s.question || "질문 없음"}
                         </div>
+                        {s.status === "pending" && (
+                          <Badge variant="outline" className="text-[9px] border-yellow-500/30 text-yellow-400 shrink-0">
+                            대기
+                          </Badge>
+                        )}
+                        {s.status === "analyzing" && (
+                          <Badge variant="outline" className="text-[9px] border-blue-500/30 text-blue-400 shrink-0">
+                            분석중
+                          </Badge>
+                        )}
                         {s.status === "completed" && (
                           <Badge variant="outline" className="text-[9px] border-green-500/30 text-green-400 shrink-0">
                             완료
@@ -167,7 +198,7 @@ export default function ReaderPage() {
 
           {/* Reading detail */}
           {selectedSession ? (
-            <SessionDetail session={selectedSession} />
+            <SessionDetail session={selectedSession} onUpdate={updateSession} />
           ) : (
             <Card className="flex items-center justify-center border-border bg-card">
               <CardContent className="py-20 text-center">
@@ -182,10 +213,114 @@ export default function ReaderPage() {
   );
 }
 
-function SessionDetail({ session }: { session: ReadingSession }) {
-  const qType = session.question_type as QuestionType;
+function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdate: (s: ReadingSession) => void }) {
+  const [analyzing, setAnalyzing] = useState(false);
+  const qType = session.question_type;
   const reading = session.ai_reading;
   const saju = session.saju_data;
+
+  const runAIAnalysis = async () => {
+    setAnalyzing(true);
+    try {
+      // Update status to analyzing
+      await supabase.from("reading_sessions").update({ status: "analyzing" }).eq("id", session.id);
+
+      const cards = session.cards as any[];
+      const birthInfo = session.birth_date ? {
+        gender: session.gender,
+        birthDate: session.birth_date,
+        birthTime: session.birth_time || "",
+        birthPlace: session.birth_place || "",
+        isLunar: session.is_lunar || false,
+      } : null;
+
+      // Calculate astrology & ziwei data from birth info
+      let astroDataForAI = null;
+      let ziweiDataForAI = null;
+      let sajuDataForAI = saju;
+
+      if (birthInfo && birthInfo.birthDate) {
+        try {
+          const [y, m, d] = birthInfo.birthDate.split("-").map(Number);
+          const hour = birthInfo.birthTime ? parseInt(birthInfo.birthTime.split(":")[0]) : 12;
+
+          if (!sajuDataForAI) {
+            const sajuResult = calculateSaju(y, m, d, hour);
+            sajuDataForAI = {
+              ...sajuResult,
+              crossKeywords: getSajuTarotCrossKeywords(sajuResult, cards.map((c: any) => c.suit)),
+              questionAnalysis: getSajuForQuestion(sajuResult, qType as any),
+            };
+          }
+
+          const astro = calculateNatalChart(y, m, d, hour);
+          astroDataForAI = {
+            ...astro,
+            questionAnalysis: getAstrologyForQuestion(astro, qType as any),
+            transits: getCurrentTransits(astro),
+          };
+
+          const ziwei = calculateZiWei(y, m, d, hour, birthInfo.gender || "female");
+          ziweiDataForAI = {
+            ...ziwei,
+            questionAnalysis: getZiWeiForQuestion(ziwei, qType as any),
+          };
+        } catch (e) {
+          console.error("Analysis calc error:", e);
+        }
+      }
+
+      const combinationSummary = getCombinationSummary(cards.map((c: any) => c.id), qType as any);
+
+      const { data: aiData, error: fnError } = await supabase.functions.invoke("ai-reading", {
+        body: {
+          question: session.question,
+          questionType: qType,
+          memo: session.memo,
+          cards,
+          sajuData: sajuDataForAI,
+          birthInfo,
+          astrologyData: astroDataForAI,
+          ziweiData: ziweiDataForAI,
+          combinationSummary,
+          locale: "kr",
+        },
+      });
+
+      if (fnError) throw fnError;
+
+      const result = aiData?.reading;
+      if (result) {
+        await supabase.from("reading_sessions").update({
+          ai_reading: result as any,
+          saju_data: sajuDataForAI as any,
+          tarot_score: result.scores?.tarot || null,
+          saju_score: result.scores?.saju || null,
+          astrology_score: result.scores?.astrology || null,
+          ziwei_score: result.scores?.ziwei || null,
+          final_confidence: result.scores?.overall || null,
+          status: "completed",
+        }).eq("id", session.id);
+
+        onUpdate({
+          ...session,
+          ai_reading: result,
+          saju_data: sajuDataForAI,
+          tarot_score: result.scores?.tarot,
+          saju_score: result.scores?.saju,
+          astrology_score: result.scores?.astrology,
+          ziwei_score: result.scores?.ziwei,
+          final_confidence: result.scores?.overall,
+          status: "completed",
+        });
+      }
+    } catch (err) {
+      console.error("AI analysis error:", err);
+      await supabase.from("reading_sessions").update({ status: "error" }).eq("id", session.id);
+    } finally {
+      setAnalyzing(false);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -204,6 +339,14 @@ function SessionDetail({ session }: { session: ReadingSession }) {
                 신뢰도 {session.final_confidence}%
               </Badge>
             )}
+            <Badge variant="outline" className={`text-[10px] ${
+              session.status === "pending" ? "border-yellow-500/30 text-yellow-400" :
+              session.status === "analyzing" ? "border-blue-500/30 text-blue-400" :
+              session.status === "completed" ? "border-green-500/30 text-green-400" :
+              "border-red-500/30 text-red-400"
+            }`}>
+              {session.status === "pending" ? "대기중" : session.status === "analyzing" ? "분석중" : session.status === "completed" ? "완료" : session.status}
+            </Badge>
           </div>
           <div className="mt-3 text-lg font-medium text-foreground">{session.question}</div>
           {session.memo && (
@@ -222,6 +365,27 @@ function SessionDetail({ session }: { session: ReadingSession }) {
           )}
         </CardContent>
       </Card>
+
+      {/* AI Analysis Button */}
+      {!reading && (
+        <Button
+          className="w-full rounded-xl bg-gradient-to-r from-primary to-gold text-primary-foreground font-medium shadow-lg"
+          onClick={runAIAnalysis}
+          disabled={analyzing}
+        >
+          {analyzing ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              AI 분석 진행 중...
+            </>
+          ) : (
+            <>
+              <Sparkles className="mr-2 h-4 w-4" />
+              AI 교차 검증 분석 실행
+            </>
+          )}
+        </Button>
+      )}
 
       {/* Saju Analysis */}
       {saju && (
@@ -324,14 +488,28 @@ function SessionDetail({ session }: { session: ReadingSession }) {
                 <Badge variant="outline" className="border-gold/30 text-gold text-[10px]">종합: {reading.scores.overall}%</Badge>
               </div>
             )}
+
+            {/* Re-analyze button */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-full border-border/50 text-xs"
+              onClick={() => {
+                // Clear reading to show analyze button again
+                onUpdate({ ...session, ai_reading: null, status: "pending" });
+              }}
+            >
+              <RefreshCw className="mr-1.5 h-3 w-3" />
+              재분석
+            </Button>
           </CardContent>
         </Card>
       )}
 
-      {!reading && session.status === "analyzing" && (
+      {analyzing && (
         <Card className="border-border bg-card">
           <CardContent className="py-10 text-center">
-            <div className="animate-spin mx-auto mb-3 h-6 w-6 border-2 border-gold border-t-transparent rounded-full" />
+            <Loader2 className="mx-auto mb-3 h-6 w-6 animate-spin text-gold" />
             <p className="text-sm text-muted-foreground">AI 분석 진행 중...</p>
           </CardContent>
         </Card>
