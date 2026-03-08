@@ -27,13 +27,13 @@ interface CosmicStar {
 export default function CosmicBackground() {
   const stars = useMemo(
     () =>
-      Array.from({ length: 80 }, (_, i) => ({
+      Array.from({ length: 120 }, (_, i) => ({
         id: i,
         cx: Math.random() * 100,
         cy: Math.random() * 100,
-        r: Math.random() * 1.5 + 0.3,
+        r: Math.random() * 0.4 + 0.1,
         delay: Math.random() * 6,
-        brightness: Math.random() * 0.6 + 0.4,
+        brightness: Math.random() * 0.4 + 0.15,
       })) as CosmicStar[],
     []
   );
