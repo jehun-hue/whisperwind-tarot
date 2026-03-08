@@ -73,6 +73,7 @@ function FloatingStars() {
 }
 
 export default function ClientPage() {
+  const { user, useCredit } = useAuth();
   const [question, setQuestion] = useState("");
   const [memo, setMemo] = useState("");
   const [step, setStep] = useState<"question" | "birthInfo" | "select" | "loading" | "result">("question");
