@@ -425,7 +425,8 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
   </div>
 
   <h2 style="font-size:16px;margin-bottom:8px;">📋 질문: ${session.question}</h2>
-  ${session.memo ? `<p style="font-size:12px;color:#666;margin-bottom:12px;">메모: ${session.memo}</p>` : ""}
+  ${session.memo ? `<p style="font-size:12px;color:#666;margin-bottom:8px;">고객 메모: ${session.memo}</p>` : ""}
+  ${session.counselor_comment ? `<p style="font-size:12px;color:#666;margin-bottom:12px;">상담사 코멘트: ${session.counselor_comment}</p>` : ""}
   ${session.birth_date ? `<p style="font-size:12px;color:#666;">${session.gender === "male" ? "남" : "여"} • ${session.birth_date} • ${session.birth_time || "시간 미상"} • ${session.birth_place || ""} • ${session.is_lunar ? "음력" : "양력"}</p>` : ""}
 
   <div class="cards">
