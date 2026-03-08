@@ -297,15 +297,17 @@ function SessionDetail({ session }: { session: ReadingSession }) {
           </CardHeader>
           <CardContent className="space-y-3">
             {[
-              { label: "최종 결론", content: reading.conclusion },
-              { label: "타로 분석", content: reading.tarotAnalysis },
+              { label: "✦ 최종 결론", content: reading.conclusion },
+              { label: "🃏 타로 분석", content: reading.tarotAnalysis },
               ...(saju ? [
-                { label: "사주 분석", content: reading.sajuAnalysis },
-                { label: "교차 검증", content: reading.crossValidation },
+                { label: "🔮 사주 분석", content: reading.sajuAnalysis },
+                { label: "⭐ 점성술 분석", content: reading.astrologyAnalysis },
+                { label: "🏯 자미두수 분석", content: reading.ziweiAnalysis },
+                { label: "⚖️ 교차 검증", content: reading.crossValidation },
               ] : []),
-              { label: "리스크", content: reading.risk },
-              { label: "현실 조언", content: reading.advice },
-            ].map((section, i) => (
+              { label: "⚠️ 리스크", content: reading.risk },
+              { label: "💡 현실 조언", content: reading.advice },
+            ].filter(s => s.content).map((section, i) => (
               <div key={i} className="rounded-lg border border-border bg-secondary p-4">
                 <div className="mb-1 text-xs text-muted-foreground">{section.label}</div>
                 <p className="text-sm leading-relaxed text-foreground whitespace-pre-line">
@@ -314,9 +316,11 @@ function SessionDetail({ session }: { session: ReadingSession }) {
               </div>
             ))}
             {reading.scores && (
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Badge variant="secondary" className="text-[10px]">타로: {reading.scores.tarot}%</Badge>
                 {saju && <Badge variant="secondary" className="text-[10px]">사주: {reading.scores.saju}%</Badge>}
+                {reading.scores.astrology != null && <Badge variant="secondary" className="text-[10px]">점성술: {reading.scores.astrology}%</Badge>}
+                {reading.scores.ziwei != null && <Badge variant="secondary" className="text-[10px]">자미두수: {reading.scores.ziwei}%</Badge>}
                 <Badge variant="outline" className="border-gold/30 text-gold text-[10px]">종합: {reading.scores.overall}%</Badge>
               </div>
             )}
