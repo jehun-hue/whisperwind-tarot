@@ -51,7 +51,10 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        gold: "hsl(var(--tarot-gold))",
+        gold: {
+          DEFAULT: "hsl(var(--tarot-gold))",
+          light: "hsl(var(--tarot-gold-light))",
+        },
         mystic: "hsl(var(--tarot-mystic))",
         surface: "hsl(var(--tarot-surface))",
         sidebar: {
