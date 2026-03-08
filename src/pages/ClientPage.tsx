@@ -235,7 +235,9 @@ export default function ClientPage() {
       </div>
       <FloatingStars />
 
-      <div className="relative z-10 mx-auto max-w-4xl px-4 py-10 sm:px-6">
+      <div className="relative z-10">
+        <UserHeader />
+        <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
