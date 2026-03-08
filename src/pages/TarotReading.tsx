@@ -46,7 +46,7 @@ function classifyQuestion(question: string): QuestionType {
   return "general";
 }
 
-interface TarotCard {
+interface TarotCardData {
   id: number;
   name: string;
   korean: string;
@@ -60,7 +60,7 @@ interface TarotCard {
   short: string;
 }
 
-interface DeckCard extends TarotCard {
+interface DeckCard extends TarotCardData {
   isPicked: boolean;
   revealed: boolean;
   isReversed: boolean;
