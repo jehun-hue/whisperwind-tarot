@@ -128,6 +128,17 @@ export default function ClientPage() {
 
   const handleSubmit = async () => {
     if (picked.length !== 3) return;
+
+    // Credit check: logged-in users use credits for AI deep analysis
+    if (user) {
+      const ok = await useCredit("AI 심화 분석");
+      if (!ok) {
+        setError("크레딧이 부족합니다. 관리자에게 문의하세요.");
+        setStep("result");
+        return;
+      }
+    }
+
     setStep("loading");
     setError(null);
 
