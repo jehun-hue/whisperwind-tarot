@@ -306,7 +306,6 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                       {i < 3 && (
                         <div className={`h-px w-4 ${i < currentIdx ? (config.locale === "us" ? "bg-purple-400/40" : "bg-gold/40") : "bg-border/30"}`} />
                       )}
-                      )}
                     </div>
                 );
               })}
