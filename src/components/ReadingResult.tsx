@@ -9,12 +9,16 @@ interface AIReadingResult {
   conclusion: string;
   tarotAnalysis: string;
   sajuAnalysis: string;
+  astrologyAnalysis: string;
+  ziweiAnalysis: string;
   crossValidation: string;
   risk: string;
   advice: string;
   scores: {
     tarot: number;
     saju: number;
+    astrology: number;
+    ziwei: number;
     overall: number;
   };
 }
