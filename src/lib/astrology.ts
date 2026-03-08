@@ -296,11 +296,11 @@ export function getAstrologyForQuestion(
 
   switch (questionType) {
     case "love":
-      return `금성 ${venus.sign} ${venus.house}하우스: 사랑의 스타일이 ${SIGN_MEANINGS[venus.sign].split(",")[0]}. 달 ${moon.sign}: 감정 표현이 ${SIGN_MEANINGS[moon.sign].split(",")[0]}.`;
+      return `금성 ${venus.sign} ${venus.house}하우스: 사랑의 스타일이 ${(SIGN_MEANINGS[venus.sign] || "다양한").split(",")[0]}. 달 ${moon.sign}: 감정 표현이 ${(SIGN_MEANINGS[moon.sign] || "다양한").split(",")[0]}.`;
     case "career":
-      return `토성 ${saturn.sign} ${saturn.house}하우스: 커리어에서 ${SIGN_MEANINGS[saturn.sign].split(",")[0]}한 도전. 화성 ${mars.sign}: ${SIGN_MEANINGS[mars.sign].split(",")[0]}한 방식으로 행동.`;
+      return `토성 ${saturn.sign} ${saturn.house}하우스: 커리어에서 ${(SIGN_MEANINGS[saturn.sign] || "다양한").split(",")[0]}한 도전. 화성 ${mars.sign}: ${(SIGN_MEANINGS[mars.sign] || "다양한").split(",")[0]}한 방식으로 행동.`;
     case "money":
-      return `목성 ${jupiter.sign} ${jupiter.house}하우스: 재물 확장이 ${SIGN_MEANINGS[jupiter.sign].split(",")[0]}한 영역에서. 금성 ${venus.sign}: 가치관이 ${SIGN_MEANINGS[venus.sign].split(",")[0]}.`;
+      return `목성 ${jupiter.sign} ${jupiter.house}하우스: 재물 확장이 ${(SIGN_MEANINGS[jupiter.sign] || "다양한").split(",")[0]}한 영역에서. 금성 ${venus.sign}: 가치관이 ${(SIGN_MEANINGS[venus.sign] || "다양한").split(",")[0]}.`;
     default:
       return astro.chartSummary;
   }
