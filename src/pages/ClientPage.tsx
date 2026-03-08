@@ -12,8 +12,10 @@ import { calculateNatalChart, getAstrologyForQuestion, getCurrentTransits, type 
 import { calculateZiWei, getZiWeiForQuestion, type ZiWeiResult } from "@/lib/ziwei";
 import { getCombinationSummary } from "@/data/tarotCombinations";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import BirthInfoForm, { type BirthInfo } from "@/components/BirthInfoForm";
 import ReadingResult from "@/components/ReadingResult";
+import UserHeader from "@/components/UserHeader";
 import heroBg from "@/assets/tarot-hero-bg.jpg";
 import cardBackImg from "@/assets/card-back.png";
 
@@ -71,6 +73,7 @@ function FloatingStars() {
 }
 
 export default function ClientPage() {
+  const { user, useCredit } = useAuth();
   const [question, setQuestion] = useState("");
   const [memo, setMemo] = useState("");
   const [step, setStep] = useState<"question" | "birthInfo" | "select" | "loading" | "result">("question");
@@ -125,6 +128,17 @@ export default function ClientPage() {
 
   const handleSubmit = async () => {
     if (picked.length !== 3) return;
+
+    // Credit check: logged-in users use credits for AI deep analysis
+    if (user) {
+      const ok = await useCredit("AI 심화 분석");
+      if (!ok) {
+        setError("크레딧이 부족합니다. 관리자에게 문의하세요.");
+        setStep("result");
+        return;
+      }
+    }
+
     setStep("loading");
     setError(null);
 
@@ -160,6 +174,7 @@ export default function ClientPage() {
           birth_time: birthInfo?.birthTime || null, birth_place: birthInfo?.birthPlace || null,
           is_lunar: birthInfo?.isLunar || false, cards: cardData as any,
           saju_data: sajuDataForAI as any, status: "analyzing",
+          user_id: user?.id || null,
         })
         .select().single();
 
@@ -220,7 +235,9 @@ export default function ClientPage() {
       </div>
       <FloatingStars />
 
-      <div className="relative z-10 mx-auto max-w-4xl px-4 py-10 sm:px-6">
+      <div className="relative z-10">
+        <UserHeader />
+        <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -528,6 +545,7 @@ export default function ClientPage() {
             </motion.div>
           )}
         </AnimatePresence>
+        </div>
       </div>
     </div>
   );
