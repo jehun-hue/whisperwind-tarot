@@ -272,9 +272,10 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
             className="mb-12 text-center"
           >
             <div className="animate-float mb-4 text-4xl">{config.locale === "us" ? "✦" : "☽"}</div>
-            <span className="text-sm italic tracking-[0.3em] text-gold-light"
+            <span className={`text-sm italic tracking-[0.3em] ${config.locale === "us" ? "text-cosmic-accent" : "text-gold-light"}`}
                   style={{ fontFamily: config.displayFont }}>
               {config.siteSubtitle}
+            </span>
             </span>
             <h1 className="mt-3 text-4xl font-semibold tracking-tight text-foreground sm:text-5xl"
                 style={{ fontFamily: config.displayFont }}>
