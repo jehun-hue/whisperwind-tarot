@@ -63,7 +63,7 @@ interface TarotCard {
 interface DeckCard extends TarotCard {
   isPicked: boolean;
   revealed: boolean;
-  reversed: boolean;
+  isReversed: boolean;
 }
 
 function interpretCard(card: DeckCard, reversed: boolean, type: QuestionType) {
