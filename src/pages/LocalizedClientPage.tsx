@@ -271,7 +271,7 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
             transition={{ duration: 0.8 }}
             className="mb-12 text-center"
           >
-            <div className="animate-float mb-4 text-4xl">☽</div>
+            <div className="animate-float mb-4 text-4xl">{config.locale === "us" ? "✦" : "☽"}</div>
             <span className="text-sm italic tracking-[0.3em] text-gold-light"
                   style={{ fontFamily: config.displayFont }}>
               {config.siteSubtitle}
