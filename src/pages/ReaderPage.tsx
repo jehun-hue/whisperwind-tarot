@@ -696,18 +696,29 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
               </div>
             )}
 
-            {/* Re-analyze button */}
-            <Button
-              variant="outline"
-              size="sm"
-              className="rounded-full border-border/50 text-xs"
-              onClick={() => {
-                onUpdate({ ...session, ai_reading: null, status: "pending" });
-              }}
-            >
-              <RefreshCw className="mr-1.5 h-3 w-3" />
-              재분석
-            </Button>
+            {/* Action buttons */}
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full border-border/50 text-xs"
+                onClick={() => {
+                  onUpdate({ ...session, ai_reading: null, status: "pending" });
+                }}
+              >
+                <RefreshCw className="mr-1.5 h-3 w-3" />
+                재분석
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full border-gold/30 text-gold text-xs"
+                onClick={downloadPDF}
+              >
+                <Download className="mr-1.5 h-3 w-3" />
+                PDF 다운로드
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}
