@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      credit_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          reason: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          reason?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          credits: number
+          display_name: string | null
+          email: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          credits?: number
+          display_name?: string | null
+          email?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          credits?: number
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       reading_sessions: {
         Row: {
           ai_reading: Json | null
@@ -35,6 +86,7 @@ export type Database = {
           status: string
           tarot_score: number | null
           updated_at: string
+          user_id: string | null
           ziwei_score: number | null
         }
         Insert: {
@@ -57,6 +109,7 @@ export type Database = {
           status?: string
           tarot_score?: number | null
           updated_at?: string
+          user_id?: string | null
           ziwei_score?: number | null
         }
         Update: {
@@ -79,6 +132,7 @@ export type Database = {
           status?: string
           tarot_score?: number | null
           updated_at?: string
+          user_id?: string | null
           ziwei_score?: number | null
         }
         Relationships: []
