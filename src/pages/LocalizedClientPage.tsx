@@ -173,7 +173,7 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
     if (ziweiResult) {
       ziweiDataForAI = { ...ziweiResult, questionAnalysis: getZiWeiForQuestion(ziweiResult, questionType as any) };
     }
-    const combinationSummary = getCombinationSummary(picked.map((c) => c.id), questionType);
+    const combinationSummary = getCombinationSummary(picked.map((c) => c.id), questionType as any);
 
     try {
       const { data: session, error: dbError } = await supabase
