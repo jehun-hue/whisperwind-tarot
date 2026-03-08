@@ -82,8 +82,30 @@ function classifyQuestionByLocale(question: string, locale: Locale): string {
   return "general";
 }
 
+const seoData: Record<Locale, { title: string; description: string }> = {
+  kr: {
+    title: "AI 통합 점술 상담 — 타로 + 사주 교차 검증 리딩",
+    description: "타로, 사주, 점성술, 자미두수를 결합한 AI 교차 검증 점술 상담. 깊이 있는 리딩으로 당신의 질문에 답합니다.",
+  },
+  jp: {
+    title: "AI占いリーディング — タロット＋占星術の総合鑑定",
+    description: "タロットと西洋占星術を組み合わせたAI占いリーディング。あなたの心に寄り添う優しい鑑定をお届けします。",
+  },
+  us: {
+    title: "AI Spiritual Reading — Tarot + Astrology Cosmic Guidance",
+    description: "AI-powered Tarot and Astrology spiritual reading. Get deep cosmic guidance, energy insights, and actionable advice for love, career, and life.",
+  },
+};
+
 export default function LocalizedClientPage({ config }: LocalizedClientPageProps) {
   const { user, useCredit } = useAuth();
+
+  useSEO({
+    title: seoData[config.locale].title,
+    description: seoData[config.locale].description,
+    lang: config.lang,
+    canonical: `${window.location.origin}/${config.locale}`,
+  });
   const [question, setQuestion] = useState("");
   const [memo, setMemo] = useState("");
   const [step, setStep] = useState<"question" | "birthInfo" | "select" | "loading" | "result">("question");
