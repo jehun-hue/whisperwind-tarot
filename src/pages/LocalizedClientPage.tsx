@@ -142,16 +142,23 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
   };
 
   const handleBirthInfoSubmit = (info: BirthInfo) => {
-    setBirthInfo(info);
-    const [y, m, d] = info.birthDate.split("-").map(Number);
-    const hour = info.birthTime ? parseInt(info.birthTime.split(":")[0]) : 12;
-    const saju = calculateSaju(y, m, d, hour);
-    setSajuResult(saju);
-    const astro = calculateNatalChart(y, m, d, hour);
-    setAstroResult(astro);
-    const ziwei = calculateZiWei(y, m, d, hour, info.gender);
-    setZiweiResult(ziwei);
-    setStep("select");
+    try {
+      setBirthInfo(info);
+      const [y, m, d] = info.birthDate.split("-").map(Number);
+      const hour = info.birthTime ? parseInt(info.birthTime.split(":")[0]) : 12;
+      const saju = calculateSaju(y, m, d, hour);
+      setSajuResult(saju);
+      const astro = calculateNatalChart(y, m, d, hour);
+      setAstroResult(astro);
+      const ziwei = calculateZiWei(y, m, d, hour, info.gender);
+      setZiweiResult(ziwei);
+      setStep("select");
+    } catch (err) {
+      console.error("Birth analysis error:", err);
+      // Still proceed to card selection even if analysis fails
+      setBirthInfo(info);
+      setStep("select");
+    }
   };
 
   const handleBirthInfoSkip = () => {
