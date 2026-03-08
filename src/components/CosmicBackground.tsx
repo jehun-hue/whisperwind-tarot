@@ -104,9 +104,10 @@ export default function CosmicBackground() {
             key={i}
             d={d}
             fill="none"
-            stroke="hsl(220 40% 60% / 0.12)"
-            strokeWidth="0.15"
+            stroke="hsl(220 40% 60% / 0.08)"
+            strokeWidth="0.08"
             strokeLinecap="round"
+          />
           />
         ))}
 
