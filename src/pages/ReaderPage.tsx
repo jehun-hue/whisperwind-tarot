@@ -32,6 +32,8 @@ interface ReadingSession {
   ai_reading: any;
   tarot_score: number | null;
   saju_score: number | null;
+  astrology_score: number | null;
+  ziwei_score: number | null;
   final_confidence: number | null;
   status: string;
   created_at: string;
