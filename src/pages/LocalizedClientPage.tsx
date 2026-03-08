@@ -479,7 +479,9 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                       onClick={() => setSuitFilter(key)}
                       className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${
                         suitFilter === key
-                          ? "bg-gold/20 text-gold border border-gold/30"
+                          ? config.locale === "us"
+                            ? "bg-purple-500/20 text-purple-300 border border-purple-400/30"
+                            : "bg-gold/20 text-gold border border-gold/30"
                           : "bg-secondary/50 text-muted-foreground hover:bg-muted border border-transparent"
                       }`}
                     >
