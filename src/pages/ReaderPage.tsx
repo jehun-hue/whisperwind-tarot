@@ -34,6 +34,7 @@ interface ReadingSession {
   question: string;
   question_type: string;
   memo: string | null;
+  counselor_comment: string | null;
   gender: string | null;
   birth_date: string | null;
   birth_time: string | null;
