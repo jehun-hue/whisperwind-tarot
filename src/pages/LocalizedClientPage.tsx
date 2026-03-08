@@ -501,7 +501,7 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
 
 
                 <div className="grid grid-cols-5 gap-2 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10">
-                  {filteredDeck.map((card) => {
+                  {deck.map((card) => {
                     const isSelected = picked.some((p) => p.id === card.id);
                     const isDisabled = card.isPicked || picked.length >= 3;
                     const dir = getCardDirectionLabel(card.isReversed, config.locale);
