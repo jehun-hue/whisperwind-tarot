@@ -104,17 +104,22 @@ export default function ClientPage() {
 
   const handleBirthInfoSubmit = (info: BirthInfo) => {
     setBirthInfo(info);
-    // Calculate saju
     const [y, m, d] = info.birthDate.split("-").map(Number);
     const hour = info.birthTime ? parseInt(info.birthTime.split(":")[0]) : 12;
     const saju = calculateSaju(y, m, d, hour);
     setSajuResult(saju);
+    const astro = calculateNatalChart(y, m, d, hour);
+    setAstroResult(astro);
+    const ziwei = calculateZiWei(y, m, d, hour, info.gender);
+    setZiweiResult(ziwei);
     setStep("select");
   };
 
   const handleBirthInfoSkip = () => {
     setBirthInfo(null);
     setSajuResult(null);
+    setAstroResult(null);
+    setZiweiResult(null);
     setStep("select");
   };
 
