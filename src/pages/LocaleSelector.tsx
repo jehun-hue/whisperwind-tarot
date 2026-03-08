@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { useSEO } from "@/hooks/useSEO";
 import heroBg from "@/assets/tarot-hero-bg.jpg";
 
 const locales = [
