@@ -172,15 +172,6 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
   const handleSubmit = async () => {
     if (picked.length !== 3) return;
 
-    if (user) {
-      const ok = await useCredit("AI Reading");
-      if (!ok) {
-        setError(config.locale === "kr" ? "크레딧이 부족합니다." : config.locale === "jp" ? "クレジットが不足しています。" : "Not enough credits.");
-        setStep("result");
-        return;
-      }
-    }
-
     setStep("loading");
     setError(null);
 
@@ -192,68 +183,28 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
       isReversed: c.isReversed,
     }));
 
-    let sajuDataForAI = null;
+    let sajuDataForDB = null;
     if (sajuResult) {
-      sajuDataForAI = { ...sajuResult, crossKeywords: getSajuTarotCrossKeywords(sajuResult, picked.map((c) => c.suit)), questionAnalysis: getSajuForQuestion(sajuResult, questionType as any) };
+      sajuDataForDB = { ...sajuResult, crossKeywords: getSajuTarotCrossKeywords(sajuResult, picked.map((c) => c.suit)), questionAnalysis: getSajuForQuestion(sajuResult, questionType as any) };
     }
-    let astroDataForAI = null;
-    if (astroResult) {
-      astroDataForAI = { ...astroResult, questionAnalysis: getAstrologyForQuestion(astroResult, questionType as any), transits: getCurrentTransits(astroResult) };
-    }
-    let ziweiDataForAI = null;
-    if (ziweiResult) {
-      ziweiDataForAI = { ...ziweiResult, questionAnalysis: getZiWeiForQuestion(ziweiResult, questionType as any) };
-    }
-    const combinationSummary = getCombinationSummary(picked.map((c) => c.id), questionType as any);
 
     try {
-      const { data: session, error: dbError } = await supabase
+      const { error: dbError } = await supabase
         .from("reading_sessions")
         .insert({
           question, question_type: questionType, memo: memo || null,
           gender: birthInfo?.gender || null, birth_date: birthInfo?.birthDate || null,
           birth_time: birthInfo?.birthTime || null, birth_place: birthInfo?.birthPlace || null,
           is_lunar: birthInfo?.isLunar || false, cards: cardData as any,
-          saju_data: sajuDataForAI as any, status: "analyzing",
+          saju_data: sajuDataForDB as any, status: "pending",
           user_id: user?.id || null,
-        })
-        .select().single();
+        });
 
       if (dbError) throw dbError;
 
-      const { data: aiData, error: fnError } = await supabase.functions.invoke("ai-reading", {
-        body: {
-          question, questionType, memo, cards: cardData,
-          sajuData: sajuDataForAI, birthInfo,
-          astrologyData: astroDataForAI, ziweiData: ziweiDataForAI,
-          combinationSummary,
-          locale: config.locale,
-        },
-      });
-
-      if (fnError) throw fnError;
-
-      const reading = aiData?.reading;
-      setAiReading(reading);
-
-      if (session?.id && reading) {
-        await supabase
-          .from("reading_sessions")
-          .update({
-            ai_reading: reading as any,
-            tarot_score: reading.scores?.tarot || null,
-            saju_score: reading.scores?.saju || null,
-            astrology_score: reading.scores?.astrology || null,
-            ziwei_score: reading.scores?.ziwei || null,
-            final_confidence: reading.scores?.overall || null,
-            status: "completed",
-          })
-          .eq("id", session.id);
-      }
-
       setStep("result");
     } catch (err: any) {
-      console.error("Reading error:", err);
+      console.error("Submit error:", err);
       setError(err.message || "Error occurred");
       setStep("result");
     }
