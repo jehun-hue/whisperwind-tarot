@@ -570,11 +570,17 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                           return (
                             <Badge
                               key={card.id}
-                              className="rounded-full border border-gold/30 bg-gold/10 px-3 py-1.5 text-foreground"
+                              className={`rounded-full border px-3 py-1.5 text-foreground ${
+                                config.locale === "us"
+                                  ? "border-purple-400/30 bg-purple-500/10"
+                                  : "border-gold/30 bg-gold/10"
+                              }`}
                             >
                               {idx + 1}. {getCardDisplayName(card, config.locale)}
-                              <span className="ml-1 text-gold">
+                              <span className={`ml-1 ${config.locale === "us" ? "text-purple-300" : "text-gold"}`}>
                                 ({dir.short})
+                              </span>
+                            </Badge>
                               </span>
                             </Badge>
                           );
