@@ -163,7 +163,7 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
 
     let sajuDataForAI = null;
     if (sajuResult) {
-      sajuDataForAI = { ...sajuResult, crossKeywords: getSajuTarotCrossKeywords(sajuResult, picked.map((c) => c.suit)), questionAnalysis: getSajuForQuestion(sajuResult, questionType) };
+      sajuDataForAI = { ...sajuResult, crossKeywords: getSajuTarotCrossKeywords(sajuResult, picked.map((c) => c.suit)), questionAnalysis: getSajuForQuestion(sajuResult, questionType as any) };
     }
     let astroDataForAI = null;
     if (astroResult) {
