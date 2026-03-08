@@ -217,11 +217,30 @@ export default function ReaderPage() {
 
 function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdate: (s: ReadingSession) => void }) {
   const [analyzing, setAnalyzing] = useState(false);
+  const [counselorComment, setCounselorComment] = useState(session.counselor_comment || "");
+  const [savingComment, setSavingComment] = useState(false);
   const qType = session.question_type;
   const reading = session.ai_reading;
   const saju = session.saju_data;
 
-  const runAIAnalysis = async () => {
+  useEffect(() => {
+    setCounselorComment(session.counselor_comment || "");
+  }, [session.id, session.counselor_comment]);
+
+  const saveCounselorComment = async () => {
+    setSavingComment(true);
+    const value = counselorComment.trim() || null;
+    const { error } = await supabase
+      .from("reading_sessions")
+      .update({ counselor_comment: value })
+      .eq("id", session.id);
+
+    if (!error) {
+      onUpdate({ ...session, counselor_comment: value });
+    }
+
+    setSavingComment(false);
+  };
     setAnalyzing(true);
     try {
       // Update status to analyzing
