@@ -499,27 +499,9 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                   </div>
                 </div>
 
-                <div className="mb-4 flex flex-wrap items-center justify-center gap-1.5">
-                  <Filter className="mr-1 h-3.5 w-3.5 text-muted-foreground" />
-                  {Object.entries(config.suitLabels).map(([key, label]) => (
-                    <button
-                      key={key}
-                      onClick={() => setSuitFilter(key)}
-                      className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${
-                        suitFilter === key
-                          ? config.locale === "us"
-                            ? "bg-purple-500/20 text-purple-300 border border-purple-400/30"
-                            : "bg-gold/20 text-gold border border-gold/30"
-                          : "bg-secondary/50 text-muted-foreground hover:bg-muted border border-transparent"
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
 
                 <div className="grid grid-cols-5 gap-2 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10">
-                  {filteredDeck.map((card) => {
+                  {deck.map((card) => {
                     const isSelected = picked.some((p) => p.id === card.id);
                     const isDisabled = card.isPicked || picked.length >= 3;
                     const dir = getCardDirectionLabel(card.isReversed, config.locale);
