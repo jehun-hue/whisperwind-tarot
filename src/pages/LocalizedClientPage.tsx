@@ -284,7 +284,7 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
             <p className="mt-4 text-sm leading-relaxed text-muted-foreground whitespace-pre-line">
               {config.siteDescription}
             </p>
-            <div className="mx-auto mt-6 h-px w-32 bg-gradient-to-r from-transparent via-gold/40 to-transparent" />
+            <div className={`mx-auto mt-6 h-px w-32 bg-gradient-to-r ${config.locale === "us" ? "from-transparent via-purple-400/40 to-transparent" : "from-transparent via-gold/40 to-transparent"}`} />
 
             {/* Step indicator */}
             <div className="mt-6 flex items-center justify-center gap-2">
