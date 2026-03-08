@@ -5,16 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Eye, EyeOff, Filter, CheckCircle2 } from "lucide-react";
+import { Sparkles, Eye, EyeOff, CheckCircle2 } from "lucide-react";
 import { tarotCards, makeDeckCard, type DeckCard } from "@/data/tarotCards";
 import { calculateSaju, getSajuTarotCrossKeywords, getSajuForQuestion, type SajuResult } from "@/lib/saju";
-import { calculateNatalChart, getAstrologyForQuestion, getCurrentTransits, type AstrologyResult } from "@/lib/astrology";
-import { calculateZiWei, getZiWeiForQuestion, type ZiWeiResult } from "@/lib/ziwei";
-import { getCombinationSummary } from "@/data/tarotCombinations";
+import { calculateNatalChart, type AstrologyResult } from "@/lib/astrology";
+import { calculateZiWei, type ZiWeiResult } from "@/lib/ziwei";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import LocalizedBirthInfoForm from "@/components/LocalizedBirthInfoForm";
-import LocalizedReadingResult from "@/components/LocalizedReadingResult";
 import UserHeader from "@/components/UserHeader";
 import CosmicBackground from "@/components/CosmicBackground";
 import heroBg from "@/assets/tarot-hero-bg.jpg";
@@ -172,15 +170,6 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
   const handleSubmit = async () => {
     if (picked.length !== 3) return;
 
-    if (user) {
-      const ok = await useCredit("AI Reading");
-      if (!ok) {
-        setError(config.locale === "kr" ? "크레딧이 부족합니다." : config.locale === "jp" ? "クレジットが不足しています。" : "Not enough credits.");
-        setStep("result");
-        return;
-      }
-    }
-
     setStep("loading");
     setError(null);
 
@@ -192,68 +181,28 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
       isReversed: c.isReversed,
     }));
 
-    let sajuDataForAI = null;
+    let sajuDataForDB = null;
     if (sajuResult) {
-      sajuDataForAI = { ...sajuResult, crossKeywords: getSajuTarotCrossKeywords(sajuResult, picked.map((c) => c.suit)), questionAnalysis: getSajuForQuestion(sajuResult, questionType as any) };
+      sajuDataForDB = { ...sajuResult, crossKeywords: getSajuTarotCrossKeywords(sajuResult, picked.map((c) => c.suit)), questionAnalysis: getSajuForQuestion(sajuResult, questionType as any) };
     }
-    let astroDataForAI = null;
-    if (astroResult) {
-      astroDataForAI = { ...astroResult, questionAnalysis: getAstrologyForQuestion(astroResult, questionType as any), transits: getCurrentTransits(astroResult) };
-    }
-    let ziweiDataForAI = null;
-    if (ziweiResult) {
-      ziweiDataForAI = { ...ziweiResult, questionAnalysis: getZiWeiForQuestion(ziweiResult, questionType as any) };
-    }
-    const combinationSummary = getCombinationSummary(picked.map((c) => c.id), questionType as any);
 
     try {
-      const { data: session, error: dbError } = await supabase
+      const { error: dbError } = await supabase
         .from("reading_sessions")
         .insert({
           question, question_type: questionType, memo: memo || null,
           gender: birthInfo?.gender || null, birth_date: birthInfo?.birthDate || null,
           birth_time: birthInfo?.birthTime || null, birth_place: birthInfo?.birthPlace || null,
           is_lunar: birthInfo?.isLunar || false, cards: cardData as any,
-          saju_data: sajuDataForAI as any, status: "analyzing",
+          saju_data: sajuDataForDB as any, status: "pending",
           user_id: user?.id || null,
-        })
-        .select().single();
+        });
 
       if (dbError) throw dbError;
 
-      const { data: aiData, error: fnError } = await supabase.functions.invoke("ai-reading", {
-        body: {
-          question, questionType, memo, cards: cardData,
-          sajuData: sajuDataForAI, birthInfo,
-          astrologyData: astroDataForAI, ziweiData: ziweiDataForAI,
-          combinationSummary,
-          locale: config.locale,
-        },
-      });
-
-      if (fnError) throw fnError;
-
-      const reading = aiData?.reading;
-      setAiReading(reading);
-
-      if (session?.id && reading) {
-        await supabase
-          .from("reading_sessions")
-          .update({
-            ai_reading: reading as any,
-            tarot_score: reading.scores?.tarot || null,
-            saju_score: reading.scores?.saju || null,
-            astrology_score: reading.scores?.astrology || null,
-            ziwei_score: reading.scores?.ziwei || null,
-            final_confidence: reading.scores?.overall || null,
-            status: "completed",
-          })
-          .eq("id", session.id);
-      }
-
       setStep("result");
     } catch (err: any) {
-      console.error("Reading error:", err);
+      console.error("Submit error:", err);
       setError(err.message || "Error occurred");
       setStep("result");
     }
@@ -619,7 +568,7 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
               </motion.div>
             )}
 
-            {/* Step 4: Loading & Result */}
+            {/* Step 4: Completion */}
             {(step === "loading" || step === "result") && (
               <motion.div key="result">
                 {error ? (
@@ -640,14 +589,82 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                       </Button>
                     </CardContent>
                   </Card>
+                ) : step === "loading" ? (
+                  <Card className={`mx-auto max-w-lg border-border/50 bg-card/80 backdrop-blur-xl animate-pulse-glow`}>
+                    <CardContent className="py-16 px-8 text-center">
+                      <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-t-transparent ${config.locale === 'us' ? 'border-purple-400' : 'border-gold'}" />
+                      <h2 className="text-xl font-semibold text-foreground"
+                          style={{ fontFamily: config.displayFont }}>
+                        {config.loadingTitle}
+                      </h2>
+                      <p className="mt-3 text-sm text-muted-foreground">
+                        {config.loadingSubtitle}
+                      </p>
+                    </CardContent>
+                  </Card>
                 ) : (
-                  <LocalizedReadingResult
-                    config={config}
-                    reading={aiReading}
-                    isLoading={step === "loading"}
-                    onReset={resetAll}
-                    hasBirthInfo={!!birthInfo}
-                  />
+                  <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6 }}
+                    className="mx-auto max-w-lg"
+                  >
+                    <Card className={`border-border/50 bg-card/80 backdrop-blur-xl ${
+                      config.locale === "us" ? "glow-cosmic" : "glow-gold"
+                    }`}>
+                      <CardContent className="py-12 px-8 text-center">
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ type: "spring", delay: 0.2 }}
+                          className="mb-6 text-5xl"
+                        >
+                          ✦
+                        </motion.div>
+                        <h2 className="text-xl font-semibold text-foreground"
+                            style={{ fontFamily: config.displayFont }}>
+                          {config.completionTitle}
+                        </h2>
+                        <p className="mt-4 text-sm leading-relaxed text-muted-foreground whitespace-pre-line">
+                          {config.completionMessage}
+                        </p>
+                        <div className={`mx-auto my-6 h-px w-32 bg-gradient-to-r from-transparent ${
+                          config.locale === "us" ? "via-purple-400/40" : "via-gold/40"
+                        } to-transparent`} />
+                        <p className="text-xs leading-relaxed text-muted-foreground/70 whitespace-pre-line">
+                          {config.completionSubMessage}
+                        </p>
+
+                        {/* Show selected cards summary */}
+                        <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+                          {picked.map((card, idx) => {
+                            const dir = getCardDirectionLabel(card.isReversed, config.locale);
+                            return (
+                              <Badge
+                                key={card.id}
+                                variant="outline"
+                                className={`rounded-full px-3 py-1 text-xs ${
+                                  config.locale === "us"
+                                    ? "border-purple-400/30 text-purple-300"
+                                    : "border-gold/30 text-gold"
+                                }`}
+                              >
+                                {idx + 1}. {getCardDisplayName(card, config.locale)} ({dir.short})
+                              </Badge>
+                            );
+                          })}
+                        </div>
+
+                        <Button
+                          variant="secondary"
+                          className="mt-8 rounded-full border border-border/50 bg-secondary/50 backdrop-blur"
+                          onClick={resetAll}
+                        >
+                          {config.resetButton}
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
                 )}
               </motion.div>
             )}

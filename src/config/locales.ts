@@ -41,6 +41,10 @@ export interface LocaleConfig {
   cardPositions: string[];
   suitLabels: Record<string, string>;
   submitButton: string;
+  // Completion screen (after card selection)
+  completionTitle: string;
+  completionMessage: string;
+  completionSubMessage: string;
   // Result
   loadingTitle: string;
   loadingSubtitle: string;
@@ -124,7 +128,10 @@ export const localeConfigs: Record<Locale, LocaleConfig> = {
       Swords: "검",
       Pentacles: "펜타클",
     },
-    submitButton: "AI 분석 시작하기",
+    submitButton: "카드 선택 완료",
+    completionTitle: "카드 선택이 완료되었습니다 ✦",
+    completionMessage: "선택하신 카드를 기반으로 전문 상담사가\n정성껏 분석하여 결과를 전달해 드리겠습니다.",
+    completionSubMessage: "분석이 완료되면 별도로 안내해 드립니다.\n잠시만 기다려 주세요.",
     loadingTitle: "AI가 분석 중입니다...",
     loadingSubtitle: "타로 + 사주 + 점성술 + 자미두수 교차 검증 리딩을 생성하고 있습니다",
     errorTitle: "분석 중 오류 발생",
@@ -203,7 +210,10 @@ export const localeConfigs: Record<Locale, LocaleConfig> = {
       Swords: "ソード",
       Pentacles: "ペンタクル",
     },
-    submitButton: "AIリーディングを開始",
+    submitButton: "カード選択完了",
+    completionTitle: "カード選択が完了しました ✦",
+    completionMessage: "選んでいただいたカードをもとに、専門の鑑定師が\n丁寧に分析し、結果をお届けいたします。",
+    completionSubMessage: "分析が完了次第、ご案内いたします。\n少々お待ちください。",
     loadingTitle: "AIが分析中です...",
     loadingSubtitle: "タロット＋占星術を組み合わせたリーディングを作成しています",
     errorTitle: "分析中にエラーが発生しました",
@@ -293,7 +303,10 @@ export const localeConfigs: Record<Locale, LocaleConfig> = {
       Swords: "Swords",
       Pentacles: "Pentacles",
     },
-    submitButton: "Begin AI Reading",
+    submitButton: "Complete Card Selection",
+    completionTitle: "Your cards have been selected ✦",
+    completionMessage: "A professional reader will carefully analyze your selected cards\nand deliver a personalized reading to you.",
+    completionSubMessage: "You'll be notified once your reading is ready.\nPlease allow a moment.",
     loadingTitle: "The universe is speaking...",
     loadingSubtitle: "Creating your personalized Tarot + Astrology reading",
     errorTitle: "Something went wrong",
