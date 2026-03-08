@@ -494,6 +494,33 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
         </CardContent>
       </Card>
 
+      {/* Counselor comment */}
+      <Card className="border-border bg-card">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base text-foreground">📝 상담사 코멘트</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Textarea
+            value={counselorComment}
+            onChange={(e) => setCounselorComment(e.target.value)}
+            className="min-h-[110px] border-border bg-secondary"
+            placeholder="분석 결과에 대한 상담사 메모/코멘트를 입력하세요"
+          />
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs text-muted-foreground">저장 후 목록을 바꿔도 코멘트가 유지됩니다.</p>
+            <Button
+              size="sm"
+              className="rounded-full"
+              onClick={saveCounselorComment}
+              disabled={savingComment || (counselorComment.trim() || "") === (session.counselor_comment || "")}
+            >
+              {savingComment ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+              코멘트 저장
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* AI Analysis Button */}
       {!reading && (
         <Button
