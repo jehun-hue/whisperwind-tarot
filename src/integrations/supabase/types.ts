@@ -14,7 +14,75 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      reading_sessions: {
+        Row: {
+          ai_reading: Json | null
+          astrology_score: number | null
+          birth_date: string | null
+          birth_place: string | null
+          birth_time: string | null
+          cards: Json
+          created_at: string
+          final_confidence: number | null
+          gender: string | null
+          id: string
+          is_lunar: boolean | null
+          memo: string | null
+          question: string
+          question_type: string
+          saju_data: Json | null
+          saju_score: number | null
+          status: string
+          tarot_score: number | null
+          updated_at: string
+          ziwei_score: number | null
+        }
+        Insert: {
+          ai_reading?: Json | null
+          astrology_score?: number | null
+          birth_date?: string | null
+          birth_place?: string | null
+          birth_time?: string | null
+          cards?: Json
+          created_at?: string
+          final_confidence?: number | null
+          gender?: string | null
+          id?: string
+          is_lunar?: boolean | null
+          memo?: string | null
+          question: string
+          question_type?: string
+          saju_data?: Json | null
+          saju_score?: number | null
+          status?: string
+          tarot_score?: number | null
+          updated_at?: string
+          ziwei_score?: number | null
+        }
+        Update: {
+          ai_reading?: Json | null
+          astrology_score?: number | null
+          birth_date?: string | null
+          birth_place?: string | null
+          birth_time?: string | null
+          cards?: Json
+          created_at?: string
+          final_confidence?: number | null
+          gender?: string | null
+          id?: string
+          is_lunar?: boolean | null
+          memo?: string | null
+          question?: string
+          question_type?: string
+          saju_data?: Json | null
+          saju_score?: number | null
+          status?: string
+          tarot_score?: number | null
+          updated_at?: string
+          ziwei_score?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
