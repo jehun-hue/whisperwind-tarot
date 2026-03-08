@@ -371,7 +371,7 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                       />
                       {question.trim() && (
                         <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="border-gold/30 text-gold text-xs">
+                          <Badge variant="outline" className={`text-xs ${config.locale === "us" ? "border-purple-400/30 text-purple-300" : "border-gold/30 text-gold"}`}>
                             {config.classifyLabel(questionType)}
                           </Badge>
                         </div>
