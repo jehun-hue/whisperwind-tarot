@@ -545,6 +545,7 @@ export default function ClientPage() {
             </motion.div>
           )}
         </AnimatePresence>
+        </div>
       </div>
     </div>
   );
