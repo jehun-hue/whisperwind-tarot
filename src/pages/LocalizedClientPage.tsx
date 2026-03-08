@@ -16,6 +16,7 @@ import { useAuth } from "@/hooks/useAuth";
 import LocalizedBirthInfoForm from "@/components/LocalizedBirthInfoForm";
 import LocalizedReadingResult from "@/components/LocalizedReadingResult";
 import UserHeader from "@/components/UserHeader";
+import CosmicBackground from "@/components/CosmicBackground";
 import heroBg from "@/assets/tarot-hero-bg.jpg";
 import cardBackImg from "@/assets/card-back.png";
 import { type LocaleConfig, type Locale, getCardDisplayName, getCardDirectionLabel } from "@/config/locales";
