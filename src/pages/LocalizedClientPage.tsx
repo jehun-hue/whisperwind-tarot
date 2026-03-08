@@ -171,7 +171,7 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
     }
     let ziweiDataForAI = null;
     if (ziweiResult) {
-      ziweiDataForAI = { ...ziweiResult, questionAnalysis: getZiWeiForQuestion(ziweiResult, questionType) };
+      ziweiDataForAI = { ...ziweiResult, questionAnalysis: getZiWeiForQuestion(ziweiResult, questionType as any) };
     }
     const combinationSummary = getCombinationSummary(picked.map((c) => c.id), questionType);
 
