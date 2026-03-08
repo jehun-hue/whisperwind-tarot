@@ -153,20 +153,20 @@ export default function LocalizedReadingResult({ config, reading, isLoading, onR
       className="mx-auto max-w-2xl space-y-4"
     >
       {/* Scores */}
-      <Card className="border-border/50 bg-card/80 backdrop-blur-xl glow-gold">
+      <Card className={`border-border/50 bg-card/80 backdrop-blur-xl ${config.locale === "us" ? "glow-cosmic" : "glow-gold"}`}>
         <CardContent className="p-5">
           <div className="mb-3 flex items-center justify-between">
-            <span className="text-sm italic tracking-widest text-gold"
+            <span className={`text-sm italic tracking-widest ${config.locale === "us" ? "text-cosmic-accent" : "text-gold"}`}
                   style={{ fontFamily: config.displayFont }}>
               analysis scores
             </span>
-            <Badge variant="outline" className="border-gold/30 text-gold text-xs">
+            <Badge variant="outline" className={`text-xs ${config.locale === "us" ? "border-purple-400/30 text-purple-300" : "border-gold/30 text-gold"}`}>
               {config.confidenceLabel} {reading.scores.overall}%
             </Badge>
           </div>
           <div className="space-y-3">
             {scoreEntries.map((entry) => (
-              <ScoreBar key={entry.label} label={entry.label} score={entry.score} />
+              <ScoreBar key={entry.label} label={entry.label} score={entry.score} isUS={config.locale === "us"} />
             ))}
           </div>
         </CardContent>
