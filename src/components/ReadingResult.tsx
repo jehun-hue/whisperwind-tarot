@@ -107,6 +107,8 @@ export default function ReadingResult({ reading, isLoading, onReset, hasSaju }: 
           <div className="space-y-3">
             <ScoreBar label="타로 분석" score={reading.scores.tarot} />
             {hasSaju && <ScoreBar label="사주 분석" score={reading.scores.saju} />}
+            {hasSaju && <ScoreBar label="점성술 분석" score={reading.scores.astrology || 0} />}
+            {hasSaju && <ScoreBar label="자미두수 분석" score={reading.scores.ziwei || 0} />}
             <ScoreBar label="종합 신뢰도" score={reading.scores.overall} />
           </div>
         </CardContent>

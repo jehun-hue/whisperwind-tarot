@@ -203,7 +203,10 @@ export default function ClientPage() {
     setPicked([]);
     setSuitFilter("all");
     setBirthInfo(null);
+    setBirthInfo(null);
     setSajuResult(null);
+    setAstroResult(null);
+    setZiweiResult(null);
     setAiReading(null);
     setError(null);
     setDeck(tarotCards.map((card) => makeDeckCard(card, false, false, false)));
