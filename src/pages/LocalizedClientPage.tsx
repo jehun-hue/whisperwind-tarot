@@ -377,7 +377,11 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                         </div>
                       )}
                       <Button
-                        className="w-full rounded-xl bg-gradient-to-r from-primary to-gold text-primary-foreground font-medium shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-shadow"
+                        className={`w-full rounded-xl font-medium shadow-lg transition-shadow ${
+                          config.locale === "us"
+                            ? "bg-gradient-to-r from-purple-600 to-indigo-500 text-white shadow-purple-500/20 hover:shadow-purple-500/40"
+                            : "bg-gradient-to-r from-primary to-gold text-primary-foreground shadow-primary/20 hover:shadow-primary/40"
+                        }`}
                         onClick={() => setStep("birthInfo")}
                         disabled={!question.trim()}
                       >
