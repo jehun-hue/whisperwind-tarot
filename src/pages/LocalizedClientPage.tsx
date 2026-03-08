@@ -570,7 +570,7 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
               </motion.div>
             )}
 
-            {/* Step 4: Loading & Result */}
+            {/* Step 4: Completion */}
             {(step === "loading" || step === "result") && (
               <motion.div key="result">
                 {error ? (
@@ -591,14 +591,82 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                       </Button>
                     </CardContent>
                   </Card>
+                ) : step === "loading" ? (
+                  <Card className={`mx-auto max-w-lg border-border/50 bg-card/80 backdrop-blur-xl animate-pulse-glow`}>
+                    <CardContent className="py-16 px-8 text-center">
+                      <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-t-transparent ${config.locale === 'us' ? 'border-purple-400' : 'border-gold'}" />
+                      <h2 className="text-xl font-semibold text-foreground"
+                          style={{ fontFamily: config.displayFont }}>
+                        {config.loadingTitle}
+                      </h2>
+                      <p className="mt-3 text-sm text-muted-foreground">
+                        {config.loadingSubtitle}
+                      </p>
+                    </CardContent>
+                  </Card>
                 ) : (
-                  <LocalizedReadingResult
-                    config={config}
-                    reading={aiReading}
-                    isLoading={step === "loading"}
-                    onReset={resetAll}
-                    hasBirthInfo={!!birthInfo}
-                  />
+                  <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6 }}
+                    className="mx-auto max-w-lg"
+                  >
+                    <Card className={`border-border/50 bg-card/80 backdrop-blur-xl ${
+                      config.locale === "us" ? "glow-cosmic" : "glow-gold"
+                    }`}>
+                      <CardContent className="py-12 px-8 text-center">
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ type: "spring", delay: 0.2 }}
+                          className="mb-6 text-5xl"
+                        >
+                          ✦
+                        </motion.div>
+                        <h2 className="text-xl font-semibold text-foreground"
+                            style={{ fontFamily: config.displayFont }}>
+                          {config.completionTitle}
+                        </h2>
+                        <p className="mt-4 text-sm leading-relaxed text-muted-foreground whitespace-pre-line">
+                          {config.completionMessage}
+                        </p>
+                        <div className={`mx-auto my-6 h-px w-32 bg-gradient-to-r from-transparent ${
+                          config.locale === "us" ? "via-purple-400/40" : "via-gold/40"
+                        } to-transparent`} />
+                        <p className="text-xs leading-relaxed text-muted-foreground/70 whitespace-pre-line">
+                          {config.completionSubMessage}
+                        </p>
+
+                        {/* Show selected cards summary */}
+                        <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+                          {picked.map((card, idx) => {
+                            const dir = getCardDirectionLabel(card.isReversed, config.locale);
+                            return (
+                              <Badge
+                                key={card.id}
+                                variant="outline"
+                                className={`rounded-full px-3 py-1 text-xs ${
+                                  config.locale === "us"
+                                    ? "border-purple-400/30 text-purple-300"
+                                    : "border-gold/30 text-gold"
+                                }`}
+                              >
+                                {idx + 1}. {getCardDisplayName(card, config.locale)} ({dir.short})
+                              </Badge>
+                            );
+                          })}
+                        </div>
+
+                        <Button
+                          variant="secondary"
+                          className="mt-8 rounded-full border border-border/50 bg-secondary/50 backdrop-blur"
+                          onClick={resetAll}
+                        >
+                          {config.resetButton}
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
                 )}
               </motion.div>
             )}
