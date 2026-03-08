@@ -4,14 +4,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { User, Calendar, Clock, MapPin } from "lucide-react";
 import type { BirthInfo } from "@/components/BirthInfoForm";
 import type { LocaleConfig } from "@/config/locales";
@@ -22,19 +14,26 @@ interface LocalizedBirthInfoFormProps {
   onSkip: () => void;
 }
 
-const BIRTH_HOURS = Array.from({ length: 24 }, (_, i) => {
-  const h = i.toString().padStart(2, "0");
-  return { value: `${h}:00`, label: `${h}:00` };
-});
+const unknownLabel: Record<string, string> = {
+  kr: "모름",
+  jp: "不明",
+  us: "Unknown",
+};
 
 export default function LocalizedBirthInfoForm({ config, onSubmit, onSkip }: LocalizedBirthInfoFormProps) {
   const [gender, setGender] = useState<"male" | "female">("female");
   const [birthDate, setBirthDate] = useState("");
   const [birthTime, setBirthTime] = useState("");
+  const [birthTimeUnknown, setBirthTimeUnknown] = useState(false);
   const [birthPlace, setBirthPlace] = useState("");
   const [isLunar, setIsLunar] = useState(false);
 
   const canSubmit = birthDate.length > 0;
+
+  const handleUnknownToggle = () => {
+    setBirthTimeUnknown(!birthTimeUnknown);
+    if (!birthTimeUnknown) setBirthTime("");
+  };
 
   return (
     <motion.div
@@ -79,49 +78,78 @@ export default function LocalizedBirthInfoForm({ config, onSubmit, onSkip }: Loc
               </div>
             </div>
 
-            {/* Birth Date */}
+            {/* Birth Date + Calendar Toggle */}
             <div className="space-y-2">
               <Label className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Calendar className="h-3.5 w-3.5" /> {config.birthDateLabel}
               </Label>
-              <Input
-                type="date"
-                value={birthDate}
-                onChange={(e) => setBirthDate(e.target.value)}
-                className="rounded-xl border-border/50 bg-background/50 backdrop-blur text-foreground"
-                max={new Date().toISOString().split("T")[0]}
-              />
-              {config.locale === "kr" && (
-                <div className="flex items-center gap-2">
-                  <Switch
-                    checked={isLunar}
-                    onCheckedChange={setIsLunar}
-                    className="data-[state=checked]:bg-primary"
-                  />
-                  <span className="text-xs text-muted-foreground">
-                    {isLunar ? config.calendarToggle.lunar : config.calendarToggle.solar}
-                  </span>
+              <div className="flex gap-2">
+                <Input
+                  type="date"
+                  value={birthDate}
+                  onChange={(e) => setBirthDate(e.target.value)}
+                  className="flex-1 rounded-xl border-border/50 bg-background/50 backdrop-blur text-foreground"
+                  max={new Date().toISOString().split("T")[0]}
+                />
+                {/* Lunar/Solar toggle as segmented button */}
+                <div className="flex rounded-xl border border-border/50 overflow-hidden">
+                  <button
+                    onClick={() => setIsLunar(false)}
+                    className={`px-3 py-2 text-xs font-medium transition-all ${
+                      !isLunar
+                        ? "bg-primary/20 text-primary"
+                        : "bg-background/50 text-muted-foreground hover:bg-muted"
+                    }`}
+                  >
+                    {config.calendarToggle.solar}
+                  </button>
+                  <button
+                    onClick={() => setIsLunar(true)}
+                    className={`px-3 py-2 text-xs font-medium transition-all ${
+                      isLunar
+                        ? "bg-primary/20 text-primary"
+                        : "bg-background/50 text-muted-foreground hover:bg-muted"
+                    }`}
+                  >
+                    {config.calendarToggle.lunar}
+                  </button>
                 </div>
-              )}
+              </div>
             </div>
 
-            {/* Birth Time */}
+            {/* Birth Time - Direct Input + Unknown Button */}
             <div className="space-y-2">
               <Label className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Clock className="h-3.5 w-3.5" /> {config.birthTimeLabel}
               </Label>
-              <Select value={birthTime} onValueChange={setBirthTime}>
-                <SelectTrigger className="rounded-xl border-border/50 bg-background/50 backdrop-blur text-foreground">
-                  <SelectValue placeholder={config.birthTimePlaceholder} />
-                </SelectTrigger>
-                <SelectContent>
-                  {BIRTH_HOURS.map((h) => (
-                    <SelectItem key={h.value} value={h.value}>
-                      {h.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex gap-2">
+                <Input
+                  type="time"
+                  value={birthTime}
+                  onChange={(e) => {
+                    setBirthTime(e.target.value);
+                    if (e.target.value) setBirthTimeUnknown(false);
+                  }}
+                  disabled={birthTimeUnknown}
+                  className={`flex-1 rounded-xl border-border/50 bg-background/50 backdrop-blur text-foreground ${
+                    birthTimeUnknown ? "opacity-40" : ""
+                  }`}
+                  placeholder={config.birthTimePlaceholder}
+                />
+                <Button
+                  type="button"
+                  variant={birthTimeUnknown ? "default" : "outline"}
+                  size="sm"
+                  onClick={handleUnknownToggle}
+                  className={`rounded-xl px-4 text-xs whitespace-nowrap ${
+                    birthTimeUnknown
+                      ? "bg-primary/20 text-primary border-primary/50"
+                      : "border-border/50 text-muted-foreground"
+                  }`}
+                >
+                  {unknownLabel[config.locale]}
+                </Button>
+              </div>
             </div>
 
             {/* Birth Place */}
@@ -142,7 +170,13 @@ export default function LocalizedBirthInfoForm({ config, onSubmit, onSkip }: Loc
               <Button
                 className="w-full rounded-xl bg-gradient-to-r from-primary to-gold text-primary-foreground font-medium shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-shadow"
                 onClick={() =>
-                  onSubmit({ gender, birthDate, birthTime, birthPlace, isLunar })
+                  onSubmit({
+                    gender,
+                    birthDate,
+                    birthTime: birthTimeUnknown ? "" : birthTime,
+                    birthPlace,
+                    isLunar,
+                  })
                 }
                 disabled={!canSubmit}
               >
