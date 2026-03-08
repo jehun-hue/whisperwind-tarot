@@ -59,8 +59,8 @@ export default function ReadingResult({ reading, isLoading, onReset, hasSaju }: 
             <h2 className="font-display text-xl font-semibold text-foreground">
               AI가 분석 중입니다...
             </h2>
-            <p className="mt-3 text-sm text-muted-foreground">
-              타로{hasSaju ? " + 사주" : ""} 교차 검증 리딩을 생성하고 있습니다
+      <p className="mt-3 text-sm text-muted-foreground">
+              타로{hasSaju ? " + 사주 + 점성술 + 자미두수" : ""} 교차 검증 리딩을 생성하고 있습니다
             </p>
             <div className="mx-auto mt-6 h-px w-32 bg-gradient-to-r from-transparent via-gold/40 to-transparent" />
           </CardContent>
