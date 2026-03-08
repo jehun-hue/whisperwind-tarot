@@ -276,7 +276,6 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                   style={{ fontFamily: config.displayFont }}>
               {config.siteSubtitle}
             </span>
-            </span>
             <h1 className="mt-3 text-4xl font-semibold tracking-tight text-foreground sm:text-5xl"
                 style={{ fontFamily: config.displayFont }}>
               {config.siteTitle}
