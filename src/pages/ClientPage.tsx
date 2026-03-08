@@ -12,8 +12,10 @@ import { calculateNatalChart, getAstrologyForQuestion, getCurrentTransits, type 
 import { calculateZiWei, getZiWeiForQuestion, type ZiWeiResult } from "@/lib/ziwei";
 import { getCombinationSummary } from "@/data/tarotCombinations";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import BirthInfoForm, { type BirthInfo } from "@/components/BirthInfoForm";
 import ReadingResult from "@/components/ReadingResult";
+import UserHeader from "@/components/UserHeader";
 import heroBg from "@/assets/tarot-hero-bg.jpg";
 import cardBackImg from "@/assets/card-back.png";
 
