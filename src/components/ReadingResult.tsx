@@ -77,6 +77,8 @@ export default function ReadingResult({ reading, isLoading, onReset, hasSaju }: 
     ...(hasSaju
       ? [
           { title: "🔮 사주 분석", content: reading.sajuAnalysis },
+          { title: "⭐ 점성술 분석", content: reading.astrologyAnalysis },
+          { title: "🏯 자미두수 분석", content: reading.ziweiAnalysis },
           { title: "⚖️ 교차 검증", content: reading.crossValidation },
         ]
       : []),
