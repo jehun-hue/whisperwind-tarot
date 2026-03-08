@@ -459,26 +459,128 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
           <CardHeader>
             <CardTitle className="text-lg text-foreground">AI 교차 검증 분석</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {[
-              { label: "✦ 최종 결론", content: reading.conclusion },
-              { label: "🃏 타로 분석", content: reading.tarotAnalysis },
-              ...(saju ? [
-                { label: "🔮 사주 분석", content: reading.sajuAnalysis },
-                { label: "⭐ 점성술 분석", content: reading.astrologyAnalysis },
-                { label: "🏯 자미두수 분석", content: reading.ziweiAnalysis },
-                { label: "⚖️ 교차 검증", content: reading.crossValidation },
-              ] : []),
-              { label: "⚠️ 리스크", content: reading.risk },
-              { label: "💡 현실 조언", content: reading.advice },
-            ].filter(s => s.content).map((section, i) => (
-              <div key={i} className="rounded-lg border border-border bg-secondary p-4">
-                <div className="mb-1 text-xs text-muted-foreground">{section.label}</div>
+          <CardContent className="space-y-4">
+            {/* Conclusion - highlighted */}
+            {reading.conclusion && (
+              <div className="rounded-lg border border-gold/20 bg-gold/5 p-5">
+                <div className="mb-2 text-xs font-semibold text-gold">✦ 최종 결론</div>
                 <p className="text-sm leading-relaxed text-foreground whitespace-pre-line">
-                  {section.content}
+                  {reading.conclusion}
                 </p>
               </div>
-            ))}
+            )}
+
+            {/* Tarot Section */}
+            <div className="space-y-2">
+              <div className="text-xs font-semibold text-muted-foreground tracking-wider uppercase">🃏 타로 분석</div>
+              {[
+                { label: "카드 해석", content: reading.tarotAnalysis },
+                { label: "카드 간 상호작용", content: reading.tarotCardInteraction },
+              ].filter(s => s.content).map((section, i) => (
+                <div key={i} className="rounded-lg border border-border bg-secondary p-4">
+                  <div className="mb-1 text-[11px] text-muted-foreground">{section.label}</div>
+                  <p className="text-sm leading-relaxed text-foreground whitespace-pre-line">{section.content}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Saju Section */}
+            {saju && (
+              <div className="space-y-2">
+                <div className="text-xs font-semibold text-muted-foreground tracking-wider uppercase">🔮 사주 (명리학)</div>
+                {[
+                  { label: "사주 구조 분석", content: reading.sajuAnalysis },
+                  { label: "시간축 / 운세 흐름", content: reading.sajuTimeline },
+                ].filter(s => s.content).map((section, i) => (
+                  <div key={i} className="rounded-lg border border-border bg-secondary p-4">
+                    <div className="mb-1 text-[11px] text-muted-foreground">{section.label}</div>
+                    <p className="text-sm leading-relaxed text-foreground whitespace-pre-line">{section.content}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Astrology Section */}
+            {saju && (
+              <div className="space-y-2">
+                <div className="text-xs font-semibold text-muted-foreground tracking-wider uppercase">⭐ 점성술</div>
+                {[
+                  { label: "출생차트 분석", content: reading.astrologyAnalysis },
+                  { label: "행성 트랜짓", content: reading.astrologyTransits },
+                ].filter(s => s.content).map((section, i) => (
+                  <div key={i} className="rounded-lg border border-border bg-secondary p-4">
+                    <div className="mb-1 text-[11px] text-muted-foreground">{section.label}</div>
+                    <p className="text-sm leading-relaxed text-foreground whitespace-pre-line">{section.content}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Ziwei Section */}
+            {saju && (
+              <div className="space-y-2">
+                <div className="text-xs font-semibold text-muted-foreground tracking-wider uppercase">🏯 자미두수</div>
+                {[
+                  { label: "궁위 분석", content: reading.ziweiAnalysis },
+                  { label: "인생 구조", content: reading.ziweiLifeStructure },
+                ].filter(s => s.content).map((section, i) => (
+                  <div key={i} className="rounded-lg border border-border bg-secondary p-4">
+                    <div className="mb-1 text-[11px] text-muted-foreground">{section.label}</div>
+                    <p className="text-sm leading-relaxed text-foreground whitespace-pre-line">{section.content}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Cross Validation Section - highlighted */}
+            {(reading.crossValidation || reading.crossValidationMatrix) && (
+              <div className="space-y-2">
+                <div className="text-xs font-semibold text-muted-foreground tracking-wider uppercase">⚖️ 교차 검증</div>
+                {[
+                  { label: "4체계 일치/불일치 분석", content: reading.crossValidation },
+                  { label: "교차 검증 매트릭스", content: reading.crossValidationMatrix },
+                ].filter(s => s.content).map((section, i) => (
+                  <div key={i} className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+                    <div className="mb-1 text-[11px] text-primary">{section.label}</div>
+                    <p className="text-sm leading-relaxed text-foreground whitespace-pre-line">{section.content}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Timing */}
+            {reading.timing && (
+              <div className="rounded-lg border border-border bg-secondary p-4">
+                <div className="mb-1 text-[11px] text-muted-foreground">⏰ 시기 분석</div>
+                <p className="text-sm leading-relaxed text-foreground whitespace-pre-line">{reading.timing}</p>
+              </div>
+            )}
+
+            {/* Risk & Hidden Pattern */}
+            <div className="grid gap-2 md:grid-cols-2">
+              {reading.risk && (
+                <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4">
+                  <div className="mb-1 text-[11px] text-destructive">⚠️ 리스크 요인</div>
+                  <p className="text-sm leading-relaxed text-foreground whitespace-pre-line">{reading.risk}</p>
+                </div>
+              )}
+              {reading.hiddenPattern && (
+                <div className="rounded-lg border border-gold/20 bg-gold/5 p-4">
+                  <div className="mb-1 text-[11px] text-gold">🔍 숨겨진 패턴</div>
+                  <p className="text-sm leading-relaxed text-foreground whitespace-pre-line">{reading.hiddenPattern}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Advice - highlighted */}
+            {reading.advice && (
+              <div className="rounded-lg border border-green-500/20 bg-green-500/5 p-5">
+                <div className="mb-2 text-xs font-semibold text-green-400">💡 현실 조언</div>
+                <p className="text-sm leading-relaxed text-foreground whitespace-pre-line">{reading.advice}</p>
+              </div>
+            )}
+
+            {/* Scores */}
             {reading.scores && (
               <div className="flex flex-wrap gap-2">
                 <Badge variant="secondary" className="text-[10px]">타로: {reading.scores.tarot}%</Badge>
@@ -495,7 +597,6 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
               size="sm"
               className="rounded-full border-border/50 text-xs"
               onClick={() => {
-                // Clear reading to show analyze button again
                 onUpdate({ ...session, ai_reading: null, status: "pending" });
               }}
             >
