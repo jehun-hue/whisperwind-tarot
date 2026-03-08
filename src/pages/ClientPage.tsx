@@ -136,57 +136,38 @@ export default function ClientPage() {
       isReversed: c.isReversed,
     }));
 
-    // Prepare saju data for AI
+    // Prepare all engine data for AI
     let sajuDataForAI = null;
     if (sajuResult) {
-      const crossKeywords = getSajuTarotCrossKeywords(
-        sajuResult,
-        picked.map((c) => c.suit)
-      );
-      const questionAnalysis = getSajuForQuestion(sajuResult, questionType);
-      sajuDataForAI = {
-        ...sajuResult,
-        crossKeywords,
-        questionAnalysis,
-      };
+      sajuDataForAI = { ...sajuResult, crossKeywords: getSajuTarotCrossKeywords(sajuResult, picked.map((c) => c.suit)), questionAnalysis: getSajuForQuestion(sajuResult, questionType) };
     }
+    let astroDataForAI = null;
+    if (astroResult) {
+      astroDataForAI = { ...astroResult, questionAnalysis: getAstrologyForQuestion(astroResult, questionType), transits: getCurrentTransits(astroResult) };
+    }
+    let ziweiDataForAI = null;
+    if (ziweiResult) {
+      ziweiDataForAI = { ...ziweiResult, questionAnalysis: getZiWeiForQuestion(ziweiResult, questionType) };
+    }
+    const combinationSummary = getCombinationSummary(picked.map((c) => c.id), questionType);
 
     try {
-      // Save session to DB
       const { data: session, error: dbError } = await supabase
         .from("reading_sessions")
         .insert({
-          question,
-          question_type: questionType,
-          memo: memo || null,
-          gender: birthInfo?.gender || null,
-          birth_date: birthInfo?.birthDate || null,
-          birth_time: birthInfo?.birthTime || null,
-          birth_place: birthInfo?.birthPlace || null,
-          is_lunar: birthInfo?.isLunar || false,
-          cards: cardData as any,
-          saju_data: sajuDataForAI as any,
-          status: "analyzing",
+          question, question_type: questionType, memo: memo || null,
+          gender: birthInfo?.gender || null, birth_date: birthInfo?.birthDate || null,
+          birth_time: birthInfo?.birthTime || null, birth_place: birthInfo?.birthPlace || null,
+          is_lunar: birthInfo?.isLunar || false, cards: cardData as any,
+          saju_data: sajuDataForAI as any, status: "analyzing",
         })
-        .select()
-        .single();
+        .select().single();
 
       if (dbError) throw dbError;
 
-      // Call AI reading edge function
-      const { data: aiData, error: fnError } = await supabase.functions.invoke(
-        "ai-reading",
-        {
-          body: {
-            question,
-            questionType,
-            memo,
-            cards: cardData,
-            sajuData: sajuDataForAI,
-            birthInfo,
-          },
-        }
-      );
+      const { data: aiData, error: fnError } = await supabase.functions.invoke("ai-reading", {
+        body: { question, questionType, memo, cards: cardData, sajuData: sajuDataForAI, birthInfo, astrologyData: astroDataForAI, ziweiData: ziweiDataForAI, combinationSummary },
+      });
 
       if (fnError) throw fnError;
 
