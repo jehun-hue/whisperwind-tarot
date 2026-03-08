@@ -1,5 +1,5 @@
-import TarotReading from "./TarotReading";
+import ClientPage from "./ClientPage";
 
-const Index = () => <TarotReading />;
+const Index = () => <ClientPage />;
 
 export default Index;
