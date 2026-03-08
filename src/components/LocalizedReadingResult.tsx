@@ -35,7 +35,7 @@ interface LocalizedReadingResultProps {
   hasBirthInfo: boolean;
 }
 
-function ScoreBar({ label, score }: { label: string; score: number }) {
+function ScoreBar({ label, score, isUS = false }: { label: string; score: number; isUS?: boolean }) {
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between text-xs">
@@ -47,7 +47,7 @@ function ScoreBar({ label, score }: { label: string; score: number }) {
           initial={{ width: 0 }}
           animate={{ width: `${score}%` }}
           transition={{ duration: 1, delay: 0.3 }}
-          className="h-full rounded-full bg-gradient-to-r from-primary to-gold"
+          className={`h-full rounded-full ${isUS ? "bg-gradient-to-r from-purple-600 to-indigo-400" : "bg-gradient-to-r from-primary to-gold"}`}
         />
       </div>
     </div>
