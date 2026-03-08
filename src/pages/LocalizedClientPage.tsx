@@ -16,6 +16,7 @@ import { useAuth } from "@/hooks/useAuth";
 import LocalizedBirthInfoForm from "@/components/LocalizedBirthInfoForm";
 import LocalizedReadingResult from "@/components/LocalizedReadingResult";
 import UserHeader from "@/components/UserHeader";
+import CosmicBackground from "@/components/CosmicBackground";
 import heroBg from "@/assets/tarot-hero-bg.jpg";
 import cardBackImg from "@/assets/card-back.png";
 import { type LocaleConfig, type Locale, getCardDisplayName, getCardDirectionLabel } from "@/config/locales";
@@ -247,11 +248,18 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
   return (
     <div className={`relative min-h-screen bg-background ${config.themeClass}`}
          style={{ fontFamily: config.bodyFont }}>
-      <div className="fixed inset-0 z-0">
-        <img src={heroBg} alt="" className="h-full w-full object-cover opacity-30" />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/80 to-background" />
-      </div>
-      <FloatingStars />
+      {/* Background: Cosmic for US, standard for others */}
+      {config.locale === "us" ? (
+        <CosmicBackground />
+      ) : (
+        <>
+          <div className="fixed inset-0 z-0">
+            <img src={heroBg} alt="" className="h-full w-full object-cover opacity-30" />
+            <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/80 to-background" />
+          </div>
+          <FloatingStars />
+        </>
+      )}
 
       <div className="relative z-10">
         <UserHeader />
@@ -263,8 +271,8 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
             transition={{ duration: 0.8 }}
             className="mb-12 text-center"
           >
-            <div className="animate-float mb-4 text-4xl">☽</div>
-            <span className="text-sm italic tracking-[0.3em] text-gold-light"
+            <div className="animate-float mb-4 text-4xl">{config.locale === "us" ? "✦" : "☽"}</div>
+            <span className={`text-sm italic tracking-[0.3em] ${config.locale === "us" ? "text-cosmic-accent" : "text-gold-light"}`}
                   style={{ fontFamily: config.displayFont }}>
               {config.siteSubtitle}
             </span>
@@ -275,7 +283,7 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
             <p className="mt-4 text-sm leading-relaxed text-muted-foreground whitespace-pre-line">
               {config.siteDescription}
             </p>
-            <div className="mx-auto mt-6 h-px w-32 bg-gradient-to-r from-transparent via-gold/40 to-transparent" />
+            <div className={`mx-auto mt-6 h-px w-32 bg-gradient-to-r ${config.locale === "us" ? "from-transparent via-purple-400/40 to-transparent" : "from-transparent via-gold/40 to-transparent"}`} />
 
             {/* Step indicator */}
             <div className="mt-6 flex items-center justify-center gap-2">
@@ -283,20 +291,22 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                 const stepOrder = ["question", "birthInfo", "select", "result"];
                 const currentIdx = stepOrder.indexOf(step === "loading" ? "result" : step);
                 return (
-                  <div key={label} className="flex items-center gap-2">
-                    <div
-                      className={`flex h-7 items-center rounded-full px-3 text-[10px] font-medium transition-all ${
-                        i <= currentIdx
-                          ? "bg-gold/20 text-gold"
-                          : "bg-secondary/50 text-muted-foreground/40"
-                      }`}
-                    >
-                      {label}
+                    <div key={label} className="flex items-center gap-2">
+                      <div
+                        className={`flex h-7 items-center rounded-full px-3 text-[10px] font-medium transition-all ${
+                          i <= currentIdx
+                            ? config.locale === "us"
+                              ? "bg-purple-500/20 text-purple-300"
+                              : "bg-gold/20 text-gold"
+                            : "bg-secondary/50 text-muted-foreground/40"
+                        }`}
+                      >
+                        {label}
+                      </div>
+                      {i < 3 && (
+                        <div className={`h-px w-4 ${i < currentIdx ? (config.locale === "us" ? "bg-purple-400/40" : "bg-gold/40") : "bg-border/30"}`} />
+                      )}
                     </div>
-                    {i < 3 && (
-                      <div className={`h-px w-4 ${i < currentIdx ? "bg-gold/40" : "bg-border/30"}`} />
-                    )}
-                  </div>
                 );
               })}
             </div>
@@ -333,7 +343,9 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                           onClick={() => setSelectedQuestionType(qt.value)}
                           className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
                             selectedQuestionType === qt.value
-                              ? "bg-gold/20 text-gold border border-gold/30"
+                              ? config.locale === "us"
+                                ? "bg-purple-500/20 text-purple-300 border border-purple-400/30"
+                                : "bg-gold/20 text-gold border border-gold/30"
                               : "bg-secondary/50 text-muted-foreground hover:bg-muted border border-transparent"
                           }`}
                         >
@@ -357,13 +369,17 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                       />
                       {question.trim() && (
                         <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="border-gold/30 text-gold text-xs">
+                          <Badge variant="outline" className={`text-xs ${config.locale === "us" ? "border-purple-400/30 text-purple-300" : "border-gold/30 text-gold"}`}>
                             {config.classifyLabel(questionType)}
                           </Badge>
                         </div>
                       )}
                       <Button
-                        className="w-full rounded-xl bg-gradient-to-r from-primary to-gold text-primary-foreground font-medium shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-shadow"
+                        className={`w-full rounded-xl font-medium shadow-lg transition-shadow ${
+                          config.locale === "us"
+                            ? "bg-gradient-to-r from-purple-600 to-indigo-500 text-white shadow-purple-500/20 hover:shadow-purple-500/40"
+                            : "bg-gradient-to-r from-primary to-gold text-primary-foreground shadow-primary/20 hover:shadow-primary/40"
+                        }`}
                         onClick={() => setStep("birthInfo")}
                         disabled={!question.trim()}
                       >
@@ -440,7 +456,9 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                         key={i}
                         className={`flex h-10 w-10 items-center justify-center rounded-full border-2 text-sm transition-all ${
                           i < picked.length
-                            ? "border-gold bg-gold/20 text-gold glow-gold"
+                            ? config.locale === "us"
+                              ? "border-purple-400 bg-purple-500/20 text-purple-300 glow-cosmic"
+                              : "border-gold bg-gold/20 text-gold glow-gold"
                             : "border-border/30 text-muted-foreground/30"
                         }`}
                         style={{ fontFamily: config.displayFont }}
@@ -459,7 +477,9 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                       onClick={() => setSuitFilter(key)}
                       className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${
                         suitFilter === key
-                          ? "bg-gold/20 text-gold border border-gold/30"
+                          ? config.locale === "us"
+                            ? "bg-purple-500/20 text-purple-300 border border-purple-400/30"
+                            : "bg-gold/20 text-gold border border-gold/30"
                           : "bg-secondary/50 text-muted-foreground hover:bg-muted border border-transparent"
                       }`}
                     >
@@ -473,43 +493,61 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                     const isSelected = picked.some((p) => p.id === card.id);
                     const isDisabled = card.isPicked || picked.length >= 3;
                     const dir = getCardDirectionLabel(card.isReversed, config.locale);
+                    const isUS = config.locale === "us";
                     return (
                       <motion.button
-                        whileHover={!isDisabled ? { y: -6, scale: 1.05 } : {}}
-                        whileTap={!isDisabled ? { scale: 0.95 } : {}}
+                        whileHover={!isDisabled ? { y: isUS ? -10 : -6, scale: isUS ? 1.08 : 1.05, rotateY: isUS ? 5 : 0 } : {}}
+                        whileTap={!isDisabled ? { scale: 0.92 } : {}}
                         key={card.id}
                         onClick={() => selectCard(card)}
                         disabled={isDisabled}
-                        className={`group relative aspect-[0.65] overflow-hidden rounded-lg border transition-all ${
+                        className={`group relative aspect-[0.65] overflow-hidden rounded-lg border transition-all duration-300 ${
                           isSelected
-                            ? "border-gold/60 glow-gold-strong"
+                            ? isUS
+                              ? "border-purple-400/60 glow-cosmic animate-card-mystical"
+                              : "border-gold/60 glow-gold-strong"
                             : isDisabled
                             ? "border-border/20 opacity-40 cursor-not-allowed"
+                            : isUS
+                            ? "border-purple-500/20 hover:border-purple-400/40 cursor-pointer hover:shadow-[0_0_25px_-5px_hsl(270_60%_60%/0.3)]"
                             : "border-border/30 hover:border-gold/30 cursor-pointer"
                         }`}
                       >
                         {isSelected ? (
-                          <div className="flex h-full flex-col items-center justify-center bg-gradient-to-b from-gold/10 to-accent/10 p-1.5">
-                            <span className="text-lg font-semibold text-gold"
+                          <motion.div
+                            initial={{ rotateY: 180, opacity: 0 }}
+                            animate={{ rotateY: 0, opacity: 1 }}
+                            transition={{ duration: 0.6, ease: "easeOut" }}
+                            className={`flex h-full flex-col items-center justify-center p-1.5 ${
+                              isUS
+                                ? "bg-gradient-to-b from-purple-500/15 via-indigo-500/10 to-blue-500/15"
+                                : "bg-gradient-to-b from-gold/10 to-accent/10"
+                            }`}
+                          >
+                            <span className={`text-lg font-semibold ${isUS ? "text-purple-300" : "text-gold"}`}
                                   style={{ fontFamily: config.displayFont }}>
                               {card.name[0]}
                             </span>
                             <span className="mt-0.5 text-[9px] font-medium text-foreground">
                               {getCardDisplayName(card, config.locale)}
                             </span>
-                            <span className="mt-0.5 flex items-center gap-0.5 text-[8px] text-gold-light">
+                            <span className={`mt-0.5 flex items-center gap-0.5 text-[8px] ${isUS ? "text-purple-300/80" : "text-gold-light"}`}>
                               {card.isReversed ? (
                                 <><EyeOff className="h-2 w-2" /> {dir.short}</>
                               ) : (
                                 <><Eye className="h-2 w-2" /> {dir.short}</>
                               )}
                             </span>
-                          </div>
+                          </motion.div>
                         ) : (
                           <img
                             src={cardBackImg}
                             alt="tarot card"
-                            className="h-full w-full object-cover opacity-70 transition-opacity group-hover:opacity-100"
+                            className={`h-full w-full object-cover transition-all duration-300 ${
+                              isUS
+                                ? "opacity-60 group-hover:opacity-100 group-hover:brightness-110"
+                                : "opacity-70 group-hover:opacity-100"
+                            }`}
                           />
                         )}
                       </motion.button>
@@ -530,10 +568,14 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                           return (
                             <Badge
                               key={card.id}
-                              className="rounded-full border border-gold/30 bg-gold/10 px-3 py-1.5 text-foreground"
+                              className={`rounded-full border px-3 py-1.5 text-foreground ${
+                                config.locale === "us"
+                                  ? "border-purple-400/30 bg-purple-500/10"
+                                  : "border-gold/30 bg-gold/10"
+                              }`}
                             >
                               {idx + 1}. {getCardDisplayName(card, config.locale)}
-                              <span className="ml-1 text-gold">
+                              <span className={`ml-1 ${config.locale === "us" ? "text-purple-300" : "text-gold"}`}>
                                 ({dir.short})
                               </span>
                             </Badge>
@@ -547,7 +589,11 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                           animate={{ opacity: 1, scale: 1 }}
                         >
                           <Button
-                            className="w-full rounded-xl bg-gradient-to-r from-primary to-gold text-primary-foreground font-medium shadow-lg shadow-primary/20"
+                            className={`w-full rounded-xl font-medium shadow-lg ${
+                              config.locale === "us"
+                                ? "bg-gradient-to-r from-purple-600 to-indigo-500 text-white shadow-purple-500/20"
+                                : "bg-gradient-to-r from-primary to-gold text-primary-foreground shadow-primary/20"
+                            }`}
                             onClick={handleSubmit}
                           >
                             <CheckCircle2 className="mr-2 h-4 w-4" />
