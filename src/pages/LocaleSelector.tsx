@@ -12,6 +12,12 @@ const locales = [
 export default function LocaleSelector() {
   const navigate = useNavigate();
 
+  useSEO({
+    title: "AI Tarot Reading — Choose Your Language",
+    description: "AI-powered Tarot + Astrology spiritual reading. Available in Korean, Japanese, and English.",
+    lang: "en",
+  });
+
   return (
     <div className="relative min-h-screen bg-background">
       <div className="fixed inset-0 z-0">
