@@ -167,7 +167,7 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
     }
     let astroDataForAI = null;
     if (astroResult) {
-      astroDataForAI = { ...astroResult, questionAnalysis: getAstrologyForQuestion(astroResult, questionType), transits: getCurrentTransits(astroResult) };
+      astroDataForAI = { ...astroResult, questionAnalysis: getAstrologyForQuestion(astroResult, questionType as any), transits: getCurrentTransits(astroResult) };
     }
     let ziweiDataForAI = null;
     if (ziweiResult) {
