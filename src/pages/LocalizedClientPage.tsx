@@ -248,11 +248,18 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
   return (
     <div className={`relative min-h-screen bg-background ${config.themeClass}`}
          style={{ fontFamily: config.bodyFont }}>
-      <div className="fixed inset-0 z-0">
-        <img src={heroBg} alt="" className="h-full w-full object-cover opacity-30" />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/80 to-background" />
-      </div>
-      <FloatingStars />
+      {/* Background: Cosmic for US, standard for others */}
+      {config.locale === "us" ? (
+        <CosmicBackground />
+      ) : (
+        <>
+          <div className="fixed inset-0 z-0">
+            <img src={heroBg} alt="" className="h-full w-full object-cover opacity-30" />
+            <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/80 to-background" />
+          </div>
+          <FloatingStars />
+        </>
+      )}
 
       <div className="relative z-10">
         <UserHeader />
