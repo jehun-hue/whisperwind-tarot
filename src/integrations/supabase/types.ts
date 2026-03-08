@@ -73,6 +73,7 @@ export type Database = {
           birth_place: string | null
           birth_time: string | null
           cards: Json
+          counselor_comment: string | null
           created_at: string
           final_confidence: number | null
           gender: string | null
@@ -96,6 +97,7 @@ export type Database = {
           birth_place?: string | null
           birth_time?: string | null
           cards?: Json
+          counselor_comment?: string | null
           created_at?: string
           final_confidence?: number | null
           gender?: string | null
@@ -119,6 +121,7 @@ export type Database = {
           birth_place?: string | null
           birth_time?: string | null
           cards?: Json
+          counselor_comment?: string | null
           created_at?: string
           final_confidence?: number | null
           gender?: string | null

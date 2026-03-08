@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Lock, Trash2, RefreshCw, Sparkles, Loader2, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,6 +34,7 @@ interface ReadingSession {
   question: string;
   question_type: string;
   memo: string | null;
+  counselor_comment: string | null;
   gender: string | null;
   birth_date: string | null;
   birth_time: string | null;
@@ -215,10 +217,30 @@ export default function ReaderPage() {
 
 function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdate: (s: ReadingSession) => void }) {
   const [analyzing, setAnalyzing] = useState(false);
+  const [counselorComment, setCounselorComment] = useState(session.counselor_comment || "");
+  const [savingComment, setSavingComment] = useState(false);
   const qType = session.question_type;
   const reading = session.ai_reading;
   const saju = session.saju_data;
 
+  useEffect(() => {
+    setCounselorComment(session.counselor_comment || "");
+  }, [session.id, session.counselor_comment]);
+
+  const saveCounselorComment = async () => {
+    setSavingComment(true);
+    const value = counselorComment.trim() || null;
+    const { error } = await supabase
+      .from("reading_sessions")
+      .update({ counselor_comment: value })
+      .eq("id", session.id);
+
+    if (!error) {
+      onUpdate({ ...session, counselor_comment: value });
+    }
+
+    setSavingComment(false);
+  };
   const runAIAnalysis = async () => {
     setAnalyzing(true);
     try {
@@ -403,7 +425,8 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
   </div>
 
   <h2 style="font-size:16px;margin-bottom:8px;">📋 질문: ${session.question}</h2>
-  ${session.memo ? `<p style="font-size:12px;color:#666;margin-bottom:12px;">메모: ${session.memo}</p>` : ""}
+  ${session.memo ? `<p style="font-size:12px;color:#666;margin-bottom:8px;">고객 메모: ${session.memo}</p>` : ""}
+  ${session.counselor_comment ? `<p style="font-size:12px;color:#666;margin-bottom:12px;">상담사 코멘트: ${session.counselor_comment}</p>` : ""}
   ${session.birth_date ? `<p style="font-size:12px;color:#666;">${session.gender === "male" ? "남" : "여"} • ${session.birth_date} • ${session.birth_time || "시간 미상"} • ${session.birth_place || ""} • ${session.is_lunar ? "음력" : "양력"}</p>` : ""}
 
   <div class="cards">
@@ -468,6 +491,33 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
               <span>{session.is_lunar ? "음력" : "양력"}</span>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Counselor comment */}
+      <Card className="border-border bg-card">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base text-foreground">📝 상담사 코멘트</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Textarea
+            value={counselorComment}
+            onChange={(e) => setCounselorComment(e.target.value)}
+            className="min-h-[110px] border-border bg-secondary"
+            placeholder="분석 결과에 대한 상담사 메모/코멘트를 입력하세요"
+          />
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs text-muted-foreground">저장 후 목록을 바꿔도 코멘트가 유지됩니다.</p>
+            <Button
+              size="sm"
+              className="rounded-full"
+              onClick={saveCounselorComment}
+              disabled={savingComment || (counselorComment.trim() || "") === (session.counselor_comment || "")}
+            >
+              {savingComment ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+              코멘트 저장
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
