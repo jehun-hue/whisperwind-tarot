@@ -41,6 +41,10 @@ export interface LocaleConfig {
   cardPositions: string[];
   suitLabels: Record<string, string>;
   submitButton: string;
+  // Completion screen (after card selection)
+  completionTitle: string;
+  completionMessage: string;
+  completionSubMessage: string;
   // Result
   loadingTitle: string;
   loadingSubtitle: string;
