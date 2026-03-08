@@ -184,17 +184,19 @@ function calculatePlanetPositions(year: number, month: number, day: number, hour
   ];
 
   return positions.map((p, idx) => {
-    const sign = ZODIAC_SIGNS[p.signIdx];
-    const house = ((p.signIdx - risingIdx + 12) % 12) + 1;
+    const safeIdx = ((p.signIdx % 12) + 12) % 12;
+    const sign = ZODIAC_SIGNS[safeIdx];
+    const house = ((safeIdx - risingIdx + 12) % 12) + 1;
     const meaning = PLANET_MEANINGS[p.planet];
+    const signMeaning = SIGN_MEANINGS[sign] || "다양한 특성";
 
     return {
       planet: p.planet,
       sign,
-      signEnglish: ZODIAC_ENGLISH[p.signIdx],
+      signEnglish: ZODIAC_ENGLISH[safeIdx],
       degree: Math.round(p.degree * 100) / 100,
       house,
-      interpretation: `${p.planet}(${meaning.keyword}) in ${sign} ${house}하우스 → ${meaning.domain}이 ${SIGN_MEANINGS[sign].split(".")[0]}한 방식으로 표현됨.`,
+      interpretation: `${p.planet}(${meaning.keyword}) in ${sign} ${house}하우스 → ${meaning.domain}이 ${signMeaning.split(".")[0]}한 방식으로 표현됨.`,
     };
   });
 }
