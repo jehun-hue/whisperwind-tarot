@@ -581,8 +581,6 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                                 ({dir.short})
                               </span>
                             </Badge>
-                              </span>
-                            </Badge>
                           );
                         })}
                       </div>
