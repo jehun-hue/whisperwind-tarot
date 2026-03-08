@@ -9,12 +9,16 @@ interface AIReadingResult {
   conclusion: string;
   tarotAnalysis: string;
   sajuAnalysis: string;
+  astrologyAnalysis: string;
+  ziweiAnalysis: string;
   crossValidation: string;
   risk: string;
   advice: string;
   scores: {
     tarot: number;
     saju: number;
+    astrology: number;
+    ziwei: number;
     overall: number;
   };
 }
@@ -59,8 +63,8 @@ export default function ReadingResult({ reading, isLoading, onReset, hasSaju }: 
             <h2 className="font-display text-xl font-semibold text-foreground">
               AI가 분석 중입니다...
             </h2>
-            <p className="mt-3 text-sm text-muted-foreground">
-              타로{hasSaju ? " + 사주" : ""} 교차 검증 리딩을 생성하고 있습니다
+      <p className="mt-3 text-sm text-muted-foreground">
+              타로{hasSaju ? " + 사주 + 점성술 + 자미두수" : ""} 교차 검증 리딩을 생성하고 있습니다
             </p>
             <div className="mx-auto mt-6 h-px w-32 bg-gradient-to-r from-transparent via-gold/40 to-transparent" />
           </CardContent>
@@ -77,6 +81,8 @@ export default function ReadingResult({ reading, isLoading, onReset, hasSaju }: 
     ...(hasSaju
       ? [
           { title: "🔮 사주 분석", content: reading.sajuAnalysis },
+          { title: "⭐ 점성술 분석", content: reading.astrologyAnalysis },
+          { title: "🏯 자미두수 분석", content: reading.ziweiAnalysis },
           { title: "⚖️ 교차 검증", content: reading.crossValidation },
         ]
       : []),
@@ -105,6 +111,8 @@ export default function ReadingResult({ reading, isLoading, onReset, hasSaju }: 
           <div className="space-y-3">
             <ScoreBar label="타로 분석" score={reading.scores.tarot} />
             {hasSaju && <ScoreBar label="사주 분석" score={reading.scores.saju} />}
+            {hasSaju && <ScoreBar label="점성술 분석" score={reading.scores.astrology || 0} />}
+            {hasSaju && <ScoreBar label="자미두수 분석" score={reading.scores.ziwei || 0} />}
             <ScoreBar label="종합 신뢰도" score={reading.scores.overall} />
           </div>
         </CardContent>
