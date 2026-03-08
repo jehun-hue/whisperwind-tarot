@@ -260,7 +260,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
             transits: getCurrentTransits(astro),
           };
 
-          const ziwei = calculateZiWei(y, m, d, hour, birthInfo.gender || "female");
+          const ziwei = calculateZiWei(y, m, d, hour, (birthInfo.gender as "male" | "female") || "female");
           ziweiDataForAI = {
             ...ziwei,
             questionAnalysis: getZiWeiForQuestion(ziwei, qType as any),
