@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { useSEO } from "@/hooks/useSEO";
 import heroBg from "@/assets/tarot-hero-bg.jpg";
 
 const locales = [
@@ -10,6 +11,12 @@ const locales = [
 
 export default function LocaleSelector() {
   const navigate = useNavigate();
+
+  useSEO({
+    title: "AI Tarot Reading — Choose Your Language",
+    description: "AI-powered Tarot + Astrology spiritual reading. Available in Korean, Japanese, and English.",
+    lang: "en",
+  });
 
   return (
     <div className="relative min-h-screen bg-background">
