@@ -458,7 +458,9 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                         key={i}
                         className={`flex h-10 w-10 items-center justify-center rounded-full border-2 text-sm transition-all ${
                           i < picked.length
-                            ? "border-gold bg-gold/20 text-gold glow-gold"
+                            ? config.locale === "us"
+                              ? "border-purple-400 bg-purple-500/20 text-purple-300 glow-cosmic"
+                              : "border-gold bg-gold/20 text-gold glow-gold"
                             : "border-border/30 text-muted-foreground/30"
                         }`}
                         style={{ fontFamily: config.displayFont }}
