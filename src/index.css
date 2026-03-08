@@ -86,6 +86,37 @@
     border-color: hsl(var(--border));
   }
   .glow-gold {
-    box-shadow: 0 0 30px -5px hsl(var(--tarot-gold) / 0.15);
+    box-shadow: 0 0 40px -8px hsl(var(--tarot-gold) / 0.2);
+  }
+  .glow-gold-strong {
+    box-shadow: 0 0 60px -5px hsl(var(--tarot-gold) / 0.35);
+  }
+  .text-gold {
+    color: hsl(var(--tarot-gold));
+  }
+  .text-gold-light {
+    color: hsl(var(--tarot-gold-light));
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
+  }
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+  }
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 20px -5px hsl(var(--tarot-gold) / 0.2); }
+    50% { box-shadow: 0 0 35px -3px hsl(var(--tarot-gold) / 0.4); }
+  }
+  .animate-float {
+    animation: float 4s ease-in-out infinite;
+  }
+  .animate-twinkle {
+    animation: twinkle 3s ease-in-out infinite;
+  }
+  .animate-pulse-glow {
+    animation: pulse-glow 3s ease-in-out infinite;
   }
 }
