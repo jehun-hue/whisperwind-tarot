@@ -593,7 +593,11 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                           animate={{ opacity: 1, scale: 1 }}
                         >
                           <Button
-                            className="w-full rounded-xl bg-gradient-to-r from-primary to-gold text-primary-foreground font-medium shadow-lg shadow-primary/20"
+                            className={`w-full rounded-xl font-medium shadow-lg ${
+                              config.locale === "us"
+                                ? "bg-gradient-to-r from-purple-600 to-indigo-500 text-white shadow-purple-500/20"
+                                : "bg-gradient-to-r from-primary to-gold text-primary-foreground shadow-primary/20"
+                            }`}
                             onClick={handleSubmit}
                           >
                             <CheckCircle2 className="mr-2 h-4 w-4" />
