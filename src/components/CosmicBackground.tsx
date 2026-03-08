@@ -108,7 +108,6 @@ export default function CosmicBackground() {
             strokeWidth="0.08"
             strokeLinecap="round"
           />
-          />
         ))}
 
         {/* Stars */}
