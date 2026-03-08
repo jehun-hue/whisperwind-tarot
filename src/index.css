@@ -6,40 +6,43 @@
 
 @layer base {
   :root {
-    --background: 240 10% 6%;
-    --foreground: 0 0% 95%;
+    --background: 250 20% 6%;
+    --foreground: 45 20% 90%;
 
-    --card: 240 8% 10%;
-    --card-foreground: 0 0% 95%;
+    --card: 250 18% 10%;
+    --card-foreground: 45 20% 90%;
 
-    --popover: 240 8% 10%;
-    --popover-foreground: 0 0% 95%;
+    --popover: 250 18% 10%;
+    --popover-foreground: 45 20% 90%;
 
-    --primary: 45 80% 65%;
-    --primary-foreground: 240 10% 6%;
+    --primary: 45 80% 60%;
+    --primary-foreground: 250 20% 6%;
 
-    --secondary: 240 6% 18%;
-    --secondary-foreground: 0 0% 85%;
+    --secondary: 250 15% 15%;
+    --secondary-foreground: 45 20% 80%;
 
-    --muted: 240 6% 15%;
-    --muted-foreground: 0 0% 55%;
+    --muted: 250 12% 18%;
+    --muted-foreground: 250 10% 55%;
 
-    --accent: 280 40% 50%;
-    --accent-foreground: 0 0% 95%;
+    --accent: 270 50% 45%;
+    --accent-foreground: 45 20% 90%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 240 6% 20%;
-    --input: 240 6% 20%;
-    --ring: 45 80% 65%;
+    --border: 250 15% 18%;
+    --input: 250 15% 18%;
+    --ring: 45 80% 60%;
 
     --radius: 1rem;
 
-    --tarot-gold: 45 80% 65%;
-    --tarot-mystic: 280 40% 50%;
-    --tarot-surface: 240 8% 12%;
-    --tarot-card-bg: 240 10% 8%;
+    --tarot-gold: 45 80% 60%;
+    --tarot-gold-light: 45 70% 75%;
+    --tarot-mystic: 270 50% 45%;
+    --tarot-deep: 250 30% 12%;
+    --tarot-surface: 250 18% 12%;
+    --tarot-card-bg: 250 20% 8%;
+    --tarot-glow: 45 80% 60%;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -83,6 +86,37 @@
     border-color: hsl(var(--border));
   }
   .glow-gold {
-    box-shadow: 0 0 30px -5px hsl(var(--tarot-gold) / 0.15);
+    box-shadow: 0 0 40px -8px hsl(var(--tarot-gold) / 0.2);
+  }
+  .glow-gold-strong {
+    box-shadow: 0 0 60px -5px hsl(var(--tarot-gold) / 0.35);
+  }
+  .text-gold {
+    color: hsl(var(--tarot-gold));
+  }
+  .text-gold-light {
+    color: hsl(var(--tarot-gold-light));
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
+  }
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+  }
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 20px -5px hsl(var(--tarot-gold) / 0.2); }
+    50% { box-shadow: 0 0 35px -3px hsl(var(--tarot-gold) / 0.4); }
+  }
+  .animate-float {
+    animation: float 4s ease-in-out infinite;
+  }
+  .animate-twinkle {
+    animation: twinkle 3s ease-in-out infinite;
+  }
+  .animate-pulse-glow {
+    animation: pulse-glow 3s ease-in-out infinite;
   }
 }
