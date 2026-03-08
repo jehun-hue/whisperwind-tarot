@@ -20,6 +20,7 @@ import CosmicBackground from "@/components/CosmicBackground";
 import heroBg from "@/assets/tarot-hero-bg.jpg";
 import cardBackImg from "@/assets/card-back.png";
 import { type LocaleConfig, type Locale, getCardDisplayName, getCardDirectionLabel } from "@/config/locales";
+import { useSEO } from "@/hooks/useSEO";
 import type { BirthInfo } from "@/components/BirthInfoForm";
 
 interface LocalizedClientPageProps {
