@@ -174,6 +174,7 @@ export default function ClientPage() {
           birth_time: birthInfo?.birthTime || null, birth_place: birthInfo?.birthPlace || null,
           is_lunar: birthInfo?.isLunar || false, cards: cardData as any,
           saju_data: sajuDataForAI as any, status: "analyzing",
+          user_id: user?.id || null,
         })
         .select().single();
 
