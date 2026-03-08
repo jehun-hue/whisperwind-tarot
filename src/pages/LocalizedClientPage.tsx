@@ -292,18 +292,21 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                 const stepOrder = ["question", "birthInfo", "select", "result"];
                 const currentIdx = stepOrder.indexOf(step === "loading" ? "result" : step);
                 return (
-                  <div key={label} className="flex items-center gap-2">
-                    <div
-                      className={`flex h-7 items-center rounded-full px-3 text-[10px] font-medium transition-all ${
-                        i <= currentIdx
-                          ? "bg-gold/20 text-gold"
-                          : "bg-secondary/50 text-muted-foreground/40"
-                      }`}
-                    >
-                      {label}
-                    </div>
-                    {i < 3 && (
-                      <div className={`h-px w-4 ${i < currentIdx ? "bg-gold/40" : "bg-border/30"}`} />
+                    <div key={label} className="flex items-center gap-2">
+                      <div
+                        className={`flex h-7 items-center rounded-full px-3 text-[10px] font-medium transition-all ${
+                          i <= currentIdx
+                            ? config.locale === "us"
+                              ? "bg-purple-500/20 text-purple-300"
+                              : "bg-gold/20 text-gold"
+                            : "bg-secondary/50 text-muted-foreground/40"
+                        }`}
+                      >
+                        {label}
+                      </div>
+                      {i < 3 && (
+                        <div className={`h-px w-4 ${i < currentIdx ? (config.locale === "us" ? "bg-purple-400/40" : "bg-gold/40") : "bg-border/30"}`} />
+                      )}
                     )}
                   </div>
                 );
