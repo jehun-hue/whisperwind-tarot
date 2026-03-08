@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Lock, Trash2, RefreshCw, Sparkles, Loader2 } from "lucide-react";
+import { Lock, Trash2, RefreshCw, Sparkles, Loader2, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { calculateSaju, getSajuTarotCrossKeywords, getSajuForQuestion } from "@/lib/saju";
 import { calculateNatalChart, getAstrologyForQuestion, getCurrentTransits } from "@/lib/astrology";
@@ -321,6 +321,111 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       setAnalyzing(false);
     }
   };
+  const downloadPDF = () => {
+    if (!reading) return;
+    const cards = session.cards as any[];
+    const qLabel = questionTypeLabels[qType] || "🔮 종합";
+
+    const sections: { title: string; content: string }[] = [
+      { title: "✦ 최종 결론", content: reading.conclusion },
+      { title: "🃏 타로 카드 해석", content: reading.tarotAnalysis },
+      { title: "🃏 카드 간 상호작용", content: reading.tarotCardInteraction },
+      ...(saju ? [
+        { title: "🔮 사주 구조 분석", content: reading.sajuAnalysis },
+        { title: "🔮 사주 시간축 분석", content: reading.sajuTimeline },
+        { title: "⭐ 점성술 분석", content: reading.astrologyAnalysis },
+        { title: "⭐ 행성 트랜짓", content: reading.astrologyTransits },
+        { title: "🏯 자미두수 궁위 분석", content: reading.ziweiAnalysis },
+        { title: "🏯 자미두수 인생 구조", content: reading.ziweiLifeStructure },
+        { title: "⚖️ 4체계 교차 검증", content: reading.crossValidation },
+        { title: "⚖️ 교차 검증 매트릭스", content: reading.crossValidationMatrix },
+      ] : []),
+      { title: "⏰ 시기 분석", content: reading.timing },
+      { title: "⚠️ 리스크 요인", content: reading.risk },
+      { title: "🔍 숨겨진 패턴", content: reading.hiddenPattern },
+      { title: "💡 현실 조언", content: reading.advice },
+    ].filter(s => s.content);
+
+    const sajuHtml = saju ? `
+      <div class="info-grid">
+        <div class="pillar"><div class="pillar-label">연주</div><div class="pillar-value">${saju.yearPillar?.cheongan}${saju.yearPillar?.jiji}</div><div class="pillar-element">${saju.yearPillar?.cheonganElement}/${saju.yearPillar?.jijiElement}</div></div>
+        <div class="pillar"><div class="pillar-label">월주</div><div class="pillar-value">${saju.monthPillar?.cheongan}${saju.monthPillar?.jiji}</div><div class="pillar-element">${saju.monthPillar?.cheonganElement}/${saju.monthPillar?.jijiElement}</div></div>
+        <div class="pillar"><div class="pillar-label">일주</div><div class="pillar-value">${saju.dayPillar?.cheongan}${saju.dayPillar?.jiji}</div><div class="pillar-element">${saju.dayPillar?.cheonganElement}/${saju.dayPillar?.jijiElement}</div></div>
+        <div class="pillar"><div class="pillar-label">시주</div><div class="pillar-value">${saju.hourPillar?.cheongan}${saju.hourPillar?.jiji}</div><div class="pillar-element">${saju.hourPillar?.cheonganElement}/${saju.hourPillar?.jijiElement}</div></div>
+      </div>
+      <p style="margin-top:8px;font-size:12px;color:#666;">일간: ${saju.ilgan}(${saju.ilganElement}) | ${saju.strength} | 용신: ${saju.yongsin}</p>
+    ` : "";
+
+    const scoresHtml = reading.scores ? `
+      <div class="scores">
+        <span>타로: ${reading.scores.tarot}%</span>
+        ${saju ? `<span>사주: ${reading.scores.saju}%</span>` : ""}
+        ${reading.scores.astrology != null ? `<span>점성술: ${reading.scores.astrology}%</span>` : ""}
+        ${reading.scores.ziwei != null ? `<span>자미두수: ${reading.scores.ziwei}%</span>` : ""}
+        <span class="overall">종합: ${reading.scores.overall}%</span>
+      </div>
+    ` : "";
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>상담 분석 결과</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif; color:#222; padding:40px; line-height:1.7; }
+  .header { text-align:center; border-bottom:2px solid #c8a864; padding-bottom:20px; margin-bottom:30px; }
+  .header h1 { font-size:22px; color:#333; margin-bottom:6px; }
+  .header .meta { font-size:12px; color:#888; }
+  .header .badge { display:inline-block; background:#c8a864; color:#fff; padding:2px 12px; border-radius:12px; font-size:11px; margin:6px 4px; }
+  .cards { display:flex; gap:12px; margin:20px 0; }
+  .card-item { flex:1; border:1px solid #ddd; border-radius:8px; padding:12px; text-align:center; }
+  .card-item .pos { font-size:10px; color:#888; }
+  .card-item .name { font-size:14px; font-weight:600; margin:4px 0; }
+  .card-item .dir { font-size:11px; color:#c8a864; }
+  .info-grid { display:flex; gap:8px; margin:12px 0; }
+  .pillar { flex:1; border:1px solid #ddd; border-radius:6px; padding:8px; text-align:center; }
+  .pillar-label { font-size:10px; color:#888; }
+  .pillar-value { font-size:18px; font-weight:700; margin:4px 0; }
+  .pillar-element { font-size:10px; color:#c8a864; }
+  .section { margin:20px 0; page-break-inside:avoid; }
+  .section-title { font-size:13px; font-weight:700; color:#c8a864; margin-bottom:8px; border-left:3px solid #c8a864; padding-left:10px; }
+  .section-content { font-size:13px; line-height:1.8; color:#333; background:#f9f8f5; border-radius:8px; padding:14px; }
+  .scores { display:flex; gap:10px; flex-wrap:wrap; margin:20px 0; padding:12px; background:#f0ede4; border-radius:8px; }
+  .scores span { font-size:12px; color:#555; }
+  .scores .overall { font-weight:700; color:#c8a864; }
+  .footer { text-align:center; margin-top:30px; padding-top:16px; border-top:1px solid #eee; font-size:10px; color:#aaa; }
+  @media print { body { padding:20px; } }
+</style></head><body>
+  <div class="header">
+    <h1>AI 통합 점술 상담 분석 결과</h1>
+    <div class="meta">${new Date(session.created_at).toLocaleString("ko-KR")}</div>
+    <div>
+      <span class="badge">${qLabel}</span>
+      ${session.final_confidence ? `<span class="badge">신뢰도 ${session.final_confidence}%</span>` : ""}
+    </div>
+  </div>
+
+  <h2 style="font-size:16px;margin-bottom:8px;">📋 질문: ${session.question}</h2>
+  ${session.memo ? `<p style="font-size:12px;color:#666;margin-bottom:12px;">메모: ${session.memo}</p>` : ""}
+  ${session.birth_date ? `<p style="font-size:12px;color:#666;">${session.gender === "male" ? "남" : "여"} • ${session.birth_date} • ${session.birth_time || "시간 미상"} • ${session.birth_place || ""} • ${session.is_lunar ? "음력" : "양력"}</p>` : ""}
+
+  <div class="cards">
+    ${cards.map((c: any, i: number) => `<div class="card-item"><div class="pos">${i === 0 ? "현재" : i === 1 ? "문제" : "결과"}</div><div class="name">${c.korean}</div><div class="dir">${c.isReversed ? "역방향" : "정방향"}</div></div>`).join("")}
+  </div>
+
+  ${sajuHtml}
+
+  ${sections.map(s => `<div class="section"><div class="section-title">${s.title}</div><div class="section-content">${s.content}</div></div>`).join("")}
+
+  ${scoresHtml}
+
+  <div class="footer">AI 통합 점술 상담 시스템 • ${new Date().toLocaleDateString("ko-KR")}</div>
+</body></html>`;
+
+    const printWindow = window.open("", "_blank");
+    if (printWindow) {
+      printWindow.document.write(html);
+      printWindow.document.close();
+      setTimeout(() => printWindow.print(), 500);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -591,18 +696,29 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
               </div>
             )}
 
-            {/* Re-analyze button */}
-            <Button
-              variant="outline"
-              size="sm"
-              className="rounded-full border-border/50 text-xs"
-              onClick={() => {
-                onUpdate({ ...session, ai_reading: null, status: "pending" });
-              }}
-            >
-              <RefreshCw className="mr-1.5 h-3 w-3" />
-              재분석
-            </Button>
+            {/* Action buttons */}
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full border-border/50 text-xs"
+                onClick={() => {
+                  onUpdate({ ...session, ai_reading: null, status: "pending" });
+                }}
+              >
+                <RefreshCw className="mr-1.5 h-3 w-3" />
+                재분석
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full border-gold/30 text-gold text-xs"
+                onClick={downloadPDF}
+              >
+                <Download className="mr-1.5 h-3 w-3" />
+                PDF 다운로드
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}
