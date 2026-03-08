@@ -138,9 +138,9 @@ export default function CosmicBackground() {
             key={`anchor-${i}`}
             cx={cx}
             cy={cy}
-            r={0.6}
+            r={0.25}
             fill="hsl(220 70% 85%)"
-            opacity={0.7}
+            opacity={0.5}
             style={{
               animation: `twinkle ${3 + Math.random() * 2}s ease-in-out ${Math.random() * 3}s infinite`,
             }}
