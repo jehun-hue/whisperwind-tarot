@@ -703,7 +703,17 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
         </CardContent>
       </Card>
 
-      {/* Saju Data Section */}
+      {/* Result page link */}
+      <div className="flex gap-2">
+        <Button
+          variant="outline"
+          className="flex-1 rounded-lg border-gold/30 text-gold hover:bg-gold/10"
+          onClick={() => window.open(`/reader/result/${session.id}`, "_blank")}
+        >
+          📋 결과 페이지 열기
+        </Button>
+      </div>
+
       {session.birth_date && (
         <Card className="border-border bg-card">
           <CardHeader className="pb-2">
