@@ -219,7 +219,39 @@ serve(async (req) => {
     }).join("\n");
 
     let sajuSection = locale === "jp" ? "出生情報未提供（内部参考なし）" : locale === "us" ? "Birth data not provided (no Eastern data)" : "출생정보 미제공";
-    if (sajuData) {
+    
+    // Priority: forcetellData (manual) > manseryeokData (auto) > sajuData (legacy)
+    if (forcetellData) {
+      sajuSection = `[포스텔러 원본 데이터 (수동 입력)]\n${forcetellData}`;
+      if (manseryeokData) {
+        sajuSection += `\n\n[만세력 자동 계산 (참고용)]\n사주 원국: ${manseryeokData.yearPillar?.cheongan}${manseryeokData.yearPillar?.jiji} / ${manseryeokData.monthPillar?.cheongan}${manseryeokData.monthPillar?.jiji} / ${manseryeokData.dayPillar?.cheongan}${manseryeokData.dayPillar?.jiji} / ${manseryeokData.hourPillar?.cheongan}${manseryeokData.hourPillar?.jiji}
+일간: ${manseryeokData.ilgan}(${manseryeokData.ilganElement}, ${manseryeokData.ilganYinyang})
+${manseryeokData.hanjaString ? `한자: ${manseryeokData.hanjaString}` : ""}
+${manseryeokData.fourPillarsString ? `전체: ${manseryeokData.fourPillarsString}` : ""}`;
+      }
+    } else if (manseryeokData) {
+      sajuSection = `[만세력 자동 계산 데이터 (manseryeok 라이브러리)]
+사주 원국: ${manseryeokData.yearPillar?.cheongan}${manseryeokData.yearPillar?.jiji} / ${manseryeokData.monthPillar?.cheongan}${manseryeokData.monthPillar?.jiji} / ${manseryeokData.dayPillar?.cheongan}${manseryeokData.dayPillar?.jiji} / ${manseryeokData.hourPillar?.cheongan}${manseryeokData.hourPillar?.jiji}
+일간: ${manseryeokData.ilgan}(${manseryeokData.ilganElement}, ${manseryeokData.ilganYinyang})
+연주 오행: ${manseryeokData.yearPillar?.cheonganElement}/${manseryeokData.yearPillar?.jijiElement}
+월주 오행: ${manseryeokData.monthPillar?.cheonganElement}/${manseryeokData.monthPillar?.jijiElement}
+일주 오행: ${manseryeokData.dayPillar?.cheonganElement}/${manseryeokData.dayPillar?.jijiElement}
+시주 오행: ${manseryeokData.hourPillar?.cheonganElement}/${manseryeokData.hourPillar?.jijiElement}
+${manseryeokData.hanjaString ? `한자: ${manseryeokData.hanjaString}` : ""}
+${manseryeokData.fourPillarsString ? `전체: ${manseryeokData.fourPillarsString}` : ""}
+${manseryeokData.lunarDate ? `음력: ${manseryeokData.lunarDate.year}년 ${manseryeokData.lunarDate.month}월 ${manseryeokData.lunarDate.day}일${manseryeokData.lunarDate.isLeapMonth ? " (윤달)" : ""}` : ""}`;
+      if (sajuData) {
+        sajuSection += `\n\n[내부 분석 보충 데이터]
+신강/신약: ${sajuData.strength || ""} / 용신: ${sajuData.yongsin || ""}
+${sajuData.gyeokguk ? `격국: ${sajuData.gyeokguk}` : ""}
+${sajuData.sinsal ? `신살: ${sajuData.sinsal.map((s: any) => `${s.name}(${s.branch}): ${s.meaning}`).join("; ")}` : ""}
+${sajuData.jijiInteractions ? `지지 상호작용: ${sajuData.jijiInteractions.map((j: any) => `${j.type}(${j.branches.join(",")}): ${j.effect}`).join("; ")}` : ""}
+${sajuData.daeun ? `현재 대운: ${sajuData.daeun.current?.cheongan}${sajuData.daeun.current?.jiji}(${sajuData.daeun.current?.startAge}-${sajuData.daeun.current?.endAge}세)` : ""}
+${sajuData.sewun ? `현재 세운: ${sajuData.sewun.cheongan}${sajuData.sewun.jiji}` : ""}
+${sajuData.crossKeywords ? "교차 키워드: " + sajuData.crossKeywords.join(", ") : ""}
+${sajuData.questionAnalysis || ""}`;
+      }
+    } else if (sajuData) {
       sajuSection = `Four Pillars: ${sajuData.yearPillar?.cheongan}${sajuData.yearPillar?.jiji} / ${sajuData.monthPillar?.cheongan}${sajuData.monthPillar?.jiji} / ${sajuData.dayPillar?.cheongan}${sajuData.dayPillar?.jiji} / ${sajuData.hourPillar?.cheongan}${sajuData.hourPillar?.jiji}
 Day Master: ${sajuData.ilgan}(${sajuData.ilganElement}, ${sajuData.ilganYinyang}) / Strength: ${sajuData.strength} / Yongsin: ${sajuData.yongsin}
 Five Elements: Wood${sajuData.fiveElementDist?.["목"]?.toFixed(1)} Fire${sajuData.fiveElementDist?.["화"]?.toFixed(1)} Earth${sajuData.fiveElementDist?.["토"]?.toFixed(1)} Metal${sajuData.fiveElementDist?.["금"]?.toFixed(1)} Water${sajuData.fiveElementDist?.["수"]?.toFixed(1)}
