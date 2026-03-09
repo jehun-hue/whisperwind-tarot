@@ -738,6 +738,19 @@ export default function ClientPage() {
                   </div>
                 </div>
 
+                {/* Submit button - shown after 3 cards selected, above grid */}
+                {picked.length >= 3 && (
+                  <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mt-3">
+                    <Button
+                      className="w-full rounded-xl bg-gradient-to-r from-accent via-gold to-accent text-primary-foreground font-semibold text-base shadow-lg shadow-gold/20 hover:shadow-gold/40 transition-all py-6"
+                      onClick={handleSubmit}
+                    >
+                      <Sparkles className="mr-2 h-5 w-5" />
+                      선택 완료
+                    </Button>
+                  </motion.div>
+                )}
+
                 {/* Card Grid */}
                 <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-6 md:grid-cols-8">
                   {deck.map((card) => {
@@ -782,78 +795,6 @@ export default function ClientPage() {
                       </Badge>
                     ))}
                   </div>
-                )}
-
-                {/* Grade Selection - shown after minimum 3 cards */}
-                {picked.length >= 3 && (
-                  <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mt-2">
-                    <Card className="border-border/50 bg-card/90 backdrop-blur-xl">
-                      <CardContent className="p-5 space-y-3">
-                        <h3 className="font-display text-base font-semibold text-foreground text-center">분석 등급을 선택하세요</h3>
-                        <div className="space-y-2">
-                          {GRADE_INFO.map((g) => (
-                            <button
-                              key={g.grade}
-                              onClick={() => handleGradeChange(g.grade)}
-                              className={`w-full rounded-xl border p-3 text-left transition-all relative ${
-                                selectedGrade === g.grade
-                                  ? g.grade === "S"
-                                    ? "border-gold/60 bg-gradient-to-r from-gold/10 to-accent/10 glow-gold"
-                                    : "border-gold/50 bg-gold/10"
-                                  : "border-border/30 bg-background/30 hover:border-border/50"
-                              }`}
-                            >
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
-                                    g.grade === "S" ? "bg-gradient-to-r from-gold to-accent text-primary-foreground" :
-                                    g.grade === "A" ? "bg-accent/20 text-accent" :
-                                    g.grade === "B" ? "bg-primary/20 text-primary" :
-                                    "bg-secondary text-muted-foreground"
-                                  }`}>
-                                    {g.grade}
-                                  </span>
-                                  <div>
-                                    <div className="flex items-center gap-1.5">
-                                      <span className={`text-sm font-medium ${selectedGrade === g.grade ? "text-gold" : "text-foreground"}`}>
-                                        {g.label}
-                                      </span>
-                                      {g.badge && (
-                                        <Badge className="bg-gold/20 text-gold border-gold/30 text-[9px] px-1.5 py-0">
-                                          {g.badge}
-                                        </Badge>
-                                      )}
-                                    </div>
-                                    <p className="text-[10px] text-muted-foreground mt-0.5">{g.desc}</p>
-                                  </div>
-                                </div>
-                                <span className={`text-sm font-semibold ${g.priceNum === 0 ? "text-emerald-400" : "text-gold"}`}>
-                                  {g.price}
-                                </span>
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-
-                        {/* Additional cards needed message */}
-                        {requiredCards > picked.length && (
-                          <p className="text-center text-xs text-gold animate-pulse">
-                            ⬆ 카드 {requiredCards - picked.length}장을 더 선택해주세요
-                          </p>
-                        )}
-
-                        {hasEnoughCards && (
-                          <Button
-                            className="w-full rounded-xl bg-gradient-to-r from-accent via-gold to-accent text-primary-foreground font-semibold text-base shadow-lg shadow-gold/20 hover:shadow-gold/40 transition-all py-6"
-                            onClick={handleSubmit}
-                          >
-                            <Sparkles className="mr-2 h-5 w-5" />
-                            {selectedGrade === "C" ? "무료 분석 시작" : `${GRADE_INFO.find((g) => g.grade === selectedGrade)?.price} 결제 후 분석 시작`}
-                          </Button>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </motion.div>
                 )}
               </div>
             </motion.div>
