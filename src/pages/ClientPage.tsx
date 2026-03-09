@@ -337,7 +337,7 @@ export default function ClientPage() {
     setStep("question");
     setQuestion(""); setMemo("");
     setBirthYear(""); setBirthMonth(""); setBirthDay("");
-    setBirthTime("unknown"); setGender("female");
+    setBirthTime("unknown"); setBirthHourInput(""); setBirthMinInput(""); setBirthAmPm("am"); setGender("female");
     setIsLunar(false); setIsLeapMonth(false);
     setRomanceStatus(null);
     setPicked([]); setSelectedGrade("S");
