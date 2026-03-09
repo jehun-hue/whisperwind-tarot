@@ -515,39 +515,59 @@ export default function ClientPage() {
 
                   {/* Birth time - text input */}
                   <div className="space-y-2">
-                    <label className="text-sm text-muted-foreground">출생 시간</label>
-                    {/* AM/PM toggle */}
-                    <div className="inline-flex items-center rounded-full border border-border/50 bg-background/30 p-0.5">
-                      <button
-                        onClick={() => {
-                          setBirthAmPm("am");
-                          if (birthHourInput) {
-                            const h = parseInt(birthHourInput, 10);
-                            if (!isNaN(h) && h >= 0 && h <= 11) setBirthTime(`${String(h).padStart(2, "0")}:${birthMinInput || "00"}`);
-                          }
-                        }}
-                        className={`rounded-full px-4 py-1.5 text-xs font-medium transition-all ${
-                          birthAmPm === "am" ? "bg-accent/20 text-accent shadow-sm" : "text-muted-foreground hover:text-foreground"
-                        }`}
-                      >
-                        오전
-                      </button>
-                      <button
-                        onClick={() => {
-                          setBirthAmPm("pm");
-                          if (birthHourInput) {
-                            const h = parseInt(birthHourInput, 10);
-                            if (!isNaN(h) && h >= 0 && h <= 11) {
-                              const h24 = h === 12 ? 12 : h + 12;
-                              setBirthTime(`${String(h24).padStart(2, "0")}:${birthMinInput || "00"}`);
+                    <div className="flex items-center gap-3">
+                      <label className="text-sm text-muted-foreground">출생 시간</label>
+                      {/* AM/PM toggle */}
+                      <div className="inline-flex items-center rounded-full border border-border/50 bg-background/30 p-0.5">
+                        <button
+                          onClick={() => {
+                            setBirthAmPm("am");
+                            if (birthHourInput) {
+                              const h = parseInt(birthHourInput, 10);
+                              if (!isNaN(h) && h >= 0 && h <= 12) {
+                                const h24 = h === 12 ? 0 : h;
+                                setBirthTime(`${String(h24).padStart(2, "0")}:${birthMinInput || "00"}`);
+                              }
                             }
-                          }
+                          }}
+                          className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${
+                            birthAmPm === "am" && birthTime !== "unknown" ? "bg-accent/20 text-accent shadow-sm" : "text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          오전
+                        </button>
+                        <button
+                          onClick={() => {
+                            setBirthAmPm("pm");
+                            if (birthHourInput) {
+                              const h = parseInt(birthHourInput, 10);
+                              if (!isNaN(h) && h >= 0 && h <= 12) {
+                                const h24 = h === 12 ? 12 : h + 12;
+                                setBirthTime(`${String(h24).padStart(2, "0")}:${birthMinInput || "00"}`);
+                              }
+                            }
+                          }}
+                          className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${
+                            birthAmPm === "pm" && birthTime !== "unknown" ? "bg-accent/20 text-accent shadow-sm" : "text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          오후
+                        </button>
+                      </div>
+                      {/* 모름 button */}
+                      <button
+                        onClick={() => {
+                          setBirthTime("unknown");
+                          setBirthHourInput("");
+                          setBirthMinInput("");
                         }}
-                        className={`rounded-full px-4 py-1.5 text-xs font-medium transition-all ${
-                          birthAmPm === "pm" ? "bg-accent/20 text-accent shadow-sm" : "text-muted-foreground hover:text-foreground"
+                        className={`rounded-full border px-3 py-1 text-xs font-medium transition-all ${
+                          birthTime === "unknown"
+                            ? "border-gold/50 bg-gold/10 text-gold"
+                            : "border-border/50 text-muted-foreground hover:text-foreground"
                         }`}
                       >
-                        오후
+                        모름
                       </button>
                     </div>
                     {/* Hour / Min inputs */}
@@ -571,6 +591,7 @@ export default function ClientPage() {
                           }
                         }}
                         className="w-20 rounded-xl border-border/50 bg-background/50 text-foreground text-center"
+                        disabled={birthTime === "unknown" && !birthHourInput}
                       />
                       <span className="text-sm text-muted-foreground">시</span>
                       <Input
@@ -590,12 +611,13 @@ export default function ClientPage() {
                           }
                         }}
                         className="w-20 rounded-xl border-border/50 bg-background/50 text-foreground text-center"
+                        disabled={birthTime === "unknown" && !birthHourInput}
                       />
                       <span className="text-sm text-muted-foreground">분</span>
                     </div>
                     {birthTime === "unknown" && (
                       <p className="text-[10px] text-muted-foreground/70">
-                        ⓘ 시간을 모르시면 비워두세요. 년·월·일주만 사용합니다.
+                        ⓘ 시간을 모르면 시주 분석을 제외하고 년·월·일주만 사용합니다.
                       </p>
                     )}
                   </div>
