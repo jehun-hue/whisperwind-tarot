@@ -22,7 +22,7 @@ import { calculateZiWei, getZiWeiForQuestion, type ZiWeiResult } from "@/lib/ziw
 import { calculateManseryeokSaju, type ManseryeokResult } from "@/lib/manseryeokCalc";
 import { getCombinationSummary } from "@/data/tarotCombinations";
 import { supabase } from "@/integrations/supabase/client";
-import ReadingResultV2 from "@/components/ReadingResultV2";
+import ReadingResultV3 from "@/components/ReadingResultV3";
 import SajuManualOverride from "@/components/SajuManualOverride";
 import cardBackImg from "@/assets/card-back.png";
 
