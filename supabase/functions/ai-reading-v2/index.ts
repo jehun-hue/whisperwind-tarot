@@ -306,8 +306,8 @@ ${ziweiSection}
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        temperature: 0.72,
-        max_tokens: 10000,
+        temperature: 0.65,
+        max_tokens: 16000,
       }),
     });
 
