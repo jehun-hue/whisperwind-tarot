@@ -1,9 +1,9 @@
 /**
- * 자미두수(紫微斗數) 명반 계산 엔진
- * 출생정보 기반 명반 생성 및 궁위별 분석
+ * 자미두수(紫微斗數) 명반 계산 엔진 - 고급 버전
+ * 사화(四化), 대한(大限), 소한(小限) 포함
  */
 
-// 12궁위 (Twelve Palaces)
+// ─── 12궁위 (Twelve Palaces) ───
 export const PALACES = [
   "명궁", "형제궁", "부처궁", "자녀궁", "재백궁", "질액궁",
   "천이궁", "노복궁", "관록궁", "전택궁", "복덕궁", "부모궁",
@@ -11,7 +11,7 @@ export const PALACES = [
 
 export type PalaceName = typeof PALACES[number];
 
-// 14 주성 (Major Stars)
+// ─── 14 주성 (Major Stars) ───
 export const MAJOR_STARS = [
   "자미", "천기", "태양", "무곡", "천동", "염정",
   "천부", "태음", "탐랑", "거문", "천상", "천량",
@@ -20,10 +20,36 @@ export const MAJOR_STARS = [
 
 export type MajorStar = typeof MAJOR_STARS[number];
 
-// 별의 밝기 등급
-export type StarBrightness = "묘" | "왕" | "득지" | "평화" | "함지" | "낙함";
+// ─── 사화 (Four Transformations) ───
+export type TransformationType = "화록" | "화권" | "화과" | "화기";
 
-// 오행국 (Five Element Bureau)
+export interface Transformation {
+  type: TransformationType;
+  star: MajorStar;
+  palace: PalaceName;
+  description: string;
+}
+
+// ─── 대한/소한 (Major/Minor Period) ───
+export interface MajorPeriod {
+  startAge: number;
+  endAge: number;
+  palace: PalaceName;
+  branch: string;
+  stars: StarPlacement[];
+  transformations: Transformation[];
+  interpretation: string;
+}
+
+export interface MinorPeriod {
+  age: number;
+  palace: PalaceName;
+  branch: string;
+  interpretation: string;
+}
+
+// ─── 기존 타입 ───
+export type StarBrightness = "묘" | "왕" | "득지" | "평화" | "함지" | "낙함";
 export type Bureau = "수이국" | "목삼국" | "금사국" | "토오국" | "화육국";
 
 export interface StarPlacement {
@@ -35,124 +61,133 @@ export interface StarPlacement {
 
 export interface PalaceInfo {
   name: PalaceName;
-  branch: string; // 지지
+  branch: string;
   stars: StarPlacement[];
+  transformations: Transformation[];
   interpretation: string;
 }
 
 export interface ZiWeiResult {
-  mingGong: string; // 명궁 지지
-  shenGong: string; // 신궁 지지
+  mingGong: string;
+  shenGong: string;
   bureau: Bureau;
   palaces: PalaceInfo[];
   lifeStructure: string;
   keyInsights: string[];
+  // 사화
+  natalTransformations: Transformation[];
+  // 대한/소한
+  majorPeriods: MajorPeriod[];
+  currentMajorPeriod: MajorPeriod | null;
+  currentMinorPeriod: MinorPeriod | null;
+  periodAnalysis: string;
 }
 
-// 지지 순서
+// ─── 상수 ───
 const BRANCHES = ["자", "축", "인", "묘", "진", "사", "오", "미", "신", "유", "술", "해"];
+const STEMS = ["갑", "을", "병", "정", "무", "기", "경", "신", "임", "계"];
 
-// 명궁 계산: 출생월 + 출생시 기반
+// ─── 사화 테이블 (천간별 화록/화권/화과/화기 대상 별) ───
+const TRANSFORMATION_TABLE: Record<string, Record<TransformationType, MajorStar>> = {
+  갑: { 화록: "염정", 화권: "파군", 화과: "무곡", 화기: "태양" },
+  을: { 화록: "천기", 화권: "천량", 화과: "자미", 화기: "태음" },
+  병: { 화록: "천동", 화권: "천기", 화과: "천상", 화기: "염정" },
+  정: { 화록: "태음", 화권: "천동", 화과: "천기", 화기: "거문" },
+  무: { 화록: "탐랑", 화권: "태음", 화과: "천부", 화기: "천기" },
+  기: { 화록: "무곡", 화권: "탐랑", 화과: "천량", 화기: "천상" },
+  경: { 화록: "태양", 화권: "무곡", 화과: "태음", 화기: "천동" },
+  신: { 화록: "거문", 화권: "태양", 화과: "천부", 화기: "천량" },
+  임: { 화록: "천량", 화권: "자미", 화과: "천부", 화기: "무곡" },
+  계: { 화록: "파군", 화권: "거문", 화과: "태음", 화기: "탐랑" },
+};
+
+// ─── 사화 해석 ───
+const TRANSFORMATION_MEANINGS: Record<TransformationType, { meaning: string; effect: string }> = {
+  화록: { meaning: "록(祿) - 재물, 풍요, 기회", effect: "해당 궁에 재물운과 기회가 유입됨" },
+  화권: { meaning: "권(權) - 권력, 장악, 통제", effect: "해당 궁에서 주도권과 결정력이 강해짐" },
+  화과: { meaning: "과(科) - 명예, 학문, 평판", effect: "해당 궁에서 명성과 인정을 얻게 됨" },
+  화기: { meaning: "기(忌) - 장애, 집착, 손실", effect: "해당 궁에 장애와 소모가 발생함" },
+};
+
+// ─── 명궁/신궁/오행국 계산 ───
 function calculateMingGong(lunarMonth: number, birthHourBranch: number): number {
-  // 명궁 = 인(2) + 월 - 시 (12로 나머지)
-  const mingIdx = (2 + lunarMonth - 1 - birthHourBranch + 24) % 12;
-  return mingIdx;
+  return (2 + lunarMonth - 1 - birthHourBranch + 24) % 12;
 }
 
-// 신궁 계산
 function calculateShenGong(lunarMonth: number, birthHourBranch: number): number {
-  const shenIdx = (2 + lunarMonth - 1 + birthHourBranch) % 12;
-  return shenIdx;
+  return (2 + lunarMonth - 1 + birthHourBranch) % 12;
 }
 
-// 오행국 결정
 function determineBureau(mingGongIdx: number, yearGanIdx: number): Bureau {
-  // 납음오행 기반 간소화된 결정
   const combo = (yearGanIdx + mingGongIdx) % 5;
   const bureaus: Bureau[] = ["수이국", "목삼국", "금사국", "토오국", "화육국"];
   return bureaus[combo];
 }
 
-// 자미성 위치 계산 (간소화)
+// ─── 자미성 위치 ───
 function calculateZiWeiPosition(lunarDay: number, bureau: Bureau): number {
   const bureauNum: Record<Bureau, number> = {
     수이국: 2, 목삼국: 3, 금사국: 4, 토오국: 5, 화육국: 6,
   };
-  const num = bureauNum[bureau];
-  // 간소화된 자미성 위치 = 일수를 국수로 나눈 몫 기반
-  const pos = Math.ceil(lunarDay / num) % 12;
-  return pos;
+  return Math.ceil(lunarDay / bureauNum[bureau]) % 12;
 }
 
-// 14주성 배치 (자미성 위치 기준)
+// ─── 14주성 배치 ───
 function placeMajorStars(ziWeiPos: number): Map<number, MajorStar[]> {
   const placements = new Map<number, MajorStar[]>();
 
-  // 자미계 (자미 기준 고정 간격)
   const ziWeiGroup: [MajorStar, number][] = [
     ["자미", 0], ["천기", -1], ["태양", -2], ["무곡", -3],
     ["천동", -4], ["염정", -6],
   ];
 
-  // 천부계 (천부 = 자미 대칭)
-  const tianFuPos = (12 - ziWeiPos + 4) % 12; // 간소화된 천부 위치
+  const tianFuPos = (12 - ziWeiPos + 4) % 12;
   const tianFuGroup: [MajorStar, number][] = [
     ["천부", 0], ["태음", 1], ["탐랑", 2], ["거문", 3],
     ["천상", 4], ["천량", 5], ["칠살", 6], ["파군", 8],
   ];
 
-  ziWeiGroup.forEach(([star, offset]) => {
+  for (const [star, offset] of ziWeiGroup) {
     const pos = ((ziWeiPos + offset) % 12 + 12) % 12;
     if (!placements.has(pos)) placements.set(pos, []);
     placements.get(pos)!.push(star);
-  });
+  }
 
-  tianFuGroup.forEach(([star, offset]) => {
+  for (const [star, offset] of tianFuGroup) {
     const pos = ((tianFuPos + offset) % 12 + 12) % 12;
     if (!placements.has(pos)) placements.set(pos, []);
     placements.get(pos)!.push(star);
-  });
+  }
 
   return placements;
 }
 
-// 별 밝기 판단 (간소화)
+// ─── 별 밝기 판단 ───
 function getStarBrightness(star: MajorStar, palaceIdx: number): StarBrightness {
-  // 간소화된 밝기 판단 - 각 별의 최적 위치
   const optimalPositions: Partial<Record<MajorStar, number[]>> = {
-    자미: [1, 4, 6, 7],
-    천기: [2, 5, 8],
-    태양: [2, 3, 4, 5],
-    무곡: [0, 1, 6, 7],
-    천동: [2, 5, 8, 11],
-    염정: [2, 5, 8],
-    천부: [1, 4, 6, 7, 10],
-    태음: [8, 9, 10, 11],
-    탐랑: [2, 5, 8, 11],
-    거문: [0, 3, 6, 9],
-    천상: [1, 4, 7, 10],
-    천량: [0, 2, 5, 8],
-    칠살: [2, 5, 8, 11],
-    파군: [0, 3, 6, 9],
+    자미: [1, 4, 6, 7], 천기: [2, 5, 8], 태양: [2, 3, 4, 5],
+    무곡: [0, 1, 6, 7], 천동: [2, 5, 8, 11], 염정: [2, 5, 8],
+    천부: [1, 4, 6, 7, 10], 태음: [8, 9, 10, 11], 탐랑: [2, 5, 8, 11],
+    거문: [0, 3, 6, 9], 천상: [1, 4, 7, 10], 천량: [0, 2, 5, 8],
+    칠살: [2, 5, 8, 11], 파군: [0, 3, 6, 9],
   };
 
   const worstPositions: Partial<Record<MajorStar, number[]>> = {
-    자미: [3, 9],
-    태양: [8, 9, 10, 11],
-    태음: [2, 3, 4, 5],
-    천동: [0, 6],
+    자미: [3, 9], 태양: [8, 9, 10, 11], 태음: [2, 3, 4, 5], 천동: [0, 6],
   };
 
+  // Use deterministic brightness based on star+palace combo
+  const seed = (star.charCodeAt(0) * 31 + palaceIdx * 17) % 6;
   if (optimalPositions[star]?.includes(palaceIdx)) {
-    return Math.random() > 0.5 ? "묘" : "왕";
+    return seed % 2 === 0 ? "묘" : "왕";
   }
   if (worstPositions[star]?.includes(palaceIdx)) {
-    return Math.random() > 0.5 ? "함지" : "낙함";
+    return seed % 2 === 0 ? "함지" : "낙함";
   }
-  return Math.random() > 0.5 ? "득지" : "평화";
+  return seed % 2 === 0 ? "득지" : "평화";
 }
 
-// 별의 기본 해석
+// ─── 별 의미 ───
 const STAR_MEANINGS: Record<MajorStar, { positive: string; negative: string; domain: string }> = {
   자미: { positive: "리더십, 존귀, 중심, 결정권", negative: "독단, 고집, 외로움", domain: "인생 전반의 격과 위치" },
   천기: { positive: "지혜, 전략, 계획, 학문", negative: "우유부단, 신경질, 체력약", domain: "사고방식과 지적 능력" },
@@ -170,63 +205,235 @@ const STAR_MEANINGS: Record<MajorStar, { positive: string; negative: string; dom
   파군: { positive: "개척, 변화, 파괴후재건", negative: "파괴, 불안정, 방탕", domain: "파괴와 재건" },
 };
 
-// 궁위별 해석 생성
-function interpretPalace(palace: PalaceName, stars: StarPlacement[]): string {
-  if (stars.length === 0) return `${palace}에 주성이 없어 타 궁의 영향을 크게 받습니다.`;
+// ─── 사화 계산 (생년 천간 기준) ───
+function calculateNatalTransformations(
+  yearGanIdx: number,
+  starMap: Map<number, MajorStar[]>,
+  mingGongIdx: number
+): Transformation[] {
+  const stem = STEMS[yearGanIdx];
+  const table = TRANSFORMATION_TABLE[stem];
+  if (!table) return [];
 
-  const mainStar = stars[0];
-  const meaning = STAR_MEANINGS[mainStar.star];
-  const isBright = mainStar.brightness === "묘" || mainStar.brightness === "왕";
+  const transformations: Transformation[] = [];
+  const types: TransformationType[] = ["화록", "화권", "화과", "화기"];
+
+  for (const type of types) {
+    const targetStar = table[type];
+    // Find which palace this star is in
+    for (const [posIdx, stars] of starMap.entries()) {
+      if (stars.includes(targetStar)) {
+        const palaceOffset = ((posIdx - mingGongIdx) % 12 + 12) % 12;
+        const palace = PALACES[palaceOffset];
+        const meaning = TRANSFORMATION_MEANINGS[type];
+        transformations.push({
+          type,
+          star: targetStar,
+          palace,
+          description: `${targetStar}${type} → ${palace}: ${meaning.effect}`,
+        });
+        break;
+      }
+    }
+  }
+
+  return transformations;
+}
+
+// ─── 대한 계산 (10년 주기) ───
+function calculateMajorPeriods(
+  bureau: Bureau,
+  mingGongIdx: number,
+  gender: "male" | "female",
+  yearGanIdx: number,
+  starMap: Map<number, MajorStar[]>
+): MajorPeriod[] {
+  const bureauStartAge: Record<Bureau, number> = {
+    수이국: 2, 목삼국: 3, 금사국: 4, 토오국: 5, 화육국: 6,
+  };
+
+  const startAge = bureauStartAge[bureau];
+  // 양남음녀 순행, 음남양녀 역행
+  const isYangStem = yearGanIdx % 2 === 0;
+  const isForward = (gender === "male" && isYangStem) || (gender === "female" && !isYangStem);
+  const direction = isForward ? 1 : -1;
+
+  const periods: MajorPeriod[] = [];
+
+  for (let i = 0; i < 12; i++) {
+    const periodStart = startAge + i * 10;
+    const periodEnd = periodStart + 9;
+    const palaceIdx = ((mingGongIdx + direction * (i + 1)) % 12 + 12) % 12;
+    const palaceOffset = ((palaceIdx - mingGongIdx) % 12 + 12) % 12;
+    const palace = PALACES[palaceOffset];
+    const branch = BRANCHES[palaceIdx];
+
+    const starsInPalace = starMap.get(palaceIdx) || [];
+    const starPlacements: StarPlacement[] = starsInPalace.map((star) => ({
+      star,
+      palace,
+      brightness: getStarBrightness(star, palaceIdx),
+      description: STAR_MEANINGS[star].positive,
+    }));
+
+    // 대한 사화: 대한 궁의 천간으로 계산
+    const periodStemIdx = (yearGanIdx + palaceIdx) % 10;
+    const periodStem = STEMS[periodStemIdx];
+    const periodTable = TRANSFORMATION_TABLE[periodStem];
+    const periodTransformations: Transformation[] = [];
+
+    if (periodTable) {
+      for (const type of ["화록", "화권", "화과", "화기"] as TransformationType[]) {
+        const targetStar = periodTable[type];
+        for (const [posIdx, stars] of starMap.entries()) {
+          if (stars.includes(targetStar)) {
+            const tPalaceOffset = ((posIdx - mingGongIdx) % 12 + 12) % 12;
+            periodTransformations.push({
+              type,
+              star: targetStar,
+              palace: PALACES[tPalaceOffset],
+              description: `대한${type}: ${targetStar} → ${PALACES[tPalaceOffset]}`,
+            });
+            break;
+          }
+        }
+      }
+    }
+
+    const isBright = starPlacements.some(s => s.brightness === "묘" || s.brightness === "왕");
+    const hasHuaJi = periodTransformations.some(t => t.type === "화기");
+    const hasHuaLu = periodTransformations.some(t => t.type === "화록");
+
+    let interpretation = `${periodStart}-${periodEnd}세 대한: ${palace}(${branch}궁). `;
+    if (starsInPalace.length > 0) {
+      interpretation += `${starsInPalace.join(", ")} 좌정. `;
+    }
+    if (isBright && hasHuaLu) {
+      interpretation += "매우 길한 시기. 재물과 기회가 풍부하며 주요 성취 가능.";
+    } else if (isBright) {
+      interpretation += "전반적으로 순조로운 시기. 노력의 결실을 볼 수 있음.";
+    } else if (hasHuaJi) {
+      interpretation += "주의가 필요한 시기. 장애물과 소모가 예상되므로 신중한 판단 필요.";
+    } else {
+      interpretation += "평온한 시기. 안정적이나 큰 변화는 적음.";
+    }
+
+    periods.push({
+      startAge: periodStart,
+      endAge: periodEnd,
+      palace,
+      branch,
+      stars: starPlacements,
+      transformations: periodTransformations,
+      interpretation,
+    });
+  }
+
+  return periods;
+}
+
+// ─── 소한 계산 (연도별) ───
+function calculateMinorPeriod(
+  birthYear: number,
+  currentYear: number,
+  mingGongIdx: number,
+  gender: "male" | "female",
+  yearGanIdx: number
+): MinorPeriod {
+  const age = currentYear - birthYear + 1; // 한국 나이
+  // 소한 궁위: 명궁에서 나이만큼 이동 (성별/음양에 따라 방향)
+  const isYangStem = yearGanIdx % 2 === 0;
+  const isForward = (gender === "male" && isYangStem) || (gender === "female" && !isYangStem);
+  const direction = isForward ? 1 : -1;
+  const palaceIdx = ((mingGongIdx + direction * (age % 12)) % 12 + 12) % 12;
+  const palaceOffset = ((palaceIdx - mingGongIdx) % 12 + 12) % 12;
+  const palace = PALACES[palaceOffset];
+  const branch = BRANCHES[palaceIdx];
 
   const palaceContext: Record<PalaceName, string> = {
-    명궁: "성격과 인생 전반의 방향",
-    형제궁: "형제자매 및 가까운 동료",
-    부처궁: "배우자와 연애 관계",
-    자녀궁: "자녀와 후계",
-    재백궁: "재물 운용과 수입",
-    질액궁: "건강과 질병",
-    천이궁: "이동, 여행, 외부 활동",
-    노복궁: "부하, 직원, 팔로워",
-    관록궁: "직업과 사업",
-    전택궁: "부동산과 가산",
-    복덕궁: "정신적 만족과 취미",
-    부모궁: "부모와 상사",
+    명궁: "자아와 행동력", 형제궁: "인간관계", 부처궁: "연애/결혼",
+    자녀궁: "창의력/후배", 재백궁: "재물 흐름", 질액궁: "건강 관리",
+    천이궁: "이동/변화", 노복궁: "사회적 지원", 관록궁: "사업/직장",
+    전택궁: "부동산/가정", 복덕궁: "정신적 여유", 부모궁: "윗사람 관계",
+  };
+
+  return {
+    age,
+    palace,
+    branch,
+    interpretation: `올해(${age}세) 소한: ${palace}(${branch}궁) → ${palaceContext[palace]}에 에너지가 집중되는 해.`,
+  };
+}
+
+// ─── 궁위별 해석 (사화 포함) ───
+function interpretPalace(palace: PalaceName, stars: StarPlacement[], transformations: Transformation[]): string {
+  const palaceContext: Record<PalaceName, string> = {
+    명궁: "성격과 인생 전반의 방향", 형제궁: "형제자매 및 가까운 동료",
+    부처궁: "배우자와 연애 관계", 자녀궁: "자녀와 후계",
+    재백궁: "재물 운용과 수입", 질액궁: "건강과 질병",
+    천이궁: "이동, 여행, 외부 활동", 노복궁: "부하, 직원, 팔로워",
+    관록궁: "직업과 사업", 전택궁: "부동산과 가산",
+    복덕궁: "정신적 만족과 취미", 부모궁: "부모와 상사",
   };
 
   const context = palaceContext[palace];
-  if (isBright) {
-    return `${palace}(${context})에 ${mainStar.star}(${mainStar.brightness}) → ${meaning.positive}. ${meaning.domain}에서 강한 에너지.`;
-  } else if (mainStar.brightness === "함지" || mainStar.brightness === "낙함") {
-    return `${palace}(${context})에 ${mainStar.star}(${mainStar.brightness}) → ${meaning.negative} 경향. ${meaning.domain}에서 주의 필요.`;
+  let result = "";
+
+  if (stars.length === 0) {
+    result = `${palace}(${context})에 주성이 없어 타 궁의 영향을 크게 받습니다.`;
+  } else {
+    const mainStar = stars[0];
+    const meaning = STAR_MEANINGS[mainStar.star];
+    const isBright = mainStar.brightness === "묘" || mainStar.brightness === "왕";
+    const isDark = mainStar.brightness === "함지" || mainStar.brightness === "낙함";
+
+    if (isBright) {
+      result = `${palace}(${context})에 ${mainStar.star}(${mainStar.brightness}) → ${meaning.positive}. ${meaning.domain}에서 강한 에너지.`;
+    } else if (isDark) {
+      result = `${palace}(${context})에 ${mainStar.star}(${mainStar.brightness}) → ${meaning.negative} 경향. ${meaning.domain}에서 주의 필요.`;
+    } else {
+      result = `${palace}(${context})에 ${mainStar.star}(${mainStar.brightness}) → ${meaning.positive}과 ${meaning.negative} 혼재.`;
+    }
   }
-  return `${palace}(${context})에 ${mainStar.star}(${mainStar.brightness}) → ${meaning.positive}과 ${meaning.negative} 혼재. 환경에 따라 변동.`;
+
+  // 사화 영향 추가
+  if (transformations.length > 0) {
+    const tDesc = transformations.map(t => {
+      const m = TRANSFORMATION_MEANINGS[t.type];
+      return `${t.type}(${m.meaning}): ${t.star}`;
+    }).join("; ");
+    result += ` [사화: ${tDesc}]`;
+  }
+
+  return result;
 }
 
-/**
- * 자미두수 명반 계산
- */
+// ─── 메인 계산 함수 ───
 export function calculateZiWei(
   birthYear: number,
   lunarMonth: number,
   lunarDay: number,
-  birthHour: number, // 0-23
+  birthHour: number,
   gender: "male" | "female"
 ): ZiWeiResult {
   const yearGanIdx = (birthYear - 4) % 10;
   const birthHourBranch = Math.floor((birthHour + 1) / 2) % 12;
 
-  // 명궁, 신궁 계산
   const mingGongIdx = calculateMingGong(lunarMonth, birthHourBranch);
   const shenGongIdx = calculateShenGong(lunarMonth, birthHourBranch);
-
-  // 오행국
   const bureau = determineBureau(mingGongIdx, yearGanIdx);
-
-  // 자미성 위치
   const ziWeiPos = calculateZiWeiPosition(lunarDay, bureau);
-
-  // 14주성 배치
   const starMap = placeMajorStars(ziWeiPos);
+
+  // 생년 사화
+  const natalTransformations = calculateNatalTransformations(yearGanIdx, starMap, mingGongIdx);
+
+  // 궁위별 사화 매핑
+  const palaceTransMap = new Map<string, Transformation[]>();
+  for (const t of natalTransformations) {
+    if (!palaceTransMap.has(t.palace)) palaceTransMap.set(t.palace, []);
+    palaceTransMap.get(t.palace)!.push(t);
+  }
 
   // 12궁 구성
   const palaces: PalaceInfo[] = PALACES.map((name, idx) => {
@@ -239,30 +446,40 @@ export function calculateZiWei(
       description: STAR_MEANINGS[star].positive,
     }));
 
+    const trans = palaceTransMap.get(name) || [];
+
     return {
       name,
       branch: BRANCHES[palaceIdx],
       stars: starPlacements,
-      interpretation: interpretPalace(name, starPlacements),
+      transformations: trans,
+      interpretation: interpretPalace(name, starPlacements, trans),
     };
   });
 
-  // 핵심 궁위 분석
-  const mingPalace = palaces[0];
-  const fuChuPalace = palaces[2]; // 부처궁
-  const caiBaiPalace = palaces[4]; // 재백궁
-  const guanLuPalace = palaces[8]; // 관록궁
+  // 대한
+  const majorPeriods = calculateMajorPeriods(bureau, mingGongIdx, gender, yearGanIdx, starMap);
+  const currentYear = new Date().getFullYear();
+  const currentAge = currentYear - birthYear + 1;
+  const currentMajorPeriod = majorPeriods.find(p => currentAge >= p.startAge && currentAge <= p.endAge) || null;
+
+  // 소한
+  const currentMinorPeriod = calculateMinorPeriod(birthYear, currentYear, mingGongIdx, gender, yearGanIdx);
 
   // 인생 구조 분석
-  const mingStars = mingPalace.stars.map((s) => s.star).join(", ") || "공궁";
-  const hasPowerStar = mingPalace.stars.some((s) =>
-    ["자미", "천부", "태양", "무곡"].includes(s.star)
-  );
-  const hasChangeStar = mingPalace.stars.some((s) =>
-    ["칠살", "파군", "염정"].includes(s.star)
-  );
+  const mingPalace = palaces[0];
+  const mingStars = mingPalace.stars.map(s => s.star).join(", ") || "공궁";
+  const hasPowerStar = mingPalace.stars.some(s => ["자미", "천부", "태양", "무곡"].includes(s.star));
+  const hasChangeStar = mingPalace.stars.some(s => ["칠살", "파군", "염정"].includes(s.star));
 
   let lifeStructure = `명궁 ${BRANCHES[mingGongIdx]}궁에 ${mingStars} 좌정. `;
+
+  // 사화 영향 추가
+  const huaLu = natalTransformations.find(t => t.type === "화록");
+  const huaJi = natalTransformations.find(t => t.type === "화기");
+  if (huaLu) lifeStructure += `화록이 ${huaLu.palace}에 위치하여 ${huaLu.star}의 재물/기회 에너지가 활성화됨. `;
+  if (huaJi) lifeStructure += `화기가 ${huaJi.palace}에 위치하여 ${huaJi.star} 관련 분야에 주의 필요. `;
+
   if (hasPowerStar) {
     lifeStructure += "권위와 안정을 추구하는 인생 구조. 리더십과 구조적 성공이 핵심.";
   } else if (hasChangeStar) {
@@ -271,32 +488,47 @@ export function calculateZiWei(
     lifeStructure += "유연하고 다양한 경험을 통해 성장하는 인생 구조.";
   }
 
+  // 시기 분석
+  let periodAnalysis = "";
+  if (currentMajorPeriod) {
+    periodAnalysis += `현재 대한(${currentMajorPeriod.startAge}-${currentMajorPeriod.endAge}세): ${currentMajorPeriod.palace}. ${currentMajorPeriod.interpretation} `;
+    const daehanHuaLu = currentMajorPeriod.transformations.find(t => t.type === "화록");
+    const daehanHuaJi = currentMajorPeriod.transformations.find(t => t.type === "화기");
+    if (daehanHuaLu) periodAnalysis += `대한 화록이 ${daehanHuaLu.palace}에 작용하여 기회 확대. `;
+    if (daehanHuaJi) periodAnalysis += `대한 화기가 ${daehanHuaJi.palace}에 작용하여 해당 영역 주의. `;
+  }
+  if (currentMinorPeriod) {
+    periodAnalysis += currentMinorPeriod.interpretation;
+  }
+
   // 핵심 인사이트
   const keyInsights: string[] = [];
   keyInsights.push(mingPalace.interpretation);
 
-  if (fuChuPalace.stars.length > 0) {
-    const fuStar = fuChuPalace.stars[0];
-    const isBright = fuStar.brightness === "묘" || fuStar.brightness === "왕";
-    keyInsights.push(
-      `부처궁: ${fuStar.star}(${fuStar.brightness}) → ${isBright ? "좋은 배우자운" : "배우자 관계에 노력 필요"}`
-    );
+  // 사화 인사이트
+  for (const t of natalTransformations) {
+    keyInsights.push(`생년${t.type}: ${t.star} → ${t.palace} (${TRANSFORMATION_MEANINGS[t.type].effect})`);
   }
 
-  if (caiBaiPalace.stars.length > 0) {
-    const caiStar = caiBaiPalace.stars[0];
-    const isBright = caiStar.brightness === "묘" || caiStar.brightness === "왕";
-    keyInsights.push(
-      `재백궁: ${caiStar.star}(${caiStar.brightness}) → ${isBright ? "재물 획득 능력 강" : "재물 관리에 주의"}`
-    );
+  // 주요 궁위
+  for (const [idx, label] of [[2, "부처궁"], [4, "재백궁"], [8, "관록궁"]] as [number, string][]) {
+    const p = palaces[idx];
+    if (p.stars.length > 0) {
+      const s = p.stars[0];
+      const isBright = s.brightness === "묘" || s.brightness === "왕";
+      const palaceInsights: Record<string, [string, string]> = {
+        부처궁: ["좋은 배우자운", "배우자 관계에 노력 필요"],
+        재백궁: ["재물 획득 능력 강", "재물 관리에 주의"],
+        관록궁: ["직업운 강함", "직업 변동 가능성"],
+      };
+      const [good, bad] = palaceInsights[label] || ["길", "주의"];
+      keyInsights.push(`${label}: ${s.star}(${s.brightness}) → ${isBright ? good : bad}`);
+    }
   }
 
-  if (guanLuPalace.stars.length > 0) {
-    const guanStar = guanLuPalace.stars[0];
-    const isBright = guanStar.brightness === "묘" || guanStar.brightness === "왕";
-    keyInsights.push(
-      `관록궁: ${guanStar.star}(${guanStar.brightness}) → ${isBright ? "직업운 강함" : "직업 변동 가능성"}`
-    );
+  // 대한 인사이트
+  if (currentMajorPeriod) {
+    keyInsights.push(`현재 대한(${currentMajorPeriod.startAge}-${currentMajorPeriod.endAge}세): ${currentMajorPeriod.interpretation}`);
   }
 
   return {
@@ -306,31 +538,41 @@ export function calculateZiWei(
     palaces,
     lifeStructure,
     keyInsights,
+    natalTransformations,
+    majorPeriods,
+    currentMajorPeriod,
+    currentMinorPeriod,
+    periodAnalysis,
   };
 }
 
-/**
- * 질문 유형별 자미두수 핵심 분석
- */
+// ─── 질문 유형별 분석 ───
 export function getZiWeiForQuestion(
   ziwei: ZiWeiResult,
   questionType: "love" | "career" | "money" | "general"
 ): string {
-  switch (questionType) {
-    case "love": {
-      const fuChu = ziwei.palaces[2]; // 부처궁
-      return fuChu.interpretation;
+  const palaceMap: Record<string, number> = { love: 2, career: 8, money: 4 };
+  const idx = palaceMap[questionType];
+
+  let result = "";
+
+  if (idx !== undefined) {
+    const palace = ziwei.palaces[idx];
+    result = palace.interpretation;
+
+    // 해당 궁 사화 분석
+    const relevantTrans = ziwei.natalTransformations.filter(t => t.palace === palace.name);
+    if (relevantTrans.length > 0) {
+      result += " " + relevantTrans.map(t => t.description).join(". ");
     }
-    case "career": {
-      const guanLu = ziwei.palaces[8]; // 관록궁
-      return guanLu.interpretation;
-    }
-    case "money": {
-      const caiBai = ziwei.palaces[4]; // 재백궁
-      return caiBai.interpretation;
-    }
-    default: {
-      return ziwei.lifeStructure;
-    }
+  } else {
+    result = ziwei.lifeStructure;
   }
+
+  // 대한/소한 시기 분석 추가
+  if (ziwei.periodAnalysis) {
+    result += " [시기 분석] " + ziwei.periodAnalysis;
+  }
+
+  return result;
 }
