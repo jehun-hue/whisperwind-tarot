@@ -250,7 +250,7 @@ export default function ClientPage() {
             divination reading
           </span>
           <h1 className="mt-3 font-display text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
-            AI 통합 점술 상담
+            통합 점술 상담
           </h1>
           <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
             타로 + 사주 교차 검증으로 깊이 있는 리딩을 제공합니다

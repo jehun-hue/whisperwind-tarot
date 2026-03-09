@@ -475,7 +475,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
 
   ${scoresHtml}
 
-  <div class="footer">AI 통합 점술 상담 시스템 • ${new Date().toLocaleDateString("ko-KR")}</div>
+  <div class="footer">통합 점술 상담 시스템 • ${new Date().toLocaleDateString("ko-KR")}</div>
 </body></html>`;
 
     const printWindow = window.open("", "_blank");

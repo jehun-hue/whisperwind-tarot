@@ -82,8 +82,8 @@ function classifyQuestionByLocale(question: string, locale: Locale): string {
 
 const seoData: Record<Locale, { title: string; description: string }> = {
   kr: {
-    title: "AI 통합 점술 상담 — 타로 + 사주 교차 검증 리딩",
-    description: "타로, 사주, 점성술, 자미두수를 결합한 AI 교차 검증 점술 상담. 깊이 있는 리딩으로 당신의 질문에 답합니다.",
+    title: "통합 점술 상담 — 타로 + 사주 교차 검증 리딩",
+    description: "타로, 사주, 점성술, 자미두수를 결합한 교차 검증 점술 상담. 깊이 있는 리딩으로 당신의 질문에 답합니다.",
   },
   jp: {
     title: "AI占いリーディング — タロット＋占星術の総合鑑定",

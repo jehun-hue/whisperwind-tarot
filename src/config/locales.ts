@@ -92,7 +92,7 @@ export const localeConfigs: Record<Locale, LocaleConfig> = {
   kr: {
     locale: "kr",
     lang: "ko",
-    siteTitle: "AI 통합 점술 상담",
+    siteTitle: "통합 점술 상담",
     siteSubtitle: "divination reading",
     siteDescription: "타로 + 사주 교차 검증으로 깊이 있는 리딩을 제공합니다\n고요히 마음을 가다듬고, 직감이 이끄는 대로 진행하세요.",
     stepLabels: ["질문", "출생정보", "카드선택", "결과"],
