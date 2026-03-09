@@ -165,6 +165,7 @@ export default function ClientPage() {
   // Result
   const [aiReading, setAiReading] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loadingMessage, setLoadingMessage] = useState("");
 
   const questionType = useMemo(() => classifyQuestion(question), [question]);
   const isLoveQuestion = useMemo(() => ROMANCE_KEYWORDS.test(question), [question]);
