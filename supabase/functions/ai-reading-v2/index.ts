@@ -325,17 +325,20 @@ ${ziweiSection}
 사주 데이터가 제공되지 않았다면 나머지 5개 체계로 분석하고, 등급도 5개 체계 기준으로 판정하세요.
 반드시 순수 JSON만 출력하세요. 마크다운 코드블록(\`\`\`)을 사용하지 마세요.`;
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${GOOGLE_GEMINI_API_KEY}`, {
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
-        contents: [
-          { role: "user", parts: [{ text: systemPrompt + "\n\n" + userPrompt }] },
+        model: "google/gemini-2.5-pro",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
         ],
-        generationConfig: {
-          temperature: 0.65,
-          maxOutputTokens: 16000,
-        },
+        temperature: 0.65,
+        max_tokens: 16000,
       }),
     });
 
