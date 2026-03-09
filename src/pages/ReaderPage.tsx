@@ -467,6 +467,24 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
 
   return (
     <div className="space-y-4">
+      {/* Customer Name */}
+      <Card className="border-border bg-card">
+        <CardContent className="p-5">
+          <div className="text-sm font-medium text-muted-foreground mb-2">고객 이름</div>
+          <div className="flex gap-2">
+            <Input
+              value={userName}
+              onChange={(e) => setUserName(e.target.value)}
+              placeholder="고객 이름을 입력하세요"
+              className="flex-1"
+            />
+            <Button size="sm" onClick={saveUserName} disabled={savingName}>
+              {savingName ? "저장중..." : "저장"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Question & Birth info */}
       <Card className="border-border bg-card">
         <CardContent className="p-5">
