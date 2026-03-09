@@ -27,6 +27,7 @@ const systemPrompt = `당신은 동양·서양 운명학을 통합 분석하는 
 
 ### 1. 사주팔자
 - 제공된 사주 원국(년주, 월주, 일주, 시주)을 기반으로 해석하세요.
+- [포스텔러 원본 데이터]가 제공된 경우 이를 최우선으로 사용하세요. 포스텔러 데이터는 전문 만세력 서비스의 정밀 계산 결과입니다.
 - 제공된 오행 비율, 십신 배치, 용신 정보를 활용하세요.
 - 제공된 대운/세운 정보로 현재 시기의 운세 흐름을 분석하세요.
 - 합, 충, 형, 파, 해는 데이터에 명시된 것만 언급하세요.
@@ -182,6 +183,7 @@ serve(async (req) => {
       astrologyData,
       ziweiData,
       combinationSummary,
+      forcetellData,
     } = await req.json();
 
     // Build card descriptions
@@ -196,7 +198,13 @@ serve(async (req) => {
 
     // Build saju section
     let sajuSection = "출생정보 미제공";
-    if (sajuData) {
+    if (forcetellData) {
+      sajuSection = `[포스텔러 원본 데이터]\n${forcetellData}`;
+      if (sajuData) {
+        sajuSection += `\n\n[내부 계산 사주 데이터 (참고용)]\n사주 원국: ${sajuData.yearPillar?.cheongan || ""}${sajuData.yearPillar?.jiji || ""} / ${sajuData.monthPillar?.cheongan || ""}${sajuData.monthPillar?.jiji || ""} / ${sajuData.dayPillar?.cheongan || ""}${sajuData.dayPillar?.jiji || ""} / ${sajuData.hourPillar?.cheongan || ""}${sajuData.hourPillar?.jiji || ""}
+일간: ${sajuData.ilgan || ""}(${sajuData.ilganElement || ""}) / 신강/신약: ${sajuData.strength || ""} / 용신: ${sajuData.yongsin || ""}`;
+      }
+    } else if (sajuData) {
       sajuSection = `사주 원국: ${sajuData.yearPillar?.cheongan || ""}${sajuData.yearPillar?.jiji || ""} / ${sajuData.monthPillar?.cheongan || ""}${sajuData.monthPillar?.jiji || ""} / ${sajuData.dayPillar?.cheongan || ""}${sajuData.dayPillar?.jiji || ""} / ${sajuData.hourPillar?.cheongan || ""}${sajuData.hourPillar?.jiji || ""}
 일간: ${sajuData.ilgan || ""}(${sajuData.ilganElement || ""}, ${sajuData.ilganYinyang || ""}) / 신강/신약: ${sajuData.strength || ""} / 용신: ${sajuData.yongsin || ""}
 오행 비율: 목${sajuData.fiveElementDist?.["목"]?.toFixed(1) || 0} 화${sajuData.fiveElementDist?.["화"]?.toFixed(1) || 0} 토${sajuData.fiveElementDist?.["토"]?.toFixed(1) || 0} 금${sajuData.fiveElementDist?.["금"]?.toFixed(1) || 0} 수${sajuData.fiveElementDist?.["수"]?.toFixed(1) || 0}

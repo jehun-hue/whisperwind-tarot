@@ -243,6 +243,8 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
   const [savingComment, setSavingComment] = useState(false);
   const [userName, setUserName] = useState(session.user_name || "");
   const [savingName, setSavingName] = useState(false);
+  const [forcetellData, setForcetellData] = useState("");
+  const [showForcetellInput, setShowForcetellInput] = useState(false);
   const qType = session.question_type;
   const reading = session.ai_reading;
   const saju = session.saju_data;
@@ -442,6 +444,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
           astrologyData: astroDataForAI,
           ziweiData: ziweiDataForAI,
           combinationSummary,
+          forcetellData: forcetellData.trim() || null,
         },
       });
 
@@ -672,6 +675,46 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
         </CardContent>
       </Card>
 
+      {/* Forceteller Saju Data Input */}
+      {session.birth_date && (
+        <Card className="border-border bg-card">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base text-foreground">🔮 포스텔러 사주 데이터</CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowForcetellInput(!showForcetellInput)}
+                className="text-xs text-muted-foreground"
+              >
+                {showForcetellInput ? "접기" : "펼치기"}
+              </Button>
+            </div>
+          </CardHeader>
+          {showForcetellInput && (
+            <CardContent className="space-y-2">
+              <p className="text-xs text-muted-foreground">
+                포스텔러(pro.forceteller.com)에서 확인한 사주 데이터를 붙여넣으세요. 
+                사주팔자, 십신, 오행 비율, 신강/신약, 합충 등의 정보를 포함하면 더 정밀한 분석이 가능합니다.
+              </p>
+              <Textarea
+                value={forcetellData}
+                onChange={(e) => setForcetellData(e.target.value.slice(0, 3000))}
+                className="min-h-[120px] border-border bg-secondary text-xs font-mono"
+                placeholder={`예시:
+연주: 갑자(甲子) / 월주: 정묘(丁卯) / 일주: 임오(壬午) / 시주: 경술(庚戌)
+일간: 임수(壬水), 신약
+오행: 목2 화3 토1 금1 수1
+십신: 편인 정관 비견 편재
+용신: 금(金)
+합충: 자오충, 묘술합`}
+              />
+              <p className="text-[10px] text-muted-foreground">{forcetellData.length}/3000자</p>
+            </CardContent>
+          )}
+        </Card>
+      )}
+
       {/* AI Analysis Buttons */}
       {!reading && (
         <div className="space-y-2">
@@ -706,6 +749,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
               <>
                 <Sparkles className="mr-2 h-4 w-4" />
                 ✦ 6체계 통합 분석 실행 (v2)
+                {forcetellData.trim() && <Badge variant="outline" className="ml-2 text-[10px] border-gold/30 text-gold">포스텔러</Badge>}
               </>
             )}
           </Button>
