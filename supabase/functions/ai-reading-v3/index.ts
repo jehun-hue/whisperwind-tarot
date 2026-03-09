@@ -89,37 +89,54 @@ const LOVE_PROMPTS: Record<string, string> = {
 };
 
 const ROMANCE_STATUS_KR: Record<string, string> = {
-  solo: "솔로",
-  some: "썸",
-  dating: "연애중",
-  breakup: "이별후",
-  marriage: "결혼고민",
+  solo: "솔로", some: "썸", dating: "연애중", breakup: "이별후", marriage: "결혼고민",
 };
+
+function getMaxTokens(grade: string): number {
+  switch (grade) {
+    case "C": return 1024;
+    case "B": return 2048;
+    case "A": return 3072;
+    case "S": return 4096;
+    default: return 1024;
+  }
+}
 
 function buildGradeInstruction(grade: string, isLove: boolean): string {
   switch (grade) {
     case "C":
       return `[등급 C 규칙]
 - tarot_reading: waite만 포함. choihanna, monad는 null.
+- waite story는 300자 이내로 간결하게.
 - love_analysis: null.
-- action_guide: lucky만 포함. do_list, dont_list는 null.
+- action_guide: do_list, dont_list는 null. lucky는 color, number만.
+- final_message: title만 포함. summary는 null.
 - convergence: 간략하게.`;
     case "B":
       return `[등급 B 규칙]
 - tarot_reading: waite + choihanna 포함. monad는 null.
+- 각 story는 400자 내외.
 - love_analysis: ${isLove ? "status_specific.main_insight만 포함, 나머지 null." : "null."}
-- action_guide: lucky + do_list 포함. dont_list는 null.`;
+- action_guide: do_list 2개 + dont_list 2개 + lucky 전체.
+- final_message: title + summary (300자 축약).
+- convergence: 간략하게.`;
     case "A":
       return `[등급 A 규칙]
 - tarot_reading: 3종 모두 포함.
-- love_analysis: ${isLove ? "love_dna + status_specific 포함, timeline은 3개월(month_1~month_3)만." : "null."}
-- action_guide: 모두 포함.`;
+- 각 story는 500자 내외.
+- love_analysis: ${isLove ? "love_dna + status_specific 포함, timeline은 3개월(month_1~month_3)만. partner_profile은 null." : "null."}
+- action_guide: do_list 3개 + dont_list 3개 + lucky 전체.
+- final_message: 전체.
+- convergence: 상세하게.`;
     case "S":
     default:
       return `[등급 S 규칙]
 - 모든 필드 완전 포함.
+- 각 story는 500자 이상 상세하게.
 - love_analysis: ${isLove ? "timeline 6개월. partner_profile 포함. 모든 항목 완전 포함." : "null."}
-- action_guide: 모두 포함.`;
+- action_guide: 전체 포함. 각 항목에 구체적 날짜/상황 포함.
+- final_message: title + 600자 종합 요약.
+- convergence: 상세 + divergent_note 포함.`;
   }
 }
 
@@ -151,7 +168,6 @@ ${manseryeokData.hanjaString ? `한자: ${manseryeokData.hanjaString}` : ""}`;
 
 function extractJSON(raw: string): any {
   let content = raw.trim();
-  // Strip markdown code fences
   content = content.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
   const first = content.indexOf("{");
   const last = content.lastIndexOf("}");
@@ -178,7 +194,6 @@ serve(async (req) => {
     const isLove = !!romanceStatus;
     const today = new Date().toISOString().slice(0, 10);
 
-    // Positions based on card count
     const positions5 = ["내 마음", "상대방 마음", "현재 관계", "장애물", "결과"];
     const positions3 = ["현재 상황", "도전/과제", "미래/조언"];
 
@@ -192,7 +207,6 @@ serve(async (req) => {
 
     const sajuSection = buildSajuSection(manseryeokData, forcetellData, sajuData);
 
-    // Build love section
     let loveSection = "";
     if (isLove && romanceStatus) {
       const statusKr = ROMANCE_STATUS_KR[romanceStatus] || romanceStatus;
@@ -203,10 +217,8 @@ serve(async (req) => {
 ${LOVE_PROMPTS[romanceStatus] || ""}`;
     }
 
-    // Grade instruction
     const gradeInstruction = buildGradeInstruction(selectedGrade, isLove);
 
-    // Build user prompt
     const birthDate = birthInfo?.birthDate || "미제공";
     const birthHour = birthInfo?.birthTime || "미제공";
     const genderStr = birthInfo?.gender === "male" ? "남성" : birthInfo?.gender === "female" ? "여성" : "미제공";
@@ -246,17 +258,17 @@ ${gradeInstruction}
   "tarot_reading": {
     "waite": {
       "cards": [{"name": "카드명", "position": "위치", "reversed": false}],
-      "story": "스토리텔링 해석 (300~500자)",
+      "story": "스토리텔링 해석",
       "key_message": "핵심 메시지 한 문장"
     },
     "choihanna": ${selectedGrade === "C" ? "null" : `{
       "cards": [{"name": "카드명", "position": "위치", "reversed": false}],
-      "story": "스토리텔링 해석 (300~500자)",
+      "story": "스토리텔링 해석",
       "key_message": "핵심 메시지 한 문장"
     }`},
     "monad": ${selectedGrade === "C" || selectedGrade === "B" ? "null" : `{
       "cards": [{"name": "카드명", "position": "위치", "reversed": false}],
-      "story": "스토리텔링 해석 (300~500자)",
+      "story": "스토리텔링 해석",
       "key_message": "핵심 메시지 한 문장"
     }`}
   },
@@ -279,7 +291,7 @@ ${gradeInstruction}
     "timeline": ${selectedGrade === "C" || selectedGrade === "B" ? "null" : selectedGrade === "A" ? `{"month_1": {"period": "", "theme": "", "detail": ""}, "month_2": {"period": "", "theme": "", "detail": ""}, "month_3": {"period": "", "theme": "", "detail": ""}}` : `{"month_1": {"period": "", "theme": "", "detail": ""}, "month_2": {"period": "", "theme": "", "detail": ""}, "month_3": {"period": "", "theme": "", "detail": ""}, "month_4": {"period": "", "theme": "", "detail": ""}, "month_5": {"period": "", "theme": "", "detail": ""}, "month_6": {"period": "", "theme": "", "detail": ""}}`},
     "partner_profile": ${selectedGrade === "S" ? `{"personality": "", "atmosphere": "", "meeting_place": ""}` : "null"},
     "status_specific": {
-      "main_insight": "상태별 핵심 분석 (200~400자)",
+      "main_insight": "상태별 핵심 분석",
       "probability": "높음|보통|낮음",
       "timing": "최적 시기",
       "warning": "주의사항"
@@ -287,27 +299,27 @@ ${gradeInstruction}
   }`},
   "action_guide": {
     "do_list": ${selectedGrade === "C" ? "null" : `["해야 할 것 1", "해야 할 것 2", "해야 할 것 3"]`},
-    "dont_list": ${selectedGrade === "C" || selectedGrade === "B" ? "null" : `["하지 말아야 할 것 1", "하지 말아야 할 것 2", "하지 말아야 할 것 3"]`},
+    "dont_list": ${selectedGrade === "C" ? "null" : `["하지 말아야 할 것 1", "하지 말아야 할 것 2", "하지 말아야 할 것 3"]`},
     "lucky": {
       "color": "행운 색상",
-      "number": "행운 숫자",
+      "number": "행운 숫자"${selectedGrade !== "C" ? `,
       "direction": "행운 방위",
       "day": "행운 요일/날짜",
-      "item": "행운 아이템"
+      "item": "행운 아이템"` : ""}
     }
   },
   "final_message": {
-    "title": "리딩 제목 (감성적, 10자 내외)",
-    "summary": "종합 리딩 요약 (400~600자, 따뜻하고 희망적 톤)"
+    "title": "리딩 제목 (감성적, 10자 내외)"${selectedGrade !== "C" ? `,
+    "summary": "종합 리딩 요약 (따뜻하고 희망적 톤)"` : ""}
   }
 }`;
 
-    // Model selection based on grade
+    // Model selection: C,B → flash, A,S → pro
     const model = selectedGrade === "S" || selectedGrade === "A"
       ? "gemini-2.5-pro-preview-06-05"
       : "gemini-2.0-flash-001";
 
-    const maxTokens = selectedGrade === "S" ? 16000 : selectedGrade === "A" ? 14000 : selectedGrade === "B" ? 10000 : 6000;
+    const maxTokens = getMaxTokens(selectedGrade);
 
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GOOGLE_GEMINI_API_KEY}`;
 
@@ -315,8 +327,8 @@ ${gradeInstruction}
       contents: [{ parts: [{ text: userPrompt }] }],
       systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
       generationConfig: {
-        temperature: selectedGrade === "S" ? 0.85 : 0.8,
-        topP: 0.95,
+        temperature: 0.7,
+        topP: 0.9,
         topK: 40,
         maxOutputTokens: maxTokens,
         responseMimeType: "application/json",
@@ -326,8 +338,11 @@ ${gradeInstruction}
     let reading: any = null;
     let lastError: string = "";
 
-    // Try up to 2 times
+    // Try up to 2 times (1 retry after 3s delay)
     for (let attempt = 0; attempt < 2; attempt++) {
+      if (attempt > 0) {
+        await new Promise((r) => setTimeout(r, 3000));
+      }
       try {
         const resp = await fetch(apiUrl, {
           method: "POST",
@@ -359,7 +374,7 @@ ${gradeInstruction}
     }
 
     if (!reading) {
-      throw new Error(`분석 중 오류가 발생했습니다. 다시 시도해 주세요. (${lastError})`);
+      throw new Error(`분석 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요. (${lastError})`);
     }
 
     return new Response(JSON.stringify({ reading }), {
