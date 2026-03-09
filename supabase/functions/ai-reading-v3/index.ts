@@ -350,15 +350,15 @@ ${gradeInstruction}
         });
 
         if (resp.status === 429) {
-          lastError = "Rate limit exceeded (429)";
+          lastError = "429 - API 할당량 초과 (Rate Limit)";
           console.error(`Attempt ${attempt + 1}: 429 rate limited`);
           continue;
         }
 
         if (!resp.ok) {
           const errText = await resp.text();
-          lastError = `API error: ${resp.status} - ${errText.slice(0, 300)}`;
-          console.error(`Attempt ${attempt + 1} failed:`, lastError);
+          lastError = `${resp.status} - ${errText.slice(0, 500)}`;
+          console.error(`Attempt ${attempt + 1} failed: status=${resp.status}, body=${errText.slice(0, 500)}`);
           continue;
         }
 
@@ -381,9 +381,11 @@ ${gradeInstruction}
 
     if (!reading) {
       const is429 = lastError.includes("429");
+      const statusCode = lastError.match(/^(\d{3})/)?.[1] || "500";
       const msg = is429
-        ? "서버가 혼잡합니다. 1~2분 후 다시 시도해 주세요."
-        : `분석 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요. (${lastError})`;
+        ? "429 - 서버가 혼잡합니다. 1~2분 후 다시 시도해 주세요."
+        : `${statusCode} - 분석 중 오류가 발생했습니다. (${lastError.slice(0, 200)})`;
+      console.error(`Final error after ${MAX_RETRIES} attempts: ${lastError}`);
       throw new Error(msg);
     }
 
