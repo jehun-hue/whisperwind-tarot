@@ -58,6 +58,7 @@ export default function ReaderPage() {
   const [pin, setPin] = useState("");
   const [sessions, setSessions] = useState<ReadingSession[]>([]);
   const [selectedSession, setSelectedSession] = useState<ReadingSession | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const loadSessions = useCallback(async () => {
     const { data, error } = await supabase
