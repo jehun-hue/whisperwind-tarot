@@ -361,7 +361,7 @@ ${gradeInstruction}
         }
 
         const data = await resp.json();
-        const rawContent = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        const rawContent = data?.choices?.[0]?.message?.content;
 
         if (!rawContent) {
           lastError = "Empty response from AI";
