@@ -144,6 +144,7 @@ export default function ClientPage() {
   const handleBirthInfoSkip = () => {
     setBirthInfo(null);
     setSajuResult(null);
+    setManseryeokResult(null);
     setAstroResult(null);
     setZiweiResult(null);
     setStep("select");
