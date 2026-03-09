@@ -350,15 +350,15 @@ ${gradeInstruction}
         });
 
         if (resp.status === 429) {
-          lastError = "Rate limit exceeded (429)";
+          lastError = "429 - API 할당량 초과 (Rate Limit)";
           console.error(`Attempt ${attempt + 1}: 429 rate limited`);
           continue;
         }
 
         if (!resp.ok) {
           const errText = await resp.text();
-          lastError = `API error: ${resp.status} - ${errText.slice(0, 300)}`;
-          console.error(`Attempt ${attempt + 1} failed:`, lastError);
+          lastError = `${resp.status} - ${errText.slice(0, 500)}`;
+          console.error(`Attempt ${attempt + 1} failed: status=${resp.status}, body=${errText.slice(0, 500)}`);
           continue;
         }
 
