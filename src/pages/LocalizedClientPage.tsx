@@ -359,7 +359,7 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                             ? "bg-gradient-to-r from-purple-600 to-indigo-500 text-white shadow-purple-500/20 hover:shadow-purple-500/40"
                             : "bg-gradient-to-r from-primary to-gold text-primary-foreground shadow-primary/20 hover:shadow-primary/40"
                         }`}
-                        onClick={() => setStep("birthInfo")}
+                        onClick={() => setStep(birthInfo ? "select" : "birthInfo")}
                         disabled={!question.trim()}
                       >
                         <Sparkles className="mr-2 h-4 w-4" />
