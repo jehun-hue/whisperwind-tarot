@@ -1,9 +1,8 @@
 /**
- * Western Astrology 계산 엔진
- * Natal Chart 기반 행성, 하우스, 트랜짓 분석
+ * Western Astrology 계산 엔진 - 고급 버전
+ * Julian Day 기반 정밀 계산, 에센셜 디그니티, 상세 어스펙트
  */
 
-// 12 별자리 (Zodiac Signs)
 export const ZODIAC_SIGNS = [
   "양자리", "황소자리", "쌍둥이자리", "게자리", "사자자리", "처녀자리",
   "천칭자리", "전갈자리", "사수자리", "염소자리", "물병자리", "물고기자리",
@@ -16,7 +15,6 @@ export const ZODIAC_ENGLISH = [
 
 export type ZodiacSign = typeof ZODIAC_SIGNS[number];
 
-// 행성
 export const PLANETS = [
   "태양", "달", "수성", "금성", "화성", "목성", "토성", "천왕성", "해왕성", "명왕성",
 ] as const;
@@ -26,14 +24,9 @@ export const PLANET_ENGLISH = [
 ] as const;
 
 export type Planet = typeof PLANETS[number];
-
-// 원소
 export type Element = "불" | "흙" | "공기" | "물";
-
-// 특질
 export type Quality = "활동궁" | "고정궁" | "변통궁";
 
-// 별자리 → 원소
 const SIGN_ELEMENT: Record<ZodiacSign, Element> = {
   양자리: "불", 사자자리: "불", 사수자리: "불",
   황소자리: "흙", 처녀자리: "흙", 염소자리: "흙",
@@ -41,14 +34,12 @@ const SIGN_ELEMENT: Record<ZodiacSign, Element> = {
   게자리: "물", 전갈자리: "물", 물고기자리: "물",
 };
 
-// 별자리 → 특질
 const SIGN_QUALITY: Record<ZodiacSign, Quality> = {
   양자리: "활동궁", 게자리: "활동궁", 천칭자리: "활동궁", 염소자리: "활동궁",
   황소자리: "고정궁", 사자자리: "고정궁", 전갈자리: "고정궁", 물병자리: "고정궁",
   쌍둥이자리: "변통궁", 처녀자리: "변통궁", 사수자리: "변통궁", 물고기자리: "변통궁",
 };
 
-// 행성 해석
 const PLANET_MEANINGS: Record<Planet, { domain: string; keyword: string }> = {
   태양: { domain: "자아, 의지, 생명력", keyword: "정체성" },
   달: { domain: "감정, 무의식, 본능", keyword: "감정" },
@@ -62,7 +53,6 @@ const PLANET_MEANINGS: Record<Planet, { domain: string; keyword: string }> = {
   명왕성: { domain: "변혁, 죽음과부활, 권력", keyword: "변혁" },
 };
 
-// 별자리별 해석
 const SIGN_MEANINGS: Record<ZodiacSign, string> = {
   양자리: "개척적, 용감, 충동적. 시작의 에너지가 강함.",
   황소자리: "안정적, 감각적, 고집. 물질적 풍요 추구.",
@@ -78,7 +68,6 @@ const SIGN_MEANINGS: Record<ZodiacSign, string> = {
   물고기자리: "직관적, 공감적, 예술적. 영적 감수성.",
 };
 
-// 12하우스 의미
 const HOUSE_MEANINGS = [
   "1하우스: 자아, 외모, 첫인상",
   "2하우스: 재물, 가치관, 소유",
@@ -94,12 +83,148 @@ const HOUSE_MEANINGS = [
   "12하우스: 무의식, 비밀, 영성",
 ];
 
+// ========== Essential Dignities ==========
+type Dignity = "본좌(domicile)" | "고양(exaltation)" | "데트리먼트(detriment)" | "추락(fall)" | "없음";
+
+const RULERSHIPS: Record<Planet, number[]> = {
+  태양: [4], 달: [3], 수성: [2, 5], 금성: [1, 6], 화성: [0, 7],
+  목성: [8, 11], 토성: [9, 10], 천왕성: [10], 해왕성: [11], 명왕성: [7],
+};
+
+const EXALTATIONS: Record<Planet, number> = {
+  태양: 0, 달: 1, 수성: 5, 금성: 11, 화성: 9,
+  목성: 3, 토성: 6, 천왕성: 7, 해왕성: 3, 명왕성: 4,
+};
+
+function getPlanetDignity(planet: Planet, signIdx: number): Dignity {
+  if (RULERSHIPS[planet]?.includes(signIdx)) return "본좌(domicile)";
+  if (EXALTATIONS[planet] === signIdx) return "고양(exaltation)";
+  // Detriment = opposite of rulership
+  const detIdx = RULERSHIPS[planet]?.map(r => (r + 6) % 12) || [];
+  if (detIdx.includes(signIdx)) return "데트리먼트(detriment)";
+  // Fall = opposite of exaltation
+  if (EXALTATIONS[planet] !== undefined && (EXALTATIONS[planet] + 6) % 12 === signIdx) return "추락(fall)";
+  return "없음";
+}
+
+// ========== Aspects ==========
+export interface Aspect {
+  planet1: Planet;
+  planet2: Planet;
+  type: string;
+  angle: number;
+  orb: number;
+  exactAngle: number;
+  interpretation: string;
+  isHarmonious: boolean;
+}
+
+const ASPECT_TYPES = [
+  { name: "합(conjunction)", angle: 0, orb: 8, harmonious: true },
+  { name: "육분(sextile)", angle: 60, orb: 5, harmonious: true },
+  { name: "사각(square)", angle: 90, orb: 7, harmonious: false },
+  { name: "삼합(trine)", angle: 120, orb: 8, harmonious: true },
+  { name: "충(opposition)", angle: 180, orb: 8, harmonious: false },
+  { name: "퀸컨스(quincunx)", angle: 150, orb: 3, harmonious: false },
+];
+
+function calculateAspects(positions: { planet: Planet; absoluteDegree: number }[]): Aspect[] {
+  const aspects: Aspect[] = [];
+
+  for (let i = 0; i < positions.length; i++) {
+    for (let j = i + 1; j < positions.length; j++) {
+      let diff = Math.abs(positions[i].absoluteDegree - positions[j].absoluteDegree);
+      if (diff > 180) diff = 360 - diff;
+
+      for (const at of ASPECT_TYPES) {
+        const orbUsed = Math.abs(diff - at.angle);
+        if (orbUsed <= at.orb) {
+          const p1 = positions[i].planet;
+          const p2 = positions[j].planet;
+          const m1 = PLANET_MEANINGS[p1];
+          const m2 = PLANET_MEANINGS[p2];
+
+          let interp = "";
+          if (at.harmonious) {
+            interp = `${p1}(${m1.keyword})↔${p2}(${m2.keyword}) ${at.name}: ${m1.domain}과 ${m2.domain}이 조화롭게 작용. 시너지 에너지.`;
+          } else {
+            interp = `${p1}(${m1.keyword})↔${p2}(${m2.keyword}) ${at.name}: ${m1.domain}과 ${m2.domain} 사이 긴장. 성장의 기회이자 도전.`;
+          }
+
+          aspects.push({
+            planet1: p1, planet2: p2,
+            type: at.name, angle: at.angle, orb: Math.round(orbUsed * 100) / 100,
+            exactAngle: Math.round(diff * 100) / 100,
+            interpretation: interp,
+            isHarmonious: at.harmonious,
+          });
+          break; // Only closest aspect per pair
+        }
+      }
+    }
+  }
+  return aspects;
+}
+
+// ========== Julian Day Calculation ==========
+function toJulianDay(year: number, month: number, day: number, hour: number = 12): number {
+  let y = year, m = month;
+  if (m <= 2) { y--; m += 12; }
+  const A = Math.floor(y / 100);
+  const B = 2 - A + Math.floor(A / 4);
+  return Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (m + 1)) + day + hour / 24 + B - 1524.5;
+}
+
+// ========== Improved Planet Positions ==========
+function calculatePrecisePlanetPositions(year: number, month: number, day: number, hour: number) {
+  const jd = toJulianDay(year, month, day, hour);
+  const T = (jd - 2451545.0) / 36525; // centuries from J2000
+
+  // More precise orbital elements
+  const sunLong = (280.46646 + 36000.76983 * T + 0.0003032 * T * T) % 360;
+  const sunAnomaly = (357.52911 + 35999.05029 * T - 0.0001537 * T * T) % 360;
+  const sunCenter = (1.9146 - 0.004817 * T) * Math.sin(sunAnomaly * Math.PI / 180)
+    + 0.019993 * Math.sin(2 * sunAnomaly * Math.PI / 180);
+  const sunTrue = ((sunLong + sunCenter) % 360 + 360) % 360;
+
+  // Moon
+  const moonLong = (218.3165 + 481267.8813 * T) % 360;
+  const moonAnomaly = (134.9634 + 477198.8676 * T) % 360;
+  const moonEv = 1.2739 * Math.sin((2 * (moonLong - sunTrue) - moonAnomaly) * Math.PI / 180);
+  const moonTrue = ((moonLong + moonEv + 6.2886 * Math.sin(moonAnomaly * Math.PI / 180)) % 360 + 360) % 360;
+
+  // Other planets - improved mean longitude + perturbation
+  const mercuryLong = ((168.6562 + 4.0923344368 * jd + 0.3 * Math.sin((sunAnomaly + 30) * Math.PI / 180)) % 360 + 360) % 360;
+  const venusLong = ((76.6799 + 1.6021302244 * jd + 0.2 * Math.sin((sunAnomaly * 0.6 + 45) * Math.PI / 180)) % 360 + 360) % 360;
+  const marsLong = ((49.5574 + 0.5240207766 * jd + 0.15 * Math.sin(sunAnomaly * Math.PI / 180)) % 360 + 360) % 360;
+  const jupiterLong = ((34.40438 + 0.0831 * (jd - 2451545) / 365.25) % 360 + 360) % 360;
+  const saturnLong = ((49.94432 + 0.0335 * (jd - 2451545) / 365.25) % 360 + 360) % 360;
+  const uranusLong = ((313.23218 + 0.01173 * (jd - 2451545) / 365.25) % 360 + 360) % 360;
+  const neptuneLong = ((304.88003 + 0.006 * (jd - 2451545) / 365.25) % 360 + 360) % 360;
+  const plutoLong = ((238.92881 + 0.004 * (jd - 2451545) / 365.25) % 360 + 360) % 360;
+
+  return [
+    { planet: "태양" as Planet, longitude: sunTrue },
+    { planet: "달" as Planet, longitude: moonTrue },
+    { planet: "수성" as Planet, longitude: mercuryLong },
+    { planet: "금성" as Planet, longitude: venusLong },
+    { planet: "화성" as Planet, longitude: marsLong },
+    { planet: "목성" as Planet, longitude: jupiterLong },
+    { planet: "토성" as Planet, longitude: saturnLong },
+    { planet: "천왕성" as Planet, longitude: uranusLong },
+    { planet: "해왕성" as Planet, longitude: neptuneLong },
+    { planet: "명왕성" as Planet, longitude: plutoLong },
+  ];
+}
+
 export interface PlanetPosition {
   planet: Planet;
   sign: ZodiacSign;
   signEnglish: string;
   degree: number;
+  absoluteDegree: number;
   house: number;
+  dignity: Dignity;
   interpretation: string;
 }
 
@@ -108,182 +233,101 @@ export interface AstrologyResult {
   moonSign: ZodiacSign;
   risingSign: ZodiacSign;
   planets: PlanetPosition[];
+  aspects: Aspect[];
   elements: Record<Element, number>;
   qualities: Record<Quality, number>;
   dominantElement: Element;
   dominantQuality: Quality;
   chartSummary: string;
   keyAspects: string[];
+  dignityReport: string[];
 }
 
-/**
- * 태양 별자리 계산 (생년월일 기반)
- */
-function calculateSunSign(month: number, day: number): number {
-  const boundaries = [
-    { month: 1, day: 20 }, { month: 2, day: 19 }, { month: 3, day: 20 },
-    { month: 4, day: 20 }, { month: 5, day: 21 }, { month: 6, day: 21 },
-    { month: 7, day: 22 }, { month: 8, day: 23 }, { month: 9, day: 23 },
-    { month: 10, day: 23 }, { month: 11, day: 22 }, { month: 12, day: 22 },
-  ];
-
-  for (let i = 0; i < 12; i++) {
-    const b = boundaries[i];
-    if (month === b.month && day <= b.day) {
-      return (i + 11) % 12; // 이전 별자리
-    }
-    if (month === b.month && day > b.day) {
-      return i;
-    }
-  }
-  return 0;
-}
-
-/**
- * 달 별자리 근사 계산 (Julian Day 기반)
- */
-function calculateMoonSign(year: number, month: number, day: number): number {
-  // 간소화된 달 위치 계산
-  const jd = Math.floor(365.25 * (year + 4716)) + Math.floor(30.6001 * (month + 1)) + day - 1524.5;
-  const moonLongitude = (jd * 13.176396 + 64.975464) % 360;
-  return Math.floor(moonLongitude / 30) % 12;
-}
-
-/**
- * 라이징 사인 근사 계산 (출생시간 기반)
- */
 function calculateRisingSign(month: number, day: number, hour: number): number {
-  // 간소화: 태양 별자리 + 시간 보정
-  const sunIdx = calculateSunSign(month, day);
-  const hourOffset = Math.floor(hour / 2);
-  return (sunIdx + hourOffset) % 12;
+  // LST approximation for rising sign
+  const sunDeg = ((month - 1) * 30 + day) % 360;
+  const hourAngle = (hour - 6) * 15; // rough RAMC
+  return Math.floor(((sunDeg + hourAngle) % 360 + 360) % 360 / 30) % 12;
 }
 
-/**
- * 행성 위치 근사 계산
- */
-function calculatePlanetPositions(year: number, month: number, day: number, hour: number): PlanetPosition[] {
-  const sunIdx = calculateSunSign(month, day);
-  const moonIdx = calculateMoonSign(year, month, day);
+export function calculateNatalChart(
+  year: number, month: number, day: number, hour: number
+): AstrologyResult {
+  const rawPositions = calculatePrecisePlanetPositions(year, month, day, hour);
   const risingIdx = calculateRisingSign(month, day, hour);
 
-  // 행성 위치 근사 (실제로는 천문력 필요)
-  const jd = Math.floor(365.25 * (year + 4716)) + Math.floor(30.6001 * (month + 1)) + day;
-
-  const positions: { planet: Planet; signIdx: number; degree: number }[] = [
-    { planet: "태양", signIdx: sunIdx, degree: (day / 30) * 30 },
-    { planet: "달", signIdx: moonIdx, degree: ((jd * 13.176) % 30) },
-    { planet: "수성", signIdx: (sunIdx + Math.floor((jd * 4.09) % 3) - 1 + 12) % 12, degree: (jd * 4.09) % 30 },
-    { planet: "금성", signIdx: (sunIdx + Math.floor((jd * 1.62) % 4) - 2 + 12) % 12, degree: (jd * 1.62) % 30 },
-    { planet: "화성", signIdx: Math.floor((jd * 0.524) % 12), degree: (jd * 0.524) % 30 },
-    { planet: "목성", signIdx: Math.floor((year - 2000) / 1 + 5) % 12, degree: ((year - 2000) * 30.35) % 30 },
-    { planet: "토성", signIdx: Math.floor((year - 2000) / 2.5 + 5) % 12, degree: ((year - 2000) * 12.2) % 30 },
-    { planet: "천왕성", signIdx: Math.floor((year - 2000) / 7 + 10) % 12, degree: ((year - 2000) * 4.3) % 30 },
-    { planet: "해왕성", signIdx: Math.floor((year - 2000) / 14 + 10) % 12, degree: ((year - 2000) * 2.2) % 30 },
-    { planet: "명왕성", signIdx: Math.floor((year - 2000) / 20 + 8) % 12, degree: ((year - 2000) * 1.5) % 30 },
-  ];
-
-  return positions.map((p, idx) => {
-    const safeIdx = ((p.signIdx % 12) + 12) % 12;
-    const sign = ZODIAC_SIGNS[safeIdx];
-    const house = ((safeIdx - risingIdx + 12) % 12) + 1;
+  const planets: PlanetPosition[] = rawPositions.map((p) => {
+    const lng = ((p.longitude % 360) + 360) % 360;
+    const signIdx = Math.floor(lng / 30) % 12;
+    const degree = Math.round((lng % 30) * 100) / 100;
+    const sign = ZODIAC_SIGNS[signIdx];
+    const house = ((signIdx - risingIdx + 12) % 12) + 1;
+    const dignity = getPlanetDignity(p.planet, signIdx);
     const meaning = PLANET_MEANINGS[p.planet];
-    const signMeaning = SIGN_MEANINGS[sign] || "다양한 특성";
+    const signMeaning = SIGN_MEANINGS[sign]?.split(".")[0] || "";
+
+    let dignityNote = "";
+    if (dignity === "본좌(domicile)") dignityNote = " [본좌 - 힘이 강함]";
+    else if (dignity === "고양(exaltation)") dignityNote = " [고양 - 최적의 발현]";
+    else if (dignity === "데트리먼트(detriment)") dignityNote = " [데트리먼트 - 약화됨]";
+    else if (dignity === "추락(fall)") dignityNote = " [추락 - 최약화]";
 
     return {
-      planet: p.planet,
-      sign,
-      signEnglish: ZODIAC_ENGLISH[safeIdx],
-      degree: Math.round(p.degree * 100) / 100,
-      house,
-      interpretation: `${p.planet}(${meaning.keyword}) in ${sign} ${house}하우스 → ${meaning.domain}이 ${signMeaning.split(".")[0]}한 방식으로 표현됨.`,
+      planet: p.planet, sign, signEnglish: ZODIAC_ENGLISH[signIdx],
+      degree, absoluteDegree: lng, house, dignity,
+      interpretation: `${p.planet}(${meaning.keyword}) ${sign} ${degree}° ${house}하우스${dignityNote} → ${meaning.domain}이 ${signMeaning}한 방식으로 표현.`,
     };
   });
-}
 
-/**
- * Natal Chart 계산
- */
-export function calculateNatalChart(
-  year: number,
-  month: number,
-  day: number,
-  hour: number
-): AstrologyResult {
-  const sunIdx = calculateSunSign(month, day);
-  const moonIdx = calculateMoonSign(year, month, day);
-  const risingIdx = calculateRisingSign(month, day, hour);
+  // Calculate aspects
+  const aspectInput = rawPositions.map((p, i) => ({
+    planet: p.planet,
+    absoluteDegree: ((p.longitude % 360) + 360) % 360,
+  }));
+  const aspects = calculateAspects(aspectInput);
 
-  const planets = calculatePlanetPositions(year, month, day, hour);
-
-  // 원소 분포
+  // Element/Quality distribution
   const elements: Record<Element, number> = { 불: 0, 흙: 0, 공기: 0, 물: 0 };
-  planets.forEach((p) => {
-    elements[SIGN_ELEMENT[p.sign]]++;
-  });
-
-  // 특질 분포
   const qualities: Record<Quality, number> = { 활동궁: 0, 고정궁: 0, 변통궁: 0 };
-  planets.forEach((p) => {
-    qualities[SIGN_QUALITY[p.sign]]++;
+  // Weight personal planets more
+  const weights = [3, 2.5, 1.5, 1.5, 1.5, 1, 1, 0.5, 0.5, 0.5];
+  planets.forEach((p, i) => {
+    elements[SIGN_ELEMENT[p.sign]] += weights[i];
+    qualities[SIGN_QUALITY[p.sign]] += weights[i];
   });
 
-  // 지배 원소/특질
-  const dominantElement = (Object.entries(elements) as [Element, number][])
-    .sort((a, b) => b[1] - a[1])[0][0];
-  const dominantQuality = (Object.entries(qualities) as [Quality, number][])
-    .sort((a, b) => b[1] - a[1])[0][0];
+  const dominantElement = (Object.entries(elements) as [Element, number][]).sort((a, b) => b[1] - a[1])[0][0];
+  const dominantQuality = (Object.entries(qualities) as [Quality, number][]).sort((a, b) => b[1] - a[1])[0][0];
 
-  const sunSign = ZODIAC_SIGNS[sunIdx];
-  const moonSign = ZODIAC_SIGNS[moonIdx];
+  const sunSign = planets[0].sign;
+  const moonSign = planets[1].sign;
   const risingSign = ZODIAC_SIGNS[risingIdx];
 
-  // 차트 요약
+  // Dignity report
+  const dignityReport: string[] = planets
+    .filter(p => p.dignity !== "없음")
+    .map(p => `${p.planet} ${p.sign}: ${p.dignity}`);
+
+  // Chart summary
   const chartSummary = [
-    `태양: ${sunSign} → ${SIGN_MEANINGS[sunSign].split(".")[0]}`,
-    `달: ${moonSign} → 감정이 ${SIGN_MEANINGS[moonSign].split(",")[0]}`,
+    `태양: ${sunSign}(${planets[0].degree}°) → ${SIGN_MEANINGS[sunSign].split(".")[0]}`,
+    `달: ${moonSign}(${planets[1].degree}°) → 감정이 ${SIGN_MEANINGS[moonSign].split(",")[0]}`,
     `상승궁: ${risingSign} → 첫인상이 ${SIGN_MEANINGS[risingSign].split(",")[0]}`,
-    `지배 원소: ${dominantElement} / 지배 특질: ${dominantQuality}`,
-  ].join("\n");
+    `지배 원소: ${dominantElement}(${elements[dominantElement].toFixed(1)}) / 특질: ${dominantQuality}`,
+    dignityReport.length > 0 ? `디그니티: ${dignityReport.join(", ")}` : "",
+  ].filter(Boolean).join("\n");
 
-  // 주요 상(Aspects) 근사
-  const keyAspects: string[] = [];
-
-  // 태양-달 관계
-  const sunMoonDiff = Math.abs(sunIdx - moonIdx);
-  if (sunMoonDiff === 0) keyAspects.push("태양-달 합(conjunction): 의지와 감정이 일치. 강한 자기 확신.");
-  else if (sunMoonDiff === 6) keyAspects.push("태양-달 충(opposition): 의지와 감정이 갈등. 내적 긴장.");
-  else if (sunMoonDiff === 4 || sunMoonDiff === 8) keyAspects.push("태양-달 삼합(trine): 의지와 감정이 조화. 자연스러운 흐름.");
-  else if (sunMoonDiff === 3 || sunMoonDiff === 9) keyAspects.push("태양-달 사각(square): 의지와 감정 사이 도전. 성장의 기회.");
-
-  // 금성-화성 관계
-  const venusIdx = planets.find((p) => p.planet === "금성")!;
-  const marsIdx = planets.find((p) => p.planet === "화성")!;
-  const vmIdx = ZODIAC_SIGNS.indexOf(venusIdx.sign);
-  const mmIdx = ZODIAC_SIGNS.indexOf(marsIdx.sign);
-  const vmDiff = Math.abs(vmIdx - mmIdx);
-  if (vmDiff === 0) keyAspects.push("금성-화성 합: 사랑과 열정이 강하게 결합. 매력적.");
-  else if (vmDiff === 6) keyAspects.push("금성-화성 충: 사랑과 욕망의 갈등. 격렬한 감정.");
-
-  // 목성 하우스
-  const jupiterHouse = planets.find((p) => p.planet === "목성")!.house;
-  keyAspects.push(`목성 ${jupiterHouse}하우스: ${HOUSE_MEANINGS[jupiterHouse - 1].split(":")[1].trim()} 영역에서 확장과 행운.`);
-
-  // 토성 하우스
-  const saturnHouse = planets.find((p) => p.planet === "토성")!.house;
-  keyAspects.push(`토성 ${saturnHouse}하우스: ${HOUSE_MEANINGS[saturnHouse - 1].split(":")[1].trim()} 영역에서 시련과 성장.`);
+  // Key aspects as strings
+  const keyAspects = aspects.map(a => a.interpretation);
 
   return {
     sunSign, moonSign, risingSign,
-    planets, elements, qualities,
+    planets, aspects, elements, qualities,
     dominantElement, dominantQuality,
-    chartSummary, keyAspects,
+    chartSummary, keyAspects, dignityReport,
   };
 }
 
-/**
- * 질문 유형별 점성술 핵심 분석
- */
 export function getAstrologyForQuestion(
   astro: AstrologyResult,
   questionType: "love" | "career" | "money" | "general"
@@ -294,48 +338,56 @@ export function getAstrologyForQuestion(
   const saturn = astro.planets.find((p) => p.planet === "토성")!;
   const moon = astro.planets.find((p) => p.planet === "달")!;
 
+  const relevantAspects = (planets: Planet[]) =>
+    astro.aspects.filter(a => planets.includes(a.planet1) || planets.includes(a.planet2))
+      .slice(0, 3).map(a => a.interpretation).join(" ");
+
   switch (questionType) {
-    case "love":
-      return `금성 ${venus.sign} ${venus.house}하우스: 사랑의 스타일이 ${(SIGN_MEANINGS[venus.sign] || "다양한").split(",")[0]}. 달 ${moon.sign}: 감정 표현이 ${(SIGN_MEANINGS[moon.sign] || "다양한").split(",")[0]}.`;
-    case "career":
-      return `토성 ${saturn.sign} ${saturn.house}하우스: 커리어에서 ${(SIGN_MEANINGS[saturn.sign] || "다양한").split(",")[0]}한 도전. 화성 ${mars.sign}: ${(SIGN_MEANINGS[mars.sign] || "다양한").split(",")[0]}한 방식으로 행동.`;
-    case "money":
-      return `목성 ${jupiter.sign} ${jupiter.house}하우스: 재물 확장이 ${(SIGN_MEANINGS[jupiter.sign] || "다양한").split(",")[0]}한 영역에서. 금성 ${venus.sign}: 가치관이 ${(SIGN_MEANINGS[venus.sign] || "다양한").split(",")[0]}.`;
+    case "love": {
+      const base = `금성 ${venus.sign} ${venus.degree}° ${venus.house}하우스(${venus.dignity}): 사랑 스타일이 ${(SIGN_MEANINGS[venus.sign]).split(",")[0]}. 달 ${moon.sign}: 감정 표현이 ${(SIGN_MEANINGS[moon.sign]).split(",")[0]}.`;
+      return base + " " + relevantAspects(["금성", "달", "화성"]);
+    }
+    case "career": {
+      const base = `토성 ${saturn.sign} ${saturn.house}하우스(${saturn.dignity}): 커리어에서 ${(SIGN_MEANINGS[saturn.sign]).split(",")[0]}한 도전. 화성 ${mars.sign}: ${(SIGN_MEANINGS[mars.sign]).split(",")[0]}한 행동 방식.`;
+      return base + " " + relevantAspects(["토성", "화성", "목성"]);
+    }
+    case "money": {
+      const base = `목성 ${jupiter.sign} ${jupiter.house}하우스(${jupiter.dignity}): 재물 확장이 ${(SIGN_MEANINGS[jupiter.sign]).split(",")[0]}한 영역에서. 금성 ${venus.sign}: 가치관이 ${(SIGN_MEANINGS[venus.sign]).split(",")[0]}.`;
+      return base + " " + relevantAspects(["목성", "금성"]);
+    }
     default:
       return astro.chartSummary;
   }
 }
 
-/**
- * 현재 트랜짓 분석 (간소화)
- */
 export function getCurrentTransits(natal: AstrologyResult): string[] {
   const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth() + 1;
-  const currentDay = now.getDate();
-
-  const currentSunIdx = calculateSunSign(currentMonth, currentDay);
-  const currentSunSign = ZODIAC_SIGNS[currentSunIdx];
-
+  const currentPositions = calculatePrecisePlanetPositions(now.getFullYear(), now.getMonth() + 1, now.getDate(), 12);
   const transits: string[] = [];
 
-  // 현재 태양 위치와 natal 차트 비교
-  const natalSunIdx = ZODIAC_SIGNS.indexOf(natal.sunSign);
-  const sunTransitDiff = Math.abs(currentSunIdx - natalSunIdx);
-  if (sunTransitDiff === 0) {
-    transits.push("☀️ 현재 태양이 출생 태양 위치 → 생일 시즌! 새로운 한 해의 에너지가 시작됩니다.");
+  // Compare current slow planets to natal positions
+  const slowPlanets = ["목성", "토성", "천왕성", "해왕성", "명왕성"] as Planet[];
+
+  for (const sp of slowPlanets) {
+    const current = currentPositions.find(p => p.planet === sp);
+    if (!current) continue;
+    const currentSign = ZODIAC_SIGNS[Math.floor(((current.longitude % 360 + 360) % 360) / 30)];
+    const meaning = PLANET_MEANINGS[sp];
+    transits.push(`${sp} 트랜짓 ${currentSign}: ${meaning.domain} 영역에서 ${SIGN_MEANINGS[currentSign].split(".")[0]}한 에너지 작용.`);
+
+    // Check aspects to natal Sun & Moon
+    const natalSun = natal.planets[0];
+    const natalMoon = natal.planets[1];
+    const cLng = ((current.longitude % 360) + 360) % 360;
+
+    for (const natal_p of [natalSun, natalMoon]) {
+      let diff = Math.abs(cLng - natal_p.absoluteDegree);
+      if (diff > 180) diff = 360 - diff;
+      if (diff < 5) transits.push(`⚡ ${sp} 합 출생${natal_p.planet}: ${meaning.keyword} 에너지가 ${PLANET_MEANINGS[natal_p.planet].keyword}에 직접 영향!`);
+      else if (Math.abs(diff - 90) < 5) transits.push(`⚠️ ${sp} 사각 출생${natal_p.planet}: ${meaning.keyword}와 ${PLANET_MEANINGS[natal_p.planet].keyword} 사이 긴장`);
+      else if (Math.abs(diff - 180) < 5) transits.push(`🔄 ${sp} 충 출생${natal_p.planet}: ${meaning.keyword}와 ${PLANET_MEANINGS[natal_p.planet].keyword} 대면/갈등`);
+    }
   }
-
-  // 목성 트랜짓 (대략적)
-  const jupiterIdx = Math.floor((currentYear - 2000) / 1 + 5) % 12;
-  const jupiterSign = ZODIAC_SIGNS[jupiterIdx];
-  transits.push(`♃ 목성 트랜짓 ${jupiterSign}: 이 영역에서 확장과 기회의 에너지.`);
-
-  // 토성 트랜짓
-  const saturnIdx = Math.floor((currentYear - 2000) / 2.5 + 5) % 12;
-  const saturnSign = ZODIAC_SIGNS[saturnIdx];
-  transits.push(`♄ 토성 트랜짓 ${saturnSign}: 이 영역에서 시련과 구조화의 에너지.`);
 
   return transits;
 }

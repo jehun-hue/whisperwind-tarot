@@ -1,6 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
@@ -8,11 +8,18 @@ import { Loader2 } from "lucide-react";
 interface AIReadingResult {
   conclusion: string;
   tarotAnalysis: string;
+  tarotCardInteraction?: string;
   sajuAnalysis: string;
+  sajuTimeline?: string;
   astrologyAnalysis: string;
+  astrologyTransits?: string;
   ziweiAnalysis: string;
+  ziweiLifeStructure?: string;
   crossValidation: string;
+  crossValidationMatrix?: string;
+  timing?: string;
   risk: string;
+  hiddenPattern?: string;
   advice: string;
   scores: {
     tarot: number;
@@ -63,7 +70,7 @@ export default function ReadingResult({ reading, isLoading, onReset, hasSaju }: 
             <h2 className="font-display text-xl font-semibold text-foreground">
               AI가 분석 중입니다...
             </h2>
-      <p className="mt-3 text-sm text-muted-foreground">
+            <p className="mt-3 text-sm text-muted-foreground">
               타로{hasSaju ? " + 사주 + 점성술 + 자미두수" : ""} 교차 검증 리딩을 생성하고 있습니다
             </p>
             <div className="mx-auto mt-6 h-px w-32 bg-gradient-to-r from-transparent via-gold/40 to-transparent" />
@@ -78,17 +85,24 @@ export default function ReadingResult({ reading, isLoading, onReset, hasSaju }: 
   const sections = [
     { title: "✦ 최종 결론", content: reading.conclusion, accent: true },
     { title: "🃏 타로 분석", content: reading.tarotAnalysis },
+    ...(reading.tarotCardInteraction ? [{ title: "🔗 카드 상호작용", content: reading.tarotCardInteraction }] : []),
     ...(hasSaju
       ? [
           { title: "🔮 사주 분석", content: reading.sajuAnalysis },
+          ...(reading.sajuTimeline ? [{ title: "📅 사주 시간축", content: reading.sajuTimeline }] : []),
           { title: "⭐ 점성술 분석", content: reading.astrologyAnalysis },
+          ...(reading.astrologyTransits ? [{ title: "🪐 트랜짓 분석", content: reading.astrologyTransits }] : []),
           { title: "🏯 자미두수 분석", content: reading.ziweiAnalysis },
+          ...(reading.ziweiLifeStructure ? [{ title: "🧬 인생 구조", content: reading.ziweiLifeStructure }] : []),
           { title: "⚖️ 교차 검증", content: reading.crossValidation },
+          ...(reading.crossValidationMatrix ? [{ title: "📊 검증 매트릭스", content: reading.crossValidationMatrix }] : []),
         ]
       : []),
+    ...(reading.timing ? [{ title: "⏰ 시기 분석", content: reading.timing }] : []),
     { title: "⚠️ 리스크", content: reading.risk },
+    ...(reading.hiddenPattern ? [{ title: "🔍 숨겨진 패턴", content: reading.hiddenPattern }] : []),
     { title: "💡 현실 조언", content: reading.advice },
-  ];
+  ].filter(s => s.content);
 
   return (
     <motion.div
