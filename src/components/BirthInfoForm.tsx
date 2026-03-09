@@ -15,6 +15,7 @@ import { Switch } from "@/components/ui/switch";
 import { User, Calendar, Clock, MapPin } from "lucide-react";
 
 export interface BirthInfo {
+  name: string;
   gender: "male" | "female";
   birthDate: string; // YYYY-MM-DD
   birthTime: string; // HH:mm or ""
