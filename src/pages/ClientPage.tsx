@@ -121,6 +121,17 @@ export default function ClientPage() {
     setBirthInfo(info);
     const [y, m, d] = info.birthDate.split("-").map(Number);
     const hour = info.birthTime ? parseInt(info.birthTime.split(":")[0]) : 12;
+    const minute = info.birthTime ? parseInt(info.birthTime.split(":")[1]) : 0;
+    
+    // Manseryeok auto-calculation
+    try {
+      const msResult = calculateManseryeokSaju(y, m, d, hour, minute, info.isLunar);
+      setManseryeokResult(msResult);
+    } catch (e) {
+      console.error("Manseryeok calculation error:", e);
+      setManseryeokResult(null);
+    }
+    
     const saju = calculateSaju(y, m, d, hour);
     setSajuResult(saju);
     const astro = calculateNatalChart(y, m, d, hour);
