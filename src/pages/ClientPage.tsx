@@ -28,6 +28,15 @@ const suitLabels: Record<string, string> = {
   Pentacles: "펜타클",
 };
 
+type ReadingStyle = "default" | "choihanna" | "psychological" | "spiritual";
+
+const readingStyleLabels: Record<ReadingStyle, { label: string; description: string; icon: string }> = {
+  default: { label: "기본 통합 분석", description: "타로+사주+점성술+자미두수 교차검증", icon: "🔮" },
+  choihanna: { label: "최한나 스타일", description: "직관적·심리 중심·상대방 감정 깊이 분석", icon: "🌙" },
+  psychological: { label: "심리 분석 중심", description: "무의식 패턴·내면 갈등·성장 포인트 집중", icon: "🧠" },
+  spiritual: { label: "영적 가이드", description: "에너지 흐름·영적 메시지·카르마 해석", icon: "✨" },
+};
+
 type QuestionType = "love" | "career" | "money" | "general";
 
 function classifyQuestion(question: string): QuestionType {
