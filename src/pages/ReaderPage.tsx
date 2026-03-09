@@ -350,30 +350,32 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       if (fnError) throw fnError;
 
       const result = aiData?.reading;
-      if (result) {
-        await supabase.from("reading_sessions").update({
-          ai_reading: result as any,
-          saju_data: sajuDataForAI as any,
-          tarot_score: result.scores?.tarot || null,
-          saju_score: result.scores?.saju || null,
-          astrology_score: result.scores?.astrology || null,
-          ziwei_score: result.scores?.ziwei || null,
-          final_confidence: result.scores?.overall || null,
-          status: "completed",
-        }).eq("id", session.id);
-
-        onUpdate({
-          ...session,
-          ai_reading: result,
-          saju_data: sajuDataForAI,
-          tarot_score: result.scores?.tarot,
-          saju_score: result.scores?.saju,
-          astrology_score: result.scores?.astrology,
-          ziwei_score: result.scores?.ziwei,
-          final_confidence: result.scores?.overall,
-          status: "completed",
-        });
+      if (!result) {
+        throw new Error("AI 응답이 비어 있습니다. 잠시 후 다시 시도해주세요.");
       }
+
+      await supabase.from("reading_sessions").update({
+        ai_reading: result as any,
+        saju_data: sajuDataForAI as any,
+        tarot_score: result.scores?.tarot || null,
+        saju_score: result.scores?.saju || null,
+        astrology_score: result.scores?.astrology || null,
+        ziwei_score: result.scores?.ziwei || null,
+        final_confidence: result.scores?.overall || null,
+        status: "completed",
+      }).eq("id", session.id);
+
+      onUpdate({
+        ...session,
+        ai_reading: result,
+        saju_data: sajuDataForAI,
+        tarot_score: result.scores?.tarot,
+        saju_score: result.scores?.saju,
+        astrology_score: result.scores?.astrology,
+        ziwei_score: result.scores?.ziwei,
+        final_confidence: result.scores?.overall,
+        status: "completed",
+      });
     } catch (err) {
       console.error("AI analysis error:", err);
       await supabase.from("reading_sessions").update({ status: "error" }).eq("id", session.id);
