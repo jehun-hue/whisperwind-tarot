@@ -316,7 +316,6 @@ ${gradeInstruction}
 }`;
 
     // Model selection via Lovable AI Gateway
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const useGateway = !!LOVABLE_API_KEY;
 
     const gatewayModel = selectedGrade === "S" || selectedGrade === "A"
