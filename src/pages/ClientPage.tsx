@@ -244,6 +244,7 @@ export default function ClientPage() {
     setBirthInfo(null);
     setReadingStyle("default");
     setSajuResult(null);
+    setManseryeokResult(null);
     setAstroResult(null);
     setZiweiResult(null);
     setAiReading(null);
