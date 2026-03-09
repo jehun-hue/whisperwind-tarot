@@ -444,6 +444,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
           astrologyData: astroDataForAI,
           ziweiData: ziweiDataForAI,
           combinationSummary,
+          forcetellData: forcetellData.trim() || null,
         },
       });
 
