@@ -269,7 +269,7 @@ export const localeConfigs: Record<Locale, LocaleConfig> = {
   us: {
     locale: "us",
     lang: "en",
-    siteTitle: "AI Spiritual Reading",
+    siteTitle: "Spiritual Reading",
     siteSubtitle: "cosmic guidance",
     siteDescription: "Tarot + Astrology combined for a deeply intuitive spiritual reading.\nClear your mind, trust your intuition, and let the universe guide you.",
     stepLabels: ["Question", "Birth Info", "Card Selection", "Reading"],

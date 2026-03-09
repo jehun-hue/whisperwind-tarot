@@ -90,8 +90,8 @@ const seoData: Record<Locale, { title: string; description: string }> = {
     description: "タロットと西洋占星術を組み合わせた占いリーディング。あなたの心に寄り添う優しい鑑定をお届けします。",
   },
   us: {
-    title: "AI Spiritual Reading — Tarot + Astrology Cosmic Guidance",
-    description: "AI-powered Tarot and Astrology spiritual reading. Get deep cosmic guidance, energy insights, and actionable advice for love, career, and life.",
+    title: "Spiritual Reading — Tarot + Astrology Cosmic Guidance",
+    description: "Tarot and Astrology spiritual reading. Get deep cosmic guidance, energy insights, and actionable advice for love, career, and life.",
   },
 };
 

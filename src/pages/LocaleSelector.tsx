@@ -34,7 +34,7 @@ export default function LocaleSelector() {
         >
           <div className="animate-float mb-4 text-5xl">☽</div>
           <span className="font-display text-sm italic tracking-[0.3em] text-gold-light">
-            AI divination
+            divination
           </span>
           <h1 className="mt-3 font-display text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
             Choose Your Language
