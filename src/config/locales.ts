@@ -25,6 +25,8 @@ export interface LocaleConfig {
   // Birth info
   birthTitle: string;
   birthSubtitle: string;
+  nameLabel: string;
+  namePlaceholder: string;
   genderLabel: string;
   genderOptions: { male: string; female: string };
   birthDateLabel: string;
