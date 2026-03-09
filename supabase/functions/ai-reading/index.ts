@@ -196,7 +196,9 @@ serve(async (req) => {
 
     const { question, questionType, memo, cards, sajuData, birthInfo, astrologyData, ziweiData, combinationSummary, locale = "kr", readingStyle = "default" } = await req.json();
 
-    const systemPrompt = systemPrompts[locale] || systemPrompts.kr;
+    const basePrompt = systemPrompts[locale] || systemPrompts.kr;
+    const styleModifier = readingStyleModifiers[readingStyle] || "";
+    const systemPrompt = basePrompt + styleModifier;
 
     const cardDescriptions = cards.map((c: any, idx: number) => {
       const positionLabels: Record<string, string[]> = {
