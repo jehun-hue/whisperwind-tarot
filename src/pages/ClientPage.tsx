@@ -72,8 +72,8 @@ function classifyQuestion(q: string): QuestionType {
   return "general";
 }
 
-function getRequiredCards(grade: Grade): number {
-  return grade === "A" || grade === "S" ? 5 : 3;
+function getRequiredCards(_grade: Grade): number {
+  return 3;
 }
 
 // ─── Floating Stars ───
