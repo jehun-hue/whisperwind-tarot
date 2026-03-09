@@ -154,7 +154,7 @@ function SystemReadingCard({ systemKey, reading }: { systemKey: string; reading?
   );
 }
 
-export default function ReadingResultV2({ reading, isLoading, onReset, hasSaju }: ReadingResultV2Props) {
+export default function ReadingResultV2({ reading, isLoading, onReset, hasSaju, children }: ReadingResultV2Props) {
   if (isLoading) {
     return (
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center">
