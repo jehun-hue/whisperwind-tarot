@@ -435,11 +435,10 @@ ${locale === "jp"
     }
 
     const aiResult = await response.json();
-    const candidate = aiResult?.candidates?.[0];
-    const content = candidate?.content?.parts?.map((part: { text?: string }) => part?.text || "").join("\n").trim() || "";
+    const content = aiResult?.choices?.[0]?.message?.content?.trim() || "";
 
     if (!content) {
-      console.error("Empty AI content", JSON.stringify({ finishReason: candidate?.finishReason, promptFeedback: aiResult?.promptFeedback }));
+      console.error("Empty AI content", JSON.stringify(aiResult));
       const emptyFallback = {
         conclusion: "AI가 빈 응답을 반환해 상세 분석을 생성하지 못했습니다. 잠시 후 다시 시도해주세요.",
         tarotAnalysis: "현재 요청은 처리되었지만 상세 텍스트가 반환되지 않았습니다. 같은 질문으로 재시도하면 정상 생성되는 경우가 많습니다.",
