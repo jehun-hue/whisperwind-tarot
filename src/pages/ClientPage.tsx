@@ -132,6 +132,7 @@ function StepIndicator({ currentStep, isLoveQuestion }: { currentStep: Step; isL
 
 // ─── Main Component ───
 export default function ClientPage() {
+  const navigate = useNavigate();
   const [step, setStep] = useState<Step>("question");
   const [question, setQuestion] = useState("");
   const [memo, setMemo] = useState("");
