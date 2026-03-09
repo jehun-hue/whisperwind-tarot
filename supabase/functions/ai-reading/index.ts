@@ -291,7 +291,7 @@ ${locale === "jp"
         ],
         generationConfig: {
           temperature: 0.72,
-          maxOutputTokens: 8000,
+          maxOutputTokens: 12000,
         },
       }),
     });
@@ -400,16 +400,89 @@ ${locale === "jp"
     }
 
     const aiResult = await response.json();
-    const content = aiResult.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const candidate = aiResult?.candidates?.[0];
+    const content = candidate?.content?.parts?.map((part: { text?: string }) => part?.text || "").join("\n").trim() || "";
 
-    let reading;
-    try {
-      const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/) || content.match(/\{[\s\S]*\}/);
-      reading = JSON.parse(jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : content);
-    } catch {
-      console.error("Parse fail:", content);
-      reading = { conclusion: content.slice(0, 500), tarotAnalysis: "", emotionFlow: "", sajuAnalysis: "", astrologyAnalysis: "", ziweiAnalysis: "", crossValidation: "", risk: "", advice: "", scores: { tarot: 50, saju: 0, astrology: 0, ziwei: 0, overall: 50 } };
+    if (!content) {
+      console.error("Empty AI content", JSON.stringify({ finishReason: candidate?.finishReason, promptFeedback: aiResult?.promptFeedback }));
+      const emptyFallback = {
+        conclusion: "AI가 빈 응답을 반환해 상세 분석을 생성하지 못했습니다. 잠시 후 다시 시도해주세요.",
+        tarotAnalysis: "현재 요청은 처리되었지만 상세 텍스트가 반환되지 않았습니다. 같은 질문으로 재시도하면 정상 생성되는 경우가 많습니다.",
+        tarotCardInteraction: "카드 조합 흐름은 유지되며, 재시도 시 상호작용 분석이 복원됩니다.",
+        sajuAnalysis: "",
+        sajuTimeline: "",
+        astrologyAnalysis: "",
+        astrologyTransits: "",
+        ziweiAnalysis: "",
+        ziweiLifeStructure: "",
+        crossValidation: "이번 응답에서는 교차 검증 텍스트가 누락되었습니다.",
+        crossValidationMatrix: "",
+        timing: "1~2분 후 같은 세션에서 다시 실행해 주세요.",
+        risk: "일시적 모델 응답 누락",
+        hiddenPattern: "",
+        advice: "재실행 후에도 반복되면 질문 길이를 줄여 다시 시도하세요.",
+        scores: { tarot: 50, saju: 0, astrology: 0, ziwei: 0, overall: 50 },
+        fallback: true,
+      };
+
+      return new Response(JSON.stringify({ reading: emptyFallback }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
+
+    let reading: any;
+    try {
+      const stripped = content.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```$/i, "").trim();
+      const firstBrace = stripped.indexOf("{");
+      const lastBrace = stripped.lastIndexOf("}");
+      const jsonCandidate = firstBrace >= 0 && lastBrace > firstBrace ? stripped.slice(firstBrace, lastBrace + 1) : stripped;
+      reading = JSON.parse(jsonCandidate);
+    } catch {
+      console.error("Parse fail:", content.slice(0, 500));
+      reading = {
+        conclusion: content.slice(0, 500),
+        tarotAnalysis: "모델 응답은 생성되었으나 JSON 구조로 파싱되지 않았습니다.",
+        emotionFlow: "",
+        sajuAnalysis: "",
+        astrologyAnalysis: "",
+        ziweiAnalysis: "",
+        crossValidation: "",
+        risk: "응답 포맷 오류",
+        advice: "같은 질문으로 다시 실행하거나 메모 길이를 줄여보세요.",
+        scores: { tarot: 50, saju: 0, astrology: 0, ziwei: 0, overall: 50 },
+        fallback: true,
+      };
+    }
+
+    reading = {
+      conclusion: reading?.conclusion || "분석 결론이 비어 있어 요약 결과를 반환했습니다.",
+      tarotAnalysis: reading?.tarotAnalysis || "타로 상세 분석이 비어 있습니다.",
+      tarotCardInteraction: reading?.tarotCardInteraction || "",
+      kabbalaAnalysis: reading?.kabbalaAnalysis || "",
+      archetypeAnalysis: reading?.archetypeAnalysis || "",
+      elementalAnalysis: reading?.elementalAnalysis || "",
+      sajuAnalysis: reading?.sajuAnalysis || "",
+      sajuTimeline: reading?.sajuTimeline || "",
+      astrologyAnalysis: reading?.astrologyAnalysis || "",
+      astrologyTransits: reading?.astrologyTransits || "",
+      ziweiAnalysis: reading?.ziweiAnalysis || "",
+      ziweiLifeStructure: reading?.ziweiLifeStructure || "",
+      crossValidation: reading?.crossValidation || "",
+      crossValidationMatrix: reading?.crossValidationMatrix || "",
+      timing: reading?.timing || "",
+      risk: reading?.risk || "분석 중 일부 데이터가 누락되었습니다.",
+      hiddenPattern: reading?.hiddenPattern || "",
+      advice: reading?.advice || "잠시 후 재시도하면 더 풍부한 결과를 얻을 수 있습니다.",
+      scores: {
+        tarot: Number(reading?.scores?.tarot ?? 50),
+        saju: Number(reading?.scores?.saju ?? 0),
+        astrology: Number(reading?.scores?.astrology ?? 0),
+        ziwei: Number(reading?.scores?.ziwei ?? 0),
+        overall: Number(reading?.scores?.overall ?? 50),
+      },
+      fallback: Boolean(reading?.fallback),
+    };
 
     return new Response(JSON.stringify({ reading }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {

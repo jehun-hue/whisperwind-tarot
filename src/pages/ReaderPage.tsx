@@ -239,6 +239,7 @@ export default function ReaderPage() {
 
 function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdate: (s: ReadingSession) => void }) {
   const [analyzing, setAnalyzing] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [counselorComment, setCounselorComment] = useState(session.counselor_comment || "");
   const [savingComment, setSavingComment] = useState(false);
   const [userName, setUserName] = useState(session.user_name || "");
@@ -252,6 +253,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
   useEffect(() => {
     setCounselorComment(session.counselor_comment || "");
     setUserName(session.user_name || "");
+    setAnalysisError(null);
   }, [session.id, session.counselor_comment, session.user_name]);
 
   const saveUserName = async () => {
@@ -280,6 +282,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
     setSavingComment(false);
   };
   const runAIAnalysis = async () => {
+    setAnalysisError(null);
     setAnalyzing(true);
     try {
       // Update status to analyzing
@@ -350,32 +353,35 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       if (fnError) throw fnError;
 
       const result = aiData?.reading;
-      if (result) {
-        await supabase.from("reading_sessions").update({
-          ai_reading: result as any,
-          saju_data: sajuDataForAI as any,
-          tarot_score: result.scores?.tarot || null,
-          saju_score: result.scores?.saju || null,
-          astrology_score: result.scores?.astrology || null,
-          ziwei_score: result.scores?.ziwei || null,
-          final_confidence: result.scores?.overall || null,
-          status: "completed",
-        }).eq("id", session.id);
-
-        onUpdate({
-          ...session,
-          ai_reading: result,
-          saju_data: sajuDataForAI,
-          tarot_score: result.scores?.tarot,
-          saju_score: result.scores?.saju,
-          astrology_score: result.scores?.astrology,
-          ziwei_score: result.scores?.ziwei,
-          final_confidence: result.scores?.overall,
-          status: "completed",
-        });
+      if (!result) {
+        throw new Error("AI 응답이 비어 있습니다. 잠시 후 다시 시도해주세요.");
       }
+
+      await supabase.from("reading_sessions").update({
+        ai_reading: result as any,
+        saju_data: sajuDataForAI as any,
+        tarot_score: result.scores?.tarot || null,
+        saju_score: result.scores?.saju || null,
+        astrology_score: result.scores?.astrology || null,
+        ziwei_score: result.scores?.ziwei || null,
+        final_confidence: result.scores?.overall || null,
+        status: "completed",
+      }).eq("id", session.id);
+
+      onUpdate({
+        ...session,
+        ai_reading: result,
+        saju_data: sajuDataForAI,
+        tarot_score: result.scores?.tarot,
+        saju_score: result.scores?.saju,
+        astrology_score: result.scores?.astrology,
+        ziwei_score: result.scores?.ziwei,
+        final_confidence: result.scores?.overall,
+        status: "completed",
+      });
     } catch (err) {
       console.error("AI analysis error:", err);
+      setAnalysisError(err instanceof Error ? err.message : "분석 중 오류가 발생했습니다.");
       await supabase.from("reading_sessions").update({ status: "error" }).eq("id", session.id);
     } finally {
       setAnalyzing(false);
@@ -754,6 +760,14 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
             )}
           </Button>
         </div>
+      )}
+
+      {analysisError && (
+        <Card className="border-destructive/30 bg-destructive/5">
+          <CardContent className="py-3">
+            <p className="text-xs text-destructive">{analysisError}</p>
+          </CardContent>
+        </Card>
       )}
 
       {/* Saju Analysis */}
