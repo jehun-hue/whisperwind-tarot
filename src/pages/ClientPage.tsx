@@ -28,6 +28,15 @@ const suitLabels: Record<string, string> = {
   Pentacles: "펜타클",
 };
 
+type ReadingStyle = "default" | "choihanna" | "psychological" | "spiritual";
+
+const readingStyleLabels: Record<ReadingStyle, { label: string; description: string; icon: string }> = {
+  default: { label: "기본 통합 분석", description: "타로+사주+점성술+자미두수 교차검증", icon: "🔮" },
+  choihanna: { label: "최한나 스타일", description: "직관적·심리 중심·상대방 감정 깊이 분석", icon: "🌙" },
+  psychological: { label: "심리 분석 중심", description: "무의식 패턴·내면 갈등·성장 포인트 집중", icon: "🧠" },
+  spiritual: { label: "영적 가이드", description: "에너지 흐름·영적 메시지·카르마 해석", icon: "✨" },
+};
+
 type QuestionType = "love" | "career" | "money" | "general";
 
 function classifyQuestion(question: string): QuestionType {
@@ -83,6 +92,7 @@ export default function ClientPage() {
   const [picked, setPicked] = useState<DeckCard[]>([]);
   const [suitFilter, setSuitFilter] = useState("all");
   const [birthInfo, setBirthInfo] = useState<BirthInfo | null>(null);
+  const [readingStyle, setReadingStyle] = useState<ReadingStyle>("default");
   const [sajuResult, setSajuResult] = useState<SajuResult | null>(null);
   const [astroResult, setAstroResult] = useState<AstrologyResult | null>(null);
   const [ziweiResult, setZiweiResult] = useState<ZiWeiResult | null>(null);
@@ -181,7 +191,7 @@ export default function ClientPage() {
       if (dbError) throw dbError;
 
       const { data: aiData, error: fnError } = await supabase.functions.invoke("ai-reading", {
-        body: { question, questionType, memo, cards: cardData, sajuData: sajuDataForAI, birthInfo, astrologyData: astroDataForAI, ziweiData: ziweiDataForAI, combinationSummary },
+        body: { question, questionType, memo, cards: cardData, sajuData: sajuDataForAI, birthInfo, astrologyData: astroDataForAI, ziweiData: ziweiDataForAI, combinationSummary, readingStyle },
       });
 
       if (fnError) throw fnError;
@@ -218,7 +228,7 @@ export default function ClientPage() {
     setPicked([]);
     setSuitFilter("all");
     setBirthInfo(null);
-    setBirthInfo(null);
+    setReadingStyle("default");
     setSajuResult(null);
     setAstroResult(null);
     setZiweiResult(null);
@@ -318,6 +328,34 @@ export default function ClientPage() {
                       className="min-h-[80px] rounded-xl border-border/50 bg-background/50 backdrop-blur text-foreground placeholder:text-muted-foreground/50"
                       placeholder="상황을 자세히 적어주시면 더 정확한 리딩이 가능합니다"
                     />
+                    {/* Reading Style Selector */}
+                    <div className="space-y-2">
+                      <label className="text-xs font-medium text-muted-foreground">해석 스타일</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {(Object.entries(readingStyleLabels) as [ReadingStyle, typeof readingStyleLabels[ReadingStyle]][]).map(([key, style]) => (
+                          <button
+                            key={key}
+                            onClick={() => setReadingStyle(key)}
+                            className={`rounded-xl border p-3 text-left transition-all ${
+                              readingStyle === key
+                                ? "border-gold/60 bg-gold/10 shadow-sm shadow-gold/10"
+                                : "border-border/30 bg-background/30 hover:border-border/50"
+                            }`}
+                          >
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-sm">{style.icon}</span>
+                              <span className={`text-xs font-medium ${readingStyle === key ? "text-gold" : "text-foreground"}`}>
+                                {style.label}
+                              </span>
+                            </div>
+                            <p className="mt-1 text-[10px] leading-tight text-muted-foreground">
+                              {style.description}
+                            </p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
                     {question.trim() && (
                       <div className="flex items-center gap-2">
                         <Badge variant="outline" className="border-gold/30 text-gold text-xs">

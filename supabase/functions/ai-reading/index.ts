@@ -157,6 +157,34 @@ Output ONLY the following JSON. Each field must contain at least 8-15 sentences 
 - saju/ziwei: Score only if internal reference data available (0 otherwise)`,
 };
 
+const readingStyleModifiers: Record<string, string> = {
+  choihanna: `
+## 해석 스타일 오버라이드: 최한나 스타일
+당신은 이제 '최한나' 스타일로 리딩합니다. 다음 특징을 반드시 반영하세요:
+1. **직관적이고 직설적인 어투**: 돌려 말하지 않고 핵심을 바로 짚어주세요. "솔직히 말씀드리면~", "이건 확실해요~" 같은 화법.
+2. **상대방 감정 3층 분석 특화**: 연애/관계 질문 시 상대방의 ①겉으로 보이는 태도 ②실제 감정 ③본인도 모르는 무의식을 분리해서 분석.
+3. **카드 이미지 상징 집중 해석**: 라이더 웨이트 카드의 그림 속 인물 표정, 자세, 배경 요소를 마치 눈앞에서 보여주듯 생생하게 묘사하며 해석.
+4. **현실적이고 구체적인 조언**: "3일 안에 연락하세요", "이번 주 수요일이 타이밍" 같은 구체적 행동 지침.
+5. **감정 흐름 내러티브**: 과거→현재→미래의 감정 변화를 마치 드라마 줄거리를 읽어주듯 서사적으로 전개.
+6. **따뜻하지만 단호한 톤**: 공감하되 필요하면 쓴소리도 하는 선배 같은 어투.`,
+
+  psychological: `
+## 해석 스타일 오버라이드: 심리 분석 중심
+1. **무의식 패턴 집중**: 프로이트/융 심리학 관점에서 카드와 차트의 상징을 해석. 그림자 자아, 아니마/아니무스, 콤플렉스.
+2. **내면 갈등 구조화**: 의식 vs 무의식, 페르소나 vs 진정한 자아의 대립 구조로 분석.
+3. **성장 포인트 제시**: 현재의 문제가 어떤 심리적 성장 과제를 내포하는지 명확히.
+4. **방어기제 분석**: 내담자가 무의식적으로 사용하는 방어기제를 카드/차트에서 읽어내기.
+5. **치유 방향 제시**: 구체적인 내면 작업, 저널링 주제, 명상 테마 등 심리적 성장 도구 제안.`,
+
+  spiritual: `
+## 해석 스타일 오버라이드: 영적 가이드
+1. **에너지 흐름 중심**: 물리적 현실보다 에너지 차원에서 상황을 해석. 차크라, 오라, 에너지 블록.
+2. **카르마/전생 연결**: 현재 상황이 영혼의 여정에서 어떤 의미인지, 카르마적 패턴 해석.
+3. **우주적 타이밍**: 행성 에너지, 달의 위상, 우주적 사이클과 개인 운명의 동기화.
+4. **영적 메시지 채널링**: 카드를 통해 전달되는 높은 차원의 메시지를 직관적으로 전달.
+5. **의식 확장 안내**: 현재 경험이 영적 성장에 어떻게 기여하는지, 의식 상승의 기회로 재해석.`,
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -166,9 +194,11 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const { question, questionType, memo, cards, sajuData, birthInfo, astrologyData, ziweiData, combinationSummary, locale = "kr" } = await req.json();
+    const { question, questionType, memo, cards, sajuData, birthInfo, astrologyData, ziweiData, combinationSummary, locale = "kr", readingStyle = "default" } = await req.json();
 
-    const systemPrompt = systemPrompts[locale] || systemPrompts.kr;
+    const basePrompt = systemPrompts[locale] || systemPrompts.kr;
+    const styleModifier = readingStyleModifiers[readingStyle] || "";
+    const systemPrompt = basePrompt + styleModifier;
 
     const cardDescriptions = cards.map((c: any, idx: number) => {
       const positionLabels: Record<string, string[]> = {
