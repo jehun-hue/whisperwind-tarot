@@ -738,6 +738,19 @@ export default function ClientPage() {
                   </div>
                 </div>
 
+                {/* Submit button - shown after 3 cards selected, above grid */}
+                {picked.length >= 3 && (
+                  <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mt-3">
+                    <Button
+                      className="w-full rounded-xl bg-gradient-to-r from-accent via-gold to-accent text-primary-foreground font-semibold text-base shadow-lg shadow-gold/20 hover:shadow-gold/40 transition-all py-6"
+                      onClick={handleSubmit}
+                    >
+                      <Sparkles className="mr-2 h-5 w-5" />
+                      선택 완료
+                    </Button>
+                  </motion.div>
+                )}
+
                 {/* Card Grid */}
                 <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-6 md:grid-cols-8">
                   {deck.map((card) => {
@@ -782,19 +795,6 @@ export default function ClientPage() {
                       </Badge>
                     ))}
                   </div>
-                )}
-
-                {/* Submit button - shown after 3 cards selected */}
-                {picked.length >= 3 && (
-                  <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mt-2">
-                    <Button
-                      className="w-full rounded-xl bg-gradient-to-r from-accent via-gold to-accent text-primary-foreground font-semibold text-base shadow-lg shadow-gold/20 hover:shadow-gold/40 transition-all py-6"
-                      onClick={handleSubmit}
-                    >
-                      <Sparkles className="mr-2 h-5 w-5" />
-                      선택 완료
-                    </Button>
-                  </motion.div>
                 )}
               </div>
             </motion.div>
