@@ -506,7 +506,7 @@ export default function ReadingResultV3({ reading, isLoading, onReset, children,
                 {showDontList && ag.dont_list && (
                   <div className="space-y-2">
                     <span className="text-xs font-medium text-red-400">❌ 이번 달 DON'T</span>
-                    {(grade === "B" ? ag.dont_list.slice(0, 2) : ag.dont_list).map((item, i) => (
+                    {ag.dont_list.map((item, i) => (
                       <p key={i} className="text-xs text-muted-foreground pl-2">• {item}</p>
                     ))}
                   </div>
