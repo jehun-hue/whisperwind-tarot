@@ -282,6 +282,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
     setSavingComment(false);
   };
   const runAIAnalysis = async () => {
+    setAnalysisError(null);
     setAnalyzing(true);
     try {
       // Update status to analyzing
