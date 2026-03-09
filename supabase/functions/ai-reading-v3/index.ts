@@ -334,11 +334,13 @@ ${gradeInstruction}
 
     let reading: any = null;
     let lastError: string = "";
+    const MAX_RETRIES = 3;
 
-    // Try up to 2 times (1 retry after 3s delay)
-    for (let attempt = 0; attempt < 2; attempt++) {
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
       if (attempt > 0) {
-        await new Promise((r) => setTimeout(r, 3000));
+        const delay = attempt === 1 ? 3000 : 5000;
+        console.log(`Retry ${attempt}/${MAX_RETRIES - 1}: waiting ${delay}ms...`);
+        await new Promise((r) => setTimeout(r, delay));
       }
       try {
         const resp = await fetch(apiUrl, {
@@ -346,6 +348,12 @@ ${gradeInstruction}
           headers: requestHeaders,
           body: JSON.stringify(requestBody),
         });
+
+        if (resp.status === 429) {
+          lastError = "Rate limit exceeded (429)";
+          console.error(`Attempt ${attempt + 1}: 429 rate limited`);
+          continue;
+        }
 
         if (!resp.ok) {
           const errText = await resp.text();
@@ -355,15 +363,7 @@ ${gradeInstruction}
         }
 
         const data = await resp.json();
-        let rawContent: string | undefined;
-
-        if (useGateway) {
-          // OpenAI-compatible format
-          rawContent = data?.choices?.[0]?.message?.content;
-        } else {
-          // Gemini direct format
-          rawContent = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-        }
+        const rawContent = data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
         if (!rawContent) {
           lastError = "Empty response from AI";
@@ -380,7 +380,11 @@ ${gradeInstruction}
     }
 
     if (!reading) {
-      throw new Error(`분석 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요. (${lastError})`);
+      const is429 = lastError.includes("429");
+      const msg = is429
+        ? "서버가 혼잡합니다. 1~2분 후 다시 시도해 주세요."
+        : `분석 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요. (${lastError})`;
+      throw new Error(msg);
     }
 
     return new Response(JSON.stringify({ reading }), {
