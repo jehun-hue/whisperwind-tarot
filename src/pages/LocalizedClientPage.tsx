@@ -109,7 +109,7 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
   const [step, setStep] = useState<"question" | "birthInfo" | "select" | "loading" | "result">("question");
   const [deck, setDeck] = useState<DeckCard[]>(() => {
     const shuffled = [...tarotCards].sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, 25).map((card) => makeDeckCard(card, false, false, false));
+    return shuffled.slice(0, 30).map((card) => makeDeckCard(card, false, false, false));
   });
   const [picked, setPicked] = useState<DeckCard[]>([]);
   const [suitFilter, setSuitFilter] = useState("all");
