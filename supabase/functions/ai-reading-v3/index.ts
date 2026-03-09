@@ -182,8 +182,7 @@ serve(async (req) => {
 
   try {
     const GOOGLE_GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!GOOGLE_GEMINI_API_KEY && !LOVABLE_API_KEY) throw new Error("No AI API key configured");
+    if (!GOOGLE_GEMINI_API_KEY) throw new Error("GOOGLE_GEMINI_API_KEY is not configured");
 
     const {
       question, questionType, memo, cards, sajuData, birthInfo,
@@ -315,62 +314,33 @@ ${gradeInstruction}
   }
 }`;
 
-    // Model selection via Lovable AI Gateway
-    const useGateway = !!LOVABLE_API_KEY;
-
-    const gatewayModel = selectedGrade === "S" || selectedGrade === "A"
-      ? "google/gemini-2.5-pro"
-      : "google/gemini-2.5-flash";
-
     const maxTokens = getMaxTokens(selectedGrade);
-
-    let apiUrl: string;
-    let requestBody: any;
-    let requestHeaders: Record<string, string>;
-
-    if (useGateway) {
-      apiUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
-      requestHeaders = {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-      };
-      requestBody = {
-        model: gatewayModel,
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: userPrompt },
-        ],
+    const directModel = selectedGrade === "S" || selectedGrade === "A"
+      ? "gemini-2.5-pro-preview-06-05"
+      : "gemini-2.0-flash-001";
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${directModel}:generateContent?key=${GOOGLE_GEMINI_API_KEY}`;
+    const requestHeaders: Record<string, string> = { "Content-Type": "application/json" };
+    const requestBody = {
+      contents: [{ parts: [{ text: userPrompt }] }],
+      systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+      generationConfig: {
         temperature: 0.7,
-        top_p: 0.9,
-        max_tokens: maxTokens,
-      };
-    } else {
-      // Fallback to direct Gemini API
-      const directModel = selectedGrade === "S" || selectedGrade === "A"
-        ? "gemini-2.5-pro-preview-06-05"
-        : "gemini-2.0-flash-001";
-      apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${directModel}:generateContent?key=${GOOGLE_GEMINI_API_KEY}`;
-      requestHeaders = { "Content-Type": "application/json" };
-      requestBody = {
-        contents: [{ parts: [{ text: userPrompt }] }],
-        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-        generationConfig: {
-          temperature: 0.7,
-          topP: 0.9,
-          topK: 40,
-          maxOutputTokens: maxTokens,
-          responseMimeType: "application/json",
-        },
-      };
-    }
+        topP: 0.9,
+        topK: 40,
+        maxOutputTokens: maxTokens,
+        responseMimeType: "application/json",
+      },
+    };
 
     let reading: any = null;
     let lastError: string = "";
+    const MAX_RETRIES = 3;
 
-    // Try up to 2 times (1 retry after 3s delay)
-    for (let attempt = 0; attempt < 2; attempt++) {
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
       if (attempt > 0) {
-        await new Promise((r) => setTimeout(r, 3000));
+        const delay = attempt === 1 ? 3000 : 5000;
+        console.log(`Retry ${attempt}/${MAX_RETRIES - 1}: waiting ${delay}ms...`);
+        await new Promise((r) => setTimeout(r, delay));
       }
       try {
         const resp = await fetch(apiUrl, {
@@ -378,6 +348,12 @@ ${gradeInstruction}
           headers: requestHeaders,
           body: JSON.stringify(requestBody),
         });
+
+        if (resp.status === 429) {
+          lastError = "Rate limit exceeded (429)";
+          console.error(`Attempt ${attempt + 1}: 429 rate limited`);
+          continue;
+        }
 
         if (!resp.ok) {
           const errText = await resp.text();
@@ -387,15 +363,7 @@ ${gradeInstruction}
         }
 
         const data = await resp.json();
-        let rawContent: string | undefined;
-
-        if (useGateway) {
-          // OpenAI-compatible format
-          rawContent = data?.choices?.[0]?.message?.content;
-        } else {
-          // Gemini direct format
-          rawContent = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-        }
+        const rawContent = data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
         if (!rawContent) {
           lastError = "Empty response from AI";
@@ -412,7 +380,11 @@ ${gradeInstruction}
     }
 
     if (!reading) {
-      throw new Error(`분석 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요. (${lastError})`);
+      const is429 = lastError.includes("429");
+      const msg = is429
+        ? "서버가 혼잡합니다. 1~2분 후 다시 시도해 주세요."
+        : `분석 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요. (${lastError})`;
+      throw new Error(msg);
     }
 
     return new Response(JSON.stringify({ reading }), {
