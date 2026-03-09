@@ -344,6 +344,9 @@ export default function ReadingResultV2({ reading, isLoading, onReset, hasSaju, 
         </Card>
       )}
 
+      {/* Manual Override */}
+      {children}
+
       {/* Reset */}
       <div className="pt-4 text-center">
         <Button
