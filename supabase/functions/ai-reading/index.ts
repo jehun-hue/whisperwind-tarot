@@ -197,8 +197,8 @@ serve(async (req) => {
   }
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    const GOOGLE_GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
+    if (!GOOGLE_GEMINI_API_KEY) throw new Error("GOOGLE_GEMINI_API_KEY is not configured");
 
     const { question, questionType, memo, cards, sajuData, birthInfo, astrologyData, ziweiData, combinationSummary, locale = "kr", readingStyle = "default" } = await req.json();
 
@@ -282,14 +282,17 @@ ${locale === "jp"
   ? "Based on ALL the above data, perform the highest-quality Tarot + Astrology spiritual reading in English. If Eastern framework data (Saju/Ziwei) is available, use it for internal cross-validation to increase accuracy — reference as 'multi-framework validation' without naming the systems. Every field must contain at least 6 sentences with specific technical evidence." 
   : "위 모든 데이터를 기반으로 4개 체계(타로+사주+점성술+자미두수) 교차 검증 분석을 수행하세요. 모든 필드는 최소 6문장 이상, 기술적 근거를 반드시 명시하세요. 사화(四化)와 대한/소한 데이터가 있으면 반드시 활용하세요."}`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro-preview-06-05:generateContent?key=${GOOGLE_GEMINI_API_KEY}`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-pro",
-        messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }],
-        temperature: 0.72,
-        max_tokens: 8000,
+        contents: [
+          { role: "user", parts: [{ text: systemPrompt + "\n\n" + userPrompt }] },
+        ],
+        generationConfig: {
+          temperature: 0.72,
+          maxOutputTokens: 8000,
+        },
       }),
     });
 
@@ -397,7 +400,7 @@ ${locale === "jp"
     }
 
     const aiResult = await response.json();
-    const content = aiResult.choices?.[0]?.message?.content || "";
+    const content = aiResult.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
     let reading;
     try {
