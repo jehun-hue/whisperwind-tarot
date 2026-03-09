@@ -38,6 +38,7 @@ interface ReadingResultProps {
   isLoading: boolean;
   onReset: () => void;
   hasSaju: boolean;
+  children?: React.ReactNode;
 }
 
 function ScoreBar({ label, score }: { label: string; score: number }) {
