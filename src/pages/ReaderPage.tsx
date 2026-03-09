@@ -239,6 +239,7 @@ export default function ReaderPage() {
 
 function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdate: (s: ReadingSession) => void }) {
   const [analyzing, setAnalyzing] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [counselorComment, setCounselorComment] = useState(session.counselor_comment || "");
   const [savingComment, setSavingComment] = useState(false);
   const [userName, setUserName] = useState(session.user_name || "");
@@ -252,6 +253,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
   useEffect(() => {
     setCounselorComment(session.counselor_comment || "");
     setUserName(session.user_name || "");
+    setAnalysisError(null);
   }, [session.id, session.counselor_comment, session.user_name]);
 
   const saveUserName = async () => {
