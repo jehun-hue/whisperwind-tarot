@@ -246,11 +246,105 @@ ${locale === "jp"
 
     if (!response.ok) {
       const status = response.status;
-      if (status === 429) return new Response(JSON.stringify({ error: locale === "jp" ? "リクエストが多すぎます。しばらくお待ちください。" : locale === "us" ? "Too many requests. Please wait a moment." : "요청이 너무 많습니다. 잠시 후 다시 시도해주세요." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      if (status === 402) return new Response(JSON.stringify({ error: locale === "jp" ? "AIクレジットが不足しています。" : locale === "us" ? "AI credits exhausted. Please add credits." : "AI 크레딧이 부족합니다." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      if (status === 429) {
+        return new Response(
+          JSON.stringify({
+            error:
+              locale === "jp"
+                ? "リクエストが多すぎます。しばらくお待ちください。"
+                : locale === "us"
+                ? "Too many requests. Please wait a moment."
+                : "요청이 너무 많습니다. 잠시 후 다시 시도해주세요.",
+          }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (status === 402) {
+        const cardNames = (cards || [])
+          .slice(0, 3)
+          .map((c: any) => `${c.korean || c.name}${c.isReversed ? (locale === "jp" ? "(逆)" : locale === "us" ? " (Reversed)" : "(역)") : ""}`)
+          .join(", ");
+
+        const creditMessage =
+          locale === "jp"
+            ? "AIクレジットが不足しているため、簡易リーディングで結果を返します。クレジット追加後に再分析すると、より精密な鑑定が可能です。"
+            : locale === "us"
+            ? "AI credits are exhausted, so a quick fallback reading is returned. Add credits and run analysis again for full-depth results."
+            : "AI 크레딧이 부족하여 요약 리딩으로 결과를 제공합니다. 크레딧 충전 후 다시 분석하면 더 정밀한 결과를 받을 수 있습니다.";
+
+        const fallbackReading = {
+          conclusion:
+            locale === "jp"
+              ? `${creditMessage} 현재の3枚は ${cardNames || "選択カード"} で、全体傾向は「焦らず状況整理→優先順位の再設定→行動再開」です。`
+              : locale === "us"
+              ? `${creditMessage} Your three cards (${cardNames || "selected cards"}) suggest a pattern of pause, clarity, then momentum.`
+              : `${creditMessage} 현재 선택된 3장(${cardNames || "선택 카드"})의 흐름은 '정리 → 우선순위 재설정 → 실행'입니다.`,
+          tarotAnalysis:
+            locale === "jp"
+              ? "現状では詳細AI生成が利用できないため、カードの基本象意を中心に解釈します。1枚目は現状認識、2枚目は課題の核、3枚目は結果/方向性を示します。逆位置がある場合、エネルギーの遅延や内面化が強まります。"
+              : locale === "us"
+              ? "Full AI generation is temporarily unavailable, so this is a structured quick interpretation. Card 1 reflects current context, card 2 shows the core friction, and card 3 indicates likely direction. Reversed cards suggest internal delays or blocked expression."
+              : "현재는 상세 AI 생성이 불가하여 카드 기본 상징 중심으로 해석합니다. 1번 카드는 현재 국면, 2번 카드는 핵심 과제, 3번 카드는 결과/방향을 의미합니다. 역방향 카드는 에너지 지연 또는 내면화를 시사합니다.",
+          tarotCardInteraction:
+            locale === "jp"
+              ? "3枚の組み合わせは、短期的には慎重さが必要である一方、中期的には改善余地がある流れです。"
+              : locale === "us"
+              ? "The three-card pattern points to short-term caution with medium-term upside if actions are staged deliberately."
+              : "3장 조합은 단기적으로 신중함이 필요하지만, 중기적으로 개선 여지가 있는 흐름입니다.",
+          sajuAnalysis: "",
+          sajuTimeline: "",
+          astrologyAnalysis: "",
+          astrologyTransits: "",
+          ziweiAnalysis: "",
+          ziweiLifeStructure: "",
+          crossValidation:
+            locale === "jp"
+              ? "現在は簡易モードのため、交差検証の深度は限定的です。"
+              : locale === "us"
+              ? "Cross-validation depth is limited in fallback mode."
+              : "현재는 요약 모드로 교차 검증 깊이가 제한됩니다.",
+          crossValidationMatrix: "",
+          timing:
+            locale === "jp"
+              ? "今後1〜2週間は情報整理、3〜6週間は優先順位に沿った実行を推奨します。"
+              : locale === "us"
+              ? "Use weeks 1-2 for clarity and planning, then weeks 3-6 for focused execution."
+              : "향후 1~2주는 정리, 3~6주는 우선순위 기반 실행을 권장합니다.",
+          risk:
+            locale === "jp"
+              ? "不安による過剰判断と連絡タイミングの焦りに注意してください。"
+              : locale === "us"
+              ? "Watch for anxiety-driven overreactions and rushed communication timing."
+              : "불안 기반의 과잉 판단과 성급한 연락 타이밍을 주의하세요.",
+          hiddenPattern:
+            locale === "jp"
+              ? "同じ反応パターンを繰り返しやすいため、記録して客観視すると改善が早まります。"
+              : locale === "us"
+              ? "A repeating reaction loop may be running; journaling decisions can break the cycle faster."
+              : "반복되는 반응 패턴이 보이므로 기록 기반 점검이 개선 속도를 높입니다.",
+          advice:
+            locale === "jp"
+              ? "最優先は1つに絞り、今日できる小さな行動を実行してください。重要な連絡は一晩 두고 문장을 정리한 뒤 보내세요。"
+              : locale === "us"
+              ? "Pick one priority only and take one concrete action today. For important communication, draft first and send after a cooling-off review."
+              : "우선순위를 1개로 압축하고 오늘 실행 가능한 작은 행동 1가지를 진행하세요. 중요한 연락은 초안 작성 후 하루 뒤 점검해 보내세요.",
+          scores: { tarot: 62, saju: 0, astrology: 0, ziwei: 0, overall: 58 },
+          fallback: true,
+        };
+
+        return new Response(JSON.stringify({ reading: fallbackReading, warning: creditMessage }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       const t = await response.text();
       console.error("AI error:", status, t);
-      return new Response(JSON.stringify({ error: locale === "jp" ? "AI分析エラー" : locale === "us" ? "AI analysis error" : "AI 분석 오류" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(
+        JSON.stringify({ error: locale === "jp" ? "AI分析エラー" : locale === "us" ? "AI analysis error" : "AI 분석 오류" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const aiResult = await response.json();
