@@ -9,6 +9,9 @@ interface AIReadingResult {
   conclusion: string;
   tarotAnalysis: string;
   tarotCardInteraction?: string;
+  kabbalaAnalysis?: string;
+  archetypeAnalysis?: string;
+  elementalAnalysis?: string;
   sajuAnalysis: string;
   sajuTimeline?: string;
   astrologyAnalysis: string;
