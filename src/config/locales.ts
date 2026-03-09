@@ -288,6 +288,8 @@ export const localeConfigs: Record<Locale, LocaleConfig> = {
     nextButton: "Continue",
     birthTitle: "Birth Information",
     birthSubtitle: "Enter your birth details for a deeper astrological reading",
+    nameLabel: "Name",
+    namePlaceholder: "Enter your name (optional)",
     genderLabel: "Gender",
     genderOptions: { male: "👨 Male", female: "👩 Female" },
     birthDateLabel: "Date of Birth",
