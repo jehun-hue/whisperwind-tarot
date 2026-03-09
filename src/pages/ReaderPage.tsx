@@ -220,13 +220,27 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
   const [analyzing, setAnalyzing] = useState(false);
   const [counselorComment, setCounselorComment] = useState(session.counselor_comment || "");
   const [savingComment, setSavingComment] = useState(false);
+  const [userName, setUserName] = useState(session.user_name || "");
+  const [savingName, setSavingName] = useState(false);
   const qType = session.question_type;
   const reading = session.ai_reading;
   const saju = session.saju_data;
 
   useEffect(() => {
     setCounselorComment(session.counselor_comment || "");
-  }, [session.id, session.counselor_comment]);
+    setUserName(session.user_name || "");
+  }, [session.id, session.counselor_comment, session.user_name]);
+
+  const saveUserName = async () => {
+    setSavingName(true);
+    const value = userName.trim() || null;
+    const { error } = await supabase
+      .from("reading_sessions")
+      .update({ user_name: value })
+      .eq("id", session.id);
+    if (!error) onUpdate({ ...session, user_name: value });
+    setSavingName(false);
+  };
 
   const saveCounselorComment = async () => {
     setSavingComment(true);
