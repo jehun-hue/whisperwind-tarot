@@ -140,6 +140,9 @@ export default function ClientPage() {
   const [birthMonth, setBirthMonth] = useState("");
   const [birthDay, setBirthDay] = useState("");
   const [birthTime, setBirthTime] = useState("unknown");
+  const [birthHourInput, setBirthHourInput] = useState("");
+  const [birthMinInput, setBirthMinInput] = useState("");
+  const [birthAmPm, setBirthAmPm] = useState<"am" | "pm">("am");
   const [gender, setGender] = useState<"male" | "female">("female");
   const [isLunar, setIsLunar] = useState(false);
   const [isLeapMonth, setIsLeapMonth] = useState(false);
