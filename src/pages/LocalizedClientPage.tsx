@@ -86,8 +86,8 @@ const seoData: Record<Locale, { title: string; description: string }> = {
     description: "타로, 사주, 점성술, 자미두수를 결합한 교차 검증 점술 상담. 깊이 있는 리딩으로 당신의 질문에 답합니다.",
   },
   jp: {
-    title: "AI占いリーディング — タロット＋占星術の総合鑑定",
-    description: "タロットと西洋占星術を組み合わせたAI占いリーディング。あなたの心に寄り添う優しい鑑定をお届けします。",
+    title: "占いリーディング — タロット＋占星術の総合鑑定",
+    description: "タロットと西洋占星術を組み合わせた占いリーディング。あなたの心に寄り添う優しい鑑定をお届けします。",
   },
   us: {
     title: "AI Spiritual Reading — Tarot + Astrology Cosmic Guidance",
