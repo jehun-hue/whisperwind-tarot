@@ -398,7 +398,7 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                   </p>
                   <h2 className="mt-1 text-2xl font-semibold text-foreground"
                       style={{ fontFamily: config.displayFont }}>
-                    {config.locale === "kr" ? "마음이 끌리는 카드 3장을 선택하세요" : config.locale === "jp" ? "心が惹かれるカードを3枚選んでください" : "Choose 3 cards that call to you"}
+                    {config.locale === "kr" ? (<>마음이 끌리는<br />카드 3장을 선택하세요</>) : config.locale === "jp" ? (<>心が惹かれるカードを<br />3枚選んでください</>) : (<>Choose 3 cards<br />that call to you</>)}
                   </h2>
                   <div className="mt-4 flex items-center justify-center gap-3">
                     {[0, 1, 2].map((i) => {
