@@ -38,6 +38,7 @@ interface ReadingResultProps {
   isLoading: boolean;
   onReset: () => void;
   hasSaju: boolean;
+  children?: React.ReactNode;
 }
 
 function ScoreBar({ label, score }: { label: string; score: number }) {
@@ -59,7 +60,7 @@ function ScoreBar({ label, score }: { label: string; score: number }) {
   );
 }
 
-export default function ReadingResult({ reading, isLoading, onReset, hasSaju }: ReadingResultProps) {
+export default function ReadingResult({ reading, isLoading, onReset, hasSaju, children }: ReadingResultProps) {
   if (isLoading) {
     return (
       <motion.div
@@ -162,6 +163,9 @@ export default function ReadingResult({ reading, isLoading, onReset, hasSaju }: 
           </Card>
         </motion.div>
       ))}
+
+      {/* Saju Manual Override */}
+      {children}
 
       {/* Reset */}
       <div className="pt-4 text-center">

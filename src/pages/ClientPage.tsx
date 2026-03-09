@@ -10,11 +10,13 @@ import { tarotCards, makeDeckCard, type DeckCard } from "@/data/tarotCards";
 import { calculateSaju, getSajuTarotCrossKeywords, getSajuForQuestion, type SajuResult } from "@/lib/saju";
 import { calculateNatalChart, getAstrologyForQuestion, getCurrentTransits, type AstrologyResult } from "@/lib/astrology";
 import { calculateZiWei, getZiWeiForQuestion, type ZiWeiResult } from "@/lib/ziwei";
+import { calculateManseryeokSaju, type ManseryeokResult } from "@/lib/manseryeokCalc";
 import { getCombinationSummary } from "@/data/tarotCombinations";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import BirthInfoForm, { type BirthInfo } from "@/components/BirthInfoForm";
 import ReadingResult from "@/components/ReadingResult";
+import SajuManualOverride from "@/components/SajuManualOverride";
 import UserHeader from "@/components/UserHeader";
 import heroBg from "@/assets/tarot-hero-bg.jpg";
 import cardBackImg from "@/assets/card-back.png";
@@ -94,9 +96,11 @@ export default function ClientPage() {
   const [birthInfo, setBirthInfo] = useState<BirthInfo | null>(null);
   const [readingStyle, setReadingStyle] = useState<ReadingStyle>("default");
   const [sajuResult, setSajuResult] = useState<SajuResult | null>(null);
+  const [manseryeokResult, setManseryeokResult] = useState<ManseryeokResult | null>(null);
   const [astroResult, setAstroResult] = useState<AstrologyResult | null>(null);
   const [ziweiResult, setZiweiResult] = useState<ZiWeiResult | null>(null);
   const [aiReading, setAiReading] = useState<any>(null);
+  const [manualSajuData, setManualSajuData] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const questionType = useMemo(() => classifyQuestion(question), [question]);
@@ -119,6 +123,17 @@ export default function ClientPage() {
     setBirthInfo(info);
     const [y, m, d] = info.birthDate.split("-").map(Number);
     const hour = info.birthTime ? parseInt(info.birthTime.split(":")[0]) : 12;
+    const minute = info.birthTime ? parseInt(info.birthTime.split(":")[1]) : 0;
+    
+    // Manseryeok auto-calculation
+    try {
+      const msResult = calculateManseryeokSaju(y, m, d, hour, minute, info.isLunar);
+      setManseryeokResult(msResult);
+    } catch (e) {
+      console.error("Manseryeok calculation error:", e);
+      setManseryeokResult(null);
+    }
+    
     const saju = calculateSaju(y, m, d, hour);
     setSajuResult(saju);
     const astro = calculateNatalChart(y, m, d, hour);
@@ -131,6 +146,7 @@ export default function ClientPage() {
   const handleBirthInfoSkip = () => {
     setBirthInfo(null);
     setSajuResult(null);
+    setManseryeokResult(null);
     setAstroResult(null);
     setZiweiResult(null);
     setStep("select");
@@ -191,7 +207,12 @@ export default function ClientPage() {
       if (dbError) throw dbError;
 
       const { data: aiData, error: fnError } = await supabase.functions.invoke("ai-reading", {
-        body: { question, questionType, memo, cards: cardData, sajuData: sajuDataForAI, birthInfo, astrologyData: astroDataForAI, ziweiData: ziweiDataForAI, combinationSummary, readingStyle },
+        body: {
+          question, questionType, memo, cards: cardData, sajuData: sajuDataForAI, birthInfo,
+          astrologyData: astroDataForAI, ziweiData: ziweiDataForAI, combinationSummary, readingStyle,
+          manseryeokData: manseryeokResult,
+          forcetellData: manualSajuData.trim() || null,
+        },
       });
 
       if (fnError) throw fnError;
@@ -230,6 +251,7 @@ export default function ClientPage() {
     setBirthInfo(null);
     setReadingStyle("default");
     setSajuResult(null);
+    setManseryeokResult(null);
     setAstroResult(null);
     setZiweiResult(null);
     setAiReading(null);
@@ -395,28 +417,19 @@ export default function ClientPage() {
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.5 }}
             >
-              {/* Saju summary (if available) */}
-              {sajuResult && (
+              {/* Saju auto-calculated (hidden from UI, data only for AI) */}
+              {manseryeokResult && (
                 <Card className="mb-6 border-border/50 bg-card/80 backdrop-blur-xl">
                   <CardContent className="p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xs font-display italic text-gold">saju analysis</span>
-                      <Badge variant="outline" className="border-gold/30 text-gold text-[10px]">
-                        {sajuResult.strength}
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-display italic text-gold">✦ 출생 데이터 분석 준비 완료</span>
+                      <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 text-[10px]">
+                        적용됨
                       </Badge>
                     </div>
-                    <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                      <span>일간: {sajuResult.ilgan}({sajuResult.ilganElement})</span>
-                      <span>•</span>
-                      <span>용신: {sajuResult.yongsin}</span>
-                      <span>•</span>
-                      <span>
-                        {sajuResult.yearPillar.cheongan}{sajuResult.yearPillar.jiji} /
-                        {sajuResult.monthPillar.cheongan}{sajuResult.monthPillar.jiji} /
-                        {sajuResult.dayPillar.cheongan}{sajuResult.dayPillar.jiji} /
-                        {sajuResult.hourPillar.cheongan}{sajuResult.hourPillar.jiji}
-                      </span>
-                    </div>
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      입력하신 출생 정보를 기반으로 정밀 분석 데이터가 자동 생성되었습니다.
+                    </p>
                   </CardContent>
                 </Card>
               )}
@@ -578,7 +591,14 @@ export default function ClientPage() {
                   isLoading={step === "loading"}
                   onReset={resetAll}
                   hasSaju={!!sajuResult}
-                />
+                >
+                  {birthInfo && (
+                    <SajuManualOverride
+                      manualData={manualSajuData}
+                      onManualDataChange={setManualSajuData}
+                    />
+                  )}
+                </ReadingResult>
               )}
             </motion.div>
           )}

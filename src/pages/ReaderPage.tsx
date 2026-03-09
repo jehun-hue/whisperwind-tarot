@@ -10,6 +10,7 @@ import { calculateSaju, getSajuTarotCrossKeywords, getSajuForQuestion } from "@/
 import { calculateNatalChart, getAstrologyForQuestion, getCurrentTransits } from "@/lib/astrology";
 import { calculateZiWei, getZiWeiForQuestion } from "@/lib/ziwei";
 import { getCombinationSummary } from "@/data/tarotCombinations";
+import { calculateManseryeokSaju } from "@/lib/manseryeokCalc";
 
 const READER_PIN = "1234";
 
@@ -301,11 +302,20 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       let astroDataForAI = null;
       let ziweiDataForAI = null;
       let sajuDataForAI = saju;
+      let manseryeokDataForAI = null;
 
       if (birthInfo && birthInfo.birthDate) {
         try {
           const [y, m, d] = birthInfo.birthDate.split("-").map(Number);
           const hour = birthInfo.birthTime ? parseInt(birthInfo.birthTime.split(":")[0]) : 12;
+          const minute = birthInfo.birthTime ? parseInt(birthInfo.birthTime.split(":")[1]) : 0;
+
+          // Manseryeok auto-calculation
+          try {
+            manseryeokDataForAI = calculateManseryeokSaju(y, m, d, hour, minute, birthInfo.isLunar as boolean);
+          } catch (e) {
+            console.error("Manseryeok calc error:", e);
+          }
 
           if (!sajuDataForAI) {
             const sajuResult = calculateSaju(y, m, d, hour);
@@ -347,6 +357,8 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
           ziweiData: ziweiDataForAI,
           combinationSummary,
           locale: "kr",
+          manseryeokData: manseryeokDataForAI,
+          forcetellData: forcetellData.trim() || null,
         },
       });
 
@@ -405,11 +417,20 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       let astroDataForAI = null;
       let ziweiDataForAI = null;
       let sajuDataForAI = saju;
+      let manseryeokDataForAI = null;
 
       if (birthInfo && birthInfo.birthDate) {
         try {
           const [y, m, d] = birthInfo.birthDate.split("-").map(Number);
           const hour = birthInfo.birthTime ? parseInt(birthInfo.birthTime.split(":")[0]) : 12;
+          const minute = birthInfo.birthTime ? parseInt(birthInfo.birthTime.split(":")[1]) : 0;
+
+          // Manseryeok auto-calculation
+          try {
+            manseryeokDataForAI = calculateManseryeokSaju(y, m, d, hour, minute, birthInfo.isLunar as boolean);
+          } catch (e) {
+            console.error("Manseryeok V2 calc error:", e);
+          }
 
           if (!sajuDataForAI) {
             const sajuResult = calculateSaju(y, m, d, hour);
@@ -451,6 +472,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
           ziweiData: ziweiDataForAI,
           combinationSummary,
           forcetellData: forcetellData.trim() || null,
+          manseryeokData: manseryeokDataForAI,
         },
       });
 
@@ -681,43 +703,52 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
         </CardContent>
       </Card>
 
-      {/* Forceteller Saju Data Input */}
+      {/* Saju Data Section */}
       {session.birth_date && (
         <Card className="border-border bg-card">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base text-foreground">🔮 포스텔러 사주 데이터</CardTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowForcetellInput(!showForcetellInput)}
-                className="text-xs text-muted-foreground"
-              >
-                {showForcetellInput ? "접기" : "펼치기"}
-              </Button>
+              <CardTitle className="text-base text-foreground">🔮 사주 데이터</CardTitle>
+              <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 text-[10px]">
+                자동 계산 적용
+              </Badge>
             </div>
           </CardHeader>
-          {showForcetellInput && (
-            <CardContent className="space-y-2">
-              <p className="text-xs text-muted-foreground">
-                포스텔러(pro.forceteller.com)에서 확인한 사주 데이터를 붙여넣으세요. 
-                사주팔자, 십신, 오행 비율, 신강/신약, 합충 등의 정보를 포함하면 더 정밀한 분석이 가능합니다.
-              </p>
-              <Textarea
-                value={forcetellData}
-                onChange={(e) => setForcetellData(e.target.value.slice(0, 3000))}
-                className="min-h-[120px] border-border bg-secondary text-xs font-mono"
-                placeholder={`예시:
-연주: 갑자(甲子) / 월주: 정묘(丁卯) / 일주: 임오(壬午) / 시주: 경술(庚戌)
-일간: 임수(壬水), 신약
-오행: 목2 화3 토1 금1 수1
-십신: 편인 정관 비견 편재
-용신: 금(金)
-합충: 자오충, 묘술합`}
-              />
-              <p className="text-[10px] text-muted-foreground">{forcetellData.length}/3000자</p>
-            </CardContent>
-          )}
+          <CardContent className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              출생 정보를 기반으로 만세력 라이브러리가 사주를 자동 계산합니다.
+            </p>
+            <div className="mt-2">
+              <button
+                onClick={() => setShowForcetellInput(!showForcetellInput)}
+                className="text-xs text-muted-foreground/70 hover:text-muted-foreground underline underline-offset-2 decoration-dashed transition-colors"
+              >
+                사주 결과가 다르게 느껴지시나요? {showForcetellInput ? "▲" : "▼"}
+              </button>
+            </div>
+            {showForcetellInput && (
+              <div className="space-y-2 pt-2">
+                <p className="text-xs text-muted-foreground">
+                  포스텔러 만세력에서 확인한 결과를 붙여넣어 주세요. 수동 입력값이 있으면 자동 계산 대신 이 데이터를 사용합니다.
+                </p>
+                <a
+                  href="https://pro.forceteller.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary px-3 py-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  🔗 포스텔러 바로가기
+                </a>
+                <Textarea
+                  value={forcetellData}
+                  onChange={(e) => setForcetellData(e.target.value.slice(0, 3000))}
+                  className="min-h-[120px] border-border bg-secondary text-xs font-mono"
+                  placeholder={`예시:\n연주: 갑자(甲子) / 월주: 정묘(丁卯) / 일주: 임오(壬午) / 시주: 경술(庚戌)\n일간: 임수(壬水), 신약\n오행: 목2 화3 토1 금1 수1\n용신: 금(金)\n합충: 자오충, 묘술합`}
+                />
+                <p className="text-[10px] text-muted-foreground">{forcetellData.length}/3000자</p>
+              </div>
+            )}
+          </CardContent>
         </Card>
       )}
 
