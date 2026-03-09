@@ -182,7 +182,8 @@ serve(async (req) => {
 
   try {
     const GOOGLE_GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
-    if (!GOOGLE_GEMINI_API_KEY) throw new Error("GOOGLE_GEMINI_API_KEY is not configured");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!GOOGLE_GEMINI_API_KEY && !LOVABLE_API_KEY) throw new Error("No AI API key configured");
 
     const {
       question, questionType, memo, cards, sajuData, birthInfo,
@@ -314,26 +315,54 @@ ${gradeInstruction}
   }
 }`;
 
-    // Model selection: C,B → flash, A,S → pro
-    const model = selectedGrade === "S" || selectedGrade === "A"
-      ? "gemini-2.5-pro-preview-06-05"
-      : "gemini-2.0-flash-001";
+    // Model selection via Lovable AI Gateway
+    const useGateway = !!LOVABLE_API_KEY;
+
+    const gatewayModel = selectedGrade === "S" || selectedGrade === "A"
+      ? "google/gemini-2.5-pro"
+      : "google/gemini-2.5-flash";
 
     const maxTokens = getMaxTokens(selectedGrade);
 
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GOOGLE_GEMINI_API_KEY}`;
+    let apiUrl: string;
+    let requestBody: any;
+    let requestHeaders: Record<string, string>;
 
-    const geminiBody = {
-      contents: [{ parts: [{ text: userPrompt }] }],
-      systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-      generationConfig: {
+    if (useGateway) {
+      apiUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
+      requestHeaders = {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+      };
+      requestBody = {
+        model: gatewayModel,
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: userPrompt },
+        ],
         temperature: 0.7,
-        topP: 0.9,
-        topK: 40,
-        maxOutputTokens: maxTokens,
-        responseMimeType: "application/json",
-      },
-    };
+        top_p: 0.9,
+        max_tokens: maxTokens,
+      };
+    } else {
+      // Fallback to direct Gemini API
+      const directModel = selectedGrade === "S" || selectedGrade === "A"
+        ? "gemini-2.5-pro-preview-06-05"
+        : "gemini-2.0-flash-001";
+      apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${directModel}:generateContent?key=${GOOGLE_GEMINI_API_KEY}`;
+      requestHeaders = { "Content-Type": "application/json" };
+      requestBody = {
+        contents: [{ parts: [{ text: userPrompt }] }],
+        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        generationConfig: {
+          temperature: 0.7,
+          topP: 0.9,
+          topK: 40,
+          maxOutputTokens: maxTokens,
+          responseMimeType: "application/json",
+        },
+      };
+    }
 
     let reading: any = null;
     let lastError: string = "";
@@ -346,19 +375,28 @@ ${gradeInstruction}
       try {
         const resp = await fetch(apiUrl, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(geminiBody),
+          headers: requestHeaders,
+          body: JSON.stringify(requestBody),
         });
 
         if (!resp.ok) {
           const errText = await resp.text();
-          lastError = `Gemini API error: ${resp.status} - ${errText.slice(0, 300)}`;
+          lastError = `API error: ${resp.status} - ${errText.slice(0, 300)}`;
           console.error(`Attempt ${attempt + 1} failed:`, lastError);
           continue;
         }
 
         const data = await resp.json();
-        const rawContent = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        let rawContent: string | undefined;
+
+        if (useGateway) {
+          // OpenAI-compatible format
+          rawContent = data?.choices?.[0]?.message?.content;
+        } else {
+          // Gemini direct format
+          rawContent = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        }
+
         if (!rawContent) {
           lastError = "Empty response from AI";
           console.error(`Attempt ${attempt + 1}: empty response`);
