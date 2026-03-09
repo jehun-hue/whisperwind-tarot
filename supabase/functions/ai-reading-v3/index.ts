@@ -315,22 +315,9 @@ ${gradeInstruction}
 }`;
 
     const maxTokens = getMaxTokens(selectedGrade);
-    const directModel = selectedGrade === "S" || selectedGrade === "A"
-      ? "gemini-2.5-pro"
-      : "gemini-2.0-flash-001";
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${directModel}:generateContent?key=${GOOGLE_GEMINI_API_KEY}`;
-    const requestHeaders: Record<string, string> = { "Content-Type": "application/json" };
-    const requestBody = {
-      contents: [{ parts: [{ text: userPrompt }] }],
-      systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-      generationConfig: {
-        temperature: 0.7,
-        topP: 0.9,
-        topK: 40,
-        maxOutputTokens: maxTokens,
-        responseMimeType: "application/json",
-      },
-    };
+    const gatewayModel = selectedGrade === "S" || selectedGrade === "A"
+      ? "google/gemini-2.5-pro"
+      : "google/gemini-2.5-flash";
 
     let reading: any = null;
     let lastError: string = "";
@@ -343,10 +330,21 @@ ${gradeInstruction}
         await new Promise((r) => setTimeout(r, delay));
       }
       try {
-        const resp = await fetch(apiUrl, {
+        const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
-          headers: requestHeaders,
-          body: JSON.stringify(requestBody),
+          headers: {
+            "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: gatewayModel,
+            messages: [
+              { role: "system", content: SYSTEM_PROMPT },
+              { role: "user", content: userPrompt },
+            ],
+            temperature: 0.7,
+            max_tokens: maxTokens,
+          }),
         });
 
         if (resp.status === 429) {
