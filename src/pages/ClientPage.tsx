@@ -275,10 +275,8 @@ export default function ClientPage() {
 
       if (dbError) throw dbError;
 
-      // Choose edge function based on grade
-      const fnName = selectedGrade === "S" || selectedGrade === "A" ? "ai-reading-v2" : "ai-reading";
-
-      const { data: aiData, error: fnError } = await supabase.functions.invoke(fnName, {
+      // Always use v3 edge function
+      const { data: aiData, error: fnError } = await supabase.functions.invoke("ai-reading-v3", {
         body: {
           question, questionType, memo,
           cards: cardData, sajuData: sajuDataForAI, birthInfo,
@@ -297,11 +295,9 @@ export default function ClientPage() {
       setAiReading(reading);
 
       if (session?.id && reading) {
-        const grade = reading.final_reading?.grade || reading.scores?.overall ? "v1" : "C";
-        const overallScore = reading.final_reading?.grade === "S" ? 97 : reading.final_reading?.grade === "A" ? 89 : reading.scores?.overall || 70;
         await supabase.from("reading_sessions").update({
           ai_reading: reading as any,
-          final_confidence: overallScore,
+          final_confidence: reading.convergence?.converged_count ? Math.round((reading.convergence.converged_count / 6) * 100) : 70,
           status: "completed",
         }).eq("id", session.id);
       }
