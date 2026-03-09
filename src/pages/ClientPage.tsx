@@ -522,6 +522,7 @@ export default function ClientPage() {
                         <button
                           onClick={() => {
                             setBirthAmPm("am");
+                            if (birthTime === "unknown") setBirthTime("");
                             if (birthHourInput) {
                               const h = parseInt(birthHourInput, 10);
                               if (!isNaN(h) && h >= 0 && h <= 12) {
@@ -539,6 +540,7 @@ export default function ClientPage() {
                         <button
                           onClick={() => {
                             setBirthAmPm("pm");
+                            if (birthTime === "unknown") setBirthTime("");
                             if (birthHourInput) {
                               const h = parseInt(birthHourInput, 10);
                               if (!isNaN(h) && h >= 0 && h <= 12) {
