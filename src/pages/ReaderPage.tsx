@@ -452,7 +452,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
   @media print { body { padding:20px; } }
 </style></head><body>
   <div class="header">
-    <h1>AI 통합 점술 상담 분석 결과</h1>
+    <h1>통합 점술 상담 분석 결과</h1>
     <div class="meta">${new Date(session.created_at).toLocaleString("ko-KR")}</div>
     <div>
       <span class="badge">${qLabel}</span>
