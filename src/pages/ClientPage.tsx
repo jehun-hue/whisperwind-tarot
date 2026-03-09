@@ -741,11 +741,15 @@ export default function ClientPage() {
             <motion.div key="result" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               {error ? (
                 <Card className="border-destructive/30 bg-card/80 backdrop-blur-xl">
-                  <CardContent className="py-10 px-8 text-center">
-                    <div className="mb-4 text-3xl">⚠️</div>
-                    <h2 className="font-display text-xl font-semibold text-foreground">분석 중 오류 발생</h2>
-                    <p className="mt-3 text-sm text-muted-foreground">{error}</p>
-                    <Button variant="secondary" className="mt-6 rounded-full" onClick={resetAll}>다시 시작하기</Button>
+                  <CardContent className="py-10 px-8 text-center space-y-4">
+                    <div className="mb-2 text-3xl">⚠️</div>
+                    <h2 className="font-display text-xl font-semibold text-foreground">분석 중 오류가 발생했습니다</h2>
+                    <p className="text-sm text-muted-foreground">잠시 후 다시 시도해 주세요.</p>
+                    <p className="text-xs text-muted-foreground/60">{error}</p>
+                    <div className="flex gap-3 justify-center pt-2">
+                      <Button variant="secondary" className="rounded-full" onClick={handleSubmit}>다시 시도</Button>
+                      <Button variant="ghost" className="rounded-full" onClick={resetAll}>처음으로</Button>
+                    </div>
                   </CardContent>
                 </Card>
               ) : (
