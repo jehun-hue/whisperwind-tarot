@@ -9,6 +9,9 @@ interface AIReadingResult {
   conclusion: string;
   tarotAnalysis: string;
   tarotCardInteraction?: string;
+  kabbalaAnalysis?: string;
+  archetypeAnalysis?: string;
+  elementalAnalysis?: string;
   sajuAnalysis: string;
   sajuTimeline?: string;
   astrologyAnalysis: string;
@@ -86,6 +89,9 @@ export default function ReadingResult({ reading, isLoading, onReset, hasSaju }: 
     { title: "✦ 최종 결론", content: reading.conclusion, accent: true },
     { title: "🃏 타로 분석", content: reading.tarotAnalysis },
     ...(reading.tarotCardInteraction ? [{ title: "🔗 카드 상호작용", content: reading.tarotCardInteraction }] : []),
+    ...(reading.kabbalaAnalysis ? [{ title: "🌳 카발라 / 생명의 나무", content: reading.kabbalaAnalysis }] : []),
+    ...(reading.archetypeAnalysis ? [{ title: "🎭 융 아키타입 분석", content: reading.archetypeAnalysis }] : []),
+    ...(reading.elementalAnalysis ? [{ title: "🌊 원소/계절 에너지", content: reading.elementalAnalysis }] : []),
     ...(hasSaju
       ? [
           { title: "🔮 사주 분석", content: reading.sajuAnalysis },
