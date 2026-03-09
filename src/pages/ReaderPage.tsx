@@ -10,6 +10,7 @@ import { calculateSaju, getSajuTarotCrossKeywords, getSajuForQuestion } from "@/
 import { calculateNatalChart, getAstrologyForQuestion, getCurrentTransits } from "@/lib/astrology";
 import { calculateZiWei, getZiWeiForQuestion } from "@/lib/ziwei";
 import { getCombinationSummary } from "@/data/tarotCombinations";
+import { calculateManseryeokSaju } from "@/lib/manseryeokCalc";
 
 const READER_PIN = "1234";
 
