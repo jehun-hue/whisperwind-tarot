@@ -88,6 +88,7 @@ export type Database = {
           tarot_score: number | null
           updated_at: string
           user_id: string | null
+          user_name: string | null
           ziwei_score: number | null
         }
         Insert: {
@@ -112,6 +113,7 @@ export type Database = {
           tarot_score?: number | null
           updated_at?: string
           user_id?: string | null
+          user_name?: string | null
           ziwei_score?: number | null
         }
         Update: {
@@ -136,6 +138,7 @@ export type Database = {
           tarot_score?: number | null
           updated_at?: string
           user_id?: string | null
+          user_name?: string | null
           ziwei_score?: number | null
         }
         Relationships: []

@@ -50,6 +50,7 @@ interface ReadingSession {
   final_confidence: number | null;
   status: string;
   created_at: string;
+  user_name: string | null;
 }
 
 export default function ReaderPage() {
@@ -152,9 +153,9 @@ export default function ReaderPage() {
                 >
                   <div className="flex items-start justify-between">
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
+                       <div className="flex items-center gap-2">
                         <div className="truncate text-sm font-medium text-foreground">
-                          {s.question || "질문 없음"}
+                          {s.user_name ? `[${s.user_name}] ` : ""}{s.question || "질문 없음"}
                         </div>
                         {s.status === "pending" && (
                           <Badge variant="outline" className="text-[9px] border-yellow-500/30 text-yellow-400 shrink-0">
@@ -219,13 +220,27 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
   const [analyzing, setAnalyzing] = useState(false);
   const [counselorComment, setCounselorComment] = useState(session.counselor_comment || "");
   const [savingComment, setSavingComment] = useState(false);
+  const [userName, setUserName] = useState(session.user_name || "");
+  const [savingName, setSavingName] = useState(false);
   const qType = session.question_type;
   const reading = session.ai_reading;
   const saju = session.saju_data;
 
   useEffect(() => {
     setCounselorComment(session.counselor_comment || "");
-  }, [session.id, session.counselor_comment]);
+    setUserName(session.user_name || "");
+  }, [session.id, session.counselor_comment, session.user_name]);
+
+  const saveUserName = async () => {
+    setSavingName(true);
+    const value = userName.trim() || null;
+    const { error } = await supabase
+      .from("reading_sessions")
+      .update({ user_name: value })
+      .eq("id", session.id);
+    if (!error) onUpdate({ ...session, user_name: value });
+    setSavingName(false);
+  };
 
   const saveCounselorComment = async () => {
     setSavingComment(true);
@@ -452,6 +467,24 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
 
   return (
     <div className="space-y-4">
+      {/* Customer Name */}
+      <Card className="border-border bg-card">
+        <CardContent className="p-5">
+          <div className="text-sm font-medium text-muted-foreground mb-2">고객 이름</div>
+          <div className="flex gap-2">
+            <Input
+              value={userName}
+              onChange={(e) => setUserName(e.target.value)}
+              placeholder="고객 이름을 입력하세요"
+              className="flex-1"
+            />
+            <Button size="sm" onClick={saveUserName} disabled={savingName}>
+              {savingName ? "저장중..." : "저장"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Question & Birth info */}
       <Card className="border-border bg-card">
         <CardContent className="p-5">
