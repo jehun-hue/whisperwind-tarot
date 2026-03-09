@@ -7,6 +7,7 @@ import ClientPage from "./pages/ClientPage";
 import LocaleSelector from "./pages/LocaleSelector";
 import LocalizedClientPage from "./pages/LocalizedClientPage";
 import ReaderPage from "./pages/ReaderPage";
+import ReadingResultPage from "./pages/ReadingResultPage";
 import NotFound from "./pages/NotFound";
 import { localeConfigs } from "@/config/locales";
 
@@ -25,6 +26,7 @@ const App = () => (
           <Route path="/jp" element={<LocalizedClientPage config={localeConfigs.jp} />} />
           <Route path="/us" element={<LocalizedClientPage config={localeConfigs.us} />} />
           <Route path="/reader" element={<ReaderPage />} />
+          <Route path="/reader/result/:id" element={<ReadingResultPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

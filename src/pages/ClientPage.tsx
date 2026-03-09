@@ -809,28 +809,57 @@ export default function ClientPage() {
                     <div className="mb-2 text-3xl">⚠️</div>
                     <h2 className="font-display text-xl font-semibold text-foreground">분석 중 오류가 발생했습니다</h2>
                     <p className="text-sm text-muted-foreground">
-                      {error.includes("1~2분") ? error : "잠시 후 다시 시도해 주세요."}
+                      {error}
                     </p>
-                    {!error.includes("1~2분") && (
-                      <p className="text-xs text-muted-foreground/60">{error}</p>
-                    )}
                     <div className="flex gap-3 justify-center pt-2">
                       <Button variant="secondary" className="rounded-full" onClick={handleSubmit}>다시 시도</Button>
                       <Button variant="ghost" className="rounded-full" onClick={resetAll}>처음으로</Button>
                     </div>
                   </CardContent>
                 </Card>
+              ) : step === "loading" ? (
+                <Card className="border-border/50 bg-card/80 backdrop-blur-xl">
+                  <CardContent className="py-16 px-8 text-center space-y-6">
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                      className="inline-block text-4xl"
+                    >
+                      🔮
+                    </motion.div>
+                    <div>
+                      <h2 className="font-display text-xl font-semibold text-foreground">{loadingMessage}</h2>
+                      <p className="mt-2 text-xs text-muted-foreground">잠시만 기다려 주세요...</p>
+                    </div>
+                  </CardContent>
+                </Card>
               ) : (
-                <ReadingResultV3
-                  reading={aiReading}
-                  isLoading={step === "loading"}
-                  onReset={resetAll}
-                  grade={selectedGrade}
-                >
-                  {hasBirthDate && (
-                    <SajuManualOverride manualData={manualSajuData} onManualDataChange={setManualSajuData} />
-                  )}
-                </ReadingResultV3>
+                <Card className="border-gold/30 bg-card/80 backdrop-blur-xl">
+                  <CardContent className="py-16 px-8 text-center space-y-6">
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: "spring", stiffness: 200, damping: 15 }}
+                      className="text-5xl"
+                    >
+                      ✨
+                    </motion.div>
+                    <div className="space-y-3">
+                      <h2 className="font-display text-2xl font-semibold text-foreground">카드 리딩이 접수되었습니다</h2>
+                      <p className="text-base text-muted-foreground">
+                        상담 내용을 곧 전달드리겠습니다.
+                      </p>
+                      <p className="text-base text-muted-foreground">
+                        잠시만 기다려 주세요 💜
+                      </p>
+                    </div>
+                    <div className="pt-4">
+                      <Button variant="ghost" className="rounded-full text-gold hover:text-gold/80" onClick={resetAll}>
+                        새로운 상담 시작하기
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
               )}
             </motion.div>
           )}

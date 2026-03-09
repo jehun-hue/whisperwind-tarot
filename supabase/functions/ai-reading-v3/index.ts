@@ -381,9 +381,11 @@ ${gradeInstruction}
 
     if (!reading) {
       const is429 = lastError.includes("429");
+      const statusCode = lastError.match(/^(\d{3})/)?.[1] || "500";
       const msg = is429
-        ? "서버가 혼잡합니다. 1~2분 후 다시 시도해 주세요."
-        : `분석 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요. (${lastError})`;
+        ? "429 - 서버가 혼잡합니다. 1~2분 후 다시 시도해 주세요."
+        : `${statusCode} - 분석 중 오류가 발생했습니다. (${lastError.slice(0, 200)})`;
+      console.error(`Final error after ${MAX_RETRIES} attempts: ${lastError}`);
       throw new Error(msg);
     }
 
