@@ -764,8 +764,12 @@ export default function ClientPage() {
                   <CardContent className="py-10 px-8 text-center space-y-4">
                     <div className="mb-2 text-3xl">⚠️</div>
                     <h2 className="font-display text-xl font-semibold text-foreground">분석 중 오류가 발생했습니다</h2>
-                    <p className="text-sm text-muted-foreground">잠시 후 다시 시도해 주세요.</p>
-                    <p className="text-xs text-muted-foreground/60">{error}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {error.includes("1~2분") ? error : "잠시 후 다시 시도해 주세요."}
+                    </p>
+                    {!error.includes("1~2분") && (
+                      <p className="text-xs text-muted-foreground/60">{error}</p>
+                    )}
                     <div className="flex gap-3 justify-center pt-2">
                       <Button variant="secondary" className="rounded-full" onClick={handleSubmit}>다시 시도</Button>
                       <Button variant="ghost" className="rounded-full" onClick={resetAll}>처음으로</Button>
