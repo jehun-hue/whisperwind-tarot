@@ -15,6 +15,7 @@ import { Switch } from "@/components/ui/switch";
 import { User, Calendar, Clock, MapPin } from "lucide-react";
 
 export interface BirthInfo {
+  name: string;
   gender: "male" | "female";
   birthDate: string; // YYYY-MM-DD
   birthTime: string; // HH:mm or ""
@@ -34,6 +35,7 @@ const BIRTH_HOURS = Array.from({ length: 24 }, (_, i) => {
 });
 
 export default function BirthInfoForm({ onSubmit, onSkip }: BirthInfoFormProps) {
+  const [name, setName] = useState("");
   const [gender, setGender] = useState<"male" | "female">("female");
   const [birthDate, setBirthDate] = useState("");
   const [birthTime, setBirthTime] = useState("");
@@ -62,6 +64,19 @@ export default function BirthInfoForm({ onSubmit, onSkip }: BirthInfoFormProps) 
           </div>
 
           <div className="space-y-5">
+            {/* Name */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2 text-sm text-muted-foreground">
+                <User className="h-3.5 w-3.5" /> 이름
+              </Label>
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="rounded-xl border-border/50 bg-background/50 backdrop-blur text-foreground placeholder:text-muted-foreground/50"
+                placeholder="이름을 입력해주세요 (선택사항)"
+              />
+            </div>
+
             {/* Gender */}
             <div className="space-y-2">
               <Label className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -145,7 +160,7 @@ export default function BirthInfoForm({ onSubmit, onSkip }: BirthInfoFormProps) 
               <Button
                 className="w-full rounded-xl bg-gradient-to-r from-primary to-gold text-primary-foreground font-medium shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-shadow"
                 onClick={() =>
-                  onSubmit({ gender, birthDate, birthTime, birthPlace, isLunar })
+                  onSubmit({ name, gender, birthDate, birthTime, birthPlace, isLunar })
                 }
                 disabled={!canSubmit}
               >

@@ -21,6 +21,7 @@ const unknownLabel: Record<string, string> = {
 };
 
 export default function LocalizedBirthInfoForm({ config, onSubmit, onSkip }: LocalizedBirthInfoFormProps) {
+  const [name, setName] = useState("");
   const [gender, setGender] = useState<"male" | "female">("female");
   const [birthDate, setBirthDate] = useState("");
   const [birthTime, setBirthTime] = useState("");
@@ -56,6 +57,19 @@ export default function LocalizedBirthInfoForm({ config, onSubmit, onSkip }: Loc
           </div>
 
           <div className="space-y-5">
+            {/* Name */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2 text-sm text-muted-foreground">
+                <User className="h-3.5 w-3.5" /> {config.nameLabel ?? "이름"}
+              </Label>
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="rounded-xl border-border/50 bg-background/50 backdrop-blur text-foreground placeholder:text-muted-foreground/50"
+                placeholder={config.namePlaceholder ?? "이름을 입력해주세요 (선택사항)"}
+              />
+            </div>
+
             {/* Gender */}
             <div className="space-y-2">
               <Label className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -171,6 +185,7 @@ export default function LocalizedBirthInfoForm({ config, onSubmit, onSkip }: Loc
                 className="w-full rounded-xl bg-gradient-to-r from-primary to-gold text-primary-foreground font-medium shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-shadow"
                 onClick={() =>
                   onSubmit({
+                    name,
                     gender,
                     birthDate,
                     birthTime: birthTimeUnknown ? "" : birthTime,

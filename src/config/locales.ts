@@ -25,6 +25,8 @@ export interface LocaleConfig {
   // Birth info
   birthTitle: string;
   birthSubtitle: string;
+  nameLabel: string;
+  namePlaceholder: string;
   genderLabel: string;
   genderOptions: { male: string; female: string };
   birthDateLabel: string;
@@ -107,6 +109,8 @@ export const localeConfigs: Record<Locale, LocaleConfig> = {
     nextButton: "다음 단계로",
     birthTitle: "출생 정보 입력",
     birthSubtitle: "사주 분석을 위해 출생 정보를 입력해주세요",
+    nameLabel: "이름",
+    namePlaceholder: "이름을 입력해주세요 (선택사항)",
     genderLabel: "성별",
     genderOptions: { male: "👨 남성", female: "👩 여성" },
     birthDateLabel: "생년월일",
@@ -189,6 +193,8 @@ export const localeConfigs: Record<Locale, LocaleConfig> = {
     nextButton: "次のステップへ",
     birthTitle: "生年月日の入力",
     birthSubtitle: "より深いリーディングのために生年月日をご入力ください",
+    nameLabel: "お名前",
+    namePlaceholder: "お名前をご入力ください（任意）",
     genderLabel: "性別",
     genderOptions: { male: "👨 男性", female: "👩 女性" },
     birthDateLabel: "生年月日",
@@ -282,6 +288,8 @@ export const localeConfigs: Record<Locale, LocaleConfig> = {
     nextButton: "Continue",
     birthTitle: "Birth Information",
     birthSubtitle: "Enter your birth details for a deeper astrological reading",
+    nameLabel: "Name",
+    namePlaceholder: "Enter your name (optional)",
     genderLabel: "Gender",
     genderOptions: { male: "👨 Male", female: "👩 Female" },
     birthDateLabel: "Date of Birth",
