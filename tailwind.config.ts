@@ -13,6 +13,9 @@ export default {
       },
     },
     extend: {
+      gridTemplateColumns: {
+        '13': 'repeat(13, minmax(0, 1fr))',
+      },
       fontFamily: {
         display: ["Cormorant Garamond", "serif"],
         body: ["Noto Sans KR", "sans-serif"],
