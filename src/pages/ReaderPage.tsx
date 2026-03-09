@@ -88,6 +88,17 @@ export default function ReaderPage() {
     setSelectedSession(updated);
   };
 
+  const filteredSessions = useMemo(() => {
+    if (!searchQuery.trim()) return sessions;
+    const q = searchQuery.trim().toLowerCase();
+    return sessions.filter(s =>
+      (s.user_name && s.user_name.toLowerCase().includes(q)) ||
+      (s.question && s.question.toLowerCase().includes(q))
+    );
+  }, [sessions, searchQuery]);
+
+  const pendingCount = sessions.filter(s => s.status === "pending").length;
+
   if (!authed) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -113,17 +124,6 @@ export default function ReaderPage() {
       </div>
     );
   }
-
-  const filteredSessions = useMemo(() => {
-    if (!searchQuery.trim()) return sessions;
-    const q = searchQuery.trim().toLowerCase();
-    return sessions.filter(s =>
-      (s.user_name && s.user_name.toLowerCase().includes(q)) ||
-      (s.question && s.question.toLowerCase().includes(q))
-    );
-  }, [sessions, searchQuery]);
-
-  const pendingCount = sessions.filter(s => s.status === "pending").length;
 
   return (
     <div className="min-h-screen bg-background">
