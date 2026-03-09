@@ -193,6 +193,8 @@ export const localeConfigs: Record<Locale, LocaleConfig> = {
     nextButton: "次のステップへ",
     birthTitle: "生年月日の入力",
     birthSubtitle: "より深いリーディングのために生年月日をご入力ください",
+    nameLabel: "お名前",
+    namePlaceholder: "お名前をご入力ください（任意）",
     genderLabel: "性別",
     genderOptions: { male: "👨 男性", female: "👩 女性" },
     birthDateLabel: "生年月日",
