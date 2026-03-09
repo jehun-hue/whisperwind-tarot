@@ -357,6 +357,8 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
           ziweiData: ziweiDataForAI,
           combinationSummary,
           locale: "kr",
+          manseryeokData: manseryeokDataForAI,
+          forcetellData: forcetellData.trim() || null,
         },
       });
 
