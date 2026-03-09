@@ -159,7 +159,7 @@ Output ONLY the following JSON. Each field must contain at least 8-15 sentences 
 ## Score Criteria (Apply Rigorously)
 - tarot: Narrative coherence of card combination (40%), question relevance (30%), elemental/numerological synergy (30%)
 - astrology: House ruler dignity for question-relevant houses (30%), transit aspect strength (30%), planetary concentration (40%)
-- overall: Weighted average of cross-system concordance. A-grade (strong convergence) = 85-100, B-grade = 70-84, C-grade = 50-69
+- overall: Weighted average of cross-system concordance. S-grade (all 7 systems converge) = 95-100, A-grade (5-6 converge) = 85-94, B-grade = 70-84, C-grade = 50-69
 - saju/ziwei: Score only if internal reference data available (0 otherwise)`,
 };
 
