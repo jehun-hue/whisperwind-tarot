@@ -474,7 +474,8 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
     } finally {
       setAnalyzing(false);
     }
-  
+  };
+
   const downloadPDF = () => {
     if (!reading) return;
     const cards = session.cards as any[];
