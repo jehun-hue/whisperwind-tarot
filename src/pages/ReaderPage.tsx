@@ -762,6 +762,14 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
         </div>
       )}
 
+      {analysisError && (
+        <Card className="border-destructive/30 bg-destructive/5">
+          <CardContent className="py-3">
+            <p className="text-xs text-destructive">{analysisError}</p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Saju Analysis */}
       {saju && (
         <Card className="border-border bg-card">
