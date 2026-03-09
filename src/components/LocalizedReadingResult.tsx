@@ -9,12 +9,19 @@ import type { LocaleConfig } from "@/config/locales";
 interface AIReadingResult {
   conclusion: string;
   tarotAnalysis: string;
+  tarotCardInteraction?: string;
   emotionFlow?: string;
   sajuAnalysis: string;
+  sajuTimeline?: string;
   astrologyAnalysis: string;
+  astrologyTransits?: string;
   ziweiAnalysis: string;
+  ziweiLifeStructure?: string;
   crossValidation: string;
+  crossValidationMatrix?: string;
+  timing?: string;
   risk: string;
+  hiddenPattern?: string;
   advice: string;
   energySummary?: string;
   guidance?: string;
@@ -54,6 +61,37 @@ function ScoreBar({ label, score, isUS = false }: { label: string; score: number
   );
 }
 
+// Section title mappings for new fields by locale
+const EXTRA_SECTION_TITLES: Record<string, Record<string, string>> = {
+  kr: {
+    tarotCardInteraction: "🔗 카드 상호작용",
+    sajuTimeline: "📅 사주 시간축 분석",
+    astrologyTransits: "🪐 트랜짓 분석",
+    ziweiLifeStructure: "🧬 인생 구조 분석",
+    crossValidationMatrix: "📊 검증 매트릭스",
+    timing: "⏰ 시기 분석",
+    hiddenPattern: "🔍 숨겨진 패턴",
+  },
+  jp: {
+    tarotCardInteraction: "🔗 カード間の相互作用",
+    sajuTimeline: "",
+    astrologyTransits: "🪐 トランジット分析",
+    ziweiLifeStructure: "",
+    crossValidationMatrix: "📊 検証マトリックス",
+    timing: "⏰ タイミング分析",
+    hiddenPattern: "🔍 隠れたパターン",
+  },
+  us: {
+    tarotCardInteraction: "🔗 Card Interactions",
+    sajuTimeline: "",
+    astrologyTransits: "🪐 Transit Analysis",
+    ziweiLifeStructure: "",
+    crossValidationMatrix: "📊 Validation Matrix",
+    timing: "⏰ Timing Analysis",
+    hiddenPattern: "🔍 Hidden Patterns",
+  },
+};
+
 export default function LocalizedReadingResult({ config, reading, isLoading, onReset, hasBirthInfo }: LocalizedReadingResultProps) {
   if (isLoading) {
     return (
@@ -81,10 +119,12 @@ export default function LocalizedReadingResult({ config, reading, isLoading, onR
 
   if (!reading) return null;
 
+  const extraTitles = EXTRA_SECTION_TITLES[config.locale] || EXTRA_SECTION_TITLES.kr;
+
   // Build sections based on locale
   const sections: { title: string; content: string; accent?: boolean }[] = [];
 
-  // Conclusion / Energy Summary
+  // Conclusion
   sections.push({
     title: config.sectionTitles.conclusion,
     content: reading.conclusion || reading.energySummary || "",
@@ -94,6 +134,11 @@ export default function LocalizedReadingResult({ config, reading, isLoading, onR
   // Tarot
   if (config.sectionTitles.tarotAnalysis) {
     sections.push({ title: config.sectionTitles.tarotAnalysis, content: reading.tarotAnalysis });
+  }
+
+  // Tarot Card Interaction (new)
+  if (reading.tarotCardInteraction && extraTitles.tarotCardInteraction) {
+    sections.push({ title: extraTitles.tarotCardInteraction, content: reading.tarotCardInteraction });
   }
 
   // Emotion Flow (JP)
@@ -106,9 +151,19 @@ export default function LocalizedReadingResult({ config, reading, isLoading, onR
     sections.push({ title: config.sectionTitles.sajuAnalysis, content: reading.sajuAnalysis });
   }
 
+  // Saju Timeline (new, KR only)
+  if (config.showSaju && hasBirthInfo && reading.sajuTimeline && extraTitles.sajuTimeline) {
+    sections.push({ title: extraTitles.sajuTimeline, content: reading.sajuTimeline });
+  }
+
   // Astrology
   if (config.sectionTitles.astrologyAnalysis) {
     sections.push({ title: config.sectionTitles.astrologyAnalysis, content: reading.astrologyAnalysis });
+  }
+
+  // Astrology Transits (new)
+  if (hasBirthInfo && reading.astrologyTransits && extraTitles.astrologyTransits) {
+    sections.push({ title: extraTitles.astrologyTransits, content: reading.astrologyTransits });
   }
 
   // Ziwei (KR only)
@@ -116,21 +171,41 @@ export default function LocalizedReadingResult({ config, reading, isLoading, onR
     sections.push({ title: config.sectionTitles.ziweiAnalysis, content: reading.ziweiAnalysis });
   }
 
-  // Cross validation (KR only)
+  // Ziwei Life Structure (new, KR only)
+  if (config.showZiwei && hasBirthInfo && reading.ziweiLifeStructure && extraTitles.ziweiLifeStructure) {
+    sections.push({ title: extraTitles.ziweiLifeStructure, content: reading.ziweiLifeStructure });
+  }
+
+  // Cross validation
   if (config.showSaju && hasBirthInfo && config.sectionTitles.crossValidation) {
     sections.push({ title: config.sectionTitles.crossValidation, content: reading.crossValidation });
+  }
+
+  // Cross Validation Matrix (new)
+  if (hasBirthInfo && reading.crossValidationMatrix && extraTitles.crossValidationMatrix) {
+    sections.push({ title: extraTitles.crossValidationMatrix, content: reading.crossValidationMatrix });
+  }
+
+  // Timing (new)
+  if (reading.timing && extraTitles.timing) {
+    sections.push({ title: extraTitles.timing, content: reading.timing });
   }
 
   // Risk
   sections.push({ title: config.sectionTitles.risk, content: reading.risk });
 
-  // Advice / Guidance
+  // Hidden Pattern (new)
+  if (reading.hiddenPattern && extraTitles.hiddenPattern) {
+    sections.push({ title: extraTitles.hiddenPattern, content: reading.hiddenPattern });
+  }
+
+  // Advice
   sections.push({ title: config.sectionTitles.advice, content: reading.advice || reading.guidance || "" });
 
   // Filter out empty sections
   const validSections = sections.filter((s) => s.title && s.content);
 
-  // Score bars based on locale
+  // Score bars
   const scoreEntries: { label: string; score: number }[] = [
     { label: config.scoreLabels.tarot, score: reading.scores.tarot },
   ];
