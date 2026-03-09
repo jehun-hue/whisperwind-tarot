@@ -69,6 +69,7 @@ interface ReadingResultV2Props {
   isLoading: boolean;
   onReset: () => void;
   hasSaju: boolean;
+  children?: React.ReactNode;
 }
 
 const gradeColors: Record<string, { bg: string; text: string; glow: string }> = {
