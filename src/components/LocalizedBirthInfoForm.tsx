@@ -185,6 +185,7 @@ export default function LocalizedBirthInfoForm({ config, onSubmit, onSkip }: Loc
                 className="w-full rounded-xl bg-gradient-to-r from-primary to-gold text-primary-foreground font-medium shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-shadow"
                 onClick={() =>
                   onSubmit({
+                    name,
                     gender,
                     birthDate,
                     birthTime: birthTimeUnknown ? "" : birthTime,
