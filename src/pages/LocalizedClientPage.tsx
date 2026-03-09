@@ -433,79 +433,11 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                   </div>
                 </div>
 
-
-                <div className="grid grid-cols-6 gap-1.5 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-13">
-                  {deck.map((card) => {
-                    const isSelected = picked.some((p) => p.id === card.id);
-                    const isDisabled = card.isPicked || picked.length >= 3;
-                    const dir = getCardDirectionLabel(card.isReversed, config.locale);
-                    const isUS = config.locale === "us";
-                    return (
-                      <motion.button
-                        whileHover={!isDisabled ? { y: isUS ? -10 : -6, scale: isUS ? 1.08 : 1.05, rotateY: isUS ? 5 : 0 } : {}}
-                        whileTap={!isDisabled ? { scale: 0.92 } : {}}
-                        key={card.id}
-                        onClick={() => selectCard(card)}
-                        disabled={isDisabled}
-                        className={`group relative aspect-[0.65] overflow-hidden rounded-lg border transition-all duration-300 ${
-                          isSelected
-                            ? isUS
-                              ? "border-purple-400/60 glow-cosmic animate-card-mystical"
-                              : "border-gold/60 glow-gold-strong"
-                            : isDisabled
-                            ? "border-border/20 opacity-40 cursor-not-allowed"
-                            : isUS
-                            ? "border-purple-500/20 hover:border-purple-400/40 cursor-pointer hover:shadow-[0_0_25px_-5px_hsl(270_60%_60%/0.3)]"
-                            : "border-border/30 hover:border-gold/30 cursor-pointer"
-                        }`}
-                      >
-                        {isSelected ? (
-                          <motion.div
-                            initial={{ rotateY: 180, opacity: 0 }}
-                            animate={{ rotateY: 0, opacity: 1 }}
-                            transition={{ duration: 0.6, ease: "easeOut" }}
-                            className={`flex h-full flex-col items-center justify-center p-1.5 ${
-                              isUS
-                                ? "bg-gradient-to-b from-purple-500/15 via-indigo-500/10 to-blue-500/15"
-                                : "bg-gradient-to-b from-gold/10 to-accent/10"
-                            }`}
-                          >
-                            <span className={`text-lg font-semibold ${isUS ? "text-purple-300" : "text-gold"}`}
-                                  style={{ fontFamily: config.displayFont }}>
-                              {card.name[0]}
-                            </span>
-                            <span className="mt-0.5 text-[9px] font-medium text-foreground">
-                              {getCardDisplayName(card, config.locale)}
-                            </span>
-                            <span className={`mt-0.5 flex items-center gap-0.5 text-[8px] ${isUS ? "text-purple-300/80" : "text-gold-light"}`}>
-                              {card.isReversed ? (
-                                <><EyeOff className="h-2 w-2" /> {dir.short}</>
-                              ) : (
-                                <><Eye className="h-2 w-2" /> {dir.short}</>
-                              )}
-                            </span>
-                          </motion.div>
-                        ) : (
-                          <img
-                            src={cardBackImg}
-                            alt="tarot card"
-                            className={`h-full w-full object-cover transition-all duration-300 ${
-                              isUS
-                                ? "opacity-60 group-hover:opacity-100 group-hover:brightness-110"
-                                : "opacity-70 group-hover:opacity-100"
-                            }`}
-                          />
-                        )}
-                      </motion.button>
-                    );
-                  })}
-                </div>
-
                 {picked.length > 0 && (
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="mt-8"
+                    className="mb-6"
                   >
                     <div className="mx-auto max-w-md space-y-3">
                       <div className="flex flex-wrap items-center justify-center gap-2">
@@ -550,8 +482,41 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                     </div>
                   </motion.div>
                 )}
-              </motion.div>
-            )}
+
+                <div className="grid grid-cols-6 gap-1.5 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-13">
+                  {deck.map((card) => {
+                    const isSelected = picked.some((p) => p.id === card.id);
+                    const isDisabled = card.isPicked || picked.length >= 3;
+                    const dir = getCardDirectionLabel(card.isReversed, config.locale);
+                    const isUS = config.locale === "us";
+                    return (
+                      <motion.button
+                        whileHover={!isDisabled ? { y: isUS ? -10 : -6, scale: isUS ? 1.08 : 1.05, rotateY: isUS ? 5 : 0 } : {}}
+                        whileTap={!isDisabled ? { scale: 0.92 } : {}}
+                        key={card.id}
+                        onClick={() => selectCard(card)}
+                        disabled={isDisabled}
+                        className={`group relative aspect-[0.65] overflow-hidden rounded-lg border transition-all duration-300 ${
+                          isSelected
+                            ? isUS
+                              ? "border-purple-400/60 glow-cosmic animate-card-mystical"
+                              : "border-gold/60 glow-gold-strong"
+                            : isDisabled
+                            ? "border-border/20 opacity-40 cursor-not-allowed"
+                            : isUS
+                            ? "border-purple-500/20 hover:border-purple-400/40 cursor-pointer hover:shadow-[0_0_25px_-5px_hsl(270_60%_60%/0.3)]"
+                            : "border-border/30 hover:border-gold/30 cursor-pointer"
+                        }`}
+                      >
+                        {isSelected ? (
+                          <motion.div
+                            initial={{ rotateY: 180, opacity: 0 }}
+                            animate={{ rotateY: 0, opacity: 1 }}
+                            transition={{ duration: 0.6, ease: "easeOut" }}
+                            className={`flex h-full flex-col items-center justify-center p-1.5 ${
+                              isUS
+                                ? "bg-gradient-to-b from-purple-500/15 via-indigo-500/10 to-blue-500/15"
+                                : "bg-gradient-to-b from-gold/10 to-accent/10"
 
             {/* Step 4: Completion */}
             {(step === "loading" || step === "result") && (
