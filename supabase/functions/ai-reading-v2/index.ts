@@ -197,7 +197,13 @@ serve(async (req) => {
 
     // Build saju section
     let sajuSection = "출생정보 미제공";
-    if (sajuData) {
+    if (forcetellData) {
+      sajuSection = `[포스텔러 원본 데이터]\n${forcetellData}`;
+      if (sajuData) {
+        sajuSection += `\n\n[내부 계산 사주 데이터 (참고용)]\n사주 원국: ${sajuData.yearPillar?.cheongan || ""}${sajuData.yearPillar?.jiji || ""} / ${sajuData.monthPillar?.cheongan || ""}${sajuData.monthPillar?.jiji || ""} / ${sajuData.dayPillar?.cheongan || ""}${sajuData.dayPillar?.jiji || ""} / ${sajuData.hourPillar?.cheongan || ""}${sajuData.hourPillar?.jiji || ""}
+일간: ${sajuData.ilgan || ""}(${sajuData.ilganElement || ""}) / 신강/신약: ${sajuData.strength || ""} / 용신: ${sajuData.yongsin || ""}`;
+      }
+    } else if (sajuData) {
       sajuSection = `사주 원국: ${sajuData.yearPillar?.cheongan || ""}${sajuData.yearPillar?.jiji || ""} / ${sajuData.monthPillar?.cheongan || ""}${sajuData.monthPillar?.jiji || ""} / ${sajuData.dayPillar?.cheongan || ""}${sajuData.dayPillar?.jiji || ""} / ${sajuData.hourPillar?.cheongan || ""}${sajuData.hourPillar?.jiji || ""}
 일간: ${sajuData.ilgan || ""}(${sajuData.ilganElement || ""}, ${sajuData.ilganYinyang || ""}) / 신강/신약: ${sajuData.strength || ""} / 용신: ${sajuData.yongsin || ""}
 오행 비율: 목${sajuData.fiveElementDist?.["목"]?.toFixed(1) || 0} 화${sajuData.fiveElementDist?.["화"]?.toFixed(1) || 0} 토${sajuData.fiveElementDist?.["토"]?.toFixed(1) || 0} 금${sajuData.fiveElementDist?.["금"]?.toFixed(1) || 0} 수${sajuData.fiveElementDist?.["수"]?.toFixed(1) || 0}
