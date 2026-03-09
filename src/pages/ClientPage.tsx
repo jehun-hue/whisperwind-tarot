@@ -749,16 +749,16 @@ export default function ClientPage() {
                   </CardContent>
                 </Card>
               ) : (
-                <ReadingResultV2
+                <ReadingResultV3
                   reading={aiReading}
                   isLoading={step === "loading"}
                   onReset={resetAll}
-                  hasSaju={!!sajuResult || !!manseryeokResult}
+                  grade={selectedGrade}
                 >
                   {hasBirthDate && (
                     <SajuManualOverride manualData={manualSajuData} onManualDataChange={setManualSajuData} />
                   )}
-                </ReadingResultV2>
+                </ReadingResultV3>
               )}
             </motion.div>
           )}
