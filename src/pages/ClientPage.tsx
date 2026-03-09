@@ -514,7 +514,7 @@ export default function ClientPage() {
                   </div>
 
                   {/* Birth time - text input */}
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <div className="flex items-center gap-3">
                       <label className="text-sm text-muted-foreground">출생 시간</label>
                       {/* AM/PM toggle */}
@@ -522,13 +522,11 @@ export default function ClientPage() {
                         <button
                           onClick={() => {
                             setBirthAmPm("am");
-                            if (birthTime === "unknown") setBirthTime("");
-                            if (birthHourInput) {
+                            if (birthTime === "unknown") { setBirthTime(""); }
+                            else if (birthHourInput) {
                               const h = parseInt(birthHourInput, 10);
-                              if (!isNaN(h) && h >= 0 && h <= 12) {
-                                const h24 = h === 12 ? 0 : h;
-                                setBirthTime(`${String(h24).padStart(2, "0")}:${birthMinInput || "00"}`);
-                              }
+                              const h24 = h === 12 ? 0 : h;
+                              setBirthTime(`${String(h24).padStart(2, "0")}:${birthMinInput || "00"}`);
                             }
                           }}
                           className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${
@@ -540,13 +538,11 @@ export default function ClientPage() {
                         <button
                           onClick={() => {
                             setBirthAmPm("pm");
-                            if (birthTime === "unknown") setBirthTime("");
-                            if (birthHourInput) {
+                            if (birthTime === "unknown") { setBirthTime(""); }
+                            else if (birthHourInput) {
                               const h = parseInt(birthHourInput, 10);
-                              if (!isNaN(h) && h >= 0 && h <= 12) {
-                                const h24 = h === 12 ? 12 : h + 12;
-                                setBirthTime(`${String(h24).padStart(2, "0")}:${birthMinInput || "00"}`);
-                              }
+                              const h24 = h === 12 ? 12 : h + 12;
+                              setBirthTime(`${String(h24).padStart(2, "0")}:${birthMinInput || "00"}`);
                             }
                           }}
                           className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${
@@ -572,50 +568,49 @@ export default function ClientPage() {
                         모름
                       </button>
                     </div>
-                    {/* Hour / Min inputs */}
+                    {/* Hour / Min selects */}
                     <div className="flex items-center gap-2">
-                      <Input
-                        type="text"
-                        inputMode="numeric"
-                        placeholder="시"
+                      <Select
                         value={birthHourInput}
-                        onChange={(e) => {
-                          const v = e.target.value.replace(/\D/g, "").slice(0, 2);
+                        onValueChange={(v) => {
                           setBirthHourInput(v);
-                          if (v === "") {
-                            setBirthTime("unknown");
-                          } else {
-                            const num = parseInt(v, 10);
-                            if (num >= 0 && num <= 12) {
-                              const h24 = birthAmPm === "pm" ? (num === 12 ? 12 : num + 12) : (num === 12 ? 0 : num);
-                              setBirthTime(`${String(h24).padStart(2, "0")}:${birthMinInput || "00"}`);
-                            }
-                          }
+                          const h = parseInt(v, 10);
+                          const h24 = birthAmPm === "pm" ? (h === 12 ? 12 : h + 12) : (h === 12 ? 0 : h);
+                          setBirthTime(`${String(h24).padStart(2, "0")}:${birthMinInput || "00"}`);
                         }}
-                        className="w-20 rounded-xl border-border/50 bg-background/50 text-foreground text-center"
-                        disabled={false}
-                      />
-                      <span className="text-sm text-muted-foreground">시</span>
-                      <Input
-                        type="text"
-                        inputMode="numeric"
-                        placeholder="분"
+                        disabled={birthTime === "unknown"}
+                      >
+                        <SelectTrigger className={`w-24 rounded-xl border-border/50 bg-background/50 text-foreground ${birthTime === "unknown" ? "opacity-40" : ""}`}>
+                          <SelectValue placeholder="시" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {[12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((h) => (
+                            <SelectItem key={h} value={String(h)}>{h}시</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <span className="text-sm text-muted-foreground">:</span>
+                      <Select
                         value={birthMinInput}
-                        onChange={(e) => {
-                          const v = e.target.value.replace(/\D/g, "").slice(0, 2);
+                        onValueChange={(v) => {
                           setBirthMinInput(v);
                           if (birthHourInput) {
-                            const hNum = parseInt(birthHourInput, 10);
-                            if (!isNaN(hNum) && hNum >= 0 && hNum <= 12) {
-                              const h24 = birthAmPm === "pm" ? (hNum === 12 ? 12 : hNum + 12) : (hNum === 12 ? 0 : hNum);
-                              setBirthTime(`${String(h24).padStart(2, "0")}:${v.padStart(2, "0") || "00"}`);
-                            }
+                            const h = parseInt(birthHourInput, 10);
+                            const h24 = birthAmPm === "pm" ? (h === 12 ? 12 : h + 12) : (h === 12 ? 0 : h);
+                            setBirthTime(`${String(h24).padStart(2, "0")}:${v}`);
                           }
                         }}
-                        className="w-20 rounded-xl border-border/50 bg-background/50 text-foreground text-center"
-                        disabled={false}
-                      />
-                      <span className="text-sm text-muted-foreground">분</span>
+                        disabled={birthTime === "unknown"}
+                      >
+                        <SelectTrigger className={`w-24 rounded-xl border-border/50 bg-background/50 text-foreground ${birthTime === "unknown" ? "opacity-40" : ""}`}>
+                          <SelectValue placeholder="분" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {["00", "10", "20", "30", "40", "50"].map((m) => (
+                            <SelectItem key={m} value={m}>{m}분</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     {birthTime === "unknown" && (
                       <p className="text-[10px] text-muted-foreground/70">
