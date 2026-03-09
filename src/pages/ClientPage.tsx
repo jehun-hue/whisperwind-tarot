@@ -462,19 +462,19 @@ export default function ClientPage() {
                     <label className="text-sm text-muted-foreground">생년월일</label>
                     <div className="grid grid-cols-3 gap-2">
                       <Input
-                        type="number" placeholder="년 (예: 1993)" value={birthYear}
+                        type="number" placeholder="1993" value={birthYear}
                         onChange={(e) => setBirthYear(e.target.value)}
                         className="rounded-xl border-border/50 bg-background/50 text-foreground"
                         min="1920" max="2010"
                       />
                       <Input
-                        type="number" placeholder="월" value={birthMonth}
+                        type="number" placeholder="07" value={birthMonth}
                         onChange={(e) => setBirthMonth(e.target.value)}
                         className="rounded-xl border-border/50 bg-background/50 text-foreground"
                         min="1" max="12"
                       />
                       <Input
-                        type="number" placeholder="일" value={birthDay}
+                        type="number" placeholder="17" value={birthDay}
                         onChange={(e) => setBirthDay(e.target.value)}
                         className="rounded-xl border-border/50 bg-background/50 text-foreground"
                         min="1" max="31"
@@ -484,9 +484,23 @@ export default function ClientPage() {
 
                   {/* Calendar toggle */}
                   <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2">
-                      <Switch checked={isLunar} onCheckedChange={(v) => { setIsLunar(v); if (!v) setIsLeapMonth(false); }} className="data-[state=checked]:bg-accent" />
-                      <span className="text-xs text-muted-foreground">{isLunar ? "음력" : "양력"}</span>
+                    <div className="inline-flex items-center rounded-full border border-border/50 bg-background/30 p-0.5">
+                      <button
+                        onClick={() => { setIsLunar(false); setIsLeapMonth(false); }}
+                        className={`rounded-full px-4 py-1.5 text-xs font-medium transition-all ${
+                          !isLunar ? "bg-accent/20 text-accent shadow-sm" : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        ☀️ 양력
+                      </button>
+                      <button
+                        onClick={() => setIsLunar(true)}
+                        className={`rounded-full px-4 py-1.5 text-xs font-medium transition-all ${
+                          isLunar ? "bg-accent/20 text-accent shadow-sm" : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        🌙 음력
+                      </button>
                     </div>
                     {isLunar && (
                       <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
@@ -496,22 +510,33 @@ export default function ClientPage() {
                     )}
                   </div>
 
-                  {/* Birth time */}
+                  {/* Birth time - text input */}
                   <div className="space-y-2">
                     <label className="text-sm text-muted-foreground">출생 시간</label>
-                    <Select value={birthTime} onValueChange={setBirthTime}>
-                      <SelectTrigger className="rounded-xl border-border/50 bg-background/50 text-foreground">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {BIRTH_HOURS.map((h) => (
-                          <SelectItem key={h.value} value={h.value}>{h.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="예: 15 (0~23시, 모르면 비워두세요)"
+                        value={birthTime === "unknown" ? "" : birthTime.replace(":00", "")}
+                        onChange={(e) => {
+                          const v = e.target.value.replace(/\D/g, "").slice(0, 2);
+                          if (v === "") {
+                            setBirthTime("unknown");
+                          } else {
+                            const num = parseInt(v, 10);
+                            if (num >= 0 && num <= 23) {
+                              setBirthTime(`${v.padStart(2, "0")}:00`);
+                            }
+                          }
+                        }}
+                        className="rounded-xl border-border/50 bg-background/50 text-foreground"
+                      />
+                      <span className="text-sm text-muted-foreground shrink-0">시</span>
+                    </div>
                     {birthTime === "unknown" && (
                       <p className="text-[10px] text-muted-foreground/70">
-                        ⓘ 시간을 모르시면 시주 분석을 제외하고 년·월·일주만 사용합니다.
+                        ⓘ 시간을 모르시면 비워두세요. 년·월·일주만 사용합니다.
                       </p>
                     )}
                   </div>
