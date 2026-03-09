@@ -314,25 +314,6 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                       </p>
                     </div>
 
-                    {/* Question type quick select */}
-                    <div className="mb-4 flex flex-wrap gap-2">
-                      {config.questionTypes.map((qt) => (
-                        <button
-                          key={qt.value}
-                          onClick={() => setSelectedQuestionType(qt.value)}
-                          className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
-                            selectedQuestionType === qt.value
-                              ? config.locale === "us"
-                                ? "bg-purple-500/20 text-purple-300 border border-purple-400/30"
-                                : "bg-gold/20 text-gold border border-gold/30"
-                              : "bg-secondary/50 text-muted-foreground hover:bg-muted border border-transparent"
-                          }`}
-                        >
-                          {qt.label}
-                        </button>
-                      ))}
-                    </div>
-
                     <div className="space-y-4">
                       <Input
                         value={question}
@@ -346,13 +327,6 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                         className="min-h-[80px] rounded-xl border-border/50 bg-background/50 backdrop-blur text-foreground placeholder:text-muted-foreground/50"
                         placeholder={config.memoPlaceholder}
                       />
-                      {question.trim() && (
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className={`text-xs ${config.locale === "us" ? "border-purple-400/30 text-purple-300" : "border-gold/30 text-gold"}`}>
-                            {config.classifyLabel(questionType)}
-                          </Badge>
-                        </div>
-                      )}
                       <Button
                         className={`w-full rounded-xl font-medium shadow-lg transition-shadow ${
                           config.locale === "us"
