@@ -82,8 +82,8 @@ function classifyQuestionByLocale(question: string, locale: Locale): string {
 
 const seoData: Record<Locale, { title: string; description: string }> = {
   kr: {
-    title: "AI 통합 점술 상담 — 타로 + 사주 교차 검증 리딩",
-    description: "타로, 사주, 점성술, 자미두수를 결합한 AI 교차 검증 점술 상담. 깊이 있는 리딩으로 당신의 질문에 답합니다.",
+    title: "통합 점술 상담 — 타로 + 사주 교차 검증 리딩",
+    description: "타로, 사주, 점성술, 자미두수를 결합한 교차 검증 점술 상담. 깊이 있는 리딩으로 당신의 질문에 답합니다.",
   },
   jp: {
     title: "AI占いリーディング — タロット＋占星術の総合鑑定",
@@ -109,7 +109,7 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
   const [step, setStep] = useState<"question" | "birthInfo" | "select" | "loading" | "result">("question");
   const [deck, setDeck] = useState<DeckCard[]>(() => {
     const shuffled = [...tarotCards].sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, 30).map((card) => makeDeckCard(card, false, false, false));
+    return shuffled.map((card) => makeDeckCard(card, false, false, false));
   });
   const [picked, setPicked] = useState<DeckCard[]>([]);
   const [suitFilter, setSuitFilter] = useState("all");
@@ -224,7 +224,7 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
     setError(null);
     setSelectedQuestionType(null);
     const shuffled = [...tarotCards].sort(() => Math.random() - 0.5);
-    setDeck(shuffled.slice(0, 30).map((card) => makeDeckCard(card, false, false, false)));
+    setDeck(shuffled.map((card) => makeDeckCard(card, false, false, false)));
   };
 
   return (

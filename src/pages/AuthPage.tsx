@@ -76,7 +76,7 @@ export default function AuthPage() {
         <div className="mb-8 text-center">
           <div className="mb-3 text-3xl">☽</div>
           <h1 className="font-display text-2xl font-semibold text-foreground">
-            AI 통합 점술 상담
+            통합 점술 상담
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             {isLogin ? "로그인하고 심화 분석을 받아보세요" : "회원가입하고 무료 크레딧 3개를 받으세요"}
