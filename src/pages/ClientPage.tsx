@@ -410,28 +410,19 @@ export default function ClientPage() {
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.5 }}
             >
-              {/* Saju summary (if available) */}
-              {sajuResult && (
+              {/* Saju auto-calculated (hidden from UI, data only for AI) */}
+              {manseryeokResult && (
                 <Card className="mb-6 border-border/50 bg-card/80 backdrop-blur-xl">
                   <CardContent className="p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xs font-display italic text-gold">saju analysis</span>
-                      <Badge variant="outline" className="border-gold/30 text-gold text-[10px]">
-                        {sajuResult.strength}
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-display italic text-gold">✦ 출생 데이터 분석 준비 완료</span>
+                      <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 text-[10px]">
+                        적용됨
                       </Badge>
                     </div>
-                    <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                      <span>일간: {sajuResult.ilgan}({sajuResult.ilganElement})</span>
-                      <span>•</span>
-                      <span>용신: {sajuResult.yongsin}</span>
-                      <span>•</span>
-                      <span>
-                        {sajuResult.yearPillar.cheongan}{sajuResult.yearPillar.jiji} /
-                        {sajuResult.monthPillar.cheongan}{sajuResult.monthPillar.jiji} /
-                        {sajuResult.dayPillar.cheongan}{sajuResult.dayPillar.jiji} /
-                        {sajuResult.hourPillar.cheongan}{sajuResult.hourPillar.jiji}
-                      </span>
-                    </div>
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      입력하신 출생 정보를 기반으로 정밀 분석 데이터가 자동 생성되었습니다.
+                    </p>
                   </CardContent>
                 </Card>
               )}
