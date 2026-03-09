@@ -191,6 +191,22 @@ export function analyzeSuitPattern(suits: string[]): string {
 /**
  * 숫자 패턴 분석
  */
+/**
+ * 카드 조합 요약 생성 (AI 프롬프트용)
+ */
+export function getCombinationSummary(cardIds: number[], questionType: string): string {
+  const matches = findMatchingCombinations(cardIds);
+  if (matches.length === 0) return "";
+
+  const parts = matches.map((m) => {
+    const typeKey = questionType as keyof CardCombination;
+    const specific = (typeKey && m[typeKey] as string) || "";
+    return `[${m.theme}] ${m.interpretation}${specific ? ` | ${questionType}: ${specific}` : ""} | Risk: ${m.risk}`;
+  });
+
+  return parts.join("\n");
+}
+
 export function analyzeNumberPattern(numbers: number[]): string {
   const patterns: string[] = [];
 
