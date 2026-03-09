@@ -14,7 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Sparkles, Eye, EyeOff, CheckCircle2, ChevronRight, Star, Crown, ArrowLeft } from "lucide-react";
+import { Sparkles, Eye, EyeOff, CheckCircle2, ChevronRight, Star, Crown, ArrowLeft, Settings } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { tarotCards, makeDeckCard, type DeckCard } from "@/data/tarotCards";
 import { calculateSaju, getSajuTarotCrossKeywords, getSajuForQuestion, type SajuResult } from "@/lib/saju";
 import { calculateNatalChart, getAstrologyForQuestion, getCurrentTransits, type AstrologyResult } from "@/lib/astrology";
@@ -131,6 +132,7 @@ function StepIndicator({ currentStep, isLoveQuestion }: { currentStep: Step; isL
 
 // ─── Main Component ───
 export default function ClientPage() {
+  const navigate = useNavigate();
   const [step, setStep] = useState<Step>("question");
   const [question, setQuestion] = useState("");
   const [memo, setMemo] = useState("");
@@ -371,6 +373,15 @@ export default function ClientPage() {
       </div>
 
       <div className="relative z-10 mx-auto max-w-lg px-4 py-8 sm:px-6">
+        {/* Admin button */}
+        <button
+          onClick={() => navigate("/reader")}
+          className="absolute top-4 right-4 p-2 rounded-full text-muted-foreground/50 hover:text-gold hover:bg-secondary/50 transition-colors"
+          title="관리자"
+        >
+          <Settings className="h-5 w-5" />
+        </button>
+
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8 text-center">
           <div className="animate-float mb-3 text-3xl">☽</div>
