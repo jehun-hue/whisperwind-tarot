@@ -182,8 +182,7 @@ serve(async (req) => {
 
   try {
     const GOOGLE_GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!GOOGLE_GEMINI_API_KEY && !LOVABLE_API_KEY) throw new Error("No AI API key configured");
+    if (!GOOGLE_GEMINI_API_KEY) throw new Error("GOOGLE_GEMINI_API_KEY is not configured");
 
     const {
       question, questionType, memo, cards, sajuData, birthInfo,
