@@ -373,6 +373,15 @@ export default function ClientPage() {
       </div>
 
       <div className="relative z-10 mx-auto max-w-lg px-4 py-8 sm:px-6">
+        {/* Admin button */}
+        <button
+          onClick={() => navigate("/reader")}
+          className="absolute top-4 right-4 p-2 rounded-full text-muted-foreground/50 hover:text-gold hover:bg-secondary/50 transition-colors"
+          title="관리자"
+        >
+          <Settings className="h-5 w-5" />
+        </button>
+
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8 text-center">
           <div className="animate-float mb-3 text-3xl">☽</div>
