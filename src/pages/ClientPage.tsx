@@ -593,7 +593,7 @@ export default function ClientPage() {
                           }
                         }}
                         className="w-20 rounded-xl border-border/50 bg-background/50 text-foreground text-center"
-                        disabled={birthTime === "unknown" && !birthHourInput}
+                        disabled={false}
                       />
                       <span className="text-sm text-muted-foreground">시</span>
                       <Input
