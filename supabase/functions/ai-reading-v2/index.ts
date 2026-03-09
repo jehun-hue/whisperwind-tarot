@@ -411,7 +411,7 @@ ${ziweiSection}
     }
 
     const aiResult = await response.json();
-    const content = aiResult.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const content = aiResult?.choices?.[0]?.message?.content || "";
 
     let reading;
     try {
