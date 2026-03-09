@@ -69,6 +69,7 @@ interface ReadingResultV2Props {
   isLoading: boolean;
   onReset: () => void;
   hasSaju: boolean;
+  children?: React.ReactNode;
 }
 
 const gradeColors: Record<string, { bg: string; text: string; glow: string }> = {
@@ -153,7 +154,7 @@ function SystemReadingCard({ systemKey, reading }: { systemKey: string; reading?
   );
 }
 
-export default function ReadingResultV2({ reading, isLoading, onReset, hasSaju }: ReadingResultV2Props) {
+export default function ReadingResultV2({ reading, isLoading, onReset, hasSaju, children }: ReadingResultV2Props) {
   if (isLoading) {
     return (
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center">
@@ -342,6 +343,9 @@ export default function ReadingResultV2({ reading, isLoading, onReset, hasSaju }
           </CardContent>
         </Card>
       )}
+
+      {/* Manual Override */}
+      {children}
 
       {/* Reset */}
       <div className="pt-4 text-center">
