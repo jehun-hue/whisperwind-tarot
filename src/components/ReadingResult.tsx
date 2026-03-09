@@ -163,6 +163,9 @@ export default function ReadingResult({ reading, isLoading, onReset, hasSaju }: 
         </motion.div>
       ))}
 
+      {/* Saju Manual Override */}
+      {children}
+
       {/* Reset */}
       <div className="pt-4 text-center">
         <Button
