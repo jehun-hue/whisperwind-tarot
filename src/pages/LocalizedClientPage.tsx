@@ -224,7 +224,7 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
     setError(null);
     setSelectedQuestionType(null);
     const shuffled = [...tarotCards].sort(() => Math.random() - 0.5);
-    setDeck(shuffled.slice(0, 30).map((card) => makeDeckCard(card, false, false, false)));
+    setDeck(shuffled.map((card) => makeDeckCard(card, false, false, false)));
   };
 
   return (
