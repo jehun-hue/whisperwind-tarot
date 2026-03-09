@@ -160,7 +160,7 @@ export default function BirthInfoForm({ onSubmit, onSkip }: BirthInfoFormProps) 
               <Button
                 className="w-full rounded-xl bg-gradient-to-r from-primary to-gold text-primary-foreground font-medium shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-shadow"
                 onClick={() =>
-                  onSubmit({ gender, birthDate, birthTime, birthPlace, isLunar })
+                  onSubmit({ name, gender, birthDate, birthTime, birthPlace, isLunar })
                 }
                 disabled={!canSubmit}
               >
