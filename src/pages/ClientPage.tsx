@@ -522,6 +522,7 @@ export default function ClientPage() {
                         <button
                           onClick={() => {
                             setBirthAmPm("am");
+                            if (birthTime === "unknown") setBirthTime("");
                             if (birthHourInput) {
                               const h = parseInt(birthHourInput, 10);
                               if (!isNaN(h) && h >= 0 && h <= 12) {
@@ -539,6 +540,7 @@ export default function ClientPage() {
                         <button
                           onClick={() => {
                             setBirthAmPm("pm");
+                            if (birthTime === "unknown") setBirthTime("");
                             if (birthHourInput) {
                               const h = parseInt(birthHourInput, 10);
                               if (!isNaN(h) && h >= 0 && h <= 12) {
@@ -591,7 +593,7 @@ export default function ClientPage() {
                           }
                         }}
                         className="w-20 rounded-xl border-border/50 bg-background/50 text-foreground text-center"
-                        disabled={birthTime === "unknown" && !birthHourInput}
+                        disabled={false}
                       />
                       <span className="text-sm text-muted-foreground">시</span>
                       <Input
@@ -611,7 +613,7 @@ export default function ClientPage() {
                           }
                         }}
                         className="w-20 rounded-xl border-border/50 bg-background/50 text-foreground text-center"
-                        disabled={birthTime === "unknown" && !birthHourInput}
+                        disabled={false}
                       />
                       <span className="text-sm text-muted-foreground">분</span>
                     </div>
