@@ -328,6 +328,34 @@ export default function ClientPage() {
                       className="min-h-[80px] rounded-xl border-border/50 bg-background/50 backdrop-blur text-foreground placeholder:text-muted-foreground/50"
                       placeholder="상황을 자세히 적어주시면 더 정확한 리딩이 가능합니다"
                     />
+                    {/* Reading Style Selector */}
+                    <div className="space-y-2">
+                      <label className="text-xs font-medium text-muted-foreground">해석 스타일</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {(Object.entries(readingStyleLabels) as [ReadingStyle, typeof readingStyleLabels[ReadingStyle]][]).map(([key, style]) => (
+                          <button
+                            key={key}
+                            onClick={() => setReadingStyle(key)}
+                            className={`rounded-xl border p-3 text-left transition-all ${
+                              readingStyle === key
+                                ? "border-gold/60 bg-gold/10 shadow-sm shadow-gold/10"
+                                : "border-border/30 bg-background/30 hover:border-border/50"
+                            }`}
+                          >
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-sm">{style.icon}</span>
+                              <span className={`text-xs font-medium ${readingStyle === key ? "text-gold" : "text-foreground"}`}>
+                                {style.label}
+                              </span>
+                            </div>
+                            <p className="mt-1 text-[10px] leading-tight text-muted-foreground">
+                              {style.description}
+                            </p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
                     {question.trim() && (
                       <div className="flex items-center gap-2">
                         <Badge variant="outline" className="border-gold/30 text-gold text-xs">
