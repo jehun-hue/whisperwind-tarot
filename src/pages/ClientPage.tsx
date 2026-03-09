@@ -205,7 +205,7 @@ export default function ClientPage() {
       if (dbError) throw dbError;
 
       const { data: aiData, error: fnError } = await supabase.functions.invoke("ai-reading", {
-        body: { question, questionType, memo, cards: cardData, sajuData: sajuDataForAI, birthInfo, astrologyData: astroDataForAI, ziweiData: ziweiDataForAI, combinationSummary, readingStyle },
+        body: { question, questionType, memo, cards: cardData, sajuData: sajuDataForAI, birthInfo, astrologyData: astroDataForAI, ziweiData: ziweiDataForAI, combinationSummary, readingStyle, manseryeokData: manseryeokResult },
       });
 
       if (fnError) throw fnError;
