@@ -67,13 +67,13 @@ export default function BirthInfoForm({ onSubmit, onSkip }: BirthInfoFormProps) 
             {/* Name */}
             <div className="space-y-2">
               <Label className="flex items-center gap-2 text-sm text-muted-foreground">
-                <User className="h-3.5 w-3.5" /> 이름
+                <User className="h-3.5 w-3.5" /> 이름/닉네임
               </Label>
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="rounded-xl border-border/50 bg-background/50 backdrop-blur text-foreground placeholder:text-muted-foreground/50"
-                placeholder="이름을 입력해주세요 (선택사항)"
+                placeholder="이름/닉네임을 입력해주세요"
               />
             </div>
 
