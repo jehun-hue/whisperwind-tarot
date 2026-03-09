@@ -21,6 +21,7 @@ const unknownLabel: Record<string, string> = {
 };
 
 export default function LocalizedBirthInfoForm({ config, onSubmit, onSkip }: LocalizedBirthInfoFormProps) {
+  const [name, setName] = useState("");
   const [gender, setGender] = useState<"male" | "female">("female");
   const [birthDate, setBirthDate] = useState("");
   const [birthTime, setBirthTime] = useState("");
