@@ -50,6 +50,7 @@ interface ReadingSession {
   final_confidence: number | null;
   status: string;
   created_at: string;
+  user_name: string | null;
 }
 
 export default function ReaderPage() {
