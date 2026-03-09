@@ -605,8 +605,8 @@ export default function ClientPage() {
                         <SelectTrigger className={`w-24 rounded-xl border-border/50 bg-background/50 text-foreground ${birthTime === "unknown" ? "opacity-40" : ""}`}>
                           <SelectValue placeholder="분" />
                         </SelectTrigger>
-                        <SelectContent>
-                          {["00", "10", "20", "30", "40", "50"].map((m) => (
+                        <SelectContent className="max-h-48 overflow-y-auto">
+                          {Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0")).map((m) => (
                             <SelectItem key={m} value={m}>{m}분</SelectItem>
                           ))}
                         </SelectContent>
