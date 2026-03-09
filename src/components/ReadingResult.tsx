@@ -60,7 +60,7 @@ function ScoreBar({ label, score }: { label: string; score: number }) {
   );
 }
 
-export default function ReadingResult({ reading, isLoading, onReset, hasSaju }: ReadingResultProps) {
+export default function ReadingResult({ reading, isLoading, onReset, hasSaju, children }: ReadingResultProps) {
   if (isLoading) {
     return (
       <motion.div
