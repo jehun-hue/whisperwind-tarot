@@ -586,7 +586,14 @@ export default function ClientPage() {
                   isLoading={step === "loading"}
                   onReset={resetAll}
                   hasSaju={!!sajuResult}
-                />
+                >
+                  {birthInfo && (
+                    <SajuManualOverride
+                      manualData={manualSajuData}
+                      onManualDataChange={setManualSajuData}
+                    />
+                  )}
+                </ReadingResult>
               )}
             </motion.div>
           )}
