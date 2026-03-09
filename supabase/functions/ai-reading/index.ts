@@ -200,7 +200,7 @@ serve(async (req) => {
     const GOOGLE_GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
     if (!GOOGLE_GEMINI_API_KEY) throw new Error("GOOGLE_GEMINI_API_KEY is not configured");
 
-    const { question, questionType, memo, cards, sajuData, birthInfo, astrologyData, ziweiData, combinationSummary, locale = "kr", readingStyle = "default" } = await req.json();
+    const { question, questionType, memo, cards, sajuData, birthInfo, astrologyData, ziweiData, combinationSummary, locale = "kr", readingStyle = "default", manseryeokData, forcetellData } = await req.json();
 
     const basePrompt = systemPrompts[locale] || systemPrompts.kr;
     const styleModifier = readingStyleModifiers[readingStyle] || "";
