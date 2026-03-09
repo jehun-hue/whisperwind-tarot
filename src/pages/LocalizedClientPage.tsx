@@ -517,6 +517,36 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                               isUS
                                 ? "bg-gradient-to-b from-purple-500/15 via-indigo-500/10 to-blue-500/15"
                                 : "bg-gradient-to-b from-gold/10 to-accent/10"
+                            }`}
+                          >
+                            <span className={`text-lg font-bold ${isUS ? "text-purple-300" : "text-gold"}`}
+                                  style={{ fontFamily: config.displayFont }}>
+                              {getCardDisplayName(card, config.locale)[0]}
+                            </span>
+                            <span className={`mt-0.5 text-[8px] leading-tight ${isUS ? "text-purple-200" : "text-gold-light"}`}>
+                              {getCardDisplayName(card, config.locale)}
+                            </span>
+                            <span className={`text-[7px] ${isUS ? "text-purple-400" : "text-gold/60"}`}>
+                              ●{dir.short}
+                            </span>
+                          </motion.div>
+                        ) : (
+                          <img
+                            src={cardBackImg}
+                            alt="tarot card"
+                            className={`h-full w-full object-cover transition-all duration-300 ${
+                              isUS
+                                ? "opacity-60 group-hover:opacity-100 group-hover:brightness-110"
+                                : "opacity-70 group-hover:opacity-100"
+                            }`}
+                          />
+                        )}
+                      </motion.button>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
 
             {/* Step 4: Completion */}
             {(step === "loading" || step === "result") && (
