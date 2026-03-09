@@ -14,7 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Sparkles, Eye, EyeOff, CheckCircle2, ChevronRight, Star, Crown, ArrowLeft } from "lucide-react";
+import { Sparkles, Eye, EyeOff, CheckCircle2, ChevronRight, Star, Crown, ArrowLeft, Settings } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { tarotCards, makeDeckCard, type DeckCard } from "@/data/tarotCards";
 import { calculateSaju, getSajuTarotCrossKeywords, getSajuForQuestion, type SajuResult } from "@/lib/saju";
 import { calculateNatalChart, getAstrologyForQuestion, getCurrentTransits, type AstrologyResult } from "@/lib/astrology";
