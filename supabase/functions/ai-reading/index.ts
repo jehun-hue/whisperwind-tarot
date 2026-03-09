@@ -197,8 +197,8 @@ serve(async (req) => {
   }
 
   try {
-    const GOOGLE_GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
-    if (!GOOGLE_GEMINI_API_KEY) throw new Error("GOOGLE_GEMINI_API_KEY is not configured");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const { question, questionType, memo, cards, sajuData, birthInfo, astrologyData, ziweiData, combinationSummary, locale = "kr", readingStyle = "default", manseryeokData, forcetellData } = await req.json();
 
@@ -314,17 +314,20 @@ ${locale === "jp"
   ? "Based on ALL the above data, perform the highest-quality Tarot + Astrology spiritual reading in English. If Eastern framework data (Saju/Ziwei) is available, use it for internal cross-validation to increase accuracy — reference as 'multi-framework validation' without naming the systems. Every field must contain at least 6 sentences with specific technical evidence." 
   : "위 모든 데이터를 기반으로 4개 체계(타로+사주+점성술+자미두수) 교차 검증 분석을 수행하세요. 모든 필드는 최소 6문장 이상, 기술적 근거를 반드시 명시하세요. 사화(四化)와 대한/소한 데이터가 있으면 반드시 활용하세요."}`;
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${GOOGLE_GEMINI_API_KEY}`, {
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
-        contents: [
-          { role: "user", parts: [{ text: systemPrompt + "\n\n" + userPrompt }] },
+        model: "google/gemini-2.5-pro",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
         ],
-        generationConfig: {
-          temperature: 0.72,
-          maxOutputTokens: 12000,
-        },
+        temperature: 0.72,
+        max_tokens: 12000,
       }),
     });
 
@@ -432,11 +435,10 @@ ${locale === "jp"
     }
 
     const aiResult = await response.json();
-    const candidate = aiResult?.candidates?.[0];
-    const content = candidate?.content?.parts?.map((part: { text?: string }) => part?.text || "").join("\n").trim() || "";
+    const content = aiResult?.choices?.[0]?.message?.content?.trim() || "";
 
     if (!content) {
-      console.error("Empty AI content", JSON.stringify({ finishReason: candidate?.finishReason, promptFeedback: aiResult?.promptFeedback }));
+      console.error("Empty AI content", JSON.stringify(aiResult));
       const emptyFallback = {
         conclusion: "AI가 빈 응답을 반환해 상세 분석을 생성하지 못했습니다. 잠시 후 다시 시도해주세요.",
         tarotAnalysis: "현재 요청은 처리되었지만 상세 텍스트가 반환되지 않았습니다. 같은 질문으로 재시도하면 정상 생성되는 경우가 많습니다.",
