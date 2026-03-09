@@ -238,9 +238,10 @@ ${locale === "jp"
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-2.5-pro",
         messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }],
-        temperature: 0.65,
+        temperature: 0.72,
+        max_tokens: 8000,
       }),
     });
 
