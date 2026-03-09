@@ -213,18 +213,15 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
   const resetAll = () => {
     setQuestion("");
     setMemo("");
-    setStep("question");
     setPicked([]);
     setSuitFilter("all");
-    setBirthInfo(null);
-    setSajuResult(null);
-    setAstroResult(null);
-    setZiweiResult(null);
     setAiReading(null);
     setError(null);
     setSelectedQuestionType(null);
     const shuffled = [...tarotCards].sort(() => Math.random() - 0.5);
     setDeck(shuffled.map((card) => makeDeckCard(card, false, false, false)));
+    // 출생정보가 이미 있으면 질문 단계로, 출생정보 입력은 생략
+    setStep("question");
   };
 
   return (
@@ -362,7 +359,7 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                             ? "bg-gradient-to-r from-purple-600 to-indigo-500 text-white shadow-purple-500/20 hover:shadow-purple-500/40"
                             : "bg-gradient-to-r from-primary to-gold text-primary-foreground shadow-primary/20 hover:shadow-primary/40"
                         }`}
-                        onClick={() => setStep("birthInfo")}
+                        onClick={() => setStep(birthInfo ? "select" : "birthInfo")}
                         disabled={!question.trim()}
                       >
                         <Sparkles className="mr-2 h-4 w-4" />
