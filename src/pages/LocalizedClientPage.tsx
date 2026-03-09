@@ -196,6 +196,7 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
           is_lunar: birthInfo?.isLunar || false, cards: cardData as any,
           saju_data: sajuDataForDB as any, status: "pending",
           user_id: user?.id || null,
+          user_name: birthInfo?.name || null,
         });
 
       if (dbError) throw dbError;
