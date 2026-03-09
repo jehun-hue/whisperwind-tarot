@@ -381,6 +381,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       });
     } catch (err) {
       console.error("AI analysis error:", err);
+      setAnalysisError(err instanceof Error ? err.message : "분석 중 오류가 발생했습니다.");
       await supabase.from("reading_sessions").update({ status: "error" }).eq("id", session.id);
     } finally {
       setAnalyzing(false);
