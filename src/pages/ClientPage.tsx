@@ -92,6 +92,7 @@ export default function ClientPage() {
   const [picked, setPicked] = useState<DeckCard[]>([]);
   const [suitFilter, setSuitFilter] = useState("all");
   const [birthInfo, setBirthInfo] = useState<BirthInfo | null>(null);
+  const [readingStyle, setReadingStyle] = useState<ReadingStyle>("default");
   const [sajuResult, setSajuResult] = useState<SajuResult | null>(null);
   const [astroResult, setAstroResult] = useState<AstrologyResult | null>(null);
   const [ziweiResult, setZiweiResult] = useState<ZiWeiResult | null>(null);
