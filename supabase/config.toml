@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.ai-reading-v2]
 verify_jwt = false
+
+[functions.ai-reading-v3]
+verify_jwt = false
