@@ -417,11 +417,20 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       let astroDataForAI = null;
       let ziweiDataForAI = null;
       let sajuDataForAI = saju;
+      let manseryeokDataForAI = null;
 
       if (birthInfo && birthInfo.birthDate) {
         try {
           const [y, m, d] = birthInfo.birthDate.split("-").map(Number);
           const hour = birthInfo.birthTime ? parseInt(birthInfo.birthTime.split(":")[0]) : 12;
+          const minute = birthInfo.birthTime ? parseInt(birthInfo.birthTime.split(":")[1]) : 0;
+
+          // Manseryeok auto-calculation
+          try {
+            manseryeokDataForAI = calculateManseryeokSaju(y, m, d, hour, minute, birthInfo.isLunar as boolean);
+          } catch (e) {
+            console.error("Manseryeok V2 calc error:", e);
+          }
 
           if (!sajuDataForAI) {
             const sajuResult = calculateSaju(y, m, d, hour);
@@ -463,6 +472,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
           ziweiData: ziweiDataForAI,
           combinationSummary,
           forcetellData: forcetellData.trim() || null,
+          manseryeokData: manseryeokDataForAI,
         },
       });
 
