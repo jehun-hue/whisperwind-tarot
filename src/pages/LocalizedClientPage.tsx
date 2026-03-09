@@ -213,18 +213,15 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
   const resetAll = () => {
     setQuestion("");
     setMemo("");
-    setStep("question");
     setPicked([]);
     setSuitFilter("all");
-    setBirthInfo(null);
-    setSajuResult(null);
-    setAstroResult(null);
-    setZiweiResult(null);
     setAiReading(null);
     setError(null);
     setSelectedQuestionType(null);
     const shuffled = [...tarotCards].sort(() => Math.random() - 0.5);
     setDeck(shuffled.map((card) => makeDeckCard(card, false, false, false)));
+    // 출생정보가 이미 있으면 질문 단계로, 출생정보 입력은 생략
+    setStep("question");
   };
 
   return (
