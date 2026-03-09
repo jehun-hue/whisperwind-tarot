@@ -230,10 +230,14 @@ export default function ClientPage() {
     }
   };
 
+  // ─── 5-minute cache ───
+  const cacheRef = React.useRef<{ key: string; data: any; ts: number } | null>(null);
+
   const handleSubmit = async () => {
     if (!hasEnoughCards) return;
     setStep("loading");
     setError(null);
+    setLoadingMessage("카드의 에너지를 읽고 있습니다...");
 
     const cardData = picked.map((c) => ({
       id: c.id, name: c.name, korean: c.korean, suit: c.suit, isReversed: c.isReversed,
@@ -246,6 +250,16 @@ export default function ClientPage() {
       birthPlace: "",
       isLunar,
     } : null;
+
+    // Cache key based on inputs
+    const cacheKey = JSON.stringify({ question, questionType, memo, cardIds: cardData.map(c => c.id + (c.isReversed ? 'R' : '')), grade: selectedGrade, romanceStatus });
+
+    // Check cache (5 min TTL)
+    if (cacheRef.current && cacheRef.current.key === cacheKey && Date.now() - cacheRef.current.ts < 5 * 60 * 1000) {
+      setAiReading(cacheRef.current.data);
+      setStep("result");
+      return;
+    }
 
     let sajuDataForAI = null;
     let astroDataForAI = null;
@@ -276,7 +290,8 @@ export default function ClientPage() {
 
       if (dbError) throw dbError;
 
-      // Always use v3 edge function
+      setLoadingMessage("6개 체계로 교차 검증 중...");
+
       const { data: aiData, error: fnError } = await supabase.functions.invoke("ai-reading-v3", {
         body: {
           question, questionType, memo,
@@ -295,6 +310,9 @@ export default function ClientPage() {
       const reading = aiData?.reading;
       setAiReading(reading);
 
+      // Store in cache
+      cacheRef.current = { key: cacheKey, data: reading, ts: Date.now() };
+
       if (session?.id && reading) {
         await supabase.from("reading_sessions").update({
           ai_reading: reading as any,
@@ -306,7 +324,8 @@ export default function ClientPage() {
       setStep("result");
     } catch (err: any) {
       console.error("Reading error:", err);
-      setError(err.message || "분석 중 오류가 발생했습니다.");
+      const msg = err.message || "분석 중 오류가 발생했습니다.";
+      setError(msg);
       setStep("result");
     }
   };
