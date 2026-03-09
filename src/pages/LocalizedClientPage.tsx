@@ -223,7 +223,8 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
     setAiReading(null);
     setError(null);
     setSelectedQuestionType(null);
-    setDeck(tarotCards.map((card) => makeDeckCard(card, false, false, false)));
+    const shuffled = [...tarotCards].sort(() => Math.random() - 0.5);
+    setDeck(shuffled.slice(0, 25).map((card) => makeDeckCard(card, false, false, false)));
   };
 
   return (
