@@ -172,7 +172,7 @@ export const localeConfigs: Record<Locale, LocaleConfig> = {
   jp: {
     locale: "jp",
     lang: "ja",
-    siteTitle: "AI占いリーディング",
+    siteTitle: "占いリーディング",
     siteSubtitle: "tarot reading",
     siteDescription: "タロット＋西洋占星術を中心に、あなたの心に寄り添うリーディングをお届けします。\n静かに心を落ち着けて、直感に従ってください。",
     stepLabels: ["質問", "生年月日", "カード選択", "結果"],
@@ -269,7 +269,7 @@ export const localeConfigs: Record<Locale, LocaleConfig> = {
   us: {
     locale: "us",
     lang: "en",
-    siteTitle: "AI Spiritual Reading",
+    siteTitle: "Spiritual Reading",
     siteSubtitle: "cosmic guidance",
     siteDescription: "Tarot + Astrology combined for a deeply intuitive spiritual reading.\nClear your mind, trust your intuition, and let the universe guide you.",
     stepLabels: ["Question", "Birth Info", "Card Selection", "Reading"],
