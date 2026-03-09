@@ -379,6 +379,102 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       setAnalyzing(false);
     }
   };
+
+  const runAIAnalysisV2 = async () => {
+    setAnalyzing(true);
+    try {
+      await supabase.from("reading_sessions").update({ status: "analyzing" }).eq("id", session.id);
+
+      const cards = session.cards as any[];
+      const birthInfo = session.birth_date ? {
+        gender: session.gender,
+        birthDate: session.birth_date,
+        birthTime: session.birth_time || "",
+        birthPlace: session.birth_place || "",
+        isLunar: session.is_lunar || false,
+      } : null;
+
+      let astroDataForAI = null;
+      let ziweiDataForAI = null;
+      let sajuDataForAI = saju;
+
+      if (birthInfo && birthInfo.birthDate) {
+        try {
+          const [y, m, d] = birthInfo.birthDate.split("-").map(Number);
+          const hour = birthInfo.birthTime ? parseInt(birthInfo.birthTime.split(":")[0]) : 12;
+
+          if (!sajuDataForAI) {
+            const sajuResult = calculateSaju(y, m, d, hour);
+            sajuDataForAI = {
+              ...sajuResult,
+              crossKeywords: getSajuTarotCrossKeywords(sajuResult, cards.map((c: any) => c.suit)),
+              questionAnalysis: getSajuForQuestion(sajuResult, qType as any),
+            };
+          }
+
+          const astro = calculateNatalChart(y, m, d, hour);
+          astroDataForAI = {
+            ...astro,
+            questionAnalysis: getAstrologyForQuestion(astro, qType as any),
+            transits: getCurrentTransits(astro),
+          };
+
+          const ziwei = calculateZiWei(y, m, d, hour, (birthInfo.gender as "male" | "female") || "female");
+          ziweiDataForAI = {
+            ...ziwei,
+            questionAnalysis: getZiWeiForQuestion(ziwei, qType as any),
+          };
+        } catch (e) {
+          console.error("V2 analysis calc error:", e);
+        }
+      }
+
+      const combinationSummary = getCombinationSummary(cards.map((c: any) => c.id), qType as any);
+
+      const { data: aiData, error: fnError } = await supabase.functions.invoke("ai-reading-v2", {
+        body: {
+          question: session.question,
+          questionType: qType,
+          memo: session.memo,
+          cards,
+          sajuData: sajuDataForAI,
+          birthInfo,
+          astrologyData: astroDataForAI,
+          ziweiData: ziweiDataForAI,
+          combinationSummary,
+        },
+      });
+
+      if (fnError) throw fnError;
+
+      const result = aiData?.reading;
+      if (result) {
+        // Store v2 result in ai_reading field (JSON)
+        const grade = result.final_reading?.grade || "C";
+        const overallScore = grade === "S" ? 97 : grade === "A" ? 89 : grade === "B" ? 77 : 55;
+        
+        await supabase.from("reading_sessions").update({
+          ai_reading: result as any,
+          saju_data: sajuDataForAI as any,
+          final_confidence: overallScore,
+          status: "completed",
+        }).eq("id", session.id);
+
+        onUpdate({
+          ...session,
+          ai_reading: result,
+          saju_data: sajuDataForAI,
+          final_confidence: overallScore,
+          status: "completed",
+        });
+      }
+    } catch (err) {
+      console.error("AI V2 analysis error:", err);
+      await supabase.from("reading_sessions").update({ status: "error" }).eq("id", session.id);
+    } finally {
+      setAnalyzing(false);
+    }
+  
   const downloadPDF = () => {
     if (!reading) return;
     const cards = session.cards as any[];
