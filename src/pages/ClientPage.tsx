@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import BirthInfoForm, { type BirthInfo } from "@/components/BirthInfoForm";
 import ReadingResult from "@/components/ReadingResult";
+import SajuManualOverride from "@/components/SajuManualOverride";
 import UserHeader from "@/components/UserHeader";
 import heroBg from "@/assets/tarot-hero-bg.jpg";
 import cardBackImg from "@/assets/card-back.png";
