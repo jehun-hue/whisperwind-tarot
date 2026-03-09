@@ -109,6 +109,8 @@ export const localeConfigs: Record<Locale, LocaleConfig> = {
     nextButton: "다음 단계로",
     birthTitle: "출생 정보 입력",
     birthSubtitle: "사주 분석을 위해 출생 정보를 입력해주세요",
+    nameLabel: "이름",
+    namePlaceholder: "이름을 입력해주세요 (선택사항)",
     genderLabel: "성별",
     genderOptions: { male: "👨 남성", female: "👩 여성" },
     birthDateLabel: "생년월일",
