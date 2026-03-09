@@ -314,26 +314,55 @@ ${gradeInstruction}
   }
 }`;
 
-    // Model selection: C,B → flash, A,S → pro
-    const model = selectedGrade === "S" || selectedGrade === "A"
-      ? "gemini-2.5-pro-preview-06-05"
-      : "gemini-2.0-flash-001";
+    // Model selection via Lovable AI Gateway
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const useGateway = !!LOVABLE_API_KEY;
+
+    const gatewayModel = selectedGrade === "S" || selectedGrade === "A"
+      ? "google/gemini-2.5-pro"
+      : "google/gemini-2.5-flash";
 
     const maxTokens = getMaxTokens(selectedGrade);
 
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GOOGLE_GEMINI_API_KEY}`;
+    let apiUrl: string;
+    let requestBody: any;
+    let requestHeaders: Record<string, string>;
 
-    const geminiBody = {
-      contents: [{ parts: [{ text: userPrompt }] }],
-      systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-      generationConfig: {
+    if (useGateway) {
+      apiUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
+      requestHeaders = {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+      };
+      requestBody = {
+        model: gatewayModel,
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: userPrompt },
+        ],
         temperature: 0.7,
-        topP: 0.9,
-        topK: 40,
-        maxOutputTokens: maxTokens,
-        responseMimeType: "application/json",
-      },
-    };
+        top_p: 0.9,
+        max_tokens: maxTokens,
+      };
+    } else {
+      // Fallback to direct Gemini API
+      const directModel = selectedGrade === "S" || selectedGrade === "A"
+        ? "gemini-2.5-pro-preview-06-05"
+        : "gemini-2.0-flash-001";
+      apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${directModel}:generateContent?key=${GOOGLE_GEMINI_API_KEY}`;
+      requestHeaders = { "Content-Type": "application/json" };
+      requestBody = {
+        contents: [{ parts: [{ text: userPrompt }] }],
+        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        generationConfig: {
+          temperature: 0.7,
+          topP: 0.9,
+          topK: 40,
+          maxOutputTokens: maxTokens,
+          responseMimeType: "application/json",
+        },
+      };
+    }
 
     let reading: any = null;
     let lastError: string = "";
