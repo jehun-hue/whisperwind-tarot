@@ -4,7 +4,7 @@ import { useSEO } from "@/hooks/useSEO";
 import heroBg from "@/assets/tarot-hero-bg.jpg";
 
 const locales = [
-  { code: "kr", flag: "🇰🇷", label: "한국어", desc: "타로 + 사주 + 점성술 + 자미두수" },
+  { code: "kr", flag: "🇰🇷", label: "한국어", desc: "타로 + 사주" },
   { code: "jp", flag: "🇯🇵", label: "日本語", desc: "タロット＋占星術リーディング" },
   { code: "us", flag: "🇺🇸", label: "English", desc: "Tarot + Astrology Spiritual Reading" },
 ];
