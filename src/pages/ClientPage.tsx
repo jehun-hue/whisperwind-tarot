@@ -228,7 +228,7 @@ export default function ClientPage() {
     setPicked([]);
     setSuitFilter("all");
     setBirthInfo(null);
-    setBirthInfo(null);
+    setReadingStyle("default");
     setSajuResult(null);
     setAstroResult(null);
     setZiweiResult(null);
