@@ -99,6 +99,7 @@ export default function ClientPage() {
   const [astroResult, setAstroResult] = useState<AstrologyResult | null>(null);
   const [ziweiResult, setZiweiResult] = useState<ZiWeiResult | null>(null);
   const [aiReading, setAiReading] = useState<any>(null);
+  const [manualSajuData, setManualSajuData] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const questionType = useMemo(() => classifyQuestion(question), [question]);
