@@ -140,6 +140,9 @@ export default function ClientPage() {
   const [birthMonth, setBirthMonth] = useState("");
   const [birthDay, setBirthDay] = useState("");
   const [birthTime, setBirthTime] = useState("unknown");
+  const [birthHourInput, setBirthHourInput] = useState("");
+  const [birthMinInput, setBirthMinInput] = useState("");
+  const [birthAmPm, setBirthAmPm] = useState<"am" | "pm">("am");
   const [gender, setGender] = useState<"male" | "female">("female");
   const [isLunar, setIsLunar] = useState(false);
   const [isLeapMonth, setIsLeapMonth] = useState(false);
@@ -334,7 +337,7 @@ export default function ClientPage() {
     setStep("question");
     setQuestion(""); setMemo("");
     setBirthYear(""); setBirthMonth(""); setBirthDay("");
-    setBirthTime("unknown"); setGender("female");
+    setBirthTime("unknown"); setBirthHourInput(""); setBirthMinInput(""); setBirthAmPm("am"); setGender("female");
     setIsLunar(false); setIsLeapMonth(false);
     setRomanceStatus(null);
     setPicked([]); setSelectedGrade("S");
@@ -513,26 +516,82 @@ export default function ClientPage() {
                   {/* Birth time - text input */}
                   <div className="space-y-2">
                     <label className="text-sm text-muted-foreground">출생 시간</label>
+                    {/* AM/PM toggle */}
+                    <div className="inline-flex items-center rounded-full border border-border/50 bg-background/30 p-0.5">
+                      <button
+                        onClick={() => {
+                          setBirthAmPm("am");
+                          if (birthHourInput) {
+                            const h = parseInt(birthHourInput, 10);
+                            if (!isNaN(h) && h >= 0 && h <= 11) setBirthTime(`${String(h).padStart(2, "0")}:${birthMinInput || "00"}`);
+                          }
+                        }}
+                        className={`rounded-full px-4 py-1.5 text-xs font-medium transition-all ${
+                          birthAmPm === "am" ? "bg-accent/20 text-accent shadow-sm" : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        오전
+                      </button>
+                      <button
+                        onClick={() => {
+                          setBirthAmPm("pm");
+                          if (birthHourInput) {
+                            const h = parseInt(birthHourInput, 10);
+                            if (!isNaN(h) && h >= 0 && h <= 11) {
+                              const h24 = h === 12 ? 12 : h + 12;
+                              setBirthTime(`${String(h24).padStart(2, "0")}:${birthMinInput || "00"}`);
+                            }
+                          }
+                        }}
+                        className={`rounded-full px-4 py-1.5 text-xs font-medium transition-all ${
+                          birthAmPm === "pm" ? "bg-accent/20 text-accent shadow-sm" : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        오후
+                      </button>
+                    </div>
+                    {/* Hour / Min inputs */}
                     <div className="flex items-center gap-2">
                       <Input
                         type="text"
                         inputMode="numeric"
-                        placeholder="예: 15 (0~23시, 모르면 비워두세요)"
-                        value={birthTime === "unknown" ? "" : birthTime.replace(":00", "")}
+                        placeholder="시"
+                        value={birthHourInput}
                         onChange={(e) => {
                           const v = e.target.value.replace(/\D/g, "").slice(0, 2);
+                          setBirthHourInput(v);
                           if (v === "") {
                             setBirthTime("unknown");
                           } else {
                             const num = parseInt(v, 10);
-                            if (num >= 0 && num <= 23) {
-                              setBirthTime(`${v.padStart(2, "0")}:00`);
+                            if (num >= 0 && num <= 12) {
+                              const h24 = birthAmPm === "pm" ? (num === 12 ? 12 : num + 12) : (num === 12 ? 0 : num);
+                              setBirthTime(`${String(h24).padStart(2, "0")}:${birthMinInput || "00"}`);
                             }
                           }
                         }}
-                        className="rounded-xl border-border/50 bg-background/50 text-foreground"
+                        className="w-20 rounded-xl border-border/50 bg-background/50 text-foreground text-center"
                       />
-                      <span className="text-sm text-muted-foreground shrink-0">시</span>
+                      <span className="text-sm text-muted-foreground">시</span>
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="분"
+                        value={birthMinInput}
+                        onChange={(e) => {
+                          const v = e.target.value.replace(/\D/g, "").slice(0, 2);
+                          setBirthMinInput(v);
+                          if (birthHourInput) {
+                            const hNum = parseInt(birthHourInput, 10);
+                            if (!isNaN(hNum) && hNum >= 0 && hNum <= 12) {
+                              const h24 = birthAmPm === "pm" ? (hNum === 12 ? 12 : hNum + 12) : (hNum === 12 ? 0 : hNum);
+                              setBirthTime(`${String(h24).padStart(2, "0")}:${v.padStart(2, "0") || "00"}`);
+                            }
+                          }
+                        }}
+                        className="w-20 rounded-xl border-border/50 bg-background/50 text-foreground text-center"
+                      />
+                      <span className="text-sm text-muted-foreground">분</span>
                     </div>
                     {birthTime === "unknown" && (
                       <p className="text-[10px] text-muted-foreground/70">
