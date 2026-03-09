@@ -422,32 +422,43 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                 )}
 
                 <div className="mb-6 text-center">
-                  <h2 className="text-2xl font-semibold text-foreground"
+                  <p className="text-sm text-muted-foreground">
+                    {config.locale === "kr" ? "카드를 섞었습니다." : config.locale === "jp" ? "カードをシャッフルしました。" : "The cards have been shuffled."}
+                  </p>
+                  <h2 className="mt-1 text-2xl font-semibold text-foreground"
                       style={{ fontFamily: config.displayFont }}>
-                    {config.cardSelectTitle}
+                    {config.locale === "kr" ? "마음이 끌리는 카드 3장을 선택하세요" : config.locale === "jp" ? "心が惹かれるカードを3枚選んでください" : "Choose 3 cards that call to you"}
                   </h2>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    {config.cardSelectSubtitle}
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground/60">
-                    {config.cardPositions.map((pos, i) => `${i + 1}: ${pos}`).join(" · ")}
-                  </p>
                   <div className="mt-4 flex items-center justify-center gap-3">
-                    {[0, 1, 2].map((i) => (
-                      <div
-                        key={i}
-                        className={`flex h-10 w-10 items-center justify-center rounded-full border-2 text-sm transition-all ${
-                          i < picked.length
-                            ? config.locale === "us"
-                              ? "border-purple-400 bg-purple-500/20 text-purple-300 glow-cosmic"
-                              : "border-gold bg-gold/20 text-gold glow-gold"
-                            : "border-border/30 text-muted-foreground/30"
-                        }`}
-                        style={{ fontFamily: config.displayFont }}
-                      >
-                        {i < picked.length ? getCardDisplayName(picked[i], config.locale)[0] : i + 1}
-                      </div>
-                    ))}
+                    {[0, 1, 2].map((i) => {
+                      const posLabels = config.locale === "kr"
+                        ? ["현재 상황", "핵심 문제", "결과 방향"]
+                        : config.locale === "jp"
+                        ? ["現状", "核心", "結果"]
+                        : ["Present", "Challenge", "Outcome"];
+                      return (
+                        <div
+                          key={i}
+                          className={`flex flex-col items-center gap-1`}
+                        >
+                          <div
+                            className={`flex h-10 w-10 items-center justify-center rounded-full border-2 text-sm transition-all ${
+                              i < picked.length
+                                ? config.locale === "us"
+                                  ? "border-purple-400 bg-purple-500/20 text-purple-300 glow-cosmic"
+                                  : "border-gold bg-gold/20 text-gold glow-gold"
+                                : "border-border/30 text-muted-foreground/30"
+                            }`}
+                            style={{ fontFamily: config.displayFont }}
+                          >
+                            {i < picked.length ? getCardDisplayName(picked[i], config.locale)[0] : i + 1}
+                          </div>
+                          <span className={`text-[10px] ${i < picked.length ? (config.locale === "us" ? "text-purple-300" : "text-gold") : "text-muted-foreground/50"}`}>
+                            {posLabels[i]}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
