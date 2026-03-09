@@ -182,6 +182,7 @@ serve(async (req) => {
       astrologyData,
       ziweiData,
       combinationSummary,
+      forcetellData,
     } = await req.json();
 
     // Build card descriptions
