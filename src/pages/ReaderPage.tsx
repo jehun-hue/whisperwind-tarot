@@ -575,25 +575,44 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
         </CardContent>
       </Card>
 
-      {/* AI Analysis Button */}
+      {/* AI Analysis Buttons */}
       {!reading && (
-        <Button
-          className="w-full rounded-xl bg-gradient-to-r from-primary to-gold text-primary-foreground font-medium shadow-lg"
-          onClick={runAIAnalysis}
-          disabled={analyzing}
-        >
-          {analyzing ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              AI 분석 진행 중...
-            </>
-          ) : (
-            <>
-              <Sparkles className="mr-2 h-4 w-4" />
-              AI 교차 검증 분석 실행
-            </>
-          )}
-        </Button>
+        <div className="space-y-2">
+          <Button
+            className="w-full rounded-xl bg-gradient-to-r from-primary to-gold text-primary-foreground font-medium shadow-lg"
+            onClick={runAIAnalysis}
+            disabled={analyzing}
+          >
+            {analyzing ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                AI 분석 진행 중...
+              </>
+            ) : (
+              <>
+                <Sparkles className="mr-2 h-4 w-4" />
+                AI 교차 검증 분석 실행 (v1)
+              </>
+            )}
+          </Button>
+          <Button
+            className="w-full rounded-xl bg-gradient-to-r from-purple-600 to-violet-500 text-white font-medium shadow-lg"
+            onClick={runAIAnalysisV2}
+            disabled={analyzing}
+          >
+            {analyzing ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                6체계 통합 분석 진행 중...
+              </>
+            ) : (
+              <>
+                <Sparkles className="mr-2 h-4 w-4" />
+                ✦ 6체계 통합 분석 실행 (v2)
+              </>
+            )}
+          </Button>
+        </div>
       )}
 
       {/* Saju Analysis */}
