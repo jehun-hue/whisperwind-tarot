@@ -23,18 +23,7 @@ export default function UserHeader({ locale = "kr" }: UserHeaderProps) {
   if (loading) return null;
 
   if (!user) {
-    return (
-      <div className="flex justify-end gap-2 px-4 py-3">
-        <Button
-          variant="outline"
-          size="sm"
-          className="rounded-full border-border/50 text-xs"
-          onClick={() => navigate("/auth")}
-        >
-          {t.login}
-        </Button>
-      </div>
-    );
+    return null;
   }
 
   return (
