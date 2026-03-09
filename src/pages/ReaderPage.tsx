@@ -243,6 +243,8 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
   const [savingComment, setSavingComment] = useState(false);
   const [userName, setUserName] = useState(session.user_name || "");
   const [savingName, setSavingName] = useState(false);
+  const [forcetellData, setForcetellData] = useState("");
+  const [showForcetellInput, setShowForcetellInput] = useState(false);
   const qType = session.question_type;
   const reading = session.ai_reading;
   const saju = session.saju_data;
