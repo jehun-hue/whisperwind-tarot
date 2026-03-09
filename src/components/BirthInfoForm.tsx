@@ -35,6 +35,7 @@ const BIRTH_HOURS = Array.from({ length: 24 }, (_, i) => {
 });
 
 export default function BirthInfoForm({ onSubmit, onSkip }: BirthInfoFormProps) {
+  const [name, setName] = useState("");
   const [gender, setGender] = useState<"male" | "female">("female");
   const [birthDate, setBirthDate] = useState("");
   const [birthTime, setBirthTime] = useState("");
