@@ -220,6 +220,7 @@ serve(async (req) => {
       ziweiData,
       combinationSummary,
       forcetellData,
+      manseryeokData,
     } = await req.json();
 
     // Build card descriptions
