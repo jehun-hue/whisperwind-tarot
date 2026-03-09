@@ -114,6 +114,15 @@ export default function ReaderPage() {
     );
   }
 
+  const filteredSessions = useMemo(() => {
+    if (!searchQuery.trim()) return sessions;
+    const q = searchQuery.trim().toLowerCase();
+    return sessions.filter(s =>
+      (s.user_name && s.user_name.toLowerCase().includes(q)) ||
+      (s.question && s.question.toLowerCase().includes(q))
+    );
+  }, [sessions, searchQuery]);
+
   const pendingCount = sessions.filter(s => s.status === "pending").length;
 
   return (
