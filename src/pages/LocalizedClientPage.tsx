@@ -196,6 +196,7 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
           is_lunar: birthInfo?.isLunar || false, cards: cardData as any,
           saju_data: sajuDataForDB as any, status: "pending",
           user_id: user?.id || null,
+          user_name: birthInfo?.name || null,
         });
 
       if (dbError) throw dbError;
@@ -623,7 +624,13 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                         </motion.div>
                         <h2 className="text-xl font-semibold text-foreground"
                             style={{ fontFamily: config.displayFont }}>
-                          {config.completionTitle}
+                          {birthInfo?.name
+                            ? config.locale === "kr"
+                              ? `${birthInfo.name}님의 리딩이 접수되었습니다`
+                              : config.locale === "jp"
+                              ? `${birthInfo.name}様のリーディングを受け付けました`
+                              : `${birthInfo.name}'s Reading Submitted`
+                            : config.completionTitle}
                         </h2>
                         <p className="mt-4 text-sm leading-relaxed text-muted-foreground whitespace-pre-line">
                           {config.completionMessage}
