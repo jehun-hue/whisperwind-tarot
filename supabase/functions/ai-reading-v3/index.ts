@@ -375,19 +375,28 @@ ${gradeInstruction}
       try {
         const resp = await fetch(apiUrl, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(geminiBody),
+          headers: requestHeaders,
+          body: JSON.stringify(requestBody),
         });
 
         if (!resp.ok) {
           const errText = await resp.text();
-          lastError = `Gemini API error: ${resp.status} - ${errText.slice(0, 300)}`;
+          lastError = `API error: ${resp.status} - ${errText.slice(0, 300)}`;
           console.error(`Attempt ${attempt + 1} failed:`, lastError);
           continue;
         }
 
         const data = await resp.json();
-        const rawContent = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        let rawContent: string | undefined;
+
+        if (useGateway) {
+          // OpenAI-compatible format
+          rawContent = data?.choices?.[0]?.message?.content;
+        } else {
+          // Gemini direct format
+          rawContent = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        }
+
         if (!rawContent) {
           lastError = "Empty response from AI";
           console.error(`Attempt ${attempt + 1}: empty response`);
