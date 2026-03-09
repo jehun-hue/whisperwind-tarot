@@ -144,14 +144,25 @@ export default function ReaderPage() {
         <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
           {/* Sessions list */}
           <Card className="border-border bg-card">
-            <CardHeader>
-              <CardTitle className="text-base text-foreground">상담 요청 목록 ({sessions.length})</CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base text-foreground">상담 요청 목록 ({filteredSessions.length})</CardTitle>
+              <div className="relative mt-2">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="이름 또는 질문 검색..."
+                  className="pl-9 h-9 text-sm"
+                />
+              </div>
             </CardHeader>
             <CardContent className="space-y-2">
-              {sessions.length === 0 && (
-                <p className="text-sm text-muted-foreground">아직 상담 요청이 없습니다.</p>
+              {filteredSessions.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  {searchQuery ? "검색 결과가 없습니다." : "아직 상담 요청이 없습니다."}
+                </p>
               )}
-              {sessions.map((s) => (
+              {filteredSessions.map((s) => (
                 <div
                   key={s.id}
                   className={`group cursor-pointer rounded-lg border p-3 transition-all ${
