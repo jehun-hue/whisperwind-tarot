@@ -316,7 +316,7 @@ ${gradeInstruction}
 
     const maxTokens = getMaxTokens(selectedGrade);
     const directModel = selectedGrade === "S" || selectedGrade === "A"
-      ? "gemini-2.5-pro-preview-06-05"
+      ? "gemini-2.5-pro"
       : "gemini-2.0-flash-001";
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${directModel}:generateContent?key=${GOOGLE_GEMINI_API_KEY}`;
     const requestHeaders: Record<string, string> = { "Content-Type": "application/json" };
