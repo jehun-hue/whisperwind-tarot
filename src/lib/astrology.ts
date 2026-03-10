@@ -167,17 +167,18 @@ function calculateAspects(positions: { planet: Planet; absoluteDegree: number }[
 }
 
 // ========== Julian Day Calculation ==========
-function toJulianDay(year: number, month: number, day: number, hour: number = 12): number {
+function toJulianDay(year: number, month: number, day: number, hour: number = 12, minute: number = 0): number {
   let y = year, m = month;
   if (m <= 2) { y--; m += 12; }
   const A = Math.floor(y / 100);
   const B = 2 - A + Math.floor(A / 4);
-  return Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (m + 1)) + day + hour / 24 + B - 1524.5;
+  const decimalHour = hour + minute / 60;
+  return Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (m + 1)) + day + decimalHour / 24 + B - 1524.5;
 }
 
 // ========== Improved Planet Positions ==========
-function calculatePrecisePlanetPositions(year: number, month: number, day: number, hour: number) {
-  const jd = toJulianDay(year, month, day, hour);
+function calculatePrecisePlanetPositions(year: number, month: number, day: number, hour: number, minute: number = 0) {
+  const jd = toJulianDay(year, month, day, hour, minute);
   const T = (jd - 2451545.0) / 36525; // centuries from J2000
 
   // More precise orbital elements
@@ -243,18 +244,18 @@ export interface AstrologyResult {
   dignityReport: string[];
 }
 
-function calculateRisingSign(month: number, day: number, hour: number): number {
+function calculateRisingSign(month: number, day: number, hour: number, minute: number = 0): number {
   // LST approximation for rising sign
   const sunDeg = ((month - 1) * 30 + day) % 360;
-  const hourAngle = (hour - 6) * 15; // rough RAMC
+  const hourAngle = (hour + minute / 60 - 6) * 15; // rough RAMC
   return Math.floor(((sunDeg + hourAngle) % 360 + 360) % 360 / 30) % 12;
 }
 
 export function calculateNatalChart(
-  year: number, month: number, day: number, hour: number
+  year: number, month: number, day: number, hour: number, minute: number = 0
 ): AstrologyResult {
-  const rawPositions = calculatePrecisePlanetPositions(year, month, day, hour);
-  const risingIdx = calculateRisingSign(month, day, hour);
+  const rawPositions = calculatePrecisePlanetPositions(year, month, day, hour, minute);
+  const risingIdx = calculateRisingSign(month, day, hour, minute);
 
   const planets: PlanetPosition[] = rawPositions.map((p) => {
     const lng = ((p.longitude % 360) + 360) % 360;
@@ -330,7 +331,7 @@ export function calculateNatalChart(
 
 export function getAstrologyForQuestion(
   astro: AstrologyResult,
-  questionType: "love" | "career" | "money" | "general"
+  questionType: "love" | "reconciliation" | "career" | "money" | "general"
 ): string {
   const venus = astro.planets.find((p) => p.planet === "금성")!;
   const mars = astro.planets.find((p) => p.planet === "화성")!;
@@ -343,7 +344,8 @@ export function getAstrologyForQuestion(
       .slice(0, 3).map(a => a.interpretation).join(" ");
 
   switch (questionType) {
-    case "love": {
+    case "love":
+    case "reconciliation": {
       const base = `금성 ${venus.sign} ${venus.degree}° ${venus.house}하우스(${venus.dignity}): 사랑 스타일이 ${(SIGN_MEANINGS[venus.sign]).split(",")[0]}. 달 ${moon.sign}: 감정 표현이 ${(SIGN_MEANINGS[moon.sign]).split(",")[0]}.`;
       return base + " " + relevantAspects(["금성", "달", "화성"]);
     }

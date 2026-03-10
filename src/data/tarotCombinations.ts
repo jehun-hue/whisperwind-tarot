@@ -199,9 +199,11 @@ export function getCombinationSummary(cardIds: number[], questionType: string): 
   if (matches.length === 0) return "";
 
   const parts = matches.map((m) => {
-    const typeKey = questionType as keyof CardCombination;
+    // reconciliation falls back to love
+    const effectiveType = questionType === "reconciliation" ? "love" : questionType;
+    const typeKey = effectiveType as keyof CardCombination;
     const specific = (typeKey && m[typeKey] as string) || "";
-    return `[${m.theme}] ${m.interpretation}${specific ? ` | ${questionType}: ${specific}` : ""} | Risk: ${m.risk}`;
+    return `[${m.theme}] ${m.interpretation}${specific ? ` | ${effectiveType}: ${specific}` : ""} | Risk: ${m.risk}`;
   });
 
   return parts.join("\n");

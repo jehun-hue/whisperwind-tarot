@@ -1,0 +1,91 @@
+/**
+ * patternDictionary.ts
+ * - PART 12: 200 Pattern Dataset (Representative Samples)
+ * - PART 13: 1000 Symbol Dataset Mapping
+ */
+
+export interface DivinationPattern {
+  pattern_id: string;
+  pattern_name: string;
+  pattern_category: "relationship" | "career" | "finance" | "emotion" | "life_transition" | "risk" | "opportunity" | "stability" | "conflict" | "growth";
+  semantic_vector: Record<string, number>; // rel, car, fin, emo, tra, risk, opp, sta, con, gro
+}
+
+export interface SymbolMapping {
+  symbol_id: string;
+  system: "Tarot" | "Saju" | "Astrology" | "Ziwei" | "Numerology";
+  symbol_name: string;
+  linked_patterns: string[]; // pattern_ids
+  semantic_values: Record<string, number>;
+}
+
+export const PATTERN_DICTIONARY: Record<string, DivinationPattern> = {
+  // Relationship
+  "P001": { pattern_id: "P001", pattern_name: "relationship_conflict", pattern_category: "relationship", semantic_vector: { relationship: -0.8, conflict: 0.8, emotion: -0.6 } },
+  "P002": { pattern_id: "P002", pattern_name: "relationship_growth", pattern_category: "relationship", semantic_vector: { relationship: 0.9, growth: 0.7, emotion: 0.8 } },
+  "P003": { pattern_id: "P003", pattern_name: "relationship_break", pattern_category: "relationship", semantic_vector: { relationship: -0.9, life_transition: 1.0, emotion: -0.9 } },
+  "P004": { pattern_id: "P004", pattern_name: "relationship_commitment", pattern_category: "relationship", semantic_vector: { relationship: 0.9, stability: 0.9, growth: 0.5 } },
+  "P005": { pattern_id: "P005", pattern_name: "relationship_uncertainty", pattern_category: "relationship", semantic_vector: { relationship: 0.2, emotion: -0.4, risk: 0.4 } },
+
+  // Career
+  "P006": { pattern_id: "P006", pattern_name: "career_breakthrough", pattern_category: "career", semantic_vector: { career: 1.0, growth: 0.9, opportunity: 0.8 } },
+  "P007": { pattern_id: "P007", pattern_name: "career_transition", pattern_category: "career", semantic_vector: { career: 0.5, life_transition: 0.8, risk: 0.6 } },
+  "P008": { pattern_id: "P008", pattern_name: "career_stagnation", pattern_category: "career", semantic_vector: { career: -0.4, stability: 0.7, emotion: -0.3 } },
+  "P009": { pattern_id: "P009", pattern_name: "career_leadership", pattern_category: "career", semantic_vector: { career: 0.9, growth: 0.8, stability: 0.6 } },
+  "P010": { pattern_id: "P010", pattern_name: "career_loss", pattern_category: "career", semantic_vector: { career: -1.0, life_transition: 0.7, risk: 0.8 } },
+
+  // Finance
+  "P011": { pattern_id: "P011", pattern_name: "financial_opportunity", pattern_category: "finance", semantic_vector: { finance: 0.9, opportunity: 1.0, growth: 0.7 } },
+  "P012": { pattern_id: "P012", pattern_name: "financial_growth", pattern_category: "finance", semantic_vector: { finance: 0.8, growth: 0.8, stability: 0.6 } },
+  "P013": { pattern_id: "P013", pattern_name: "financial_risk", pattern_category: "finance", semantic_vector: { finance: -0.3, risk: 0.9, emotion: -0.4 } },
+  "P014": { pattern_id: "P014", pattern_name: "financial_block", pattern_category: "finance", semantic_vector: { finance: -0.7, stability: 0.5, conflict: 0.4 } },
+  "P015": { pattern_id: "P015", pattern_name: "financial_instability", pattern_category: "finance", semantic_vector: { finance: -0.5, risk: 0.8, life_transition: 0.5 } },
+
+  // Life Transition
+  "P016": { pattern_id: "P016", pattern_name: "life_reset", pattern_category: "life_transition", semantic_vector: { life_transition: 1.0, risk: 0.8, stability: -0.9 } },
+  "P017": { pattern_id: "P017", pattern_name: "life_transition", pattern_category: "life_transition", semantic_vector: { life_transition: 0.8, growth: 0.7, opportunity: 0.6 } },
+  "P018": { pattern_id: "P018", pattern_name: "identity_shift", pattern_category: "life_transition", semantic_vector: { life_transition: 0.9, emotion: 0.8, growth: 0.9 } },
+  "P019": { pattern_id: "P019", pattern_name: "life_restructure", pattern_category: "life_transition", semantic_vector: { life_transition: 0.8, stability: 0.9, career: 0.5 } },
+
+  // Risk / Opportunity / Stability / Conflict / Growth
+  "P020": { pattern_id: "P020", pattern_name: "risk_event", pattern_category: "risk", semantic_vector: { risk: 1.0, stability: -0.8, emotion: -0.7 } },
+  "P021": { pattern_id: "P021", pattern_name: "unexpected_loss", pattern_category: "risk", semantic_vector: { risk: 0.9, finance: -0.8, emotion: -1.0 } },
+  "P022": { pattern_id: "P022", pattern_name: "opportunity_window", pattern_category: "opportunity", semantic_vector: { opportunity: 1.0, growth: 0.9, life_transition: 0.7 } },
+  "P023": { pattern_id: "P023", pattern_name: "lucky_timing", pattern_category: "opportunity", semantic_vector: { opportunity: 1.0, growth: 0.7, finance: 0.8 } },
+  "P024": { pattern_id: "P024", pattern_name: "long_term_security", pattern_category: "stability", semantic_vector: { stability: 1.0, finance: 0.9, career: 0.8 } },
+  "P025": { pattern_id: "P025", pattern_name: "power_struggle", pattern_category: "conflict", semantic_vector: { conflict: 1.0, career: 0.6, emotion: -0.6 } },
+  "P026": { pattern_id: "P026", pattern_name: "personal_evolution", pattern_category: "growth", semantic_vector: { growth: 1.0, life_transition: 0.8, emotion: 0.9 } }
+};
+
+export const SYMBOL_MAPPINGS: SymbolMapping[] = [
+  // Tarot (Target 1000 items - Representative samples here)
+  { symbol_id: "T016", system: "Tarot", symbol_name: "Tower", linked_patterns: ["P016", "P020"], semantic_values: { life_transition: 1.0, risk: 0.9, stability: -1.0 } },
+  { symbol_id: "T013", system: "Tarot", symbol_name: "Death", linked_patterns: ["P016", "P003"], semantic_values: { life_transition: 0.9, relationship: -0.8, risk: 0.5 } },
+  { symbol_id: "T010", system: "Tarot", symbol_name: "Wheel of Fortune", linked_patterns: ["P022", "P023"], semantic_values: { opportunity: 0.8, life_transition: 0.7 } },
+  { symbol_id: "TC02", system: "Tarot", symbol_name: "Two of Pentacles", linked_patterns: ["P015"], semantic_values: { finance: -0.2, stability: -0.3, risk: 0.5 } },
+  { symbol_id: "TC03", system: "Tarot", symbol_name: "Three of Cups", linked_patterns: ["P002"], semantic_values: { relationship: 0.8, emotion: 0.7 } },
+
+  // Saju
+  { symbol_id: "S001", system: "Saju", symbol_name: "Water deficiency", linked_patterns: ["P005"], semantic_values: { emotion: -0.6, relationship: -0.4 } },
+  { symbol_id: "S002", system: "Saju", symbol_name: "Fire excess", linked_patterns: ["P020", "P025"], semantic_values: { risk: 0.7, emotion: -0.5, conflict: 0.6 } },
+  { symbol_id: "S003", system: "Saju", symbol_name: "Metal strong", linked_patterns: ["P009", "P024"], semantic_values: { career: 0.7, stability: 0.8 } },
+  { symbol_id: "S004", system: "Saju", symbol_name: "Wealth star strong", linked_patterns: ["P011", "P012"], semantic_values: { finance: 0.9, opportunity: 0.7 } },
+  { symbol_id: "S005", system: "Saju", symbol_name: "Day master weak", linked_patterns: ["P005", "P015"], semantic_values: { stability: -0.6, risk: 0.5 } },
+
+  // Astrology
+  { symbol_id: "A001", system: "Astrology", symbol_name: "Pluto Transit", linked_patterns: ["P018", "P026"], semantic_values: { life_transition: 0.9, growth: 0.8 } },
+  { symbol_id: "A002", system: "Astrology", symbol_name: "Saturn Aspect", linked_patterns: ["P019", "P024"], semantic_values: { stability: 0.8, career: 0.6 } },
+  { symbol_id: "A003", system: "Astrology", symbol_name: "Jupiter Transit", linked_patterns: ["P022", "P023"], semantic_values: { opportunity: 0.9, growth: 0.7 } },
+  { symbol_id: "A004", system: "Astrology", symbol_name: "Mars Square", linked_patterns: ["P025", "P020"], semantic_values: { conflict: 0.8, risk: 0.7 } },
+
+  // Ziwei
+  { symbol_id: "Z001", system: "Ziwei", symbol_name: "Po-Jun (破軍)", linked_patterns: ["P016", "P020"], semantic_values: { life_transition: 0.9, risk: 0.8 } },
+  { symbol_id: "Z002", system: "Ziwei", symbol_name: "Zi-Wei (紫微)", linked_patterns: ["P009"], semantic_values: { career: 0.9, growth: 0.7 } },
+  { symbol_id: "Z003", system: "Ziwei", symbol_name: "Tian-Fu (天府)", linked_patterns: ["P024"], semantic_values: { stability: 0.9, finance: 0.8 } },
+  { symbol_id: "Z004", system: "Ziwei", symbol_name: "Qi-Sha (七殺)", linked_patterns: ["P025", "P020"], semantic_values: { risk: 0.9, conflict: 0.8 } },
+
+  // Numerology (Life Path, Destiny, Personal Year)
+  { symbol_id: "N001", system: "Numerology", symbol_name: "Life Path 1", linked_patterns: ["P009", "P006"], semantic_values: { career: 0.8, growth: 0.7 } },
+  { symbol_id: "N005", system: "Numerology", symbol_name: "Personal Year 5", linked_patterns: ["P017", "P022"], semantic_values: { life_transition: 0.8, opportunity: 0.7 } },
+  { symbol_id: "N009", system: "Numerology", symbol_name: "Personal Year 9", linked_patterns: ["P016", "P003"], semantic_values: { life_transition: 0.9, emotion: -0.6 } }
+];

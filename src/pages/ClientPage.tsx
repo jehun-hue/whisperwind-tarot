@@ -65,20 +65,44 @@ const BIRTH_HOURS = [
 ];
 
 function classifyQuestion(q: string): QuestionType {
-  const lower = q.toLowerCase();
-  if (/(재회|다시|헤어진|전남친|전여친|reconcile|reunion)/.test(lower)) return "reconciliation";
-  if (/(연애|썸|남자|여자|상대|연락|결혼|상대방|속마음|사랑|짝사랑|애인|남친|여친)/.test(lower)) return "love";
-  if (/(이직|직장|사업|취업|회사|일|브랜드|커리어|승진)/.test(lower)) return "career";
-  if (/(돈|금전|재물|수익|매출|사업운|투자|재정)/.test(lower)) return "money";
+  const text = q.toLowerCase();
+
+  if (text.match(/재회|다시|헤어진|전남친|전여친|reconcile|reunion|연락 올/))
+    return "reconciliation";
+
+  if (text.match(/연애|사랑|썸|결혼|짝사랑|남자|여자|상대|연락|상대방|속마음|애인|남친|여친/))
+    return "love";
+
+  if (text.match(/이직|직장|회사|취업|승진|커리어|사업|일|브랜드/))
+    return "career";
+
+  if (text.match(/돈|재물|금전|투자|매출|수익|사업운|재정/))
+    return "money";
+
   return "general";
 }
 
 function getRequiredCards(grade: Grade): number {
   switch (grade) {
-    case "S": return 6;
-    case "A": return 5;
-    default: return 3;
+    case "C":
+    case "B":
+      return 3;
+    case "A":
+      return 5;
+    case "S":
+      return 6;
+    default:
+      return 3;
   }
+}
+
+function shuffleDeck<T>(cards: T[]): T[] {
+  const arr = [...cards];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
 }
 
 // ─── Floating Stars ───
@@ -156,16 +180,10 @@ export default function ClientPage() {
   const [romanceStatus, setRomanceStatus] = useState<RomanceStatus | null>(null);
 
   // Cards
-  const shuffleDeck = useCallback(() => {
-    const shuffled = [...tarotCards];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
+  const [deck, setDeck] = useState<DeckCard[]>(() => {
+    const shuffled = shuffleDeck([...tarotCards]);
     return shuffled.map((c) => makeDeckCard(c, false, false, false));
-  }, []);
-
-  const [deck, setDeck] = useState<DeckCard[]>(shuffleDeck);
+  });
   const [picked, setPicked] = useState<DeckCard[]>([]);
   const [selectedGrade, setSelectedGrade] = useState<Grade>("S");
 
@@ -318,7 +336,8 @@ export default function ClientPage() {
     setAstroResult(null); setZiweiResult(null);
     setManualSajuData("");
     setError(null);
-    setDeck(shuffleDeck());
+    const shuffled = shuffleDeck([...tarotCards]);
+    setDeck(shuffled.map((c) => makeDeckCard(c, false, false, false)));
   };
 
   const goBack = () => {
@@ -408,7 +427,12 @@ export default function ClientPage() {
 
                   {question.trim() && (
                     <Badge variant="outline" className="border-gold/30 text-gold text-xs">
-                      자동 분류: {questionType === "love" ? "💕 연애" : questionType === "reconciliation" ? "💔 재회" : questionType === "career" ? "💼 직업" : questionType === "money" ? "💰 금전" : "🔮 종합"}
+                      자동 분류: {
+                        questionType === "love" ? "💕 연애" :
+                          questionType === "reconciliation" ? "💔 재회" :
+                            questionType === "career" ? "💼 직업" :
+                              questionType === "money" ? "💰 금전" : "🔮 종합"
+                      }
                     </Badge>
                   )}
 

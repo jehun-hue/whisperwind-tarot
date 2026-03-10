@@ -1,0 +1,11 @@
+[
+  {
+    "input": { "year": 1999, "month": 1, "day": 23, "hour": 10, "minute": 17 },
+    "expected": {
+      "year": { "stem": "戊", "branch": "寅" },
+      "month": { "stem": "乙", "branch": "丑" },
+      "day": { "stem": "乙", "branch": "亥" },
+      "hour": { "stem": "辛", "branch": "巳" }
+    }
+  }
+]

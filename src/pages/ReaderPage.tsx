@@ -19,10 +19,11 @@ import { getCombinationSummary } from "@/data/tarotCombinations";
 
 const READER_PIN = "1234";
 
-type QuestionType = "love" | "career" | "money" | "general";
+type QuestionType = "love" | "reconciliation" | "career" | "money" | "general";
 
 const questionTypeLabels: Record<string, string> = {
   love: "💕 연애",
+  reconciliation: "💔 재회",
   career: "💼 직업/사업",
   money: "💰 금전",
   general: "🔮 종합",
@@ -335,18 +336,18 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       if (birthInfo && birthInfo.birthDate) {
         try {
           const [y, m, d] = birthInfo.birthDate.split("-").map(Number);
-          const [hour, _minute] = birthInfo.birthTime
+          const [hour, minute] = birthInfo.birthTime
             ? birthInfo.birthTime.split(":").map(Number)
             : [12, 0];
 
-          const astro = calculateNatalChart(y, m, d, hour);
+          const astro = calculateNatalChart(y, m, d, hour, minute);
           astroDataForAI = {
             ...astro,
             questionAnalysis: getAstrologyForQuestion(astro, qType as any),
             transits: getCurrentTransits(astro),
           };
 
-          const ziwei = calculateZiWei(y, m, d, hour, (birthInfo.gender as "male" | "female") || "female");
+          const ziwei = calculateZiWei(y, m, d, hour, minute, (birthInfo.gender as "male" | "female") || "female");
           ziweiDataForAI = {
             ...ziwei,
             questionAnalysis: getZiWeiForQuestion(ziwei, qType as any),
@@ -444,16 +445,16 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       if (birthInfo && birthInfo.birthDate) {
         try {
           const [y, m, d] = birthInfo.birthDate.split("-").map(Number);
-          const [hour, _minute] = birthInfo.birthTime ? birthInfo.birthTime.split(":").map(Number) : [12, 0];
+          const [hour, minute] = birthInfo.birthTime ? birthInfo.birthTime.split(":").map(Number) : [12, 0];
 
-          const astro = calculateNatalChart(y, m, d, hour);
+          const astro = calculateNatalChart(y, m, d, hour, minute);
           astroDataForAI = {
             ...astro,
             questionAnalysis: getAstrologyForQuestion(astro, qType as any),
             transits: getCurrentTransits(astro),
           };
 
-          const ziwei = calculateZiWei(y, m, d, hour, (birthInfo.gender as "male" | "female") || "female");
+          const ziwei = calculateZiWei(y, m, d, hour, minute, (birthInfo.gender as "male" | "female") || "female");
           ziweiDataForAI = {
             ...ziwei,
             questionAnalysis: getZiWeiForQuestion(ziwei, qType as any),
@@ -753,7 +754,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
           <Card className="border-border bg-card">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base text-foreground">🔮 사주 분석</CardTitle>
+                <CardTitle className="text-base text-foreground">🔮 사주 데이터</CardTitle>
                 {hasNewFormat ? (
                   <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 text-[10px]">✓ 자동 계산 완료</Badge>
                 ) : (
@@ -779,39 +780,11 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                 ))}
               </div>
 
-              {/* ── 일간 · 강약 · 용신 ── */}
-              <div className="flex flex-wrap gap-2">
-                {ilgan && <Badge variant="secondary" className="text-[10px]">일간: {ilgan}</Badge>}
-                {sd?.strength && <Badge variant="secondary" className="text-[10px]">{sd.strength}</Badge>}
-                {(sd?.yongsin || sd?.용신) && <Badge variant="secondary" className="text-[10px]">용신: {sd.yongsin || sd.용신}</Badge>}
-              </div>
-
               {/* ── 음력→양력 변환 정보 ── */}
               {sd?.originalInput?.isLunar && sd?.solarDate && (
                 <p className="text-xs text-muted-foreground">
                   🗓 음력 {sd.originalInput.year}-{sd.originalInput.month}-{sd.originalInput.day} → 양력 {sd.solarDate.year}-{sd.solarDate.month}-{sd.solarDate.day}
                 </p>
-              )}
-
-              {/* ── 경도 시간 보정 ── */}
-              {sd?.correctedTime && (
-                <p className="text-xs text-amber-400">
-                  ⏱ 경도 시간 보정: {sd.originalInput?.hour ?? "?"}:{String(sd.originalInput?.minute ?? 0).padStart(2, "0")} → {sd.correctedTime} (참고용)
-                </p>
-              )}
-
-              {/* ── 오행 비율 ── */}
-              {(sd?.fiveElementDist || sd?.오행비율) && (
-                <div className="flex gap-1">
-                  {Object.entries((sd.fiveElementDist || sd.오행비율) as Record<string, number>).map(([el, count]) => (
-                    <div key={el} className="flex-1 rounded bg-secondary p-1.5 text-center">
-                      <div className="text-[10px] text-muted-foreground">{el}</div>
-                      <div className="text-xs font-medium text-foreground">
-                        {typeof count === "number" ? count.toFixed(1) : count}
-                      </div>
-                    </div>
-                  ))}
-                </div>
               )}
 
               {/* ── 포스텔러 수동입력 토글 ── */}
@@ -943,107 +916,275 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
               </div>
             </CardHeader>
             <CardContent className="p-0">
-              {/* ═══ 통합 리딩 (Merged Reading) ═══ */}
-              <div className="space-y-0">
-                {/* Core Narrative */}
-                <div className="p-6 bg-gold/5 border-b border-border/10">
-                  <div className="mb-3 text-xs font-bold text-gold tracking-widest uppercase">✨ 통합 분석 요약</div>
-                  <p className="text-sm leading-relaxed text-foreground whitespace-pre-line font-medium">{reading.merged_reading.coreReading}</p>
-                </div>
+              {/* 1. Integrated Summary */}
+              <div className="p-6 bg-gold/5 border-b border-border/10">
+                <div className="mb-3 text-xs font-bold text-gold tracking-widest uppercase">✨ 통합 분석 요약 (Integrated Summary)</div>
+                <p className="text-sm leading-relaxed text-foreground whitespace-pre-line font-medium">{reading.merged_reading.coreReading}</p>
+              </div>
 
-                {/* Specific Insights Grid */}
-                <div className="grid md:grid-cols-2">
-                  <div className="p-6 border-b md:border-r border-border/10">
-                    <div className="mb-2 text-xs font-semibold text-accent/80">🔮 사주: 삶의 그릇과 주제</div>
-                    <p className="text-xs leading-relaxed text-muted-foreground whitespace-pre-line">{reading.merged_reading.structureInsight}</p>
-                  </div>
-                  <div className="p-6 border-b border-border/10">
-                    <div className="mb-2 text-xs font-semibold text-purple-400/80">🃏 타로: 현재의 파도와 에너지</div>
-                    <p className="text-xs leading-relaxed text-muted-foreground whitespace-pre-line">{reading.merged_reading.currentSituation}</p>
-                  </div>
-                  <div className="p-6 border-b md:border-r md:border-b-0 border-border/10">
-                    <div className="mb-2 text-xs font-semibold text-emerald-400/80">⭐ 점성술: 결정적 타이밍</div>
-                    <p className="text-xs leading-relaxed text-muted-foreground whitespace-pre-line">{reading.merged_reading.timingInsight}</p>
-                  </div>
-                  <div className="p-6">
-                    <div className="mb-2 text-xs font-semibold text-rose-400/80">🏯 자미두수: 장기적 궤적</div>
-                    <p className="text-xs leading-relaxed text-muted-foreground whitespace-pre-line">{reading.merged_reading.longTermFlow}</p>
-                  </div>
-                </div>
-
-                {/* Final Strategic Advice */}
-                <div className="p-6 bg-accent/5 border-t border-border/10">
-                  <div className="mb-3 text-sm font-bold text-accent">💡 최종 전략적 제언</div>
-                  <p className="text-sm leading-relaxed text-foreground whitespace-pre-line italic">"{reading.merged_reading.finalAdvice}"</p>
-                </div>
-
-                {/* ═══ 개별 점술 상세 분석 (Individual Analysis) ═══ */}
-                <div className="border-t border-border/10">
-                  <details className="group">
-                    <summary className="flex cursor-pointer items-center justify-between p-4 text-xs font-medium text-muted-foreground hover:bg-secondary/50 transition-colors">
-                      <span>각 점술 시스템별 개별 분석 데이터 확인</span>
-                      <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" />
-                    </summary>
-                    <div className="p-4 space-y-6 bg-secondary/20">
-                      {/* Saju Detail */}
-                      {reading.individual_analysis?.saju && (
-                        <div className="space-y-2">
-                          <div className="text-[10px] font-bold text-accent/50 uppercase tracking-tighter">Saju Deep Analysis</div>
-                          <div className="grid gap-3 sm:grid-cols-2">
-                            {[
-                              { l: "구조 요약", v: reading.individual_analysis.saju.coreStructure },
-                              { l: "강약 및 성향", v: reading.individual_analysis.saju.strengthWeakness },
-                              { l: "관계운적 기질", v: reading.individual_analysis.saju.relationshipTendency },
-                              { l: "진로/재물 성향", v: reading.individual_analysis.saju.careerTendency },
-                              { l: "주의가 필요한 요소", v: reading.individual_analysis.saju.riskFactors },
-                            ].filter(x => x.v).map((x, i) => (
-                              <div key={i} className="rounded-lg bg-background/50 p-3 border border-border/20">
-                                <div className="mb-1 text-[10px] font-semibold text-muted-foreground">{x.l}</div>
-                                <p className="text-[11px] leading-snug text-foreground/80">{x.v}</p>
+              {/* 2. Engine Calculation Layer */}
+              {reading.engine && (
+                <div className="p-6 border-b border-border/10">
+                  <div className="mb-4 text-xs font-bold text-accent tracking-widest uppercase">🔢 AI 엔진 계산 데이터 (Engine Calculation)</div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-3">
+                      <div>
+                        <div className="mb-1 text-[10px] text-muted-foreground uppercase">Pattern Vector</div>
+                        <div className="flex flex-wrap gap-1">
+                          {reading.engine.vectors?.flatMap((v: any) => v.patterns || []).slice(0, 5).map((p: string, i: number) => (
+                            <Badge key={i} variant="secondary" className="text-[10px] bg-accent/10 text-accent border-accent/20">{p}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="rounded bg-secondary/30 p-2">
+                          <div className="text-[9px] text-muted-foreground">Consensus Score</div>
+                          <div className="text-sm font-bold text-foreground">{reading.engine.consensus?.consensus_score?.toFixed(2) || "0.00"}</div>
+                        </div>
+                        <div className="rounded bg-secondary/30 p-2">
+                          <div className="text-[9px] text-muted-foreground">Confidence Score</div>
+                          <div className="text-sm font-bold text-gold">{reading.engine.consensus?.confidence_score?.toFixed(2) || "0.00"}</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="mb-1 text-[10px] text-muted-foreground uppercase">Semantic Dimensions</div>
+                      <div className="space-y-1.5">
+                        {Object.entries(reading.engine.consensus?.dominant_vector || {}).slice(0, 5).map(([dim, val]) => (
+                          <div key={dim} className="flex items-center justify-between">
+                            <span className="text-[10px] text-muted-foreground">{dim}</span>
+                            <div className="flex items-center gap-2">
+                              <div className="h-1 w-20 rounded-full bg-secondary">
+                                <div className="h-full rounded-full bg-accent" style={{ width: `${Math.min(100, (val as number) * 100)}%` }} />
                               </div>
+                              <span className="text-[10px] font-mono">{(val as number).toFixed(2)}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 3. Cross-System Consensus */}
+              {reading.engine && (
+                <div className="p-6 border-b border-border/10 bg-secondary/10">
+                  <div className="mb-4 text-xs font-bold text-muted-foreground tracking-widest uppercase">⚖️ 다중 시스템 합의 검증 (Cross-System Consensus)</div>
+                  <div className="grid gap-6 sm:grid-cols-2">
+                    <div>
+                      <div className="mb-2 text-[10px] font-semibold text-muted-foreground">System Weights</div>
+                      <div className="flex flex-wrap gap-2">
+                        {Object.entries(reading.engine.system_weights || {}).map(([sys, weight]) => (
+                          <div key={sys} className="flex items-center gap-1.5 rounded-full border border-border/50 bg-background px-2 py-0.5">
+                            <span className="text-[9px] font-medium text-muted-foreground uppercase">{sys}</span>
+                            <span className="text-[10px] font-bold text-foreground">{(weight as number * 100).toFixed(0)}%</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="mb-2 text-[10px] font-semibold text-muted-foreground">Alignment Analysis</div>
+                      <div className="space-y-1">
+                        {reading.engine.consensus?.alignment_matrix?.map((item: any, i: number) => (
+                          <div key={i} className="flex items-center justify-between text-[10px]">
+                            <span className="text-muted-foreground">{item.pair}</span>
+                            <span className={item.similarity > 0.5 ? "text-emerald-400 font-bold" : "text-amber-400"}>{(item.similarity * 100).toFixed(1)}%</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 4. Temporal Prediction */}
+              {reading.engine?.timeline && (
+                <div className="p-6 border-b border-border/10">
+                  <div className="mb-4 text-xs font-bold text-emerald-400 tracking-widest uppercase">⏰ 시간 흐름 예측 (Temporal Prediction)</div>
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    {reading.engine.timeline.map((node: any, i: number) => (
+                      <div key={i} className="rounded-xl border border-border bg-background p-3 shadow-sm">
+                        <div className="mb-1 text-[10px] font-bold text-emerald-400">{node.window || node.period}</div>
+                        <div className="mb-2 text-lg font-bold text-foreground">{(node.probability * 100).toFixed(0)}%</div>
+                        <p className="text-[10px] leading-relaxed text-muted-foreground">{node.description || node.eventDescriptor}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 5. System Interpretations (Detailed Logs) */}
+              <div className="border-b border-border/10">
+                <details className="group">
+                  <summary className="flex cursor-pointer items-center justify-between p-6 text-xs font-bold text-muted-foreground hover:bg-secondary/50 transition-colors uppercase tracking-widest">
+                    <span>🔍 개별 시스템 계산 로그 (System Calculations)</span>
+                    <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" />
+                  </summary>
+                  <div className="p-6 space-y-8 bg-secondary/20">
+                    {/* Bazi Detail */}
+                    {reading.saju_analysis && (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <div className="h-px flex-1 bg-border/50" />
+                          <span className="text-[10px] font-bold text-accent uppercase">Bazi Extraction</span>
+                          <div className="h-px flex-1 bg-border/50" />
+                        </div>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          <div className="rounded-lg bg-background p-4 border border-border/50">
+                            <div className="mb-2 text-[10px] font-semibold text-muted-foreground uppercase">Calculation Summary</div>
+                            <div className="space-y-2">
+                              <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">일간(Day Master)</span><span className="font-bold">{reading.saju_analysis.dayMaster}</span></div>
+                              <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">강약(Strength)</span><span className="text-primary font-bold">{reading.saju_analysis.strength}</span></div>
+                              <div className="pt-2">
+                                <div className="mb-1 text-[9px] text-muted-foreground italic">오행 분포 (Elements)</div>
+                                <div className="flex gap-1">
+                                  {Object.entries(reading.saju_analysis.elements || {}).map(([el, count]) => (
+                                    <div key={el} className="flex-1 text-center bg-secondary/50 rounded py-1">
+                                      <div className="text-[9px]">{el}</div>
+                                      <div className="text-[10px] font-bold">{count as number}</div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <div className="text-[10px] font-semibold text-muted-foreground uppercase">Narrative Logic</div>
+                            <p className="text-[11px] leading-relaxed text-foreground/80 bg-background p-3 rounded-lg border border-border/50">{reading.saju_analysis.narrative}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Astrology Detail */}
+                    {reading.astrology_data && (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2"><div className="h-px flex-1 bg-border/50" /><span className="text-[10px] font-bold text-emerald-400 uppercase">Astrology Logic</span><div className="h-px flex-1 bg-border/50" /></div>
+                        <div className="grid gap-3 sm:grid-cols-3">
+                          <div className="rounded-lg bg-background p-3 border border-border/50 col-span-2">
+                            <div className="mb-2 text-[10px] font-semibold text-muted-foreground uppercase">Planet Positions</div>
+                            <div className="grid grid-cols-3 gap-2">
+                              {reading.astrology_data.planet_positions?.map((p: any, i: number) => (
+                                <div key={i} className="text-[11px]"><span className="text-muted-foreground">{p.planet}:</span> <span className="font-medium">{p.sign} {p.degree}°</span></div>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="rounded-lg bg-background p-3 border border-border/50">
+                            <div className="mb-2 text-[10px] font-semibold text-muted-foreground uppercase">House Systems</div>
+                            {Object.entries(reading.astrology_data.house_positions || {}).map(([h, s]) => (
+                              <div key={h} className="text-[11px] flex justify-between"><span className="text-muted-foreground">{h}:</span> <span>{s as string}</span></div>
                             ))}
                           </div>
                         </div>
-                      )}
-                      {/* Tarot Detail */}
-                      {reading.individual_analysis?.tarot && (
-                        <div className="space-y-2">
-                          <div className="text-[10px] font-bold text-purple-400/50 uppercase tracking-tighter">Tarot Deep Analysis</div>
-                          <div className="space-y-2">
-                            <div className="rounded-lg bg-background/50 p-3 border border-border/20">
-                              <div className="mb-1 text-[10px] font-semibold text-muted-foreground">현재의 에너지</div>
-                              <p className="text-[11px] leading-snug">{reading.individual_analysis.tarot.currentEnergy}</p>
-                            </div>
-                            <div className="rounded-lg bg-background/50 p-3 border border-border/20">
-                              <div className="mb-1 text-[10px] font-semibold text-muted-foreground">상황 해석</div>
-                              <p className="text-[11px] leading-snug">{reading.individual_analysis.tarot.situationInterpretation}</p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                      {/* Astrology Detail */}
-                      {reading.individual_analysis?.astrology && (
-                        <div className="space-y-2">
-                          <div className="text-[10px] font-bold text-emerald-400/50 uppercase tracking-tighter">Astrology Transit Analytics</div>
-                          <div className="rounded-lg bg-background/50 p-3 border border-border/20">
-                            <p className="text-[11px] leading-snug">{reading.individual_analysis.astrology.currentTransit}</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </details>
-                </div>
+                      </div>
+                    )}
 
-                {/* Action buttons */}
-                <div className="flex gap-2 p-4 border-t border-border/10">
-                  <Button variant="outline" size="sm" className="rounded-full border-border/50 text-xs"
-                    onClick={() => { onUpdate({ ...session, ai_reading: null, status: "pending" }); }}>
-                    <RefreshCw className="mr-1.5 h-3 w-3" />재분석
-                  </Button>
-                  <Button variant="outline" size="sm" className="rounded-full border-gold/30 text-gold text-xs" onClick={downloadPDF}>
-                    <Download className="mr-1.5 h-3 w-3" />리포트 저장
-                  </Button>
+                    {/* Ziwei Detail */}
+                    {reading.ziwei_data && (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2"><div className="h-px flex-1 bg-border/50" /><span className="text-[10px] font-bold text-purple-400 uppercase">Ziwei Palaces</span><div className="h-px flex-1 bg-border/50" /></div>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div className="rounded-lg bg-background p-3 border border-border/50">
+                            <div className="mb-2 text-[10px] font-semibold text-muted-foreground uppercase">Key Palaces</div>
+                            <div className="space-y-1">
+                              {reading.ziwei_data.palaces?.map((p: any, i: number) => (
+                                <div key={i} className="text-[11px] flex justify-between"><span className="text-muted-foreground">{p.name} ({p.location}):</span> <span className="font-bold">{p.main_stars.join(', ')}</span></div>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="rounded-lg bg-background p-3 border border-border/50">
+                            <div className="mb-2 text-[10px] font-semibold text-muted-foreground uppercase">Four Transformations (사화)</div>
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                              {Object.entries(reading.ziwei_data.four_transformations || {}).map(([k, v]) => (
+                                <div key={k} className="text-[11px] flex justify-between"><span className="text-muted-foreground">{k === 'rok' ? '화록' : k === 'gwon' ? '화권' : k === 'gwa' ? '화과' : '화기'}:</span> <span>{v as string}</span></div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {/* Numerology Detail */}
+                    {reading.numerology_data && (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2"><div className="h-px flex-1 bg-border/50" /><span className="text-[10px] font-bold text-blue-400 uppercase">Numerology Analytics</span><div className="h-px flex-1 bg-border/50" /></div>
+                        <div className="grid gap-3 sm:grid-cols-3">
+                          <div className="rounded-lg bg-background p-3 border border-border/50 shadow-sm">
+                            <div className="text-[9px] text-muted-foreground uppercase font-semibold">Life Path</div>
+                            <div className="text-2xl font-black text-blue-400">{reading.numerology_data.life_path_number}</div>
+                            <div className="text-[10px] text-muted-foreground mt-1 text-xs">삶의 근본적 목적과 방향</div>
+                          </div>
+                          <div className="rounded-lg bg-background p-3 border border-border/50 shadow-sm">
+                            <div className="text-[9px] text-muted-foreground uppercase font-semibold">Personal Year</div>
+                            <div className="text-2xl font-black text-emerald-400">{reading.numerology_data.personal_year}</div>
+                            <div className="text-[10px] text-muted-foreground mt-1 text-xs">현재 년도의 지배적 진동</div>
+                          </div>
+                          <div className="rounded-lg bg-background p-3 border border-border/50 shadow-sm">
+                            <div className="text-[9px] text-muted-foreground uppercase font-semibold">Destiny Number</div>
+                            <div className="text-2xl font-black text-purple-400">{reading.numerology_data.destiny_number}</div>
+                            <div className="text-[10px] text-muted-foreground mt-1 text-xs">잠재적 능력과 성취 방향</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {/* Tarot Detail */}
+                    {reading.tarot_symbolic && (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2"><div className="h-px flex-1 bg-border/50" /><span className="text-[10px] font-bold text-amber-400 uppercase">Tarot Symbolic Analytics</span><div className="h-px flex-1 bg-border/50" /></div>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div className="rounded-lg bg-background p-3 border border-border/50">
+                            <div className="mb-2 text-[10px] font-semibold text-muted-foreground uppercase">Question Classification</div>
+                            <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-[11px]">{reading.tarot_symbolic.category}</Badge>
+                          </div>
+                          <div className="rounded-lg bg-background p-3 border border-border/50">
+                            <div className="mb-2 text-[10px] font-semibold text-muted-foreground uppercase">Dominant Patterns</div>
+                            <div className="flex flex-wrap gap-1">
+                              {Object.entries(reading.tarot_symbolic.dominant_patterns || {})
+                                .sort(([, a], [, b]) => (b as number) - (a as number))
+                                .slice(0, 5)
+                                .map(([p, v]) => (
+                                  <div key={p} className="text-[9px] bg-secondary px-1.5 py-0.5 rounded border border-border/50">
+                                    {p} ({(v as number).toFixed(2)})
+                                  </div>
+                                ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </details>
+              </div>
+
+              {/* 6. Practical Advice */}
+              <div className="p-6 bg-accent/5 border-b border-border/10">
+                <div className="mb-3 text-sm font-bold text-accent">💡 최종 전략적 제언 (Practical Advice)</div>
+                <p className="text-sm leading-relaxed text-foreground whitespace-pre-line italic">"{reading.merged_reading.finalAdvice}"</p>
+              </div>
+
+              {/* 7. Validation Score */}
+              {reading.engine?.validation && (
+                <div className="p-4 bg-background border-t border-border/10 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className={`h-2 w-2 rounded-full ${reading.engine.validation.isValid ? "bg-emerald-500" : "bg-amber-500"}`} />
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Validation Layer : {reading.engine.validation.message}</span>
+                  </div>
+                  <div className="flex gap-4">
+                    <div className="text-[9px]"><span className="text-muted-foreground">Pattern Consistency:</span> <span className="text-foreground font-mono">{(reading.engine.validation.pattern_consistency || 0.75).toFixed(2)}</span></div>
+                    <div className="text-[9px]"><span className="text-muted-foreground">Cross-System Alignment:</span> <span className="text-foreground font-mono">{(reading.engine.consensus?.consensus_score || 0).toFixed(2)}</span></div>
+                  </div>
                 </div>
+              )}
+
+              {/* Action buttons */}
+              <div className="flex gap-2 p-4 border-t border-border/10">
+                <Button variant="outline" size="sm" className="rounded-full border-border/50 text-xs"
+                  onClick={() => { onUpdate({ ...session, ai_reading: null, status: "pending" }); }}>
+                  <RefreshCw className="mr-1.5 h-3 w-3" />재분석
+                </Button>
+                <Button variant="outline" size="sm" className="rounded-full border-gold/30 text-gold text-xs" onClick={downloadPDF}>
+                  <Download className="mr-1.5 h-3 w-3" />리포트 저장
+                </Button>
               </div>
             </CardContent>
           </Card>

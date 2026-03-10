@@ -414,6 +414,7 @@ export function calculateSaju(
   birthMonth: number,
   birthDay: number,
   birthHour: number,
+  birthMinute: number = 0,
   gender: "male" | "female" = "male"
 ): SajuResult {
   // 연주 (Year Pillar)
@@ -440,7 +441,7 @@ export function calculateSaju(
   const dayJi = JIJI[dayJiIdx];
 
   // 시주 (Hour Pillar)
-  const hourJiIdx = Math.floor((birthHour + 1) / 2) % 12;
+  const hourJiIdx = Math.floor((birthHour + birthMinute / 60 + 1) / 2) % 12;
   const hourJi = JIJI[hourJiIdx];
   const hourGanBase = (dayGanIdx % 5) * 2;
   const hourGanIdx = (hourGanBase + hourJiIdx) % 10;

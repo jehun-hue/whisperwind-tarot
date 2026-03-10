@@ -414,6 +414,7 @@ export function calculateZiWei(
   lunarMonth: number,
   lunarDay: number,
   birthHour: number,
+  birthMinute: number,
   gender: "male" | "female"
 ): ZiWeiResult {
   const yearGanIdx = (birthYear - 4) % 10;
@@ -549,9 +550,9 @@ export function calculateZiWei(
 // ─── 질문 유형별 분석 ───
 export function getZiWeiForQuestion(
   ziwei: ZiWeiResult,
-  questionType: "love" | "career" | "money" | "general"
+  questionType: "love" | "reconciliation" | "career" | "money" | "general"
 ): string {
-  const palaceMap: Record<string, number> = { love: 2, career: 8, money: 4 };
+  const palaceMap: Record<string, number> = { love: 2, reconciliation: 2, career: 8, money: 4 };
   const idx = palaceMap[questionType];
 
   let result = "";

@@ -108,7 +108,11 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
   const [memo, setMemo] = useState("");
   const [step, setStep] = useState<"question" | "birthInfo" | "select" | "loading" | "result">("question");
   const [deck, setDeck] = useState<DeckCard[]>(() => {
-    const shuffled = [...tarotCards].sort(() => Math.random() - 0.5);
+    const shuffled = [...tarotCards];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
     return shuffled.map((card) => makeDeckCard(card, false, false, false));
   });
   const [picked, setPicked] = useState<DeckCard[]>([]);
@@ -145,11 +149,13 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
       setBirthInfo(info);
       const [y, m, d] = info.birthDate.split("-").map(Number);
       const hour = info.birthTime ? parseInt(info.birthTime.split(":")[0]) : 12;
-      const saju = calculateSaju(y, m, d, hour);
+      const minute = info.birthTime && info.birthTime.includes(":") ? parseInt(info.birthTime.split(":")[1]) || 0 : 0;
+
+      const saju = calculateSaju(y, m, d, hour, minute, info.gender);
       setSajuResult(saju);
-      const astro = calculateNatalChart(y, m, d, hour);
+      const astro = calculateNatalChart(y, m, d, hour, minute);
       setAstroResult(astro);
-      const ziwei = calculateZiWei(y, m, d, hour, info.gender);
+      const ziwei = calculateZiWei(y, m, d, hour, minute, info.gender);
       setZiweiResult(ziwei);
       setStep("select");
     } catch (err) {
@@ -218,7 +224,11 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
     setAiReading(null);
     setError(null);
     setSelectedQuestionType(null);
-    const shuffled = [...tarotCards].sort(() => Math.random() - 0.5);
+    const shuffled = [...tarotCards];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
     setDeck(shuffled.map((card) => makeDeckCard(card, false, false, false)));
     // 출생정보가 이미 있으면 질문 단계로, 출생정보 입력은 생략
     setStep("question");
