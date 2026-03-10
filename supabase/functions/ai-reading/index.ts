@@ -434,7 +434,7 @@ ${locale === "jp"
     }
 
     const aiResult = await response.json();
-    const content = aiResult?.choices?.[0]?.message?.content?.trim() || "";
+    const content = aiResult?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
 
     if (!content) {
       console.error("Empty AI content", JSON.stringify(aiResult));
