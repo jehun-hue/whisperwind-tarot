@@ -732,8 +732,11 @@ export default function ClientPage() {
                               : "border-gold/70 shadow-[0_0_20px_rgba(200,168,100,0.2)] bg-gold/5"
                               }`}
                           >
-                            <div className={`absolute inset-0 opacity-40 bg-gradient-to-br ${suitBg}`} />
-                            <div className="absolute inset-0 bg-background/80 backdrop-blur-[2px]" />
+                            {card.image && (
+                              <img src={card.image} alt={card.korean} className="absolute inset-0 h-full w-full object-cover" />
+                            )}
+                            <div className={`absolute inset-0 opacity-50 bg-gradient-to-br ${suitBg}`} />
+                            <div className="absolute inset-0 bg-background/60 backdrop-blur-[1px]" />
 
                             <div className="relative z-10 flex flex-col items-center justify-center p-1 text-center h-full w-full">
                               <span className={`font-display text-sm md:text-base font-bold tracking-tight leading-tight px-0.5 drop-shadow-md ${card.isReversed ? "text-purple-300" : "text-gold"
@@ -808,9 +811,15 @@ export default function ClientPage() {
                             ? "border-purple-500/70 shadow-[0_0_20px_rgba(168,85,247,0.3)] bg-purple-950/20"
                             : "border-gold/70 glow-gold-strong bg-gold/5"
                             }`}>
-                            {/* 슈트별 배경색 */}
-                            <div className={`absolute inset-0 opacity-40 bg-gradient-to-br ${suitBg}`} />
-                            <div className="absolute inset-0 bg-background/70 backdrop-blur-[2px]" />
+
+                            {/* 배경 이미지 */}
+                            {card.image && (
+                              <img src={card.image} alt={card.korean} className="absolute inset-0 h-full w-full object-cover" />
+                            )}
+
+                            {/* 오버레이 (이미지 위 반투명) */}
+                            <div className={`absolute inset-0 opacity-50 bg-gradient-to-br ${suitBg}`} />
+                            <div className="absolute inset-0 bg-background/60 backdrop-blur-[1px]" />
 
                             <div className="relative z-10 flex flex-col items-center justify-center p-1 sm:p-2 text-center w-full h-full">
                               <span className={`font-display text-xs sm:text-sm font-bold tracking-tight leading-tight px-1 drop-shadow-md ${isSelected && card.isReversed ? "text-purple-300" : "text-gold"
