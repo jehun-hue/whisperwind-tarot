@@ -297,7 +297,7 @@ export default function ClientPage() {
 
       setLoadingMessage("6개 체계로 교차 검증 중...");
 
-      const { data: aiData, error: fnError } = await supabase.functions.invoke("ai-reading-v3", {
+      const { data: aiData, error: fnError } = await supabase.functions.invoke("ai-reading-v4", {
         body: {
           question, questionType, memo,
           cards: cardData, sajuData: sajuDataForAI, birthInfo,
