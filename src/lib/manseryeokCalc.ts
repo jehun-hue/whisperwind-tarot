@@ -28,9 +28,32 @@ export function getManseryeok(
       console.log(`음력 ${year}-${month}-${day} → 양력 ${solarYear}-${solarMonth}-${solarDay} 변환 완료`);
     }
 
+    // ── 야자시(夜子時) 처리 ──────────────────────────────────────
+    // 경도 보정 후 23:00 이상이면 다음날 일주를 적용해야 함
+    const LONGITUDE = 126.98;
+    const STANDARD_MERIDIAN = 135;
+    const longitudeOffsetMin = (LONGITUDE - STANDARD_MERIDIAN) * 4; // 약 –32.08분
+    const totalInputMin = hour * 60 + minute + longitudeOffsetMin;
+    const correctedHourDecimal = totalInputMin / 60;
+
+    if (correctedHourDecimal >= 23) {
+      // 날짜 +1 처리 (월, 연도 경계 포함)
+      const daysInMonth = new Date(solarYear, solarMonth, 0).getDate(); // Date month is 1-based
+      solarDay += 1;
+      if (solarDay > daysInMonth) {
+        solarDay = 1;
+        solarMonth += 1;
+        if (solarMonth > 12) {
+          solarMonth = 1;
+          solarYear += 1;
+        }
+      }
+      console.log(`야자시 보정: 날짜를 ${solarYear}-${solarMonth}-${solarDay}로 변경`);
+    }
+
     // calculateSaju는 반드시 양력을 받음
     const saju = calculateSaju(solarYear, solarMonth, solarDay, hour, minute, {
-      longitude: 126.98,
+      longitude: LONGITUDE,
       applyTimeCorrection: true
     });
 
