@@ -934,13 +934,13 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                     {p ? `${p.cheongan || p.천간 || ""}${p.jiji || p.지지 || ""}` : "데이터 없음"}
                   </div>
                   <div className="text-[10px] text-gold">
-                    {p ? `${p.cheonganElement || p.오행?.split('/')[0] || "-"}/${p.jijiElement || p.오행?.split('/')[1] || "-"}` : "-"}
+                    {p ? (p.hanja || p.한자 || `${p.cheongan || p.천간 || ""}${p.jiji || p.지지 || ""}`) : "-"}
                   </div>
                 </div>
               ))}
             </div>
             <div className="flex flex-wrap gap-2">
-              <Badge variant="secondary" className="text-[10px]">일간: {saju?.ilgan || saju?.일간 || "미상"}({saju?.ilganElement || "미상"})</Badge>
+              <Badge variant="secondary" className="text-[10px]">일간: {saju?.dayPillar?.cheongan || saju?.ilgan || saju?.일간 || "미상"}</Badge>
               {saju?.strength && <Badge variant="secondary" className="text-[10px]">{saju.strength}</Badge>}
               {(saju?.yongsin || saju?.용신) && <Badge variant="secondary" className="text-[10px]">용신: {saju.yongsin || saju.용신}</Badge>}
             </div>
