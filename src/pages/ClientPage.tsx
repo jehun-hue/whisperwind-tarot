@@ -90,7 +90,7 @@ function getRequiredCards(grade: Grade): number {
     case "A":
       return 5;
     case "S":
-      return 6;
+      return 5;
     default:
       return 3;
   }
@@ -270,8 +270,14 @@ export default function ClientPage() {
     if (!hasEnoughCards) return;
     setError(null);
 
-    const cardData = picked.map((c) => ({
-      id: c.id, name: c.name, korean: c.korean, suit: c.suit, isReversed: c.isReversed,
+    const spread = ["현재 상황", "핵심 문제", "숨겨진 원인", "조언", "가까운 결과"];
+    const cardData = picked.map((c, idx) => ({
+      id: c.id, 
+      name: c.name, 
+      korean: c.korean, 
+      suit: c.suit, 
+      isReversed: c.isReversed,
+      position: spread[idx] || "추가 분석"
     }));
 
     const birthInfo = hasBirthDate ? {
@@ -736,7 +742,8 @@ export default function ClientPage() {
                   <div className="flex items-center justify-center gap-4 w-full max-w-sm">
                     {Array.from({ length: requiredCards }).map((_, idx) => {
                       const card = picked[idx];
-                      const positionLabel = idx === 0 ? "현재" : idx === 1 ? "문제" : "결과";
+                      const spread = ["현재 상황", "핵심 문제", "숨겨진 원인", "조언", "가까운 결과"];
+                      const positionLabel = spread[idx] || "추가 분석";
 
                       if (!card) {
                         return (

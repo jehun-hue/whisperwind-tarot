@@ -55,6 +55,11 @@ export const TAROT_PATTERN_DATASET: Record<string, Record<string, number>> = {
 export function runTarotSymbolicEngine(cards: any[], question: string) {
   const category = classifyTarotQuestion(question);
   const spreadWeights: Record<string, number> = {
+    "현재 상황": 0.3,
+    "핵심 문제": 0.25,
+    "숨겨진 원인": 0.15,
+    "조언": 0.15,
+    "가까운 결과": 0.15,
     "current": 0.4,
     "challenge": 0.3,
     "outcome": 0.3,

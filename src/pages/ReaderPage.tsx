@@ -619,7 +619,11 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
   ${session.birth_date ? `<p style="font-size:12px;color:#666;">${session.gender === "male" ? "남" : "여"} • ${session.birth_date} • ${session.birth_time || "시간 미상"} • ${session.birth_place || ""} • ${session.is_lunar ? "음력" : "양력"}</p>` : ""}
 
   <div class="cards">
-    ${cards.map((c: any, i: number) => `<div class="card-item"><div class="pos">${i === 0 ? "현재" : i === 1 ? "문제" : "결과"}</div><div class="name">${c.korean}</div><div class="dir">${c.isReversed ? "역방향" : "정방향"}</div></div>`).join("")}
+    ${cards.map((c: any, i: number) => {
+      const spread = ["현재 상황", "핵심 문제", "숨겨진 원인", "조언", "가까운 결과"];
+      const label = spread[i] || "추가 분석";
+      return `<div class="card-item"><div class="pos">${label}</div><div class="name">${c.korean}</div><div class="dir">${c.isReversed ? "역방향" : "정방향"}</div></div>`;
+    }).join("")}
   </div>
 
   ${sajuHtml}

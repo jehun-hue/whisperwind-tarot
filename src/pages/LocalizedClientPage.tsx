@@ -136,7 +136,7 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
   }, [deck, suitFilter]);
 
   const selectCard = (card: DeckCard) => {
-    if (step !== "select" || picked.length >= 3 || card.isPicked) return;
+    if (step !== "select" || picked.length >= 5 || card.isPicked) return;
     const rev = Math.random() < 0.35;
     setDeck((prev) =>
       prev.map((c) => (c.id === card.id ? makeDeckCard(c, true, true, rev) : c))
@@ -175,7 +175,7 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
   };
 
   const handleSubmit = async () => {
-    if (picked.length !== 3) return;
+    if (picked.length !== 5) return;
 
     setStep("loading");
     setError(null);
@@ -406,15 +406,15 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                   </p>
                   <h2 className="mt-1 text-2xl font-semibold text-foreground"
                     style={{ fontFamily: config.displayFont }}>
-                    {config.locale === "kr" ? (<>마음이 끌리는<br />카드 3장을 선택하세요</>) : config.locale === "jp" ? (<>心が惹かれるカードを<br />3枚選んでください</>) : (<>Choose 3 cards<br />that call to you</>)}
+                    {config.locale === "kr" ? (<>마음이 끌리는<br />카드 5장을 선택하세요</>) : config.locale === "jp" ? (<>心が惹かれるカードを<br />5枚選んでください</>) : (<>Choose 5 cards<br />that call to you</>)}
                   </h2>
                   <div className="mt-4 flex items-center justify-center gap-3">
-                    {[0, 1, 2].map((i) => {
+                    {[0, 1, 2, 3, 4].map((i) => {
                       const posLabels = config.locale === "kr"
-                        ? ["현재 상황", "핵심 문제", "결과 방향"]
+                        ? ["현재 상황", "핵심 문제", "숨겨진 원인", "조언", "가까운 결과"]
                         : config.locale === "jp"
-                          ? ["現状", "核心", "結果"]
-                          : ["Present", "Challenge", "Outcome"];
+                          ? ["現状", "課題", "原因", "助言", "結果"]
+                          : ["Present", "Challenge", "Cause", "Advice", "Outcome"];
                       return (
                         <div
                           key={i}
@@ -467,7 +467,7 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                         })}
                       </div>
 
-                      {picked.length === 3 && (
+                      {picked.length === 5 && (
                         <motion.div
                           initial={{ opacity: 0, scale: 0.9 }}
                           animate={{ opacity: 1, scale: 1 }}
@@ -491,7 +491,7 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                 <div className="grid grid-cols-6 gap-1.5 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-13">
                   {deck.map((card) => {
                     const isSelected = picked.some((p) => p.id === card.id);
-                    const isDisabled = card.isPicked || picked.length >= 3;
+                    const isDisabled = card.isPicked || picked.length >= 5;
                     const dir = getCardDirectionLabel(card.isReversed, config.locale);
                     const isUS = config.locale === "us";
                     return (
