@@ -116,9 +116,8 @@ function StepIndicator({ currentStep, isLoveQuestion }: { currentStep: Step; isL
     <div className="flex items-center justify-center gap-1.5">
       {steps.map((s, i) => (
         <React.Fragment key={s.key}>
-          <div className={`flex h-7 items-center rounded-full px-3 text-[10px] font-medium transition-all ${
-            i <= effectiveIdx ? "bg-gold/20 text-gold" : "bg-secondary/50 text-muted-foreground/40"
-          }`}>
+          <div className={`flex h-7 items-center rounded-full px-3 text-[10px] font-medium transition-all ${i <= effectiveIdx ? "bg-gold/20 text-gold" : "bg-secondary/50 text-muted-foreground/40"
+            }`}>
             {s.label}
           </div>
           {i < steps.length - 1 && (
@@ -357,7 +356,7 @@ export default function ClientPage() {
         {/* Admin button */}
         <button
           onClick={() => navigate("/reader")}
-          className="absolute top-4 right-4 p-2 rounded-full text-muted-foreground/50 hover:text-gold hover:bg-secondary/50 transition-colors"
+          className="absolute top-4 right-4 p-2 z-50 rounded-full text-muted-foreground/50 hover:text-gold hover:bg-secondary/50 transition-colors"
           title="관리자"
         >
           <Settings className="h-5 w-5" />
@@ -398,11 +397,10 @@ export default function ClientPage() {
                       <button
                         key={q.label}
                         onClick={() => setQuestion(q.text)}
-                        className={`rounded-xl border p-3 text-left transition-all ${
-                          question === q.text
+                        className={`rounded-xl border p-3 text-left transition-all ${question === q.text
                             ? "border-gold/50 bg-gold/10"
                             : "border-border/30 bg-background/30 hover:border-border/60"
-                        }`}
+                          }`}
                       >
                         <span className="text-lg">{q.emoji}</span>
                         <span className={`ml-2 text-sm font-medium ${question === q.text ? "text-gold" : "text-foreground"}`}>
@@ -479,17 +477,15 @@ export default function ClientPage() {
                     <div className="inline-flex items-center rounded-full border border-border/50 bg-background/30 p-0.5">
                       <button
                         onClick={() => { setIsLunar(false); setIsLeapMonth(false); }}
-                        className={`rounded-full px-4 py-1.5 text-xs font-medium transition-all ${
-                          !isLunar ? "bg-accent/20 text-accent shadow-sm" : "text-muted-foreground hover:text-foreground"
-                        }`}
+                        className={`rounded-full px-4 py-1.5 text-xs font-medium transition-all ${!isLunar ? "bg-accent/20 text-accent shadow-sm" : "text-muted-foreground hover:text-foreground"
+                          }`}
                       >
                         ☀️ 양력
                       </button>
                       <button
                         onClick={() => setIsLunar(true)}
-                        className={`rounded-full px-4 py-1.5 text-xs font-medium transition-all ${
-                          isLunar ? "bg-accent/20 text-accent shadow-sm" : "text-muted-foreground hover:text-foreground"
-                        }`}
+                        className={`rounded-full px-4 py-1.5 text-xs font-medium transition-all ${isLunar ? "bg-accent/20 text-accent shadow-sm" : "text-muted-foreground hover:text-foreground"
+                          }`}
                       >
                         🌙 음력
                       </button>
@@ -516,9 +512,8 @@ export default function ClientPage() {
                               setBirthTime(`${String(h24).padStart(2, "0")}:${birthMinInput || "00"}`);
                             }
                           }}
-                          className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${
-                            birthAmPm === "am" && birthTime !== "unknown" ? "bg-accent/20 text-accent shadow-sm" : "text-muted-foreground hover:text-foreground"
-                          }`}
+                          className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${birthAmPm === "am" && birthTime !== "unknown" ? "bg-accent/20 text-accent shadow-sm" : "text-muted-foreground hover:text-foreground"
+                            }`}
                         >
                           오전
                         </button>
@@ -532,9 +527,8 @@ export default function ClientPage() {
                               setBirthTime(`${String(h24).padStart(2, "0")}:${birthMinInput || "00"}`);
                             }
                           }}
-                          className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${
-                            birthAmPm === "pm" && birthTime !== "unknown" ? "bg-accent/20 text-accent shadow-sm" : "text-muted-foreground hover:text-foreground"
-                          }`}
+                          className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${birthAmPm === "pm" && birthTime !== "unknown" ? "bg-accent/20 text-accent shadow-sm" : "text-muted-foreground hover:text-foreground"
+                            }`}
                         >
                           오후
                         </button>
@@ -545,11 +539,10 @@ export default function ClientPage() {
                           setBirthHourInput("");
                           setBirthMinInput("");
                         }}
-                        className={`rounded-full border px-3 py-1 text-xs font-medium transition-all ${
-                          birthTime === "unknown"
+                        className={`rounded-full border px-3 py-1 text-xs font-medium transition-all ${birthTime === "unknown"
                             ? "border-gold/50 bg-gold/10 text-gold"
                             : "border-border/50 text-muted-foreground hover:text-foreground"
-                        }`}
+                          }`}
                       >
                         모름
                       </button>
@@ -611,11 +604,10 @@ export default function ClientPage() {
                         <button
                           key={g}
                           onClick={() => setGender(g)}
-                          className={`flex-1 rounded-xl border py-2.5 text-sm font-medium transition-all ${
-                            gender === g
+                          className={`flex-1 rounded-xl border py-2.5 text-sm font-medium transition-all ${gender === g
                               ? "border-gold/50 bg-gold/10 text-gold"
                               : "border-border/50 bg-background/50 text-muted-foreground hover:bg-muted"
-                          }`}
+                            }`}
                         >
                           {g === "female" ? "👩 여성" : "👨 남성"}
                         </button>
@@ -666,11 +658,10 @@ export default function ClientPage() {
                       <button
                         key={opt.value}
                         onClick={() => setRomanceStatus(opt.value)}
-                        className={`w-full rounded-xl border p-4 text-left transition-all ${
-                          romanceStatus === opt.value
+                        className={`w-full rounded-xl border p-4 text-left transition-all ${romanceStatus === opt.value
                             ? "border-gold/50 bg-gold/10"
                             : "border-border/30 bg-background/30 hover:border-border/60"
-                        }`}
+                          }`}
                       >
                         <span className="text-lg mr-2">{opt.emoji}</span>
                         <span className={`text-sm font-medium ${romanceStatus === opt.value ? "text-gold" : "text-foreground"}`}>
@@ -709,11 +700,10 @@ export default function ClientPage() {
                     {Array.from({ length: requiredCards }, (_, i) => (
                       <div
                         key={i}
-                        className={`flex h-8 w-8 items-center justify-center rounded-full border-2 text-xs font-medium transition-all ${
-                          i < picked.length
+                        className={`flex h-8 w-8 items-center justify-center rounded-full border-2 text-xs font-medium transition-all ${i < picked.length
                             ? "border-gold bg-gold/20 text-gold glow-gold"
                             : "border-border/30 text-muted-foreground/30"
-                        }`}
+                          }`}
                       >
                         {i < picked.length ? picked[i].korean[0] : i + 1}
                       </div>
@@ -744,13 +734,12 @@ export default function ClientPage() {
                         key={card.id}
                         onClick={() => selectCard(card)}
                         disabled={isDisabled}
-                        className={`group relative aspect-[0.65] overflow-hidden rounded-lg border transition-all ${
-                          isSelected
+                        className={`group relative aspect-[0.65] overflow-hidden rounded-lg border transition-all ${isSelected
                             ? "border-gold/60 glow-gold-strong"
                             : isDisabled
-                            ? "border-border/20 opacity-30 cursor-not-allowed"
-                            : "border-border/30 hover:border-gold/30 cursor-pointer"
-                        }`}
+                              ? "border-border/20 opacity-30 cursor-not-allowed"
+                              : "border-border/30 hover:border-gold/30 cursor-pointer"
+                          }`}
                       >
                         {isSelected ? (
                           <div className="flex h-full flex-col items-center justify-center bg-gradient-to-b from-gold/10 to-accent/10 p-1">

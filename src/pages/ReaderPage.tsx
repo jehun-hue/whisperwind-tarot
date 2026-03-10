@@ -166,16 +166,15 @@ export default function ReaderPage() {
               {filteredSessions.map((s) => (
                 <div
                   key={s.id}
-                  className={`group cursor-pointer rounded-lg border p-3 transition-all ${
-                    selectedSession?.id === s.id
+                  className={`group cursor-pointer rounded-lg border p-3 transition-all ${selectedSession?.id === s.id
                       ? "border-gold/40 bg-gold/5"
                       : "border-border bg-secondary hover:bg-muted"
-                  }`}
+                    }`}
                   onClick={() => setSelectedSession(s)}
                 >
                   <div className="flex items-start justify-between">
                     <div className="min-w-0 flex-1">
-                       <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2">
                         <div className="truncate text-sm font-medium text-foreground">
                           {s.user_name ? `[${s.user_name}] ` : ""}{s.question || "질문 없음"}
                         </div>
@@ -192,6 +191,11 @@ export default function ReaderPage() {
                         {s.status === "completed" && (
                           <Badge variant="outline" className="text-[9px] border-green-500/30 text-green-400 shrink-0">
                             완료
+                          </Badge>
+                        )}
+                        {s.status === "error" && (
+                          <Badge variant="outline" className="text-[9px] border-red-500/30 text-red-400 shrink-0">
+                            에러
                           </Badge>
                         )}
                       </div>
@@ -283,11 +287,20 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
     setSavingComment(false);
   };
   const runAIAnalysis = async () => {
+    const ok = window.confirm(
+      "⚠️ API 비용이 발생합니다!\n\n" +
+      "고객: " + (session.user_name || "이름없음") + "\n" +
+      "질문: " + session.question + "\n\n" +
+      "v1 교차 검증 분석을 실행하시겠습니까?"
+    );
+    if (!ok) return;
+
     setAnalysisError(null);
     setAnalyzing(true);
     try {
       // Update status to analyzing
       await supabase.from("reading_sessions").update({ status: "analyzing" }).eq("id", session.id);
+      onUpdate({ ...session, status: "analyzing" });
 
       const cards = session.cards as any[];
       const birthInfo = session.birth_date ? {
@@ -401,9 +414,19 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
   };
 
   const runAIAnalysisV2 = async () => {
+    const ok = window.confirm(
+      "⚠️ API 비용이 발생합니다!\n\n" +
+      "고객: " + (session.user_name || "이름없음") + "\n" +
+      "질문: " + session.question + "\n\n" +
+      "6체계 통합 분석(Gemini Pro)을 실행하시겠습니까?"
+    );
+    if (!ok) return;
+
+    setAnalysisError(null);
     setAnalyzing(true);
     try {
       await supabase.from("reading_sessions").update({ status: "analyzing" }).eq("id", session.id);
+      onUpdate({ ...session, status: "analyzing" });
 
       const cards = session.cards as any[];
       const birthInfo = session.birth_date ? {
@@ -479,11 +502,15 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       if (fnError) throw fnError;
 
       const result = aiData?.reading;
-      if (result) {
+      if (!result) {
+        throw new Error("AI 응답이 비어 있습니다. 잠시 후 다시 시도해주세요.");
+      }
+
+      {
         // Store v2 result in ai_reading field (JSON)
         const grade = result.final_reading?.grade || "C";
         const overallScore = grade === "S" ? 97 : grade === "A" ? 89 : grade === "B" ? 77 : 55;
-        
+
         await supabase.from("reading_sessions").update({
           ai_reading: result as any,
           saju_data: sajuDataForAI as any,
@@ -501,7 +528,9 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       }
     } catch (err) {
       console.error("AI V2 analysis error:", err);
+      setAnalysisError(err instanceof Error ? err.message : "V2 분석 중 오류가 발생했습니다.");
       await supabase.from("reading_sessions").update({ status: "error" }).eq("id", session.id);
+      onUpdate({ ...session, status: "error" });
     } finally {
       setAnalyzing(false);
     }
@@ -649,12 +678,11 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                 신뢰도 {session.final_confidence}%
               </Badge>
             )}
-            <Badge variant="outline" className={`text-[10px] ${
-              session.status === "pending" ? "border-yellow-500/30 text-yellow-400" :
-              session.status === "analyzing" ? "border-blue-500/30 text-blue-400" :
-              session.status === "completed" ? "border-green-500/30 text-green-400" :
-              "border-red-500/30 text-red-400"
-            }`}>
+            <Badge variant="outline" className={`text-[10px] ${session.status === "pending" ? "border-yellow-500/30 text-yellow-400" :
+                session.status === "analyzing" ? "border-blue-500/30 text-blue-400" :
+                  session.status === "completed" ? "border-green-500/30 text-green-400" :
+                    "border-red-500/30 text-red-400"
+              }`}>
               {session.status === "pending" ? "대기중" : session.status === "analyzing" ? "분석중" : session.status === "completed" ? "완료" : session.status}
             </Badge>
           </div>
@@ -762,26 +790,25 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
         </Card>
       )}
 
-      {/* AI Analysis Buttons */}
-      {!reading && (
-        <div className="space-y-2">
-          <Button
-            className="w-full rounded-xl bg-gradient-to-r from-primary to-gold text-primary-foreground font-medium shadow-lg"
-            onClick={runAIAnalysis}
-            disabled={analyzing}
-          >
-            {analyzing ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                AI 분석 진행 중...
-              </>
-            ) : (
-              <>
-                <Sparkles className="mr-2 h-4 w-4" />
-                AI 교차 검증 분석 실행 (v1)
-              </>
+      {/* AI Analysis Buttons - 수동 분석 (항상 표시) */}
+      <Card className="border-border bg-card">
+        <CardContent className="p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="text-sm font-medium text-foreground">🔮 AI 분석 실행 (수동)</div>
+            {reading && (
+              <Badge variant="outline" className="border-green-500/30 text-green-400 text-[10px]">
+                분석 완료됨
+              </Badge>
             )}
-          </Button>
+          </div>
+
+          {reading && (
+            <p className="text-xs text-yellow-400/80">
+              ⚠️ 이미 분석이 완료되었습니다. 다시 실행하면 기존 결과를 덮어씁니다.
+            </p>
+          )}
+
+          {/* 메인 버튼: AI 분석 (v2) */}
           <Button
             className="w-full rounded-xl bg-gradient-to-r from-purple-600 to-violet-500 text-white font-medium shadow-lg"
             onClick={runAIAnalysisV2}
@@ -790,18 +817,18 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
             {analyzing ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                6체계 통합 분석 진행 중...
+                AI 분석 진행 중... (1~2분 소요)
               </>
             ) : (
               <>
                 <Sparkles className="mr-2 h-4 w-4" />
-                ✦ 6체계 통합 분석 실행 (v2)
+                {reading ? "✦ AI 재분석 (v2)" : "✦ AI 분석 실행 (v2)"}
                 {forcetellData.trim() && <Badge variant="outline" className="ml-2 text-[10px] border-gold/30 text-gold">포스텔러</Badge>}
               </>
             )}
           </Button>
-        </div>
-      )}
+        </CardContent>
+      </Card>
 
       {analysisError && (
         <Card className="border-destructive/30 bg-destructive/5">
@@ -884,12 +911,11 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg text-foreground">✦ 6체계 통합 분석 (v2)</CardTitle>
               {reading.final_reading?.grade && (
-                <Badge className={`text-sm font-bold px-3 py-1 ${
-                  reading.final_reading.grade === "S" ? "bg-gradient-to-r from-amber-500 to-yellow-400 text-black" :
-                  reading.final_reading.grade === "A" ? "bg-gradient-to-r from-purple-600 to-violet-500 text-white" :
-                  reading.final_reading.grade === "B" ? "bg-gradient-to-r from-blue-600 to-cyan-500 text-white" :
-                  "bg-secondary text-muted-foreground"
-                }`}>
+                <Badge className={`text-sm font-bold px-3 py-1 ${reading.final_reading.grade === "S" ? "bg-gradient-to-r from-amber-500 to-yellow-400 text-black" :
+                    reading.final_reading.grade === "A" ? "bg-gradient-to-r from-purple-600 to-violet-500 text-white" :
+                      reading.final_reading.grade === "B" ? "bg-gradient-to-r from-blue-600 to-cyan-500 text-white" :
+                        "bg-secondary text-muted-foreground"
+                  }`}>
                   {reading.final_reading.grade}등급
                 </Badge>
               )}
