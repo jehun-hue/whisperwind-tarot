@@ -188,6 +188,7 @@ export default function ClientPage() {
     try {
       const isLunarBool = isLunar === true || String(isLunar) === "true";
       const isLeapBool = isLeapMonth === true;
+      console.log("[getManseryeok 호출]", { year: y, month: m, day: d, hour, minute, isLunar: isLunarBool, isLeapMonth: isLeapBool });
       const ms = getManseryeok(y, m, d, hour, minute, isLunarBool, isLeapBool);
       if (!ms) {
         console.warn("사주 자동 계산 실패: 입력된 날짜/시간으로 만세력을 계산할 수 없습니다.");
@@ -208,7 +209,7 @@ export default function ClientPage() {
     } catch (e) {
       console.error("Analysis calc error:", e);
     }
-  }, [birthYear, birthMonth, birthDay, birthTime, isLunar, gender, hasBirthDate]);
+  }, [birthYear, birthMonth, birthDay, birthTime, isLunar, isLeapMonth, gender, hasBirthDate]);
 
   const selectCard = (card: DeckCard) => {
     if (step !== "cardSelect" || picked.length >= requiredCards || card.isPicked) return;

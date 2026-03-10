@@ -325,10 +325,16 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
           const minute = birthInfo.birthTime ? parseInt(birthInfo.birthTime.split(":")[1]) : 0;
 
           // Manseryeok auto-calculation
+          // saju_data.originalInput에 원본 음력 입력값이 있으면 그것을 우선 사용
           try {
+            const originalInput = (session.saju_data as any)?.originalInput;
+            const rawY = originalInput?.year ?? y;
+            const rawM = originalInput?.month ?? m;
+            const rawD = originalInput?.day ?? d;
             const isLunarBool = birthInfo.isLunar === true || String(birthInfo.isLunar) === "true";
             const isLeapBool = birthInfo.isLeapMonth === true || String(birthInfo.isLeapMonth) === "true";
-            manseryeokDataForAI = getManseryeok(y, m, d, hour, minute, isLunarBool, isLeapBool);
+            console.log("[ReaderPage v1 getManseryeok 호출]", { rawY, rawM, rawD, hour, minute, isLunarBool, isLeapBool });
+            manseryeokDataForAI = getManseryeok(rawY, rawM, rawD, hour, minute, isLunarBool, isLeapBool);
             if (!manseryeokDataForAI) {
               console.warn("사주 자동 계산 실패: ReaderPage v1");
             }
@@ -456,10 +462,16 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
           const minute = birthInfo.birthTime ? parseInt(birthInfo.birthTime.split(":")[1]) : 0;
 
           // Manseryeok auto-calculation
+          // saju_data.originalInput에 원본 음력 입력값이 있으면 그것을 우선 사용
           try {
+            const originalInput = (session.saju_data as any)?.originalInput;
+            const rawY = originalInput?.year ?? y;
+            const rawM = originalInput?.month ?? m;
+            const rawD = originalInput?.day ?? d;
             const isLunarBool = birthInfo.isLunar === true || String(birthInfo.isLunar) === "true";
             const isLeapBool = birthInfo.isLeapMonth === true || String(birthInfo.isLeapMonth) === "true";
-            manseryeokDataForAI = getManseryeok(y, m, d, hour, minute, isLunarBool, isLeapBool);
+            console.log("[ReaderPage v2 getManseryeok 호출]", { rawY, rawM, rawD, hour, minute, isLunarBool, isLeapBool });
+            manseryeokDataForAI = getManseryeok(rawY, rawM, rawD, hour, minute, isLunarBool, isLeapBool);
             if (!manseryeokDataForAI) {
               console.warn("사주 자동 계산 실패: ReaderPage v2");
             }
