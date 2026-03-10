@@ -315,9 +315,9 @@ ${gradeInstruction}
 }`;
 
     const maxTokens = getMaxTokens(selectedGrade);
-    const gatewayModel = selectedGrade === "S" || selectedGrade === "A"
-      ? "google/gemini-2.5-pro"
-      : "google/gemini-2.5-flash";
+    const geminiModel = selectedGrade === "S" || selectedGrade === "A"
+      ? "gemini-2.5-pro"
+      : "gemini-2.5-flash";
 
     let reading: any = null;
     let lastError: string = "";
@@ -330,20 +330,19 @@ ${gradeInstruction}
         await new Promise((r) => setTimeout(r, delay));
       }
       try {
-        const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${GEMINI_API_KEY}`, {
           method: "POST",
           headers: {
-            "Authorization": `Bearer ${LOVABLE_API_KEY}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: gatewayModel,
-            messages: [
-              { role: "system", content: SYSTEM_PROMPT },
-              { role: "user", content: userPrompt },
+            contents: [
+              { role: "user", parts: [{ text: SYSTEM_PROMPT + "\n\n" + userPrompt }] },
             ],
-            temperature: 0.7,
-            max_tokens: maxTokens,
+            generationConfig: {
+              temperature: 0.7,
+              maxOutputTokens: maxTokens,
+            },
           }),
         });
 
@@ -361,7 +360,7 @@ ${gradeInstruction}
         }
 
         const data = await resp.json();
-        const rawContent = data?.choices?.[0]?.message?.content;
+        const rawContent = data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
         if (!rawContent) {
           lastError = "Empty response from AI";
