@@ -398,8 +398,8 @@ export default function ClientPage() {
                         key={q.label}
                         onClick={() => setQuestion(q.text)}
                         className={`rounded-xl border p-3 text-left transition-all ${question === q.text
-                            ? "border-gold/50 bg-gold/10"
-                            : "border-border/30 bg-background/30 hover:border-border/60"
+                          ? "border-gold/50 bg-gold/10"
+                          : "border-border/30 bg-background/30 hover:border-border/60"
                           }`}
                       >
                         <span className="text-lg">{q.emoji}</span>
@@ -540,8 +540,8 @@ export default function ClientPage() {
                           setBirthMinInput("");
                         }}
                         className={`rounded-full border px-3 py-1 text-xs font-medium transition-all ${birthTime === "unknown"
-                            ? "border-gold/50 bg-gold/10 text-gold"
-                            : "border-border/50 text-muted-foreground hover:text-foreground"
+                          ? "border-gold/50 bg-gold/10 text-gold"
+                          : "border-border/50 text-muted-foreground hover:text-foreground"
                           }`}
                       >
                         모름
@@ -605,8 +605,8 @@ export default function ClientPage() {
                           key={g}
                           onClick={() => setGender(g)}
                           className={`flex-1 rounded-xl border py-2.5 text-sm font-medium transition-all ${gender === g
-                              ? "border-gold/50 bg-gold/10 text-gold"
-                              : "border-border/50 bg-background/50 text-muted-foreground hover:bg-muted"
+                            ? "border-gold/50 bg-gold/10 text-gold"
+                            : "border-border/50 bg-background/50 text-muted-foreground hover:bg-muted"
                             }`}
                         >
                           {g === "female" ? "👩 여성" : "👨 남성"}
@@ -659,8 +659,8 @@ export default function ClientPage() {
                         key={opt.value}
                         onClick={() => setRomanceStatus(opt.value)}
                         className={`w-full rounded-xl border p-4 text-left transition-all ${romanceStatus === opt.value
-                            ? "border-gold/50 bg-gold/10"
-                            : "border-border/30 bg-background/30 hover:border-border/60"
+                          ? "border-gold/50 bg-gold/10"
+                          : "border-border/30 bg-background/30 hover:border-border/60"
                           }`}
                       >
                         <span className="text-lg mr-2">{opt.emoji}</span>
@@ -701,8 +701,8 @@ export default function ClientPage() {
                       <div
                         key={i}
                         className={`flex h-8 w-8 items-center justify-center rounded-full border-2 text-xs font-medium transition-all ${i < picked.length
-                            ? "border-gold bg-gold/20 text-gold glow-gold"
-                            : "border-border/30 text-muted-foreground/30"
+                          ? "border-gold bg-gold/20 text-gold glow-gold"
+                          : "border-border/30 text-muted-foreground/30"
                           }`}
                       >
                         {i < picked.length ? picked[i].korean[0] : i + 1}
@@ -727,30 +727,69 @@ export default function ClientPage() {
                   {deck.map((card) => {
                     const isSelected = picked.some((p) => p.id === card.id);
                     const isDisabled = card.isPicked || picked.length >= requiredCards;
+
+                    // 슈트별 그라데이션 색상
+                    let suitBg = 'from-purple-600 to-indigo-900'; // Major
+                    if (card.suit === 'Pentacles') suitBg = 'from-yellow-500 to-amber-900';
+                    else if (card.suit === 'Wands') suitBg = 'from-red-600 to-rose-900';
+                    else if (card.suit === 'Cups') suitBg = 'from-blue-600 to-cyan-900';
+                    else if (card.suit === 'Swords') suitBg = 'from-slate-500 to-gray-800';
+
                     return (
                       <motion.button
-                        whileHover={!isDisabled ? { y: -4, scale: 1.03 } : {}}
-                        whileTap={!isDisabled ? { scale: 0.97 } : {}}
+                        whileHover={!isDisabled ? { y: -4, scale: 1.05 } : {}}
+                        whileTap={!isDisabled ? { scale: 0.95 } : {}}
                         key={card.id}
                         onClick={() => selectCard(card)}
                         disabled={isDisabled}
-                        className={`group relative aspect-[0.65] overflow-hidden rounded-lg border transition-all ${isSelected
-                            ? "border-gold/60 glow-gold-strong"
-                            : isDisabled
-                              ? "border-border/20 opacity-30 cursor-not-allowed"
-                              : "border-border/30 hover:border-gold/30 cursor-pointer"
+                        className={`group relative aspect-[0.65] w-full [perspective:1000px] ${isDisabled && !isSelected ? "cursor-not-allowed opacity-40" : "cursor-pointer"
                           }`}
                       >
-                        {isSelected ? (
-                          <div className="flex h-full flex-col items-center justify-center bg-gradient-to-b from-gold/10 to-accent/10 p-1">
-                            <span className="font-display text-sm font-semibold text-gold">{card.korean}</span>
-                            <span className="mt-0.5 flex items-center gap-0.5 text-[8px] text-gold-light">
-                              {card.isReversed ? <><EyeOff className="h-2 w-2" /> 역</> : <><Eye className="h-2 w-2" /> 정</>}
-                            </span>
+                        <motion.div
+                          className="w-full h-full relative [transform-style:preserve-3d]"
+                          initial={false}
+                          animate={{
+                            rotateY: isSelected ? 180 : 0,
+                            y: isSelected ? -8 : 0,
+                          }}
+                          transition={{ duration: 0.6, type: "spring", stiffness: 200, damping: 20 }}
+                        >
+                          {/* 1. 카드 뒷면 (선택 전) */}
+                          <div className={`absolute inset-0 w-full h-full rounded-lg border flex flex-col items-center justify-center [backface-visibility:hidden] overflow-hidden transition-all duration-300 ${!isSelected && !isDisabled ? "border-gold/40 hover:border-gold/70 shadow-[inset_0_0_10px_rgba(200,168,100,0.1)] hover:shadow-[0_0_15px_rgba(200,168,100,0.4)]" : "border-border/20"
+                            }`}>
+                            {/* 골드 그라데이션 배경 테두리 느낌 */}
+                            <div className="absolute inset-0 bg-gradient-to-br from-background via-background/90 to-gold/10" />
+                            <img src={cardBackImg} alt="" className="absolute inset-0 h-full w-full object-cover opacity-30 group-hover:opacity-50 transition-opacity duration-500" />
+
+                            {/* 중앙 심볼 */}
+                            <div className="relative z-10 text-gold/60 group-hover:text-gold transition-colors transform group-hover:scale-125 duration-500">
+                              <span className="text-3xl font-light drop-shadow-[0_0_10px_rgba(200,168,100,0.8)]">✦</span>
+                            </div>
                           </div>
-                        ) : (
-                          <img src={cardBackImg} alt="" className="h-full w-full object-cover opacity-60 transition-opacity group-hover:opacity-90" />
-                        )}
+
+                          {/* 2. 카드 앞면 (선택 후 뒤집힌 상태) */}
+                          <div className={`absolute inset-0 w-full h-full rounded-lg border flex flex-col items-center justify-center [backface-visibility:hidden] [transform:rotateY(180deg)] overflow-hidden transition-all duration-300 ${isSelected && card.isReversed
+                              ? "border-purple-500/70 shadow-[0_0_20px_rgba(168,85,247,0.3)] bg-purple-950/20"
+                              : "border-gold/70 glow-gold-strong bg-gold/5"
+                            }`}>
+                            {/* 슈트별 배경색 */}
+                            <div className={`absolute inset-0 opacity-40 bg-gradient-to-br ${suitBg}`} />
+                            <div className="absolute inset-0 bg-background/70 backdrop-blur-[2px]" />
+
+                            <div className="relative z-10 flex flex-col items-center justify-center p-1 sm:p-2 text-center w-full h-full">
+                              <span className={`font-display text-xs sm:text-sm font-bold tracking-tight leading-tight px-1 drop-shadow-md ${isSelected && card.isReversed ? "text-purple-300" : "text-gold"
+                                }`}>
+                                {card.korean}
+                              </span>
+                              <span className={`mt-1.5 flex items-center justify-center gap-1 text-[9px] font-medium px-2 py-0.5 rounded-full border shadow-sm ${isSelected && card.isReversed
+                                  ? "text-purple-200 border-purple-500/50 bg-purple-500/20"
+                                  : "text-gold-light border-gold/50 bg-gold/20"
+                                }`}>
+                                {card.isReversed ? <>▼ 역방향</> : <>▲ 정방향</>}
+                              </span>
+                            </div>
+                          </div>
+                        </motion.div>
                       </motion.button>
                     );
                   })}
