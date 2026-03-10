@@ -28,26 +28,21 @@ export function getManseryeok(
       console.log(`음력 ${year}-${month}-${day} → 양력 ${solarYear}-${solarMonth}-${solarDay} 변환 완료`);
     }
 
-    // ── 야자시(夜子時) 처리 ──────────────────────────────────────
-    // 경도 보정 후 23:00 이상이면 다음날 일주를 적용해야 함
+    // ── 야자시(夜子時) 처리 ──────────────────────────────────────────
+    // 경도 보정 후 23:00 이상이면 다음날 일주를 계산해야 함
     const LONGITUDE = 126.98;
-    const STANDARD_MERIDIAN = 135;
-    const longitudeOffsetMin = (LONGITUDE - STANDARD_MERIDIAN) * 4; // 약 –32.08분
-    const totalInputMin = hour * 60 + minute + longitudeOffsetMin;
-    const correctedHourDecimal = totalInputMin / 60;
+    const longitudeOffsetMin = (LONGITUDE - 135) * 4; // 약 –32.08분
 
-    if (correctedHourDecimal >= 23) {
-      // 날짜 +1 처리 (월, 연도 경계 포함)
-      const daysInMonth = new Date(solarYear, solarMonth, 0).getDate(); // Date month is 1-based
-      solarDay += 1;
-      if (solarDay > daysInMonth) {
-        solarDay = 1;
-        solarMonth += 1;
-        if (solarMonth > 12) {
-          solarMonth = 1;
-          solarYear += 1;
-        }
-      }
+    let correctedMinutes = minute + longitudeOffsetMin;
+    let correctedHour = hour + Math.floor(correctedMinutes / 60);
+    correctedMinutes = ((correctedMinutes % 60) + 60) % 60; // 음수 방지
+
+    if (correctedHour >= 23) {
+      // JS Date로 넘기면 월말·연말 경계를 자동 처리
+      const nextDay = new Date(solarYear, solarMonth - 1, solarDay + 1);
+      solarYear = nextDay.getFullYear();
+      solarMonth = nextDay.getMonth() + 1;
+      solarDay = nextDay.getDate();
       console.log(`야자시 보정: 날짜를 ${solarYear}-${solarMonth}-${solarDay}로 변경`);
     }
 
