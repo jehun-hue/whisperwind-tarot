@@ -227,7 +227,7 @@ export default function ReaderPage() {
 
           {/* Reading detail */}
           {selectedSession ? (
-            <SessionDetail session={selectedSession} onUpdate={updateSession} />
+            <SessionDetail key={selectedSession.id} session={selectedSession} onUpdate={updateSession} />
           ) : (
             <Card className="flex items-center justify-center border-border bg-card">
               <CardContent className="py-20 text-center">
@@ -298,9 +298,8 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
     setAnalysisError(null);
     setAnalyzing(true);
     try {
-      // Update status to analyzing
+      // 상태 DB만 업데이트 (onUpdate 호출 생략 - 중간 re-render로 인한 cascade 방지)
       await supabase.from("reading_sessions").update({ status: "analyzing" }).eq("id", session.id);
-      onUpdate({ ...session, status: "analyzing" });
 
       const cards = session.cards as any[];
       const birthInfo = session.birth_date ? {
@@ -437,8 +436,8 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
     setAnalysisError(null);
     setAnalyzing(true);
     try {
+      // 상태 DB만 업데이트 (onUpdate 호출 생략 - 중간 re-render로 인한 cascade 방지)
       await supabase.from("reading_sessions").update({ status: "analyzing" }).eq("id", session.id);
-      onUpdate({ ...session, status: "analyzing" });
 
       const cards = session.cards as any[];
       const birthInfo = session.birth_date ? {
