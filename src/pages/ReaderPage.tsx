@@ -460,7 +460,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
 
       const combinationSummary = getCombinationSummary(cards.map((c: any) => c.id), qType as any);
 
-      const { data: aiData, error: fnError } = await supabase.functions.invoke("ai-reading-v2", {
+      const { data: aiData, error: fnError } = await supabase.functions.invoke("ai-reading-v4", {
         body: {
           question: session.question,
           questionType: qType,
