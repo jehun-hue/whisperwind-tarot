@@ -453,21 +453,21 @@ export default function ClientPage() {
                     <label className="text-sm text-muted-foreground">생년월일</label>
                     <div className="grid grid-cols-3 gap-2">
                       <Input
-                        type="number" placeholder="1993" value={birthYear}
+                        type="number" placeholder="YYYY" value={birthYear}
                         onChange={(e) => setBirthYear(e.target.value)}
-                        className="rounded-xl border-border/50 bg-background/50 text-foreground"
-                        min="1920" max="2010"
+                        className="rounded-xl border-border/50 bg-background/50 text-foreground placeholder:text-gray-500"
+                        min="1920" max="2100"
                       />
                       <Input
-                        type="number" placeholder="07" value={birthMonth}
+                        type="number" placeholder="MM" value={birthMonth}
                         onChange={(e) => setBirthMonth(e.target.value)}
-                        className="rounded-xl border-border/50 bg-background/50 text-foreground"
+                        className="rounded-xl border-border/50 bg-background/50 text-foreground placeholder:text-gray-500"
                         min="1" max="12"
                       />
                       <Input
-                        type="number" placeholder="17" value={birthDay}
+                        type="number" placeholder="DD" value={birthDay}
                         onChange={(e) => setBirthDay(e.target.value)}
-                        className="rounded-xl border-border/50 bg-background/50 text-foreground"
+                        className="rounded-xl border-border/50 bg-background/50 text-foreground placeholder:text-gray-500"
                         min="1" max="31"
                       />
                     </div>
