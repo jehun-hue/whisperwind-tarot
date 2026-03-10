@@ -696,32 +696,7 @@ export default function ClientPage() {
                   <p className="mt-2 text-xs text-muted-foreground">
                     마음이 끌리는 카드를 {requiredCards}장 고르세요
                   </p>
-                  <div className="mt-3 flex items-center justify-center gap-2">
-                    {Array.from({ length: requiredCards }, (_, i) => (
-                      <div
-                        key={i}
-                        className={`flex h-8 w-8 items-center justify-center rounded-full border-2 text-xs font-medium transition-all ${i < picked.length
-                          ? "border-gold bg-gold/20 text-gold glow-gold"
-                          : "border-border/30 text-muted-foreground/30"
-                          }`}
-                      >
-                        {i < picked.length ? picked[i].korean[0] : i + 1}
-                      </div>
-                    ))}
-                  </div>
                 </div>
-
-                {picked.length >= 3 && (
-                  <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mt-3">
-                    <Button
-                      className="w-full rounded-xl bg-gradient-to-r from-accent via-gold to-accent text-primary-foreground font-semibold text-base shadow-lg shadow-gold/20 hover:shadow-gold/40 transition-all py-6"
-                      onClick={handleSubmit}
-                    >
-                      <Sparkles className="mr-2 h-5 w-5" />
-                      선택 완료
-                    </Button>
-                  </motion.div>
-                )}
 
                 <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-6 md:grid-cols-8">
                   {deck.map((card) => {
@@ -769,8 +744,8 @@ export default function ClientPage() {
 
                           {/* 2. 카드 앞면 (선택 후 뒤집힌 상태) */}
                           <div className={`absolute inset-0 w-full h-full rounded-lg border flex flex-col items-center justify-center [backface-visibility:hidden] [transform:rotateY(180deg)] overflow-hidden transition-all duration-300 ${isSelected && card.isReversed
-                              ? "border-purple-500/70 shadow-[0_0_20px_rgba(168,85,247,0.3)] bg-purple-950/20"
-                              : "border-gold/70 glow-gold-strong bg-gold/5"
+                            ? "border-purple-500/70 shadow-[0_0_20px_rgba(168,85,247,0.3)] bg-purple-950/20"
+                            : "border-gold/70 glow-gold-strong bg-gold/5"
                             }`}>
                             {/* 슈트별 배경색 */}
                             <div className={`absolute inset-0 opacity-40 bg-gradient-to-br ${suitBg}`} />
@@ -782,8 +757,8 @@ export default function ClientPage() {
                                 {card.korean}
                               </span>
                               <span className={`mt-1.5 flex items-center justify-center gap-1 text-[9px] font-medium px-2 py-0.5 rounded-full border shadow-sm ${isSelected && card.isReversed
-                                  ? "text-purple-200 border-purple-500/50 bg-purple-500/20"
-                                  : "text-gold-light border-gold/50 bg-gold/20"
+                                ? "text-purple-200 border-purple-500/50 bg-purple-500/20"
+                                : "text-gold-light border-gold/50 bg-gold/20"
                                 }`}>
                                 {card.isReversed ? <>▼ 역방향</> : <>▲ 정방향</>}
                               </span>
@@ -795,15 +770,71 @@ export default function ClientPage() {
                   })}
                 </div>
 
-                {picked.length > 0 && (
-                  <div className="flex flex-wrap items-center justify-center gap-1.5">
-                    {picked.map((card, idx) => (
-                      <Badge key={card.id} className="rounded-full border border-gold/30 bg-gold/10 px-2.5 py-1 text-foreground text-[11px]">
-                        {idx + 1}. {card.korean} <span className="ml-0.5 text-gold">{card.isReversed ? "(역)" : "(정)"}</span>
-                      </Badge>
-                    ))}
+                <div className="mt-10 space-y-8 flex flex-col items-center">
+                  <div className="flex items-center justify-center gap-4 w-full max-w-sm">
+                    {Array.from({ length: requiredCards }).map((_, idx) => {
+                      const card = picked[idx];
+                      const positionLabel = idx === 0 ? "현재" : idx === 1 ? "문제" : "결과";
+
+                      if (!card) {
+                        return (
+                          <div key={idx} className="flex-1 aspect-[0.65] rounded-xl border-2 border-dashed border-border/30 flex flex-col items-center justify-center text-muted-foreground/30 bg-background/10 relative shadow-inner">
+                            <span className="absolute top-3 text-[10px] font-medium text-muted-foreground/50 tracking-widest">{positionLabel}</span>
+                            <span className="text-2xl font-light opacity-50">{idx + 1}</span>
+                          </div>
+                        );
+                      }
+
+                      let suitBg = 'from-purple-600 to-indigo-900';
+                      if (card.suit === 'Pentacles') suitBg = 'from-yellow-500 to-amber-900';
+                      else if (card.suit === 'Wands') suitBg = 'from-red-600 to-rose-900';
+                      else if (card.suit === 'Cups') suitBg = 'from-blue-600 to-cyan-900';
+                      else if (card.suit === 'Swords') suitBg = 'from-slate-500 to-gray-800';
+
+                      return (
+                        <div key={card.id} className="flex-1 flex flex-col items-center gap-2">
+                          <span className={`text-xs font-medium tracking-widest ${card.isReversed ? "text-purple-300/80" : "text-gold-light/80"}`}>{positionLabel}</span>
+                          <motion.div
+                            initial={{ scale: 0.8, opacity: 0, y: 10 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            className={`w-full aspect-[0.65] rounded-xl border-2 flex flex-col items-center justify-center overflow-hidden relative shadow-lg ${card.isReversed
+                                ? "border-purple-500/70 shadow-[0_0_20px_rgba(168,85,247,0.2)] bg-purple-950/30"
+                                : "border-gold/70 shadow-[0_0_20px_rgba(200,168,100,0.2)] bg-gold/5"
+                              }`}
+                          >
+                            <div className={`absolute inset-0 opacity-40 bg-gradient-to-br ${suitBg}`} />
+                            <div className="absolute inset-0 bg-background/80 backdrop-blur-[2px]" />
+
+                            <div className="relative z-10 flex flex-col items-center justify-center p-1 text-center h-full w-full">
+                              <span className={`font-display text-sm md:text-base font-bold tracking-tight leading-tight px-0.5 drop-shadow-md ${card.isReversed ? "text-purple-300" : "text-gold"
+                                }`}>
+                                {card.korean}
+                              </span>
+                              <span className={`mt-2 flex items-center justify-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border shadow-sm ${card.isReversed
+                                  ? "text-purple-200 border-purple-500/50 bg-purple-500/20"
+                                  : "text-gold-light border-gold/50 bg-gold/20"
+                                }`}>
+                                {card.isReversed ? <>▼ 역</> : <>▲ 정</>}
+                              </span>
+                            </div>
+                          </motion.div>
+                        </div>
+                      );
+                    })}
                   </div>
-                )}
+
+                  <Button
+                    className={`w-full max-w-sm rounded-xl font-semibold text-base shadow-lg transition-all py-6 ${picked.length >= requiredCards
+                        ? "bg-gradient-to-r from-accent via-gold to-accent text-primary-foreground shadow-gold/20 hover:shadow-gold/40 hover:-translate-y-0.5"
+                        : "bg-secondary/50 text-muted-foreground border border-border/30 opacity-60 cursor-not-allowed hover:bg-secondary/50"
+                      }`}
+                    onClick={handleSubmit}
+                    disabled={picked.length < requiredCards}
+                  >
+                    <Sparkles className={`mr-2 h-5 w-5 ${picked.length >= requiredCards ? "text-primary-foreground" : "text-muted-foreground/50"}`} />
+                    {picked.length >= requiredCards ? "선택 완료" : `${picked.length} / ${requiredCards}장 선택 중`}
+                  </Button>
+                </div>
               </div>
             </motion.div>
           )}
