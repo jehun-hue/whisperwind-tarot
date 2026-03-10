@@ -183,7 +183,7 @@ export default function ClientPage() {
     const m = parseInt(birthMonth);
     const d = parseInt(birthDay);
     const hour = birthTime !== "unknown" ? parseInt(birthTime.split(":")[0]) : 12;
-    const minute = 0;
+    const minute = birthTime !== "unknown" && birthTime.includes(":") ? parseInt(birthTime.split(":")[1]) : 0;
 
     try {
       const isLunarBool = isLunar === true || String(isLunar) === "true";
