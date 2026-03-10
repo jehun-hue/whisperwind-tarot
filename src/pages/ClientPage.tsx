@@ -28,7 +28,7 @@ import SajuManualOverride from "@/components/SajuManualOverride";
 import cardBackImg from "@/assets/card-back.png";
 
 // ─── Types ───
-type Step = "question" | "birthInfo" | "romance" | "cardSelect" | "loading" | "result";
+type Step = "question" | "birthInfo" | "romance" | "cardSelect" | "submitted";
 type QuestionType = "love" | "career" | "money" | "general";
 type Grade = "C" | "B" | "A" | "S";
 type RomanceStatus = "solo" | "some" | "dating" | "breakup" | "marriage";
@@ -110,7 +110,7 @@ function StepIndicator({ currentStep, isLoveQuestion }: { currentStep: Step; isL
     : [{ key: "question", label: "질문" }, { key: "birthInfo", label: "출생정보" }, { key: "cardSelect", label: "카드선택" }];
 
   const currentIdx = steps.findIndex((s) => s.key === currentStep);
-  const effectiveIdx = currentStep === "loading" || currentStep === "result" ? steps.length : currentIdx;
+  const effectiveIdx = currentStep === "submitted" ? steps.length : currentIdx;
 
   return (
     <div className="flex items-center justify-center gap-1.5">
@@ -168,9 +168,7 @@ export default function ClientPage() {
   const [manualSajuData, setManualSajuData] = useState("");
 
   // Result
-  const [aiReading, setAiReading] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
-  const [loadingMessage, setLoadingMessage] = useState("");
 
   const questionType = useMemo(() => classifyQuestion(question), [question]);
   const isLoveQuestion = useMemo(() => ROMANCE_KEYWORDS.test(question), [question]);
@@ -215,12 +213,10 @@ export default function ClientPage() {
     setPicked((prev) => [...prev, makeDeckCard(card, true, true, rev)]);
   };
 
-  // When grade changes and user has too many cards, keep them. If not enough, let them pick more.
   const handleGradeChange = (grade: Grade) => {
     setSelectedGrade(grade);
     const needed = getRequiredCards(grade);
     if (picked.length > needed) {
-      // Trim extra cards and reset them in deck
       const keep = picked.slice(0, needed);
       const removed = picked.slice(needed);
       setPicked(keep);
@@ -235,14 +231,10 @@ export default function ClientPage() {
     }
   };
 
-  // ─── 5-minute cache ───
-  const cacheRef = React.useRef<{ key: string; data: any; ts: number } | null>(null);
-
+  // ─── Submit: DB 저장 후 즉시 접수완료, AI는 백그라운드 ───
   const handleSubmit = async () => {
     if (!hasEnoughCards) return;
-    setStep("loading");
     setError(null);
-    setLoadingMessage("카드의 에너지를 읽고 있습니다...");
 
     const cardData = picked.map((c) => ({
       id: c.id, name: c.name, korean: c.korean, suit: c.suit, isReversed: c.isReversed,
@@ -255,16 +247,6 @@ export default function ClientPage() {
       birthPlace: "",
       isLunar,
     } : null;
-
-    // Cache key based on inputs
-    const cacheKey = JSON.stringify({ question, questionType, memo, cardIds: cardData.map(c => c.id + (c.isReversed ? 'R' : '')), grade: selectedGrade, romanceStatus });
-
-    // Check cache (5 min TTL)
-    if (cacheRef.current && cacheRef.current.key === cacheKey && Date.now() - cacheRef.current.ts < 5 * 60 * 1000) {
-      setAiReading(cacheRef.current.data);
-      setStep("result");
-      return;
-    }
 
     let sajuDataForAI = null;
     let astroDataForAI = null;
@@ -282,7 +264,7 @@ export default function ClientPage() {
     const combinationSummary = getCombinationSummary(picked.map((c) => c.id), questionType);
 
     try {
-      // Save session
+      // 1) DB에 세션 저장
       const { data: session, error: dbError } = await supabase
         .from("reading_sessions")
         .insert({
@@ -295,9 +277,11 @@ export default function ClientPage() {
 
       if (dbError) throw dbError;
 
-      setLoadingMessage("6개 체계로 교차 검증 중...");
+      // 2) 즉시 접수완료 화면으로 전환 (사용자는 더 이상 기다리지 않음)
+      setStep("submitted");
 
-      const { data: aiData, error: fnError } = await supabase.functions.invoke("ai-reading-v4", {
+      // 3) AI 호출은 백그라운드로 실행 (사용자에게 영향 없음)
+      supabase.functions.invoke("ai-reading-v4", {
         body: {
           question, questionType, memo,
           cards: cardData, sajuData: sajuDataForAI, birthInfo,
@@ -308,30 +292,28 @@ export default function ClientPage() {
           romanceStatus,
           grade: selectedGrade,
         },
+      }).then(({ data: aiData, error: fnError }) => {
+        if (fnError) {
+          console.error("AI 백그라운드 에러:", fnError);
+          return;
+        }
+        const reading = aiData?.reading;
+        if (session?.id && reading) {
+          supabase.from("reading_sessions").update({
+            ai_reading: reading as any,
+            final_confidence: reading.convergence?.converged_count ? Math.round((reading.convergence.converged_count / 6) * 100) : 70,
+            status: "completed",
+          }).eq("id", session.id).then(() => {
+            console.log("AI 분석 완료, DB 업데이트됨");
+          });
+        }
+      }).catch((err) => {
+        console.error("AI 백그라운드 에러:", err);
       });
 
-      if (fnError) throw fnError;
-
-      const reading = aiData?.reading;
-      setAiReading(reading);
-
-      // Store in cache
-      cacheRef.current = { key: cacheKey, data: reading, ts: Date.now() };
-
-      if (session?.id && reading) {
-        await supabase.from("reading_sessions").update({
-          ai_reading: reading as any,
-          final_confidence: reading.convergence?.converged_count ? Math.round((reading.convergence.converged_count / 6) * 100) : 70,
-          status: "completed",
-        }).eq("id", session.id);
-      }
-
-      setStep("result");
     } catch (err: any) {
-      console.error("Reading error:", err);
-      const msg = err.message || "분석 중 오류가 발생했습니다.";
-      setError(msg);
-      setStep("result");
+      console.error("Session save error:", err);
+      setError(err.message || "접수 중 오류가 발생했습니다.");
     }
   };
 
@@ -346,7 +328,7 @@ export default function ClientPage() {
     setManseryeokResult(null); setSajuResult(null);
     setAstroResult(null); setZiweiResult(null);
     setManualSajuData("");
-    setAiReading(null); setError(null);
+    setError(null);
     const shuffled = [...tarotCards].sort(() => Math.random() - 0.5);
     setDeck(shuffled.map((c) => makeDeckCard(c, false, false, false)));
   };
@@ -366,7 +348,6 @@ export default function ClientPage() {
   return (
     <div className="relative min-h-screen bg-background overflow-hidden">
       <FloatingStars />
-      {/* Ambient glow effects */}
       <div className="pointer-events-none fixed inset-0 z-0">
         <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-accent/5 blur-[120px]" />
         <div className="absolute bottom-1/4 right-1/4 h-80 w-80 rounded-full bg-gold/5 blur-[100px]" />
@@ -387,7 +368,7 @@ export default function ClientPage() {
           <div className="animate-float mb-3 text-3xl">☽</div>
           <span className="font-display text-xs italic tracking-[0.3em] text-gold-light">premium tarot salon</span>
           <div className="mx-auto mt-4 h-px w-24 bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
-          {step !== "loading" && step !== "result" && (
+          {step !== "submitted" && (
             <div className="mt-5">
               <StepIndicator currentStep={step} isLoveQuestion={isLoveQuestion} />
             </div>
@@ -412,7 +393,6 @@ export default function ClientPage() {
                     placeholder="예: 올해 하반기 연애운이 궁금해요"
                   />
 
-                  {/* Quick select buttons */}
                   <div className="grid grid-cols-2 gap-2">
                     {QUICK_QUESTIONS.map((q) => (
                       <button
@@ -471,7 +451,6 @@ export default function ClientPage() {
                     <p className="mt-1 text-xs text-muted-foreground">더 정밀한 분석을 위해 필요합니다</p>
                   </div>
 
-                  {/* Date inputs */}
                   <div className="space-y-2">
                     <label className="text-sm text-muted-foreground">생년월일</label>
                     <div className="grid grid-cols-3 gap-2">
@@ -496,7 +475,6 @@ export default function ClientPage() {
                     </div>
                   </div>
 
-                  {/* Calendar toggle */}
                   <div className="flex items-center gap-3">
                     <div className="inline-flex items-center rounded-full border border-border/50 bg-background/30 p-0.5">
                       <button
@@ -524,11 +502,9 @@ export default function ClientPage() {
                     )}
                   </div>
 
-                  {/* Birth time - text input */}
                   <div className="space-y-3">
                     <div className="flex items-center gap-3">
                       <label className="text-sm text-muted-foreground">출생 시간</label>
-                      {/* AM/PM toggle */}
                       <div className="inline-flex items-center rounded-full border border-border/50 bg-background/30 p-0.5">
                         <button
                           onClick={() => {
@@ -563,7 +539,6 @@ export default function ClientPage() {
                           오후
                         </button>
                       </div>
-                      {/* 모름 button */}
                       <button
                         onClick={() => {
                           setBirthTime("unknown");
@@ -579,7 +554,6 @@ export default function ClientPage() {
                         모름
                       </button>
                     </div>
-                    {/* Hour / Min selects */}
                     <div className="flex items-center gap-2">
                       <Select
                         value={birthHourInput}
@@ -630,7 +604,6 @@ export default function ClientPage() {
                     )}
                   </div>
 
-                  {/* Gender */}
                   <div className="space-y-2">
                     <label className="text-sm text-muted-foreground">성별</label>
                     <div className="flex gap-2">
@@ -719,7 +692,7 @@ export default function ClientPage() {
             </motion.div>
           )}
 
-          {/* ═══ STEP 3: Card Selection + Grade ═══ */}
+          {/* ═══ STEP 3: Card Selection ═══ */}
           {step === "cardSelect" && (
             <motion.div key="cards" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.5 }}>
               <div className="space-y-4">
@@ -732,7 +705,6 @@ export default function ClientPage() {
                   <p className="mt-2 text-xs text-muted-foreground">
                     마음이 끌리는 카드를 {requiredCards}장 고르세요
                   </p>
-                  {/* Card count indicator */}
                   <div className="mt-3 flex items-center justify-center gap-2">
                     {Array.from({ length: requiredCards }, (_, i) => (
                       <div
@@ -749,7 +721,6 @@ export default function ClientPage() {
                   </div>
                 </div>
 
-                {/* Submit button - shown after 3 cards selected, above grid */}
                 {picked.length >= 3 && (
                   <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mt-3">
                     <Button
@@ -762,7 +733,6 @@ export default function ClientPage() {
                   </motion.div>
                 )}
 
-                {/* Card Grid */}
                 <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-6 md:grid-cols-8">
                   {deck.map((card) => {
                     const isSelected = picked.some((p) => p.id === card.id);
@@ -797,7 +767,6 @@ export default function ClientPage() {
                   })}
                 </div>
 
-                {/* Selected cards summary */}
                 {picked.length > 0 && (
                   <div className="flex flex-wrap items-center justify-center gap-1.5">
                     {picked.map((card, idx) => (
@@ -811,36 +780,18 @@ export default function ClientPage() {
             </motion.div>
           )}
 
-          {/* ═══ Loading & Result ═══ */}
-          {(step === "loading" || step === "result") && (
-            <motion.div key="result" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+          {/* ═══ 접수 완료 화면 ═══ */}
+          {step === "submitted" && (
+            <motion.div key="submitted" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               {error ? (
                 <Card className="border-destructive/30 bg-card/80 backdrop-blur-xl">
                   <CardContent className="py-10 px-8 text-center space-y-4">
                     <div className="mb-2 text-3xl">⚠️</div>
-                    <h2 className="font-display text-xl font-semibold text-foreground">분석 중 오류가 발생했습니다</h2>
-                    <p className="text-sm text-muted-foreground">
-                      {error}
-                    </p>
+                    <h2 className="font-display text-xl font-semibold text-foreground">접수 중 오류가 발생했습니다</h2>
+                    <p className="text-sm text-muted-foreground">{error}</p>
                     <div className="flex gap-3 justify-center pt-2">
                       <Button variant="secondary" className="rounded-full" onClick={handleSubmit}>다시 시도</Button>
                       <Button variant="ghost" className="rounded-full" onClick={resetAll}>처음으로</Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ) : step === "loading" ? (
-                <Card className="border-border/50 bg-card/80 backdrop-blur-xl">
-                  <CardContent className="py-16 px-8 text-center space-y-6">
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                      className="inline-block text-4xl"
-                    >
-                      🔮
-                    </motion.div>
-                    <div>
-                      <h2 className="font-display text-xl font-semibold text-foreground">{loadingMessage}</h2>
-                      <p className="mt-2 text-xs text-muted-foreground">잠시만 기다려 주세요...</p>
                     </div>
                   </CardContent>
                 </Card>
