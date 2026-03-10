@@ -187,9 +187,12 @@ export default function ClientPage() {
 
     try {
       const ms = getManseryeok(y, m, d, hour, minute, isLunar, gender as 'male' | 'female');
+      if (!ms) {
+        console.warn("사주 자동 계산 실패: 입력된 날짜/시간으로 만세력을 계산할 수 없습니다.");
+      }
       setManseryeokResult(ms);
     } catch (e) {
-      console.error("Manseryeok error:", e);
+      console.warn("사주 자동 계산 에러 (예상치 못한 오류):", e);
       setManseryeokResult(null);
     }
 

@@ -326,8 +326,11 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
           // Manseryeok auto-calculation
           try {
             manseryeokDataForAI = getManseryeok(y, m, d, hour, minute, birthInfo.isLunar as boolean, (birthInfo.gender as "male" | "female") || "female");
+            if (!manseryeokDataForAI) {
+              console.warn("사주 자동 계산 실패: ReaderPage v1");
+            }
           } catch (e) {
-            console.error("Manseryeok calc error:", e);
+            console.warn("Manseryeok calc error:", e);
           }
 
           if (!sajuDataForAI) {
@@ -451,8 +454,11 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
           // Manseryeok auto-calculation
           try {
             manseryeokDataForAI = getManseryeok(y, m, d, hour, minute, birthInfo.isLunar as boolean, (birthInfo.gender as "male" | "female") || "female");
+            if (!manseryeokDataForAI) {
+              console.warn("사주 자동 계산 실패: ReaderPage v2");
+            }
           } catch (e) {
-            console.error("Manseryeok V2 calc error:", e);
+            console.warn("Manseryeok V2 calc error:", e);
           }
 
           if (!sajuDataForAI) {

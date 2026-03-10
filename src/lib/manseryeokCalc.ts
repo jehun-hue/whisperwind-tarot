@@ -72,78 +72,83 @@ export function getManseryeok(
   minute?: number,
   isLunar: boolean = false,
   gender: 'male' | 'female' = 'male'
-): ManseryeokResult {
-  // 음력이면 양력으로 변환
-  let solarY = year;
-  let solarM = month;
-  let solarD = day;
+): ManseryeokResult | null {
+  try {
+    // 음력이면 양력으로 변환
+    let solarY = year;
+    let solarM = month;
+    let solarD = day;
 
-  if (isLunar) {
-    const res = lunarToSolar(year, month, day, false);
-    if (res) {
-      solarY = res.solar.year;
-      solarM = res.solar.month;
-      solarD = res.solar.day;
-    }
-  }
-
-  // 서머타임 보정 (-60분)
-  let calcHour = hour;
-  let calcMinute = minute;
-  if (calcHour !== undefined && calcMinute !== undefined) {
-    if (isDaylightSavingTime(solarY, solarM, solarD)) {
-      calcHour -= 1;
-      if (calcHour < 0) {
-        calcHour += 24;
+    if (isLunar) {
+      const res = lunarToSolar(year, month, day, false);
+      if (res) {
+        solarY = res.solar.year;
+        solarM = res.solar.month;
+        solarD = res.solar.day;
       }
     }
-  }
 
-  // default longitude (서울)
-  let finalHour = calcHour !== undefined ? calcHour : 0;
-  let finalMinute = calcMinute !== undefined ? calcMinute : 0;
-
-  const result = calculateSaju(solarY, solarM, solarD, finalHour, finalMinute, {
-    longitude: 126.98
-  });
-
-  const yearPillar = parsePillar(result.yearPillar, result.yearPillarHanja);
-  const monthPillar = parsePillar(result.monthPillar, result.monthPillarHanja);
-  const dayPillar = parsePillar(result.dayPillar, result.dayPillarHanja) || { 천간: '', 지지: '', 한자: '', 오행: '' };
-
-  // 시주는 입력값이 없을 경우 제외
-  const hourPillar = (hour !== undefined) && result.hourPillar ? parsePillar(result.hourPillar, result.hourPillarHanja) : undefined;
-
-  // 오행비율 계산
-  const elements = { '목': 0, '화': 0, '토': 0, '금': 0, '수': 0 };
-  let totalChars = 0;
-
-  const addPillarElements = (p?: PillarData) => {
-    if (!p) return;
-    const [se, be] = p.오행.split('/');
-    if (elements[se as keyof typeof elements] !== undefined) { elements[se as keyof typeof elements]++; totalChars++; }
-    if (elements[be as keyof typeof elements] !== undefined) { elements[be as keyof typeof elements]++; totalChars++; }
-  };
-
-  addPillarElements(yearPillar);
-  addPillarElements(monthPillar);
-  addPillarElements(dayPillar);
-  addPillarElements(hourPillar);
-
-  const elementsRatio: Record<string, number> = {};
-  if (totalChars > 0) {
-    for (const [key, val] of Object.entries(elements)) {
-      elementsRatio[key] = Math.round((val / totalChars) * 100);
+    // 서머타임 보정 (-60분)
+    let calcHour = hour;
+    let calcMinute = minute;
+    if (calcHour !== undefined && calcMinute !== undefined) {
+      if (isDaylightSavingTime(solarY, solarM, solarD)) {
+        calcHour -= 1;
+        if (calcHour < 0) {
+          calcHour += 24;
+        }
+      }
     }
-  }
 
-  return {
-    연주: yearPillar,
-    월주: monthPillar,
-    일주: dayPillar,
-    시주: hourPillar,
-    일간: dayPillar.천간,
-    오행비율: elementsRatio,
-    용신: 'AI 분석 단계에서 도출됨' // AI 프롬프트가 이 데이터를 바탕으로 용신을 잡습니다.
-  };
+    // default longitude (서울)
+    let finalHour = calcHour !== undefined ? calcHour : 0;
+    let finalMinute = calcMinute !== undefined ? calcMinute : 0;
+
+    const result = calculateSaju(solarY, solarM, solarD, finalHour, finalMinute, {
+      longitude: 126.98
+    });
+
+    const yearPillar = parsePillar(result.yearPillar, result.yearPillarHanja);
+    const monthPillar = parsePillar(result.monthPillar, result.monthPillarHanja);
+    const dayPillar = parsePillar(result.dayPillar, result.dayPillarHanja) || { 천간: '', 지지: '', 한자: '', 오행: '' };
+
+    // 시주는 입력값이 없을 경우 제외
+    const hourPillar = (hour !== undefined) && result.hourPillar ? parsePillar(result.hourPillar, result.hourPillarHanja) : undefined;
+
+    // 오행비율 계산
+    const elements = { '목': 0, '화': 0, '토': 0, '금': 0, '수': 0 };
+    let totalChars = 0;
+
+    const addPillarElements = (p?: PillarData) => {
+      if (!p) return;
+      const [se, be] = p.오행.split('/');
+      if (elements[se as keyof typeof elements] !== undefined) { elements[se as keyof typeof elements]++; totalChars++; }
+      if (elements[be as keyof typeof elements] !== undefined) { elements[be as keyof typeof elements]++; totalChars++; }
+    };
+
+    addPillarElements(yearPillar);
+    addPillarElements(monthPillar);
+    addPillarElements(dayPillar);
+    addPillarElements(hourPillar);
+
+    const elementsRatio: Record<string, number> = {};
+    if (totalChars > 0) {
+      for (const [key, val] of Object.entries(elements)) {
+        elementsRatio[key] = Math.round((val / totalChars) * 100);
+      }
+    }
+
+    return {
+      연주: yearPillar,
+      월주: monthPillar,
+      일주: dayPillar,
+      시주: hourPillar,
+      일간: dayPillar.천간,
+      오행비율: elementsRatio,
+      용신: 'AI 분석 단계에서 도출됨' // AI 프롬프트가 이 데이터를 바탕으로 용신을 잡습니다.
+    };
+  } catch (error) {
+    console.error("Manseryeok calculation failed:", error);
+    return null;
+  }
 }
