@@ -153,12 +153,29 @@ function buildSajuSection(manseryeokData: any, forcetellData: string | null, saj
 }
 
 function extractJSON(raw: string): any {
+  // 1) 마크다운 코드 블록 제거
   let content = raw.trim();
   content = content.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
-  const first = content.indexOf("{");
-  const last = content.lastIndexOf("}");
-  if (first === -1 || last === -1) throw new Error("No JSON object found");
-  return JSON.parse(content.slice(first, last + 1));
+
+  // 2) 첫 번째 { ... } 블록만 추출 (앞뒤의 설명 텍스트 무시)
+  const jsonMatch = content.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    console.error("[extractJSON] No JSON object found. Raw (first 500):", raw.slice(0, 500));
+    throw new Error("No JSON object found in AI response");
+  }
+  let jsonText = jsonMatch[0];
+
+  // 3) 후행 쉼표 제거: ,} 또는 ,]
+  jsonText = jsonText.replace(/,\s*([}\]])/g, "$1");
+
+  // 4) 파싱
+  try {
+    return JSON.parse(jsonText);
+  } catch (e) {
+    console.error("[extractJSON] JSON.parse failed:", (e as Error).message);
+    console.error("[extractJSON] jsonText (first 500):", jsonText.slice(0, 500));
+    throw new Error(`JSON parse error: ${(e as Error).message}`);
+  }
 }
 
 async function callGemini(apiKey: string, model: string, prompt: string, maxTokens: number, temperature: number): Promise<any> {
