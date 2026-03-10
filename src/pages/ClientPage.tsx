@@ -459,22 +459,43 @@ export default function ClientPage() {
                     <label className="text-sm text-muted-foreground">생년월일</label>
                     <div className="grid grid-cols-3 gap-2">
                       <Input
-                        type="number" placeholder="YYYY" value={birthYear}
-                        onChange={(e) => setBirthYear(e.target.value)}
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="YYYY"
+                        value={birthYear}
+                        maxLength={4}
+                        onInput={(e) => {
+                          const t = e.currentTarget;
+                          t.value = t.value.replace(/[^0-9]/g, '').slice(0, 4);
+                        }}
+                        onChange={(e) => setBirthYear(e.target.value.replace(/[^0-9]/g, '').slice(0, 4))}
                         className="rounded-xl border-border/50 bg-background/50 text-foreground placeholder:text-gray-500"
-                        min="1920" max="2100"
                       />
                       <Input
-                        type="number" placeholder="MM" value={birthMonth}
-                        onChange={(e) => setBirthMonth(e.target.value)}
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="MM"
+                        value={birthMonth}
+                        maxLength={2}
+                        onInput={(e) => {
+                          const t = e.currentTarget;
+                          t.value = t.value.replace(/[^0-9]/g, '').slice(0, 2);
+                        }}
+                        onChange={(e) => setBirthMonth(e.target.value.replace(/[^0-9]/g, '').slice(0, 2))}
                         className="rounded-xl border-border/50 bg-background/50 text-foreground placeholder:text-gray-500"
-                        min="1" max="12"
                       />
                       <Input
-                        type="number" placeholder="DD" value={birthDay}
-                        onChange={(e) => setBirthDay(e.target.value)}
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="DD"
+                        value={birthDay}
+                        maxLength={2}
+                        onInput={(e) => {
+                          const t = e.currentTarget;
+                          t.value = t.value.replace(/[^0-9]/g, '').slice(0, 2);
+                        }}
+                        onChange={(e) => setBirthDay(e.target.value.replace(/[^0-9]/g, '').slice(0, 2))}
                         className="rounded-xl border-border/50 bg-background/50 text-foreground placeholder:text-gray-500"
-                        min="1" max="31"
                       />
                     </div>
                   </div>
