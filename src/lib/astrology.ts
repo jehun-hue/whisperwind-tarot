@@ -331,7 +331,7 @@ export function calculateNatalChart(
 
 export function getAstrologyForQuestion(
   astro: AstrologyResult,
-  questionType: "love" | "reconciliation" | "business" | "career" | "money" | "general" | "feelings"
+  questionType: "연애" | "재회" | "사업" | "직업" | "금전" | "종합"
 ): string {
   const venus = astro.planets.find((p) => p.planet === "금성")!;
   const mars = astro.planets.find((p) => p.planet === "화성")!;
@@ -344,20 +344,20 @@ export function getAstrologyForQuestion(
       .slice(0, 3).map(a => a.interpretation).join(" ");
 
   switch (questionType) {
-    case "love":
-    case "reconciliation": {
+    case "연애":
+    case "재회": {
       const base = `금성 ${venus.sign} ${venus.degree}° ${venus.house}하우스(${venus.dignity}): 사랑 스타일이 ${(SIGN_MEANINGS[venus.sign]).split(",")[0]}. 달 ${moon.sign}: 감정 표현이 ${(SIGN_MEANINGS[moon.sign]).split(",")[0]}.`;
       return base + " " + relevantAspects(["금성", "달", "화성"]);
     }
-    case "business": {
+    case "사업": {
       const base = `목성 ${jupiter.sign} ${jupiter.house}하우스(${jupiter.dignity}): 사업 행운과 확장이 ${(SIGN_MEANINGS[jupiter.sign]).split(",")[0]}한 분위기. 토성 ${saturn.sign}: 기초 공사가 ${(SIGN_MEANINGS[saturn.sign]).split(",")[0]}함.`;
       return base + " " + relevantAspects(["목성", "토성", "태양"]);
     }
-    case "career": {
+    case "직업": {
       const base = `토성 ${saturn.sign} ${saturn.house}하우스(${saturn.dignity}): 커리어에서 ${(SIGN_MEANINGS[saturn.sign]).split(",")[0]}한 도전. 화성 ${mars.sign}: ${(SIGN_MEANINGS[mars.sign]).split(",")[0]}한 행동 방식.`;
       return base + " " + relevantAspects(["토성", "화성", "목성"]);
     }
-    case "money": {
+    case "금전": {
       const base = `목성 ${jupiter.sign} ${jupiter.house}하우스(${jupiter.dignity}): 재물 확장이 ${(SIGN_MEANINGS[jupiter.sign]).split(",")[0]}한 영역에서. 금성 ${venus.sign}: 가치관이 ${(SIGN_MEANINGS[venus.sign]).split(",")[0]}.`;
       return base + " " + relevantAspects(["목성", "금성"]);
     }

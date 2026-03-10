@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback } from "react";
+import React, { useMemo, useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,7 @@ import { calculateZiWei, getZiWeiForQuestion, type ZiWeiResult } from "@/lib/ziw
 import { getManseryeok } from "@/lib/sajuCalc";
 import { getCombinationSummary } from "@/data/tarotCombinations";
 import { supabase } from "@/integrations/supabase/client";
-import { classifyQuestion, type QuestionType } from "@/lib/classification";
+import { classifyQuestion, type Category, type ClassificationResult } from "@/lib/classification";
 import ReadingResultV3 from "@/components/ReadingResultV3";
 import SajuManualOverride from "@/components/SajuManualOverride";
 import cardBackImg from "@/assets/card-back.png";
@@ -179,7 +179,21 @@ export default function ClientPage() {
   // Result
   const [error, setError] = useState<string | null>(null);
 
-  const questionType = useMemo(() => classifyQuestion(question), [question]);
+  const [classification, setClassification] = useState<ClassificationResult | null>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      if (question.trim()) {
+        const res = await classifyQuestion(question);
+        setClassification(res);
+      } else {
+        setClassification(null);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [question]);
+
+  const questionType = classification?.category || "종합";
   const isLoveQuestion = useMemo(() => ROMANCE_KEYWORDS.test(question), [question]);
   const requiredCards = getRequiredCards(selectedGrade);
   const hasEnoughCards = picked.length >= requiredCards;
@@ -292,10 +306,20 @@ export default function ClientPage() {
       const { data: session, error: dbError } = await supabase
         .from("reading_sessions")
         .insert({
-          question, question_type: questionType, memo: memo || null,
-          gender: birthInfo?.gender || null, birth_date: birthInfo?.birthDate || null,
-          birth_time: birthInfo?.birthTime || null, is_lunar: birthInfo?.isLunar || false,
-          cards: cardData as any, saju_data: sajuDataForAI as any, status: "pending",
+          question, 
+          question_type: questionType, 
+          memo: memo || null,
+          intent: classification?.intent || null,
+          tone: classification?.tone || null,
+          confidence: classification?.confidence || 0,
+          analysis_mode: classification?.mode || null,
+          gender: birthInfo?.gender || null, 
+          birth_date: birthInfo?.birthDate || null,
+          birth_time: birthInfo?.birthTime || null, 
+          is_lunar: birthInfo?.isLunar || false,
+          cards: cardData as any, 
+          saju_data: sajuDataForAI as any, 
+          status: "pending",
         })
         .select().single();
 
@@ -415,14 +439,27 @@ export default function ClientPage() {
                   />
 
                   {question.trim() && (
-                    <Badge variant="outline" className="border-gold/30 text-gold text-xs">
-                      자동 분류: {
-                        questionType === "love" ? "💕 연애" :
-                          questionType === "reconciliation" ? "💔 재회" :
-                            questionType === "career" ? "💼 직업" :
-                              questionType === "money" ? "💰 금전" : "🔮 종합"
-                      }
-                    </Badge>
+                    <div className="flex flex-wrap gap-2">
+                       <Badge variant="outline" className="border-gold/30 text-gold text-xs">
+                        자동 분류: {
+                          questionType === "연애" ? "💕 연애" :
+                            questionType === "재회" ? "💔 재회" :
+                              questionType === "직업" ? "💼 직업" :
+                                questionType === "사업" ? "🏢 사업" :
+                                  questionType === "금전" ? "💰 금전" : "🔮 종합"
+                        }
+                      </Badge>
+                      {classification?.intent && (
+                        <Badge variant="outline" className="border-accent/40 text-accent/80 text-[10px]">
+                          {classification.intent}
+                        </Badge>
+                      )}
+                      {classification?.tone && (
+                        <Badge variant="outline" className="border-white/10 text-white/40 text-[10px]">
+                          {classification.tone}
+                        </Badge>
+                      )}
+                    </div>
                   )}
 
                   <Button

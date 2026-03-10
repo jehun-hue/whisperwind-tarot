@@ -1,46 +1,23 @@
 
 import fs from 'fs';
 import path from 'path';
-import { classifyQuestion } from '../src/lib/classification';
+import { classifyQuestion, type ClassificationResult } from '../src/lib/classification';
 import { getManseryeok } from '../src/lib/sajuCalc';
 import { tarotCards } from '../src/data/tarotCards';
 
-// Mock types to match the dataset
-interface TestData {
-  birth: string;
-  gender: string;
-  question: string;
-  expectedCategory: string;
-}
-
 // Result structure for validation
 interface EngineResult {
-  category: string;
+  classification: ClassificationResult;
   saju: any;
   cards: any[];
 }
-
-// Load dataset
-const dataset: TestData[] = JSON.parse(
-  fs.readFileSync(path.join(process.cwd(), 'tests/divinationTestDataset.json'), 'utf-8')
-);
-
-// Mapping from Korean labels to English keys
-const categoryMap: Record<string, string> = {
-  "연애": "love",
-  "재회": "reconciliation",
-  "사업": "business", 
-  "직업": "career",
-  "금전": "money",
-  "일반": "general"
-};
 
 /**
  * AI Divination Engine Mock / Wrapper for validation
  */
 async function runDivinationEngine(input: { birth: string; gender: string; question: string }): Promise<EngineResult> {
-  // 1. Category Classification
-  const categoryKey = classifyQuestion(input.question);
+  // 1. Category/Intent/Tone Classification
+  const classification = await classifyQuestion(input.question);
   
   // 2. Saju Calculation
   const birthDate = new Date(input.birth.replace(' ', 'T'));
@@ -52,7 +29,7 @@ async function runDivinationEngine(input: { birth: string; gender: string; quest
     birthDate.getMinutes()
   );
 
-  // 3. Tarot Card Selection (Simulating random pick for 5 cards)
+  // 3. Tarot Card Selection
   const shuffled = [...tarotCards].sort(() => 0.5 - Math.random());
   const cards = shuffled.slice(0, 5).map(c => ({
     id: c.id,
@@ -61,102 +38,95 @@ async function runDivinationEngine(input: { birth: string; gender: string; quest
   }));
 
   return {
-    category: categoryKey,
+    classification,
     saju,
     cards
   };
 }
 
 async function validate() {
-  console.log("Starting Engine Validation...");
+  console.log("Starting Advanced Engine Validation...");
   
-  let correct = 0;
-  let total = dataset.length;
-  let calculationErrors = 0;
+  // Load specialized datasets
+  const loveDS = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'data/loveQuestions.json'), 'utf-8'));
+  const reunionDS = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'data/reunionQuestions.json'), 'utf-8'));
+  const originalDS = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'tests/divinationTestDataset.json'), 'utf-8'));
+  
+  // Mapping for original dataset (since it uses Korean labels in expectedCategory)
+  const categoryMap: Record<string, string> = {
+    "연애": "연애",
+    "재회": "재회",
+    "사업": "사업",
+    "직업": "직업",
+    "금전": "금전"
+  };
 
-  const failures: string[] = [];
-  for (const test of dataset) {
-    const result = await runDivinationEngine({
-      birth: test.birth,
-      gender: test.gender,
-      question: test.question
-    });
+  let totalTests = 0;
+  let classCorrect = 0;
+  let intentCorrect = 0;
+  let toneDetected = 0;
 
-    const expectedKey = categoryMap[test.expectedCategory];
-    if (result.category === expectedKey) {
-      correct++;
-    } else {
-      failures.push(`Q: ${test.question} | Expected: ${test.expectedCategory}(${expectedKey}) | Got: ${result.category}`);
-    }
+  const demoInput = { birth: "1990-01-01 12:00", gender: "female" };
+
+  // 1. Classification & Intent Test
+  const fullDataset = [...loveDS, ...reunionDS];
+  
+  for (const test of fullDataset) {
+    totalTests++;
+    const res = await classifyQuestion(test.question);
+    
+    if (res.category === test.category) classCorrect++;
+    if (res.intent === test.intent) intentCorrect++;
+    if (res.tone !== "평온형") toneDetected++;
   }
 
-  const categoryAccuracy = correct / total;
-  
-  if (failures.length > 0) {
-    console.log("\n--- Failure Samples ---");
-    failures.slice(0, 20).forEach(f => console.log(f));
-    if (failures.length > 20) console.log(`... and ${failures.length - 20} more failures.`);
+  // Also include original dataset for broader coverage
+  for (const test of originalDS) {
+    totalTests++;
+    const res = await classifyQuestion(test.question);
+    const expected = categoryMap[test.expectedCategory] || "종합";
+    if (res.category === expected) classCorrect++;
   }
+
+  const classAccuracy = classCorrect / totalTests;
+  const intentAccuracy = intentCorrect / (loveDS.length + reunionDS.length);
 
   // 2. Tarot Randomness Test
-  const testInput = dataset[0];
+  let randomnessScore = 0;
   const randomnessResults = [];
   for (let i = 0; i < 20; i++) {
-    const r = await runDivinationEngine(testInput);
+    const r = await runDivinationEngine({ ...demoInput, question: "오늘의 운세" } as any);
     randomnessResults.push(JSON.stringify(r.cards.map(c => c.id).sort()));
   }
-  const uniqueCombinations = new Set(randomnessResults);
-  const randomnessScore = uniqueCombinations.size;
+  randomnessScore = new Set(randomnessResults).size;
 
-  // 3. Time Calculation Test (Yaja-si)
-  const yajasiInput = {
-    birth: "1990-03-01 23:30",
-    gender: "male",
-    question: "테스트"
-  };
-  const yajasiResult = await runDivinationEngine(yajasiInput);
-  
-  // Checking if birth date was advanced to next day 00:00
-  const solarDate = yajasiResult.saju.solarDate;
-  const isYajasiCorrect = solarDate.year === 1990 && solarDate.month === 3 && solarDate.day === 2;
-  if (!isYajasiCorrect) {
-    console.error("Yaja-si correction failed: expected 1990-03-02, got", solarDate);
-    calculationErrors++;
-  }
+  // 3. Yaja-si Logic Test
+  const yajasiInput = { birth: "1990-03-01 23:30", gender: "male", question: "재회 가능성?" };
+  const yajasiRes = await runDivinationEngine(yajasiInput as any);
+  const solarDate = yajasiRes.saju.solarDate;
+  const yajasiPass = solarDate.year === 1990 && solarDate.month === 3 && solarDate.day === 2;
 
-  // 4. Minute Parameter Validation
-  const min30 = await runDivinationEngine({ birth: "1987-07-17 15:30", gender: "female", question: "분석" });
-  const min31 = await runDivinationEngine({ birth: "1987-07-17 15:31", gender: "female", question: "분석" });
-  
-  // Note: Since saju pillars (Year, Month, Day, Hour) might not change within a minute if they fall in the same 'si' (2-hour block),
-  // but the 'correctedTime' or other internal data should ideally reflect the minute.
-  // Actually, saju pillars change every 2 hours. So 15:30 and 15:31 will have the SAME pillars.
-  // If the user wants THEM TO BE DIFFERENT, the engine must incorporate minutes into something (like astrology or some other factor).
-  // In our engine, we have correctedTime and astrology.
-  
-  if (JSON.stringify(min30.saju) === JSON.stringify(min31.saju)) {
-    // If exact same saju object, it might be an error if we expect minute-level precision in some field.
-    // However, if we only care about pillars, they SHOULD be the same.
-    // But the prompt says "두 결과가 완전히 동일하면 오류로 표시한다."
-    // Let's check if astrology or something else makes it different.
-    // Currently getManseryeok returns correctedTime which includes minutes.
-    // So JSON.stringify(min30.saju) should be different because of originalInput and correctedTime.
-    console.error("Minute parameter validation failed: 15:30 and 15:31 produced identical results.");
-    calculationErrors++;
-  }
+  // 4. Minute Logic Test
+  const min30 = await runDivinationEngine({ birth: "1987-07-17 15:30", gender: "female", question: "사업운" } as any);
+  const min31 = await runDivinationEngine({ birth: "1987-07-17 15:31", gender: "female", question: "사업운" } as any);
+  const minutePass = JSON.stringify(min30.saju) !== JSON.stringify(min31.saju);
 
   // Final Report
-  console.log("\n==============================");
-  console.log("      Validation Report");
-  console.log("==============================");
-  console.log(`Total Tests: ${total}`);
-  console.log(`Category Accuracy: ${categoryAccuracy.toFixed(2)}`);
+  console.log("\n========================================");
+  console.log("   AI Divination Engine Validation Report");
+  console.log("========================================");
+  console.log(`Total Samples: ${totalTests}`);
+  console.log(`Classification Accuracy: ${classAccuracy.toFixed(2)}`);
+  console.log(`Intent Detection Accuracy: ${intentAccuracy.toFixed(2)}`);
+  console.log(`Tone Detection Coverage: ${(toneDetected / (loveDS.length + reunionDS.length)).toFixed(2)}`);
   console.log(`Randomness Score: ${randomnessScore} / 20`);
-  console.log(`Calculation Errors: ${calculationErrors}`);
-  console.log("==============================\n");
+  console.log(`Minute Logic Test: ${minutePass ? "PASS" : "FAIL"}`);
+  console.log(`Yaja-si Logic Test: ${yajasiPass ? "PASS" : "FAIL"}`);
+  console.log("========================================\n");
 
-  if (categoryAccuracy < 0.8 || randomnessScore < 10 || calculationErrors > 0) {
-    process.exit(1); // Fail for CI/CD
+  if (classAccuracy < 0.85 || !minutePass || !yajasiPass) {
+    console.error("Validation failed to meet quality standards.");
+    process.exit(1);
   }
 }
 

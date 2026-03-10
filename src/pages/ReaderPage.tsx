@@ -19,22 +19,15 @@ import { getCombinationSummary } from "@/data/tarotCombinations";
 
 const READER_PIN = "1234";
 
-type QuestionType = "love" | "reconciliation" | "business" | "career" | "money" | "general" | "feelings";
+type QuestionType = "연애" | "재회" | "사업" | "직업" | "금전" | "종합";
 
 const questionTypeLabels: Record<string, string> = {
-  love: "💕 연애",
-  reconciliation: "💔 재회",
-  career: "💼 직업",
-  business: "🏢 사업",
-  money: "💰 금전",
-  general: "🔮 종합",
-  feelings: "💭 기持ち",
-  reunion: "🔄 復縁",
-  relationship: "💫 관계",
-  contact: "📱 연락",
-  life: "🌟 인생",
-  spiritual: "✨ 영적",
-  jobchange: "🔀 전직",
+  "연애": "💕 연애",
+  "재회": "💔 재회",
+  "직업": "💼 직업",
+  "사업": "🏢 사업",
+  "금전": "💰 금전",
+  "종합": "🔮 종합",
 };
 
 interface ReadingSession {
@@ -56,6 +49,10 @@ interface ReadingSession {
   astrology_score: number | null;
   ziwei_score: number | null;
   final_confidence: number | null;
+  intent: string | null;
+  tone: string | null;
+  confidence: number | null;
+  analysis_mode: string | null;
   status: string;
   created_at: string;
   user_name: string | null;
@@ -74,7 +71,7 @@ export default function ReaderPage() {
       .select("*")
       .order("created_at", { ascending: false })
       .limit(100);
-    if (!error && data) setSessions(data as ReadingSession[]);
+    if (!error && data) setSessions(data as unknown as ReadingSession[]);
   }, []);
 
   useEffect(() => {
@@ -687,6 +684,26 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
               {session.status === "pending" ? "대기중" : session.status === "analyzing" ? "분석중" : session.status === "completed" ? "완료" : session.status}
             </Badge>
           </div>
+          
+          <div className="mt-4 grid grid-cols-2 gap-3 rounded-xl bg-muted/30 p-4 sm:grid-cols-4">
+            <div>
+              <div className="text-[10px] text-muted-foreground">질문 의도</div>
+              <div className="mt-1 text-[13px] font-medium text-accent">{session.intent || "분석 전"}</div>
+            </div>
+            <div>
+              <div className="text-[10px] text-muted-foreground">감정 톤</div>
+              <div className="mt-1 text-[13px] font-medium text-foreground">{session.tone || "분석 전"}</div>
+            </div>
+            <div>
+              <div className="text-[10px] text-muted-foreground">정체성</div>
+              <div className="mt-1 text-[13px] font-medium text-gold">{session.analysis_mode === "tarot_focus" ? "타로 중심" : "종합 분석"}</div>
+            </div>
+            <div>
+              <div className="text-[10px] text-muted-foreground">신뢰도</div>
+              <div className="mt-1 text-[13px] font-medium text-foreground">{session.confidence ? (session.confidence * 100).toFixed(0) + "%" : "0%"}</div>
+            </div>
+          </div>
+
           <div className="mt-3 text-lg font-medium text-foreground">{session.question}</div>
           {session.memo && (
             <div className="mt-2 rounded-lg bg-secondary p-3 text-sm text-muted-foreground">{session.memo}</div>

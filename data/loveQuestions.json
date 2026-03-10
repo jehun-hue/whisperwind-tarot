@@ -1,0 +1,1502 @@
+[
+  {
+    "question": "제발 좋은 사람 만날 수 있을까요?",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "궁금합니다. 그 사람의 속마음이 궁금해요.",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "밀당을 해야 할까요?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "우리 사이가 더 깊어질까요? 너무 떨려요.",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "상견례 무사히 마칠까요?",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "제발 직장에서 인연을 만날까요?",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "포기하는 게 나을까요 알려주세요.",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "언제쯤 확실한 사이가 될까요 알려주세요.",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "더 행복해질 방법이 있나요 알려주세요.",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "결혼 시기가 언제쯤이 좋을까요?",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "제발 먼 곳에서 인연이 올까요?",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "그 사람도 저를 생각하고 있을까요 알려주세요.",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "썸 타는 중인데 고백받을까요?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "제발 싸웠는데 화해할 수 있을까요?",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "아이를 언제 갖게 될까요?",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "여행지에서 설레는 만남이 있을까요? 너무 떨려요.",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "진지하게 어떻게 다가가면 좋을까요?",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "언제쯤 확실한 사이가 될까요? 너무 떨려요.",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "서로 신뢰를 회복할 수 있을까요? 너무 떨려요.",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "결혼하면 재물운이 좋아질까요 알려주세요.",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "먼 곳에서 인연이 올까요 알려주세요.",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "짝사랑하는 그 사람과 잘 될까요?",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "제발 어제 데이트 분위기 어땠나요?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "진지하게 더 행복해질 방법이 있나요?",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "진지하게 결혼 준비 스트레스 어떻게 풀까요?",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "제발 언제 연애할 수 있을까요?",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "그 사람의 속마음이 궁금해요.",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "언제쯤 확실한 사이가 될까요?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "그 사람이 저에게 숨기는 게 있을까요?",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "결혼하면 재물운이 좋아질까요? 너무 떨려요.",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "올해 연애운이 궁금해요.",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "궁금합니다. 다른 사람이 생기면 어쩌죠?",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "궁금합니다. 그 사람 주변에 경쟁자가 있나요?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "권태기를 극복할 수 있을까요 알려주세요.",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "아이를 언제 갖게 될까요?",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "올해 연애운이 궁금해요.",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "짝사랑하는 그 사람과 잘 될까요 알려주세요.",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "그 사람이 저를 진심으로 좋아할까요?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "진지하게 그 사람이 저에게 숨기는 게 있을까요?",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "궁금합니다. 결혼 선물은 뭐가 좋을까요?",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "제발 새로운 인연이 나타날까요?",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "궁금합니다. 다른 사람이 생기면 어쩌죠?",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "제발 변해가는 감정이 느껴지는데 어떡하죠?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "지금 남자친구와 오래 갈까요?",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "양가 부모님과 잘 지낼까요? 너무 떨려요.",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "진지하게 동갑이랑 잘 맞을까요?",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "다른 사람이 생기면 어쩌죠?",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "우리는 무슨 사이인가요?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "궁금합니다. 관계에 변화가 생길까요?",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "제발 결혼 준비 스트레스 어떻게 풀까요?",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "직장에서 인연을 만날까요?",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "그 사람도 저를 생각하고 있을까요 알려주세요.",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "궁금합니다. 그 사람이 저를 진심으로 좋아할까요?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "진지하게 관계에 변화가 생길까요?",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "궁금합니다. 결혼 선물은 뭐가 좋을까요?",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "진지하게 언제쯤 솔로 탈출할까요?",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "다른 사람이 생기면 어쩌죠?",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "데이트 신청하면 응해줄까요?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "서로 신뢰를 회복할 수 있을까요? 너무 떨려요.",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "제발 내년에 결혼할 수 있을까요?",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "지인 소개가 좋을까요? 너무 떨려요.",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "우리는 인연일까요? 너무 떨려요.",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "제발 어제 데이트 분위기 어땠나요?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "우리의 미래는 어떤 모습일까요?",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "내년에 결혼할 수 있을까요 알려주세요.",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "진지하게 먼 곳에서 인연이 올까요?",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "짝사랑하는 그 사람과 잘 될까요 알려주세요.",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "썸 타는 중인데 고백받을까요 알려주세요.",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "관계에 변화가 생길까요 알려주세요.",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "궁금합니다. 상견례 무사히 마칠까요?",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "진지하게 새로운 인연이 나타날까요?",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "고백하면 받아줄까요?",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "우리는 무슨 사이인가요 알려주세요.",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "우리 사이가 더 깊어질까요 알려주세요.",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "결혼 선물은 뭐가 좋을까요? 너무 떨려요.",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "동갑이랑 잘 맞을까요? 너무 떨려요.",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "제발 포기하는 게 나을까요?",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "언제쯤 확실한 사이가 될까요? 너무 떨려요.",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "싸웠는데 화해할 수 있을까요?",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "결혼 선물은 뭐가 좋을까요? 너무 떨려요.",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "제발 올해 연애운이 궁금해요.",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "친해질 기회가 생길까요?",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "진지하게 변해가는 감정이 느껴지는데 어떡하죠?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "관계에 변화가 생길까요?",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "궁금합니다. 준비 없이 결혼해도 괜찮을까요?",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "운명적인 만남이 있을까요?",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "궁금합니다. 고백하면 받아줄까요?",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "어제 데이트 분위기 어땠나요? 너무 떨려요.",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "우리 사이가 더 깊어질까요?",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "결혼 선물은 뭐가 좋을까요 알려주세요.",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "언제 연애할 수 있을까요?",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "우리는 인연일까요? 너무 떨려요.",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "그 사람이 저를 진심으로 좋아할까요?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "진지하게 싸웠는데 화해할 수 있을까요?",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "결혼 시기가 언제쯤이 좋을까요?",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "진지하게 연하랑 잘 어울릴까요?",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "포기하는 게 나을까요 알려주세요.",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "이 관계가 연인으로 발전할까요?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "제발 관계에 변화가 생길까요?",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "제발 이 사람과 결혼하면 행복할까요?",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "언제 연애할 수 있을까요? 너무 떨려요.",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "어떻게 다가가면 좋을까요 알려주세요.",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "궁금합니다. 이 관계가 연인으로 발전할까요?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "궁금합니다. 싸웠는데 화해할 수 있을까요?",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "준비 없이 결혼해도 괜찮을까요 알려주세요.",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "제발 연상이랑 인연이 있을까요?",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "친해질 기회가 생길까요? 너무 떨려요.",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "어제 데이트 분위기 어땠나요?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "서로 신뢰를 회복할 수 있을까요?",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "제발 이 사람과 결혼하면 행복할까요?",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "제발 언제쯤 솔로 탈출할까요?",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "그 사람도 저를 생각하고 있을까요?",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "제발 언제쯤 확실한 사이가 될까요?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "관계에 변화가 생길까요 알려주세요.",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "결혼 선물은 뭐가 좋을까요? 너무 떨려요.",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "동갑이랑 잘 맞을까요?",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "우리는 인연일까요? 너무 떨려요.",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "변해가는 감정이 느껴지는데 어떡하죠 알려주세요.",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "궁금합니다. 더 행복해질 방법이 있나요?",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "양가 부모님과 잘 지낼까요?",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "진지하게 올해 연애운이 궁금해요.",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "궁금합니다. 짝사랑하는 그 사람과 잘 될까요?",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "진지하게 변해가는 감정이 느껴지는데 어떡하죠?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "우리 사이가 더 깊어질까요? 너무 떨려요.",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "진지하게 결혼 준비 스트레스 어떻게 풀까요?",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "언제쯤 솔로 탈출할까요 알려주세요.",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "우리는 인연일까요? 너무 떨려요.",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "제발 데이트 신청하면 응해줄까요?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "관계에 변화가 생길까요?",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "양가 부모님과 잘 지낼까요?",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "궁금합니다. 동갑이랑 잘 맞을까요?",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "그 사람도 저를 생각하고 있을까요?",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "이 관계가 연인으로 발전할까요 알려주세요.",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "궁금합니다. 지금 남자친구와 오래 갈까요?",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "진지하게 내년에 결혼할 수 있을까요?",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "언제쯤 솔로 탈출할까요?",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "진지하게 우리는 인연일까요?",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "데이트 신청하면 응해줄까요 알려주세요.",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "진지하게 지금 남자친구와 오래 갈까요?",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "궁금합니다. 결혼 선물은 뭐가 좋을까요?",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "연하랑 잘 어울릴까요?",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "제발 제가 먼저 연락해도 될까요?",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "언제쯤 확실한 사이가 될까요?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "그 사람이 저에게 숨기는 게 있을까요? 너무 떨려요.",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "제발 이 사람과 결혼하면 행복할까요?",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "친구에서 연인이 될 수 있을까요?",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "다른 사람이 생기면 어쩌죠 알려주세요.",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "궁금합니다. 변해가는 감정이 느껴지는데 어떡하죠?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "그 사람이 저에게 숨기는 게 있을까요?",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "결혼 선물은 뭐가 좋을까요?",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "여행지에서 설레는 만남이 있을까요 알려주세요.",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "궁금합니다. 친해질 기회가 생길까요?",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "제발 이 관계가 연인으로 발전할까요?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "궁금합니다. 우리 사이가 더 깊어질까요?",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "아이를 언제 갖게 될까요? 너무 떨려요.",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "궁금합니다. 지인 소개가 좋을까요?",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "제발 그 사람의 속마음이 궁금해요.",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "그 사람 주변에 경쟁자가 있나요 알려주세요.",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "제발 관계에 변화가 생길까요?",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "결혼 준비 스트레스 어떻게 풀까요?",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "진지하게 먼 곳에서 인연이 올까요?",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "진지하게 친해질 기회가 생길까요?",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "제발 썸 타는 중인데 고백받을까요?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "더 행복해질 방법이 있나요?",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "제발 내년에 결혼할 수 있을까요?",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "궁금합니다. 여행지에서 설레는 만남이 있을까요?",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "궁금합니다. 고백하면 받아줄까요?",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "데이트 신청하면 응해줄까요?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "궁금합니다. 우리의 미래는 어떤 모습일까요?",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "제발 상견례 무사히 마칠까요?",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "연하랑 잘 어울릴까요 알려주세요.",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "그 사람도 저를 생각하고 있을까요 알려주세요.",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "제발 그 사람이 저를 진심으로 좋아할까요?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "지금 남자친구와 오래 갈까요?",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "결혼 시기가 언제쯤이 좋을까요?",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "궁금합니다. 연하랑 잘 어울릴까요?",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "궁금합니다. 짝사랑하는 그 사람과 잘 될까요?",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "진지하게 그 사람이 저를 진심으로 좋아할까요?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "진지하게 서로 신뢰를 회복할 수 있을까요?",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "진지하게 결혼 준비 스트레스 어떻게 풀까요?",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "진지하게 소개팅에서 좋은 사람 만날까요?",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "짝사랑하는 그 사람과 잘 될까요? 너무 떨려요.",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "진지하게 우리는 무슨 사이인가요?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "싸웠는데 화해할 수 있을까요 알려주세요.",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "궁금합니다. 결혼하면 재물운이 좋아질까요?",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "동갑이랑 잘 맞을까요?",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "짝사랑하는 그 사람과 잘 될까요 알려주세요.",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "이 관계가 연인으로 발전할까요? 너무 떨려요.",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "궁금합니다. 관계에 변화가 생길까요?",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "결혼하면 재물운이 좋아질까요 알려주세요.",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "제발 먼 곳에서 인연이 올까요?",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "제발 포기하는 게 나을까요?",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "진지하게 그 사람이 저를 진심으로 좋아할까요?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "궁금합니다. 우리의 미래는 어떤 모습일까요?",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "진지하게 상견례 무사히 마칠까요?",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "궁금합니다. 운명적인 만남이 있을까요?",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "어떻게 다가가면 좋을까요 알려주세요.",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "데이트 신청하면 응해줄까요?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "제발 장거리 연애 괜찮을까요?",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "결혼하면 재물운이 좋아질까요?",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "여행지에서 설레는 만남이 있을까요?",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "짝사랑하는 그 사람과 잘 될까요?",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "그 사람 주변에 경쟁자가 있나요? 너무 떨려요.",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "진지하게 서로 신뢰를 회복할 수 있을까요?",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "제발 내년에 결혼할 수 있을까요?",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "궁금합니다. 여행지에서 설레는 만남이 있을까요?",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "궁금합니다. 포기하는 게 나을까요?",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "궁금합니다. 썸 타는 중인데 고백받을까요?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "진지하게 서로 신뢰를 회복할 수 있을까요?",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "궁금합니다. 결혼 준비 스트레스 어떻게 풀까요?",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "궁금합니다. 먼 곳에서 인연이 올까요?",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "제발 친해질 기회가 생길까요?",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "데이트 신청하면 응해줄까요?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "궁금합니다. 관계에 변화가 생길까요?",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "상견례 무사히 마칠까요?",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "제발 연상이랑 인연이 있을까요?",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "어떻게 다가가면 좋을까요 알려주세요.",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "제발 데이트 신청하면 응해줄까요?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "장거리 연애 괜찮을까요 알려주세요.",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "궁금합니다. 내년에 결혼할 수 있을까요?",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "소개팅에서 좋은 사람 만날까요?",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "그 사람의 속마음이 궁금해요. 너무 떨려요.",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "그 사람 주변에 경쟁자가 있나요?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "관계에 변화가 생길까요 알려주세요.",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "양가 부모님과 잘 지낼까요?",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "올해 연애운이 궁금해요!",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "궁금합니다. 고백하면 받아줄까요?",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "이 관계가 연인으로 발전할까요?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "궁금합니다. 더 행복해질 방법이 있나요?",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "양가 부모님과 잘 지낼까요? 너무 떨려요.",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "여행지에서 설레는 만남이 있을까요?",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "궁금합니다. 고백하면 받아줄까요?",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "제발 우리는 무슨 사이인가요?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "궁금합니다. 우리 사이가 더 깊어질까요?",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "아이를 언제 갖게 될까요 알려주세요.",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "운명적인 만남이 있을까요?",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "포기하는 게 나을까요 알려주세요.",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "진지하게 데이트 신청하면 응해줄까요?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "궁금합니다. 그 사람이 저에게 숨기는 게 있을까요?",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "결혼 시기가 언제쯤이 좋을까요?",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "언제 연애할 수 있을까요 알려주세요.",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "제가 먼저 연락해도 될까요 알려주세요.",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "궁금합니다. 썸 타는 중인데 고백받을까요?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "우리 사이가 더 깊어질까요 알려주세요.",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "궁금합니다. 결혼 시기가 언제쯤이 좋을까요?",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "새로운 인연이 나타날까요?",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "친해질 기회가 생길까요?",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "제발 이 관계가 연인으로 발전할까요?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "궁금합니다. 지금 남자친구와 오래 갈까요?",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "준비 없이 결혼해도 괜찮을까요? 너무 떨려요.",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "운명적인 만남이 있을까요 알려주세요.",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "우리는 인연일까요? 너무 떨려요.",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "데이트 신청하면 응해줄까요?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "더 행복해질 방법이 있나요?",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "결혼 준비 스트레스 어떻게 풀까요 알려주세요.",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "소개팅에서 좋은 사람 만날까요? 너무 떨려요.",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "진지하게 그 사람도 저를 생각하고 있을까요?",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "궁금합니다. 그 사람 주변에 경쟁자가 있나요?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "제발 관계에 변화가 생길까요?",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "결혼 준비 스트레스 어떻게 풀까요 알려주세요.",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "새로운 인연이 나타날까요?",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "그 사람의 속마음이 궁금해요. 너무 떨려요.",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "궁금합니다. 밀당을 해야 할까요?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "궁금합니다. 우리의 미래는 어떤 모습일까요?",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "제발 결혼 시기가 언제쯤이 좋을까요?",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "연상이랑 인연이 있을까요?",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "궁금합니다. 우리는 인연일까요?",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "제발 그 사람이 저를 진심으로 좋아할까요?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "더 행복해질 방법이 있나요?",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "제발 준비 없이 결혼해도 괜찮을까요?",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "궁금합니다. 지인 소개가 좋을까요?",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "우리는 인연일까요? 너무 떨려요.",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "변해가는 감정이 느껴지는데 어떡하죠? 너무 떨려요.",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "장거리 연애 괜찮을까요? 너무 떨려요.",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "제발 이 사람과 결혼하면 행복할까요?",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "여행지에서 설레는 만남이 있을까요? 너무 떨려요.",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "그 사람의 속마음이 궁금해요.",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "진지하게 이 관계가 연인으로 발전할까요?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "진지하게 관계에 변화가 생길까요?",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "궁금합니다. 아이를 언제 갖게 될까요?",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "궁금합니다. 새로운 인연이 나타날까요?",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "제발 친해질 기회가 생길까요?",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "제발 그 사람 주변에 경쟁자가 있나요?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "더 행복해질 방법이 있나요?",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "궁금합니다. 결혼 준비 스트레스 어떻게 풀까요?",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "친구에서 연인이 될 수 있을까요?",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "친해질 기회가 생길까요? 너무 떨려요.",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "우리는 무슨 사이인가요 알려주세요.",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "지금 남자친구와 오래 갈까요 알려주세요.",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "결혼하면 재물운이 좋아질까요 알려주세요.",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "올해 연애운이 궁금해요!",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "진지하게 짝사랑하는 그 사람과 잘 될까요?",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "이 관계가 연인으로 발전할까요 알려주세요.",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "관계에 변화가 생길까요 알려주세요.",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "이 사람과 결혼하면 행복할까요?",
+    "category": "연애",
+    "intent": "결혼"
+  },
+  {
+    "question": "진지하게 새로운 인연이 나타날까요?",
+    "category": "연애",
+    "intent": "연애 시작"
+  },
+  {
+    "question": "제발 포기하는 게 나을까요?",
+    "category": "연애",
+    "intent": "짝사랑"
+  },
+  {
+    "question": "밀당을 해야 할까요?",
+    "category": "연애",
+    "intent": "썸"
+  },
+  {
+    "question": "장거리 연애 괜찮을까요?",
+    "category": "연애",
+    "intent": "관계 지속"
+  },
+  {
+    "question": "양가 부모님과 잘 지낼까요 알려주세요.",
+    "category": "연애",
+    "intent": "결혼"
+  }
+]

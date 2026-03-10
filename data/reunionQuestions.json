@@ -1,0 +1,1002 @@
+[
+  {
+    "question": "너무 보고 싶어요. 잊으려고 노력하는데 잘 안 돼요.",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "차단 풀렸을까요?",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "꿈에 나왔어요. 우리 인연은 끝인가요?",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "너무 보고 싶어요. 전여친이랑 마주칠까요?",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "잊으려고 노력하는데 잘 안 돼요. 도와주세요.",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "진짜 차단 풀렸을까요?",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "꿈에 나왔어요. 다시 사귀게 되면 잘 지낼까요?",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "꿈에 나왔어요. 기념일에 연락해 볼까요?",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "너무 보고 싶어요. 다른 사람이 생겼을까요?",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "꿈에 나왔어요. 술 마시고 연락해도 될까요?",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "두 번째 기회가 있을까요? 도와주세요.",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "너무 보고 싶어요. 친구로라도 남을 수 있을까요?",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "너무 보고 싶어요. 그 사람이 저를 그리워할까요?",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "술 마시고 연락해도 될까요? 도와주세요.",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "재회 가능성 얼마나 될까요? 도와주세요.",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "진짜 친구로라도 남을 수 있을까요?",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "너무 보고 싶어요. 잊으려고 노력하는데 잘 안 돼요.",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "꿈에 나왔어요. 차단 풀렸을까요?",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "진짜 다시 사귀게 되면 잘 지낼까요?",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "너무 보고 싶어요. 전여친이랑 마주칠까요?",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "너무 보고 싶어요. 그 사람이 저를 그리워할까요?",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "먼저 연락 올 가능성이 있나요? 도와주세요.",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "꿈에 나왔어요. 두 번째 기회가 있을까요?",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "꿈에 나왔어요. 사진 다시 봐도 될까요?",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "너무 보고 싶어요. 헤어진 연인과 다시 만날까요?",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "진짜 술 마시고 연락해도 될까요?",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "너무 보고 싶어요. 다시 사귀게 되면 잘 지낼까요?",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "기념일에 연락해 볼까요? 도와주세요.",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "헤어진 연인과 다시 만날까요? 도와주세요.",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "너무 보고 싶어요. 안부 문자로 시작해도 괜찮을까요?",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "진짜 우리 인연은 끝인가요?",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "진짜 친구로라도 남을 수 있을까요?",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "다른 사람이 생겼을까요?",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "먼저 연락 올 가능성이 있나요? 도와주세요.",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "예전처럼 돌아갈 수 있을까요?",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "너무 보고 싶어요. 전여친이랑 마주칠까요?",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "너무 보고 싶어요. 헤어진 연인과 다시 만날까요?",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "진짜 안부 문자로 시작해도 괜찮을까요?",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "재회 가능성 얼마나 될까요?",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "꿈에 나왔어요. 전남친 소식 궁금해요.",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "그 사람이 저를 그리워할까요?",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "진짜 연락 기다리는데 답답해요.",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "다시 사귀게 되면 잘 지낼까요?",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "진짜 기념일에 연락해 볼까요?",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "꿈에 나왔어요. 그 사람이 저를 그리워할까요?",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "너무 보고 싶어요. 술 마시고 연락해도 될까요?",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "너무 보고 싶어요. 두 번째 기회가 있을까요?",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "꿈에 나왔어요. 전여친이랑 마주칠까요?",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "꿈에 나왔어요. 헤어진 지 오래됐는데 연락해도 될까요?",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "먼저 연락 올 가능성이 있나요? 도와주세요.",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "꿈에 나왔어요. 우리 인연은 끝인가요?",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "꿈에 나왔어요. 전여친이랑 마주칠까요?",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "너무 보고 싶어요. 다른 사람이 생겼을까요?",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "먼저 연락 올 가능성이 있나요? 도와주세요.",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "우리 인연은 끝인가요?",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "사진 다시 봐도 될까요?",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "너무 보고 싶어요. 잊으려고 노력하는데 잘 안 돼요.",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "진짜 차단 풀렸을까요?",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "꿈에 나왔어요. 예전처럼 돌아갈 수 있을까요?",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "꿈에 나왔어요. 사진 다시 봐도 될까요?",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "너무 보고 싶어요. 헤어진 연인과 다시 만날까요?",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "안부 문자로 시작해도 괜찮을까요? 도와주세요.",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "재회 가능성 얼마나 될까요?",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "너무 보고 싶어요. 전남친 소식 궁금해요.",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "너무 보고 싶어요. 다른 사람이 생겼을까요?",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "너무 보고 싶어요. 먼저 연락 올 가능성이 있나요?",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "진짜 다시 사귀게 되면 잘 지낼까요?",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "진짜 친구로라도 남을 수 있을까요?",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "꿈에 나왔어요. 다른 사람이 생겼을까요?",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "너무 보고 싶어요. 술 마시고 연락해도 될까요?",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "너무 보고 싶어요. 두 번째 기회가 있을까요?",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "진짜 전남친 소식 궁금해요.",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "진짜 그 사람이 저를 그리워할까요?",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "안부 문자로 시작해도 괜찮을까요?",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "너무 보고 싶어요. 두 번째 기회가 있을까요?",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "너무 보고 싶어요. 전여친이랑 마주칠까요?",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "그 사람이 저를 그리워할까요?",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "진짜 연락 기다리는데 답답해요.",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "진짜 우리 인연은 끝인가요?",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "너무 보고 싶어요. 사진 다시 봐도 될까요?",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "진짜 헤어진 연인과 다시 만날까요?",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "연락 기다리는데 답답해요. 도와주세요.",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "예전처럼 돌아갈 수 있을까요? 도와주세요.",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "너무 보고 싶어요. 기념일에 연락해 볼까요?",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "헤어진 지 오래됐는데 연락해도 될까요? 도와주세요.",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "너무 보고 싶어요. 먼저 연락 올 가능성이 있나요?",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "두 번째 기회가 있을까요? 도와주세요.",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "전여친이랑 마주칠까요? 도와주세요.",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "너무 보고 싶어요. 잊으려고 노력하는데 잘 안 돼요.",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "안부 문자로 시작해도 괜찮을까요? 도와주세요.",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "예전처럼 돌아갈 수 있을까요?",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "너무 보고 싶어요. 사진 다시 봐도 될까요?",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "꿈에 나왔어요. 그 사람이 저를 그리워할까요?",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "꿈에 나왔어요. 연락 기다리는데 답답해요.",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "진짜 재회 가능성 얼마나 될까요?",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "기념일에 연락해 볼까요? 도와주세요.",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "그 사람이 저를 그리워할까요? 도와주세요.",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "차단 풀렸을까요? 도와주세요.",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "진짜 다시 사귀게 되면 잘 지낼까요?",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "너무 보고 싶어요. 기념일에 연락해 볼까요?",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "너무 보고 싶어요. 잊으려고 노력하는데 잘 안 돼요.",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "먼저 연락 올 가능성이 있나요?",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "예전처럼 돌아갈 수 있을까요? 도와주세요.",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "꿈에 나왔어요. 기념일에 연락해 볼까요?",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "잊으려고 노력하는데 잘 안 돼요. 도와주세요.",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "진짜 먼저 연락 올 가능성이 있나요?",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "진짜 두 번째 기회가 있을까요?",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "진짜 전남친 소식 궁금해요.",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "헤어진 지 오래됐는데 연락해도 될까요? 도와주세요.",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "연락 기다리는데 답답해요.",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "다시 사귀게 되면 잘 지낼까요?",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "기념일에 연락해 볼까요? 도와주세요.",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "헤어진 연인과 다시 만날까요?",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "너무 보고 싶어요. 안부 문자로 시작해도 괜찮을까요?",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "꿈에 나왔어요. 재회 가능성 얼마나 될까요?",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "너무 보고 싶어요. 사진 다시 봐도 될까요?",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "너무 보고 싶어요. 헤어진 지 오래됐는데 연락해도 될까요?",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "먼저 연락 올 가능성이 있나요?",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "다시 사귀게 되면 잘 지낼까요?",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "너무 보고 싶어요. 기념일에 연락해 볼까요?",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "그 사람이 저를 그리워할까요?",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "먼저 연락 올 가능성이 있나요? 도와주세요.",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "재회 가능성 얼마나 될까요?",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "기념일에 연락해 볼까요?",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "너무 보고 싶어요. 잊으려고 노력하는데 잘 안 돼요.",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "먼저 연락 올 가능성이 있나요? 도와주세요.",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "너무 보고 싶어요. 재회 가능성 얼마나 될까요?",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "친구로라도 남을 수 있을까요? 도와주세요.",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "꿈에 나왔어요. 그 사람이 저를 그리워할까요?",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "꿈에 나왔어요. 안부 문자로 시작해도 괜찮을까요?",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "우리 인연은 끝인가요? 도와주세요.",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "진짜 사진 다시 봐도 될까요?",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "잊으려고 노력하는데 잘 안 돼요. 도와주세요.",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "술 마시고 연락해도 될까요? 도와주세요.",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "너무 보고 싶어요. 우리 인연은 끝인가요?",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "기념일에 연락해 볼까요?",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "꿈에 나왔어요. 헤어진 연인과 다시 만날까요?",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "안부 문자로 시작해도 괜찮을까요?",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "꿈에 나왔어요. 다시 사귀게 되면 잘 지낼까요?",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "너무 보고 싶어요. 친구로라도 남을 수 있을까요?",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "너무 보고 싶어요. 헤어진 연인과 다시 만날까요?",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "먼저 연락 올 가능성이 있나요?",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "재회 가능성 얼마나 될까요?",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "기념일에 연락해 볼까요? 도와주세요.",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "다른 사람이 생겼을까요?",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "너무 보고 싶어요. 먼저 연락 올 가능성이 있나요?",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "진짜 재회 가능성 얼마나 될까요?",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "사진 다시 봐도 될까요?",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "잊으려고 노력하는데 잘 안 돼요. 도와주세요.",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "차단 풀렸을까요? 도와주세요.",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "꿈에 나왔어요. 두 번째 기회가 있을까요?",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "진짜 전남친 소식 궁금해요.",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "그 사람이 저를 그리워할까요?",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "너무 보고 싶어요. 차단 풀렸을까요?",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "너무 보고 싶어요. 우리 인연은 끝인가요?",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "진짜 친구로라도 남을 수 있을까요?",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "그 사람이 저를 그리워할까요?",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "꿈에 나왔어요. 차단 풀렸을까요?",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "너무 보고 싶어요. 다시 사귀게 되면 잘 지낼까요?",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "꿈에 나왔어요. 전남친 소식 궁금해요.",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "진짜 헤어진 지 오래됐는데 연락해도 될까요?",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "꿈에 나왔어요. 안부 문자로 시작해도 괜찮을까요?",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "재회 가능성 얼마나 될까요? 도와주세요.",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "전남친 소식 궁금해요.",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "너무 보고 싶어요. 그 사람이 저를 그리워할까요?",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "너무 보고 싶어요. 연락 기다리는데 답답해요.",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "예전처럼 돌아갈 수 있을까요? 도와주세요.",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "너무 보고 싶어요. 전남친 소식 궁금해요.",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "헤어진 연인과 다시 만날까요?",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "너무 보고 싶어요. 먼저 연락 올 가능성이 있나요?",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "진짜 예전처럼 돌아갈 수 있을까요?",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "사진 다시 봐도 될까요?",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "너무 보고 싶어요. 다른 사람이 생겼을까요?",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "차단 풀렸을까요?",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "두 번째 기회가 있을까요?",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "진짜 전남친 소식 궁금해요.",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "헤어진 지 오래됐는데 연락해도 될까요? 도와주세요.",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "꿈에 나왔어요. 술 마시고 연락해도 될까요?",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "진짜 재회 가능성 얼마나 될까요?",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "꿈에 나왔어요. 전남친 소식 궁금해요.",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "너무 보고 싶어요. 헤어진 연인과 다시 만날까요?",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "꿈에 나왔어요. 술 마시고 연락해도 될까요?",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "꿈에 나왔어요. 재회 가능성 얼마나 될까요?",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "전남친 소식 궁금해요. 도와주세요.",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "너무 보고 싶어요. 다른 사람이 생겼을까요?",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "먼저 연락 올 가능성이 있나요? 도와주세요.",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "예전처럼 돌아갈 수 있을까요?",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "전남친 소식 궁금해요.",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "너무 보고 싶어요. 다른 사람이 생겼을까요?",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "진짜 안부 문자로 시작해도 괜찮을까요?",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "다시 사귀게 되면 잘 지낼까요?",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "꿈에 나왔어요. 사진 다시 봐도 될까요?",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "꿈에 나왔어요. 그 사람이 저를 그리워할까요?",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "술 마시고 연락해도 될까요? 도와주세요.",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "꿈에 나왔어요. 두 번째 기회가 있을까요?",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "꿈에 나왔어요. 전여친이랑 마주칠까요?",
+    "category": "재회",
+    "intent": "전연인 소식"
+  },
+  {
+    "question": "잊으려고 노력하는데 잘 안 돼요.",
+    "category": "재회",
+    "intent": "헤어진 연인"
+  },
+  {
+    "question": "너무 보고 싶어요. 먼저 연락 올 가능성이 있나요?",
+    "category": "재회",
+    "intent": "연락 재개"
+  },
+  {
+    "question": "진짜 우리 인연은 끝인가요?",
+    "category": "재회",
+    "intent": "재결합"
+  },
+  {
+    "question": "꿈에 나왔어요. 사진 다시 봐도 될까요?",
+    "category": "재회",
+    "intent": "전연인 소식"
+  }
+]
