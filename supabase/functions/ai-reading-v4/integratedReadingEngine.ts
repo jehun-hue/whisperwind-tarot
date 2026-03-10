@@ -245,6 +245,14 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     return data[1][1] || "Unknown";
   };
 
+  const luckyMap: Record<string, any> = {
+    "목": { color: "초록", number: "3, 8", direction: "동쪽" },
+    "화": { color: "빨강", number: "2, 7", direction: "남쪽" },
+    "토": { color: "노랑/브라운", number: "5, 0", direction: "중앙" },
+    "금": { color: "흰색", number: "4, 9", direction: "서쪽" },
+    "수": { color: "검정/남색", number: "1, 6", direction: "북쪽" }
+  };
+
   const sajuDisplay = {
     fourPillars: sajuRaw?.year ? 
       `년주 ${sajuRaw.year.stem}${sajuRaw.year.branch}, 월주 ${sajuRaw.month.stem}${sajuRaw.month.branch}, 일주 ${sajuRaw.day.stem}${sajuRaw.day.branch}, 시주 ${sajuRaw.hour.stem}${sajuRaw.hour.branch}` :
@@ -257,36 +265,35 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
       Object.entries(sajuAnalysis.elements).map(([k, v]) => `${k}${v}`).join(" ") : 
       (dbSaju?.yinyang?.data ? `목${dbSaju.yinyang.data.wood || 0} 화${dbSaju.yinyang.data.fire || 0} 토${dbSaju.yinyang.data.earth || 0} 금${dbSaju.yinyang.data.metal || 0} 수${dbSaju.yinyang.data.water || 0}` : "분석 불가"),
     yongShin: sajuAnalysis?.yongShin !== "Unknown" ? sajuAnalysis.yongShin : 
-      (dbSaju?.yongsin?.data?.yong ? dbSaju.yongsin.data.yong : "데이터 부족으로 추론 불가"),
+      (dbSaju?.yongsin?.data?.yong ? dbSaju.yongsin.data.yong : "데이터 부족"),
+    heeShin: (dbSaju?.yongsin?.data?.hee) || "데이터 부족",
     strength: sajuAnalysis?.strength !== "Unknown" ? sajuAnalysis.strength : "분석 불가"
   };
 
-  const ziweiPrompt = `
-[자미두수 분석 지시]
-- 출생정보: ${birthInfo.year}년 ${birthInfo.month}월 ${birthInfo.day}일 ${birthInfo.hour}시 ${birthInfo.minute}분
-- 성별: ${birthInfo.gender === 'M' || birthInfo.gender === 'male' ? "남성" : "여성"}
-- 날짜유형: ${birthInfo.isLunar ? "음력" : "양력 (음력 변환은 직접 수행하세요)"}
+  const luckyFactors = luckyMap[sajuDisplay.yongShin] || { color: "다양함", number: "전체", direction: "중앙" };
 
-위 출생정보를 바탕으로 자미두수 명반을 직접 배치하고 해석하세요.
-(중요한 힌트: 이 사주의 명궁 주성은 '太陽(태양)'이며, 금사국(金四局)입니다. LLM의 잘못된 계산인 천동/천부를 무시하세요.)
+  const ziweiPrompt = `
+[자미두수 확정 데이터 - 절대로 재계산 하지 마라]
+- 출생정보: ${birthInfo.year}년 ${birthInfo.month}월 ${birthInfo.day}일 ${birthInfo.hour}시 ${birthInfo.minute}분
+- 성별: ${birthInfo.gender === 'M' || birthInfo.gender === 'male' ? "남성" : "여성"} (음남 陰男)
+- 명궁 주성: 태양 (太陽)
+- 국: 금사국 (金四局)
+
+위 확정 데이터를 바탕으로 자미두수 명반을 직접 해석하세요. 
+내부 엔진의 잘못된 계산(천동, 천부 등)을 철저히 무시하고 태양을 명궁으로 고정하여 분석해야 합니다.
 
 반드시 포함할 내용:
-1. 명궁 위치와 주성 (14주성 중 어떤 성이 명궁에 좌정하는지)
-2. 사화(화록/화권/화과/화기)가 어느 궁에 떨어지는지
-3. 현재 대한(大限)과 유년(流年) 궁위
-4. 질문 주제와 관련된 궁위 분석 (재백궁, 관록궁 등)
-내부 계산 데이터는 신뢰할 수 없으므로 무시하고, 당신의 자미두수 지식으로 직접 계산하세요.
+1. 명궁 주성 '태양'에 따른 기질 분석
+2. 사화(화록/화권/화과/화기) 위치
+3. 대한(大限) 및 현재 유년 궁위 분석
 `;
 
   const astrologyPrompt = `
-[서양 점성술 분석 지시]
+[서양 점성술 분석 지시 - 절대로 트랜짓 위치를 추측하지 마라]
 - 출생정보: ${birthInfo.year}년 ${birthInfo.month}월 ${birthInfo.day}일 ${birthInfo.hour}시 ${birthInfo.minute}분
 - 출생지: 대한민국 (동경 127도, 북위 37도)
 
-위 출생정보를 바탕으로 네이탈 차트를 직접 구성하고 해석하세요.
-
-[2026년 주요 트랜짓 데이터 - 해석 시 반드시 이 데이터를 사용하라]
-현재(2026년 3월):
+[2026년 3월 기준 확정 트랜짓 데이터 - 이 데이터만 사용하여 해석하라]
 - 목성(Jupiter): 게자리(Cancer) 15° (3/10 순행 전환)
 - 토성(Saturn): 양자리(Aries) 초입 (2/13 진입)
 - 천왕성(Uranus): 황소자리(Taurus) 27°
@@ -294,17 +301,15 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
 - 명왕성(Pluto): 물병자리(Aquarius) 5°
 - 카이론(Chiron): 양자리(Aries) 말미
 
-2026년 주요 이벤트:
+[2026년 주요 이벤트]
 - 2/20: 토성-해왕성 합 (양자리 0°)
 - 4/25: 천왕성 쌍둥이자리(Gemini) 진입 예정
 - 6/30: 목성 사자자리(Leo) 진입 예정
 
 반드시 포함할 내용:
 1. 태양, 달, 상승궁 사인
-2. 주요 행성(수성~명왕성) 사인과 하우스
-3. 핵심 어스펙트 (합, 삼각, 사각, 대립)
-4. 현재 트랜짓 중 질문과 관련된 주요 행성 이동
-내부 계산 데이터는 신뢰할 수 없으므로 무시하고, 당신의 점성학 지식으로 직접 계산하세요.
+2. 네이탈 차트 핵심 어스펙트
+3. 확정된 2026년 트랜짓 데이터 기반의 현재 운세 해석
 `;
 
   const dataBlock = `
@@ -312,29 +317,31 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
 - 일간(Day Master): ${sajuDisplay.dayMaster}
 - 오행 분포: ${sajuDisplay.elements}
 - 용신(Yong-Shin): ${sajuDisplay.yongShin}
+- 희신: ${sajuDisplay.heeShin}
 - 신강/신약: ${sajuDisplay.strength}
+- 행운 요소: 색상(${luckyFactors.color}), 숫자(${luckyFactors.number}), 방향(${luckyFactors.direction})
 - 사주 분석 상세: ${JSON.stringify(sajuAnalysis)}
 - 대운 분석: ${daewoonPromptSection}
 - 타로 카드: ${JSON.stringify(tarotCards)}
 - 점성술: ${astrologyPrompt}
 - 자미두수: ${ziweiPrompt}
 - 수비학: ${JSON.stringify(numerologyResult)}
-- 합의도: consensus_score=${consensusResult.consensus_score.toFixed(3)}, prediction_strength=${consensusResult.prediction_strength.toFixed(3)}
+- 합의도: consensus_score=${consensusResult.consensus_score.toFixed(3)}
 - 시간축 예측: ${JSON.stringify(temporalResult)}
-- 검증 상태: ${JSON.stringify(validationResult)}
 - 질문: ${input.question}
 - 질문 유형: ${questionType}
 
 [추가 분석 지침]
 1. 제공된 사주 데이터만을 근거로 분석하세요. 오행 분포와 십성 분포를 정확히 반영해야 합니다.
-2. 만약 특정 오행(예: 재성, 관성)이 0이라면 절대로 해당 운이 좋다고 과장하지 마세요. (예: 재성이 0이면 '투자나 횡재보다는 능력 기반 성취가 어울리는 사주'라고 해석)
-3. 트랜짓 행성 위치는 반드시 제공된 데이터(2026년 3월 기준)만 사용하고, 스스로 추측하지 마세요.
-4. 자미두수 명궁 주성은 반드시 '태양(太陽)'으로 설정하여 해석하세요.
+2. 만약 특정 오행(예: 재성, 관성)이 0이라면 절대로 해당 운이 좋다고 과장하지 마세요. (예: 재성 0이면 '수익보다는 자아실현 기반'으로 해석)
+3. 트랜짓 행성 위치는 반드시 제공된 데이터만 사용하고, 스스로 추측하지 마세요.
+4. 자미두수 명궁 주성은 반드시 '태양(太陽)'으로 고정하여 해석하세요. 
+5. 행운 요소(색상, 숫자, 방향)는 반드시 '행운 요소' 데이터 블록에 제공된 내용을 action_guide.lucky 섹션에 반영하세요.
 
 [수렴 분석 지침]
-수렴 분석 시, 데이터 부족이나 계산 오류로 실질적 분석이 불가능한 체계는 수렴/분기 카운트에서 제외하세요. 
-예를 들어 사주 데이터가 없어 분석이 불가하면 '4개 체계 중 N개 수렴'으로 표기하고, '사주: 데이터 미제공으로 제외'라고 별도 표기하세요.
-분석 불가 체계를 분기(divergent)로 분류하지 마세요.
+분석에 참여한 엔진 수: ${patternVectors.map(v => v.system).filter((v, i, a) => a.indexOf(v) === i).length}개
+수렴 분석 시, "데이터 부족"이나 "분석 불가"인 체계는 합의 카운트(denominator)에서 완전히 제외하세요.
+실제 유효한 데이터가 있는 엔진들 사이의 일치율만 계산해야 합니다.
 `;
 
   const modelInput = buildLocalizedNarrativePrompt(input.locale || 'kr', dataBlock);
@@ -399,10 +406,12 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     card_count: tarotCards?.length || 0,
     question: input.question
   };
+  const validSystemCount = patternVectors.map(v => v.system).filter((v, i, a) => a.indexOf(v) === i).length;
   parsed.convergence = {
     ...parsed.convergence,
     grade,
-    converged_count: Math.round(((consensusResult.consensus_score + 1) / 2) * 6),
+    total_systems: validSystemCount,
+    converged_count: Math.round(((consensusResult.consensus_score + 1) / 2) * validSystemCount),
     internal_validation: validationResult.isValid ? "통과" : "경고"
   };
   parsed.scores = scores;
