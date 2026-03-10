@@ -10,7 +10,7 @@ import { calculateSaju, getSajuTarotCrossKeywords, getSajuForQuestion } from "@/
 import { calculateNatalChart, getAstrologyForQuestion, getCurrentTransits } from "@/lib/astrology";
 import { calculateZiWei, getZiWeiForQuestion } from "@/lib/ziwei";
 import { getCombinationSummary } from "@/data/tarotCombinations";
-import { calculateManseryeokSaju } from "@/lib/manseryeokCalc";
+import { getManseryeok } from "@/lib/manseryeokCalc";
 
 const READER_PIN = "1234";
 
@@ -167,8 +167,8 @@ export default function ReaderPage() {
                 <div
                   key={s.id}
                   className={`group cursor-pointer rounded-lg border p-3 transition-all ${selectedSession?.id === s.id
-                      ? "border-gold/40 bg-gold/5"
-                      : "border-border bg-secondary hover:bg-muted"
+                    ? "border-gold/40 bg-gold/5"
+                    : "border-border bg-secondary hover:bg-muted"
                     }`}
                   onClick={() => setSelectedSession(s)}
                 >
@@ -325,7 +325,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
 
           // Manseryeok auto-calculation
           try {
-            manseryeokDataForAI = calculateManseryeokSaju(y, m, d, hour, minute, birthInfo.isLunar as boolean);
+            manseryeokDataForAI = getManseryeok(y, m, d, hour, minute, birthInfo.isLunar as boolean, (birthInfo.gender as "male" | "female") || "female");
           } catch (e) {
             console.error("Manseryeok calc error:", e);
           }
@@ -450,7 +450,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
 
           // Manseryeok auto-calculation
           try {
-            manseryeokDataForAI = calculateManseryeokSaju(y, m, d, hour, minute, birthInfo.isLunar as boolean);
+            manseryeokDataForAI = getManseryeok(y, m, d, hour, minute, birthInfo.isLunar as boolean, (birthInfo.gender as "male" | "female") || "female");
           } catch (e) {
             console.error("Manseryeok V2 calc error:", e);
           }
@@ -679,9 +679,9 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
               </Badge>
             )}
             <Badge variant="outline" className={`text-[10px] ${session.status === "pending" ? "border-yellow-500/30 text-yellow-400" :
-                session.status === "analyzing" ? "border-blue-500/30 text-blue-400" :
-                  session.status === "completed" ? "border-green-500/30 text-green-400" :
-                    "border-red-500/30 text-red-400"
+              session.status === "analyzing" ? "border-blue-500/30 text-blue-400" :
+                session.status === "completed" ? "border-green-500/30 text-green-400" :
+                  "border-red-500/30 text-red-400"
               }`}>
               {session.status === "pending" ? "대기중" : session.status === "analyzing" ? "분석중" : session.status === "completed" ? "완료" : session.status}
             </Badge>
@@ -912,9 +912,9 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
               <CardTitle className="text-lg text-foreground">✦ 6체계 통합 분석 (v2)</CardTitle>
               {reading.final_reading?.grade && (
                 <Badge className={`text-sm font-bold px-3 py-1 ${reading.final_reading.grade === "S" ? "bg-gradient-to-r from-amber-500 to-yellow-400 text-black" :
-                    reading.final_reading.grade === "A" ? "bg-gradient-to-r from-purple-600 to-violet-500 text-white" :
-                      reading.final_reading.grade === "B" ? "bg-gradient-to-r from-blue-600 to-cyan-500 text-white" :
-                        "bg-secondary text-muted-foreground"
+                  reading.final_reading.grade === "A" ? "bg-gradient-to-r from-purple-600 to-violet-500 text-white" :
+                    reading.final_reading.grade === "B" ? "bg-gradient-to-r from-blue-600 to-cyan-500 text-white" :
+                      "bg-secondary text-muted-foreground"
                   }`}>
                   {reading.final_reading.grade}등급
                 </Badge>

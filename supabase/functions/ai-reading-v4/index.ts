@@ -117,13 +117,26 @@ function buildSajuSection(manseryeokData: any, forcetellData: string | null, saj
   if (forcetellData) {
     let s = `[포스텔러 원본 데이터 (수동 입력)]\n${forcetellData}`;
     if (manseryeokData) {
-      s += `\n\n[만세력 자동 계산 (참고용)]\n사주 원국: ${manseryeokData.yearPillar?.cheongan}${manseryeokData.yearPillar?.jiji} / ${manseryeokData.monthPillar?.cheongan}${manseryeokData.monthPillar?.jiji} / ${manseryeokData.dayPillar?.cheongan}${manseryeokData.dayPillar?.jiji} / ${manseryeokData.hourPillar?.cheongan}${manseryeokData.hourPillar?.jiji}\n일간: ${manseryeokData.ilgan}(${manseryeokData.ilganElement}, ${manseryeokData.ilganYinyang})`;
+      s += `\n\n[만세력 자동 계산 (참고용)]\n사주 원국: ${manseryeokData.연주?.한자 || "미상"} / ${manseryeokData.월주?.한자 || "미상"} / ${manseryeokData.일주?.한자 || "미상"} / ${manseryeokData.시주?.한자 || "미상"}\n일간: ${manseryeokData.일간 || "미상"}`;
     }
     return s;
   }
-  if (manseryeokData) {
-    return `[만세력 자동 계산 데이터]\n사주 원국: ${manseryeokData.yearPillar?.cheongan}${manseryeokData.yearPillar?.jiji} / ${manseryeokData.monthPillar?.cheongan}${manseryeokData.monthPillar?.jiji} / ${manseryeokData.dayPillar?.cheongan}${manseryeokData.dayPillar?.jiji} / ${manseryeokData.hourPillar?.cheongan}${manseryeokData.hourPillar?.jiji}\n일간: ${manseryeokData.ilgan}(${manseryeokData.ilganElement}, ${manseryeokData.ilganYinyang})\n연주 오행: ${manseryeokData.yearPillar?.cheonganElement}/${manseryeokData.yearPillar?.jijiElement}\n월주 오행: ${manseryeokData.monthPillar?.cheonganElement}/${manseryeokData.monthPillar?.jijiElement}\n일주 오행: ${manseryeokData.dayPillar?.cheonganElement}/${manseryeokData.dayPillar?.jijiElement}\n시주 오행: ${manseryeokData.hourPillar?.cheonganElement}/${manseryeokData.hourPillar?.jijiElement}\n${manseryeokData.hanjaString ? `한자: ${manseryeokData.hanjaString}` : ""}\n${manseryeokData.fourPillarsString ? `전체: ${manseryeokData.fourPillarsString}` : ""}\n${manseryeokData.lunarDate ? `음력: ${manseryeokData.lunarDate.year}년 ${manseryeokData.lunarDate.month}월 ${manseryeokData.lunarDate.day}일${manseryeokData.lunarDate.isLeapMonth ? " (윤달)" : ""}` : ""}`;
+
+  // 만세력 결과가 있으면 최우선으로 적용
+  if (manseryeokData || sajuData?.연주) {
+    const data = manseryeokData || sajuData;
+    return `[만세력 자동 계산 데이터]
+사주 원국: ${data.연주?.한자 || "미상"}(${data.연주?.천간 || ""}${data.연주?.지지 || ""}) / ${data.월주?.한자 || "미상"}(${data.월주?.천간 || ""}${data.월주?.지지 || ""}) / ${data.일주?.한자 || "미상"}(${data.일주?.천간 || ""}${data.일주?.지지 || ""}) / ${data.시주?.한자 || "미상"}(${data.시주?.천간 || ""}${data.시주?.지지 || ""})
+일간: ${data.일간 || ""}
+연주 오행: ${data.연주?.오행 || ""}
+월주 오행: ${data.월주?.오행 || ""}
+일주 오행: ${data.일주?.오행 || ""}
+시주 오행: ${data.시주?.오행 || ""}
+오행 비율: ${data.오행비율 ? Object.entries(data.오행비율).map(([k, v]) => `${k} ${v}%`).join(", ") : ""}
+추정 용신: ${data.용신 || ""}`;
   }
+
+  // Fallback (legacy sajuData)
   if (sajuData) {
     return `[내부 계산 사주 데이터]\n사주 원국: ${sajuData.yearPillar?.cheongan || ""}${sajuData.yearPillar?.jiji || ""} / ${sajuData.monthPillar?.cheongan || ""}${sajuData.monthPillar?.jiji || ""} / ${sajuData.dayPillar?.cheongan || ""}${sajuData.dayPillar?.jiji || ""} / ${sajuData.hourPillar?.cheongan || ""}${sajuData.hourPillar?.jiji || ""}\n일간: ${sajuData.ilgan || ""}(${sajuData.ilganElement || ""}) / 신강/신약: ${sajuData.strength || ""} / 용신: ${sajuData.yongsin || ""}\n${sajuData.gyeokguk ? `격국: ${sajuData.gyeokguk}` : ""}\n${sajuData.sinsal ? `신살: ${sajuData.sinsal.map((s: any) => `${s.name}(${s.branch}): ${s.meaning}`).join("; ")}` : ""}\n${sajuData.jijiInteractions ? `지지 상호작용: ${sajuData.jijiInteractions.map((j: any) => `${j.type}(${j.branches.join(",")}): ${j.effect}`).join("; ")}` : ""}\n${sajuData.daeun ? `현재 대운: ${sajuData.daeun.current?.cheongan || ""}${sajuData.daeun.current?.jiji || ""}(${sajuData.daeun.current?.startAge || ""}-${sajuData.daeun.current?.endAge || ""}세)` : ""}\n${sajuData.sewun ? `현재 세운: ${sajuData.sewun.cheongan || ""}${sajuData.sewun.jiji || ""}` : ""}`;
   }

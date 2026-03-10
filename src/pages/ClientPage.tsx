@@ -20,7 +20,7 @@ import { tarotCards, makeDeckCard, type DeckCard } from "@/data/tarotCards";
 import { calculateSaju, getSajuTarotCrossKeywords, getSajuForQuestion, type SajuResult } from "@/lib/saju";
 import { calculateNatalChart, getAstrologyForQuestion, getCurrentTransits, type AstrologyResult } from "@/lib/astrology";
 import { calculateZiWei, getZiWeiForQuestion, type ZiWeiResult } from "@/lib/ziwei";
-import { calculateManseryeokSaju, type ManseryeokResult } from "@/lib/manseryeokCalc";
+import { getManseryeok, type ManseryeokResult } from "@/lib/manseryeokCalc";
 import { getCombinationSummary } from "@/data/tarotCombinations";
 import { supabase } from "@/integrations/supabase/client";
 import ReadingResultV3 from "@/components/ReadingResultV3";
@@ -186,7 +186,7 @@ export default function ClientPage() {
     const minute = 0;
 
     try {
-      const ms = calculateManseryeokSaju(y, m, d, hour, minute, isLunar);
+      const ms = getManseryeok(y, m, d, hour, minute, isLunar, gender as 'male' | 'female');
       setManseryeokResult(ms);
     } catch (e) {
       console.error("Manseryeok error:", e);
@@ -247,12 +247,12 @@ export default function ClientPage() {
       isLunar,
     } : null;
 
-    let sajuDataForAI = null;
-    let astroDataForAI = null;
-    let ziweiDataForAI = null;
+    let sajuDataForAI: any = null;
+    let astroDataForAI: any = null;
+    let ziweiDataForAI: any = null;
 
-    if (sajuResult) {
-      sajuDataForAI = { ...sajuResult, crossKeywords: getSajuTarotCrossKeywords(sajuResult, picked.map((c) => c.suit)), questionAnalysis: getSajuForQuestion(sajuResult, questionType) };
+    if (manseryeokResult) {
+      sajuDataForAI = manseryeokResult;
     }
     if (astroResult) {
       astroDataForAI = { ...astroResult, questionAnalysis: getAstrologyForQuestion(astroResult, questionType), transits: getCurrentTransits(astroResult) };
