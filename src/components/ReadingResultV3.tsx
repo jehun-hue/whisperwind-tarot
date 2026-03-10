@@ -56,6 +56,8 @@ interface ReadingResultV3Props {
   onReset: () => void;
   children?: React.ReactNode;
   grade?: string;
+  onUpgrade?: (targetGrade: string) => void;
+  sessionId?: string;
 }
 
 // ─── Grade Badge ───
@@ -350,37 +352,55 @@ function LoveSection({ love, grade }: { love: LoveAnalysis; grade: Grade }) {
 }
 
 // ─── Upgrade Banner ───
-function UpgradeBanner({ currentGrade }: { currentGrade: Grade }) {
+function UpgradeBanner({ currentGrade, onUpgrade }: { currentGrade: Grade; onUpgrade?: (g: string) => void }) {
   if (currentGrade === "S") return null;
+  
+  const handleUpgrade = (targetGrade: string) => {
+    if (onUpgrade) onUpgrade(targetGrade);
+  };
+  
   const upgrades: Record<string, React.ReactNode> = {
     C: (
       <div className="flex flex-col sm:flex-row items-center justify-center gap-2 text-center">
         <span className="text-sm text-muted-foreground">더 깊은 리딩이 궁금하다면?</span>
         <div className="flex gap-2">
-          <Button size="sm" variant="outline" className="rounded-full border-border/50 text-xs">B등급 상세 리딩 ₩1,000</Button>
-          <Button size="sm" className="rounded-full bg-gradient-to-r from-gold to-accent text-primary-foreground text-xs">
-            <Sparkles className="h-3 w-3 mr-1" /> S등급 종합 ₩5,000
+          <Button size="sm" variant="outline" className="rounded-full border-border/50 text-xs"
+            onClick={() => handleUpgrade("B")}>
+            B등급 상세 리딩 1크레딧
+          </Button>
+          <Button size="sm" className="rounded-full bg-gradient-to-r from-gold to-accent text-primary-foreground text-xs"
+            onClick={() => handleUpgrade("S")}>
+            <Sparkles className="h-3 w-3 mr-1" /> S등급 종합 5크레딧
           </Button>
         </div>
       </div>
     ),
     B: (
       <div className="flex flex-col sm:flex-row items-center justify-center gap-2 text-center">
-        <span className="text-sm text-muted-foreground">6체계 교차검증 S등급으로 더 정확하게</span>
-        <Button size="sm" className="rounded-full bg-gradient-to-r from-gold to-accent text-primary-foreground text-xs">
-          <Sparkles className="h-3 w-3 mr-1" /> S등급 ₩5,000
-        </Button>
+        <span className="text-sm text-muted-foreground">6체계 교차검증으로 더 정확하게</span>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" className="rounded-full text-xs"
+            onClick={() => handleUpgrade("A")}>
+            A등급 프리미엄 3크레딧
+          </Button>
+          <Button size="sm" className="rounded-full bg-gradient-to-r from-gold to-accent text-primary-foreground text-xs"
+            onClick={() => handleUpgrade("S")}>
+            <Sparkles className="h-3 w-3 mr-1" /> S등급 5크레딧
+          </Button>
+        </div>
       </div>
     ),
     A: (
       <div className="flex flex-col sm:flex-row items-center justify-center gap-2 text-center">
-        <span className="text-sm text-muted-foreground">최고급 S등급: 6개월 타임라인 + 인연 프로필 포함</span>
-        <Button size="sm" className="rounded-full bg-gradient-to-r from-gold to-accent text-primary-foreground text-xs">
-          <Sparkles className="h-3 w-3 mr-1" /> S등급 ₩5,000
+        <span className="text-sm text-muted-foreground">S등급: 6개월 타임라인 + 인연 프로필 + 대운</span>
+        <Button size="sm" className="rounded-full bg-gradient-to-r from-gold to-accent text-primary-foreground text-xs"
+          onClick={() => handleUpgrade("S")}>
+          <Sparkles className="h-3 w-3 mr-1" /> S등급 5크레딧
         </Button>
       </div>
     ),
   };
+
   return (
     <Card className="border-gold/20 bg-gradient-to-r from-gold/5 to-accent/5 backdrop-blur-xl">
       <CardContent className="p-4">{upgrades[currentGrade]}</CardContent>
@@ -389,7 +409,15 @@ function UpgradeBanner({ currentGrade }: { currentGrade: Grade }) {
 }
 
 // ─── Main Component ───
-export default function ReadingResultV3({ reading, isLoading, onReset, children, grade: propGrade }: ReadingResultV3Props) {
+export default function ReadingResultV3({ 
+  reading, 
+  isLoading, 
+  onReset, 
+  children, 
+  grade: propGrade,
+  onUpgrade,
+  sessionId
+}: ReadingResultV3Props) {
   const grade = ((propGrade || reading?.reading_info?.grade || "C") as Grade);
 
   if (isLoading) return <LoadingScreen grade={grade} />;
@@ -568,7 +596,7 @@ export default function ReadingResultV3({ reading, isLoading, onReset, children,
           </Button>
         </div>
       ) : (
-        <UpgradeBanner currentGrade={grade} />
+        <UpgradeBanner currentGrade={grade} onUpgrade={onUpgrade} />
       )}
 
       <div className="pt-2 text-center">

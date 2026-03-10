@@ -17,6 +17,8 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   useCredit: (reason: string) => Promise<boolean>;
+  purchaseGrade: (sessionId: string, grade: string) => Promise<{ success: boolean; error?: string }>;
+  getSessionGrade: (sessionId: string) => Promise<string>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -90,8 +92,70 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return true;
   };
 
+  const purchaseGrade = async (sessionId: string, grade: string): Promise<{ success: boolean; error?: string }> => {
+    if (!user || !profile) return { success: false, error: "로그인이 필요합니다" };
+
+    // 상품 정보 조회
+    const { data: product } = await supabase
+      .from("reading_products")
+      .select("*")
+      .eq("id", `grade_${grade.toLowerCase()}`)
+      .single();
+    
+    if (!product) return { success: false, error: "상품을 찾을 수 없습니다" };
+    
+    // 무료 (C등급)
+    if (product.credits_required === 0) {
+      await supabase.from("reading_purchases").insert({
+        user_id: user.id, session_id: sessionId, product_id: product.id,
+        grade, credits_used: 0, payment_method: "free",
+      });
+      return { success: true };
+    }
+    
+    // 크레딧 확인
+    if (profile.credits < product.credits_required) {
+      return { success: false, error: `크레딧이 부족합니다 (필요: ${product.credits_required}, 보유: ${profile.credits})` };
+    }
+    
+    // 크레딧 차감
+    const { error: txError } = await supabase.from("credit_transactions").insert({
+      user_id: user.id, amount: -product.credits_required,
+      reason: `${grade}등급 리딩 구매 (세션: ${sessionId.slice(0, 8)})`,
+    });
+    if (txError) return { success: false, error: "결제 처리 중 오류" };
+    
+    const { error: upError } = await supabase
+      .from("profiles")
+      .update({ credits: profile.credits - product.credits_required })
+      .eq("id", user.id);
+    if (upError) return { success: false, error: "크레딧 업데이트 오류" };
+    
+    // 구매 기록
+    await supabase.from("reading_purchases").insert({
+      user_id: user.id, session_id: sessionId, product_id: product.id,
+      grade, credits_used: product.credits_required, payment_method: "credit",
+    });
+    
+    setProfile(p => p ? { ...p, credits: p.credits - product.credits_required } : p);
+    return { success: true };
+  };
+
+  const getSessionGrade = async (sessionId: string): Promise<string> => {
+    if (!user) return "C";
+    const { data } = await supabase
+      .from("reading_purchases")
+      .select("grade")
+      .eq("user_id", user.id)
+      .eq("session_id", sessionId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    return data?.grade || "C";
+  };
+
   return (
-    <AuthContext.Provider value={{ user, session, profile, loading, signOut, refreshProfile, useCredit }}>
+    <AuthContext.Provider value={{ user, session, profile, loading, signOut, refreshProfile, useCredit, purchaseGrade, getSessionGrade }}>
       {children}
     </AuthContext.Provider>
   );

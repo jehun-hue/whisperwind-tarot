@@ -15,6 +15,8 @@ import { useAuth } from "@/hooks/useAuth";
 import LocalizedBirthInfoForm from "@/components/LocalizedBirthInfoForm";
 import UserHeader from "@/components/UserHeader";
 import CosmicBackground from "@/components/CosmicBackground";
+import LocalizedReadingResult from "@/components/LocalizedReadingResult";
+import { toast } from "sonner";
 import heroBg from "@/assets/tarot-hero-bg.jpg";
 import cardBackImg from "@/assets/card-back.png";
 import { type LocaleConfig, type Locale, getCardDisplayName, getCardDirectionLabel } from "@/config/locales";
@@ -87,7 +89,7 @@ const seoData: Record<Locale, { title: string; description: string }> = {
   },
   jp: {
     title: "占いリーディング — タロット＋占星術の総合鑑定",
-    description: "タロットと西洋占星術を組み合わせた占いリーディング。あなたの心に寄り添う優しい鑑定をお届けします。",
+    description: "タロットと西洋占星術을 組み合わせた占いリーディング。あなたの心に寄り添う優しい鑑定をお届けします。",
   },
   us: {
     title: "Spiritual Reading — Tarot + Astrology Cosmic Guidance",
@@ -122,6 +124,9 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
   const [astroResult, setAstroResult] = useState<AstrologyResult | null>(null);
   const [ziweiResult, setZiweiResult] = useState<ZiWeiResult | null>(null);
   const [aiReading, setAiReading] = useState<any>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [purchasedGrade, setPurchasedGrade] = useState<string>("C");
+  const [isPolling, setIsPolling] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedQuestionType, setSelectedQuestionType] = useState<string | null>(null);
 
@@ -160,7 +165,6 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
       setStep("select");
     } catch (err) {
       console.error("Birth analysis error:", err);
-      // Still proceed to card selection even if analysis fails
       setBirthInfo(info);
       setStep("select");
     }
@@ -194,7 +198,7 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
     }
 
     try {
-      const { error: dbError } = await supabase
+      const { data, error: dbError } = await supabase
         .from("reading_sessions")
         .insert({
           question, question_type: questionType, memo: memo || null,
@@ -204,11 +208,16 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
           saju_data: sajuDataForDB as any, status: "pending",
           user_id: user?.id || null,
           user_name: birthInfo?.name || null,
-        });
+          locale: config.locale,
+        }).select('id');
 
       if (dbError) throw dbError;
 
+      const newSessionId = (data as any)[0]?.id;
+      if (newSessionId) setSessionId(newSessionId);
+
       setStep("result");
+      setIsPolling(true);
     } catch (err: any) {
       console.error("Submit error:", err);
       setError(err.message || "Error occurred");
@@ -224,20 +233,61 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
     setAiReading(null);
     setError(null);
     setSelectedQuestionType(null);
+    setSessionId(null);
+    setPurchasedGrade("C");
+    setIsPolling(false);
     const shuffled = [...tarotCards];
     for (let i = shuffled.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
     setDeck(shuffled.map((card) => makeDeckCard(card, false, false, false)));
-    // 출생정보가 이미 있으면 질문 단계로, 출생정보 입력은 생략
     setStep("question");
+  };
+
+  useEffect(() => {
+    let pollTimer: NodeJS.Timeout;
+    if (isPolling && sessionId) {
+      const poll = async () => {
+        const { data } = await supabase
+          .from("reading_sessions")
+          .select("ai_reading, status, purchased_grade")
+          .eq("id", sessionId)
+          .single();
+
+        if (data?.status === "completed" && data.ai_reading) {
+          setAiReading(data.ai_reading);
+          setPurchasedGrade(data.purchased_grade || "C");
+          setIsPolling(false);
+        } else if (data?.status === "error") {
+          setError("AI 분석 중 오류가 발생했습니다.");
+          setIsPolling(false);
+        } else {
+          pollTimer = setTimeout(poll, 3000);
+        }
+      };
+      poll();
+    }
+    return () => clearTimeout(pollTimer);
+  }, [isPolling, sessionId]);
+
+  const { purchaseGrade } = useAuth();
+
+  const handleUpgrade = async (targetGrade: string) => {
+    if (!sessionId) return;
+    const res = await purchaseGrade(sessionId, targetGrade);
+    if (res.success) {
+      toast.success(`${targetGrade}등급으로 업그레이드되었습니다.`);
+      setPurchasedGrade(targetGrade);
+      await supabase.from("reading_sessions").update({ purchased_grade: targetGrade }).eq("id", sessionId);
+    } else {
+      toast.error(res.error || "업그레이드 실패");
+    }
   };
 
   return (
     <div className={`relative min-h-screen bg-background ${config.themeClass}`}
       style={{ fontFamily: config.bodyFont }}>
-      {/* Background: Cosmic for US, standard for others */}
       {config.locale === "us" ? (
         <CosmicBackground />
       ) : (
@@ -253,11 +303,9 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
       <div className="relative z-10">
         <UserHeader locale={config.locale} />
         <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
-          {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
             className="mb-12 text-center"
           >
             <div className="animate-float mb-4 text-4xl">{config.locale === "us" ? "✦" : "☽"}</div>
@@ -274,7 +322,6 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
             </p>
             <div className={`mx-auto mt-6 h-px w-32 bg-gradient-to-r ${config.locale === "us" ? "from-transparent via-purple-400/40 to-transparent" : "from-transparent via-gold/40 to-transparent"}`} />
 
-            {/* Step indicator */}
             <div className="mt-6 flex items-center justify-center gap-2">
               {config.stepLabels.map((label, i) => {
                 const stepOrder = ["question", "birthInfo", "select", "result"];
@@ -301,14 +348,12 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
           </motion.div>
 
           <AnimatePresence mode="wait">
-            {/* Step 1: Question */}
             {step === "question" && (
               <motion.div
                 key="question"
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.5 }}
               >
                 <Card className="mx-auto max-w-lg border-border/50 bg-card/80 backdrop-blur-xl animate-pulse-glow">
                   <CardContent className="p-6 sm:p-8">
@@ -322,7 +367,6 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                         {config.questionSubtitle}
                       </p>
                     </div>
-
                     <div className="space-y-4">
                       <Input
                         value={question}
@@ -338,8 +382,8 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                       />
                       <Button
                         className={`w-full rounded-xl font-medium shadow-lg transition-shadow ${config.locale === "us"
-                            ? "bg-gradient-to-r from-purple-600 to-indigo-500 text-white shadow-purple-500/20 hover:shadow-purple-500/40"
-                            : "bg-gradient-to-r from-primary to-gold text-primary-foreground shadow-primary/20 hover:shadow-primary/40"
+                            ? "bg-gradient-to-r from-purple-600 to-indigo-500 text-white shadow-purple-500/20"
+                            : "bg-gradient-to-r from-primary to-gold text-primary-foreground shadow-primary/20"
                           }`}
                         onClick={() => setStep(birthInfo ? "select" : "birthInfo")}
                         disabled={!question.trim()}
@@ -353,7 +397,6 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
               </motion.div>
             )}
 
-            {/* Step 2: Birth Info */}
             {step === "birthInfo" && (
               <LocalizedBirthInfoForm
                 key="birthInfo"
@@ -363,16 +406,13 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
               />
             )}
 
-            {/* Step 3: Card Selection */}
             {step === "select" && (
               <motion.div
                 key="select"
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.5 }}
               >
-                {/* Engine summary (only for KR) */}
                 {config.locale === "kr" && sajuResult && (
                   <Card className="mb-6 border-border/50 bg-card/80 backdrop-blur-xl">
                     <CardContent className="p-4">
@@ -388,22 +428,12 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                         <span>일간: {sajuResult.ilgan}({sajuResult.ilganElement})</span>
                         <span>•</span>
                         <span>용신: {sajuResult.yongsin}</span>
-                        <span>•</span>
-                        <span>
-                          {sajuResult?.yearPillar?.cheongan || ""}{sajuResult?.yearPillar?.jiji || ""} /
-                          {sajuResult?.monthPillar?.cheongan || ""}{sajuResult?.monthPillar?.jiji || ""} /
-                          {sajuResult?.dayPillar?.cheongan || ""}{sajuResult?.dayPillar?.jiji || ""} /
-                          {sajuResult?.hourPillar?.cheongan || ""}{sajuResult?.hourPillar?.jiji || ""}
-                        </span>
                       </div>
                     </CardContent>
                   </Card>
                 )}
 
                 <div className="mb-6 text-center">
-                  <p className="text-sm text-muted-foreground">
-                    {config.locale === "kr" ? "카드를 섞었습니다." : config.locale === "jp" ? "カードをシャッフルしました。" : "The cards have been shuffled."}
-                  </p>
                   <h2 className="mt-1 text-2xl font-semibold text-foreground"
                     style={{ fontFamily: config.displayFont }}>
                     {config.locale === "kr" ? (<>마음이 끌리는<br />카드 5장을 선택하세요</>) : config.locale === "jp" ? (<>心が惹かれるカードを<br />5枚選んでください</>) : (<>Choose 5 cards<br />that call to you</>)}
@@ -416,18 +446,11 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                           ? ["現状", "課題", "原因", "助言", "結果"]
                           : ["Present", "Challenge", "Cause", "Advice", "Outcome"];
                       return (
-                        <div
-                          key={i}
-                          className={`flex flex-col items-center gap-1`}
-                        >
-                          <div
-                            className={`flex h-10 w-10 items-center justify-center rounded-full border-2 text-sm transition-all ${i < picked.length
-                                ? config.locale === "us"
-                                  ? "border-purple-400 bg-purple-500/20 text-purple-300 glow-cosmic"
-                                  : "border-gold bg-gold/20 text-gold glow-gold"
+                        <div key={i} className="flex flex-col items-center gap-1">
+                          <div className={`flex h-10 w-10 items-center justify-center rounded-full border-2 text-sm transition-all ${i < picked.length
+                                ? config.locale === "us" ? "border-purple-400 bg-purple-500/20 text-purple-300 glow-cosmic" : "border-gold bg-gold/20 text-gold glow-gold"
                                 : "border-border/30 text-muted-foreground/30"
                               }`}
-                            style={{ fontFamily: config.displayFont }}
                           >
                             {i < picked.length ? getCardDisplayName(picked[i], config.locale)[0] : i + 1}
                           </div>
@@ -440,215 +463,69 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                   </div>
                 </div>
 
-                {picked.length > 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mb-6"
-                  >
-                    <div className="mx-auto max-w-md space-y-3">
-                      <div className="flex flex-wrap items-center justify-center gap-2">
-                        {picked.map((card, idx) => {
-                          const dir = getCardDirectionLabel(card.isReversed, config.locale);
-                          return (
-                            <Badge
-                              key={card.id}
-                              className={`rounded-full border px-3 py-1.5 text-foreground ${config.locale === "us"
-                                  ? "border-purple-400/30 bg-purple-500/10"
-                                  : "border-gold/30 bg-gold/10"
-                                }`}
-                            >
-                              {idx + 1}. {getCardDisplayName(card, config.locale)}
-                              <span className={`ml-1 ${config.locale === "us" ? "text-purple-300" : "text-gold"}`}>
-                                ({dir.short})
-                              </span>
-                            </Badge>
-                          );
-                        })}
-                      </div>
-
-                      {picked.length === 5 && (
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.9 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                        >
-                          <Button
-                            className={`w-full rounded-xl font-medium shadow-lg ${config.locale === "us"
-                                ? "bg-gradient-to-r from-purple-600 to-indigo-500 text-white shadow-purple-500/20"
-                                : "bg-gradient-to-r from-primary to-gold text-primary-foreground shadow-primary/20"
-                              }`}
-                            onClick={handleSubmit}
-                          >
-                            <CheckCircle2 className="mr-2 h-4 w-4" />
-                            {config.submitButton}
-                          </Button>
-                        </motion.div>
-                      )}
-                    </div>
-                  </motion.div>
-                )}
-
-                <div className="grid grid-cols-6 gap-1.5 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-13">
+                <div className="grid grid-cols-6 gap-1.5 sm:grid-cols-8 md:grid-cols-10">
                   {deck.map((card) => {
                     const isSelected = picked.some((p) => p.id === card.id);
                     const isDisabled = card.isPicked || picked.length >= 5;
-                    const dir = getCardDirectionLabel(card.isReversed, config.locale);
                     const isUS = config.locale === "us";
                     return (
                       <motion.button
-                        whileHover={!isDisabled ? { y: isUS ? -10 : -6, scale: isUS ? 1.08 : 1.05, rotateY: isUS ? 5 : 0 } : {}}
-                        whileTap={!isDisabled ? { scale: 0.92 } : {}}
                         key={card.id}
                         onClick={() => selectCard(card)}
                         disabled={isDisabled}
                         className={`group relative aspect-[0.65] overflow-hidden rounded-lg border transition-all duration-300 ${isSelected
-                            ? isUS
-                              ? "border-purple-400/60 glow-cosmic animate-card-mystical"
-                              : "border-gold/60 glow-gold-strong"
-                            : isDisabled
-                              ? "border-border/20 opacity-40 cursor-not-allowed"
-                              : isUS
-                                ? "border-purple-500/20 hover:border-purple-400/40 cursor-pointer hover:shadow-[0_0_25px_-5px_hsl(270_60%_60%/0.3)]"
-                                : "border-border/30 hover:border-gold/30 cursor-pointer"
+                            ? isUS ? "border-purple-400/60 glow-cosmic" : "border-gold/60 glow-gold-strong"
+                            : isDisabled ? "border-border/20 opacity-40" : isUS ? "border-purple-500/20 hover:border-purple-400/40" : "border-border/30 hover:border-gold/30"
                           }`}
                       >
                         {isSelected ? (
-                          <motion.div
-                            initial={{ rotateY: 180, opacity: 0 }}
-                            animate={{ rotateY: 0, opacity: 1 }}
-                            transition={{ duration: 0.6, ease: "easeOut" }}
-                            className={`flex h-full flex-col items-center justify-center p-1.5 ${isUS
-                                ? "bg-gradient-to-b from-purple-500/15 via-indigo-500/10 to-blue-500/15"
-                                : "bg-gradient-to-b from-gold/10 to-accent/10"
-                              }`}
-                          >
-                            <span className={`text-lg font-bold ${isUS ? "text-purple-300" : "text-gold"}`}
-                              style={{ fontFamily: config.displayFont }}>
-                              {getCardDisplayName(card, config.locale)[0]}
-                            </span>
-                            <span className={`mt-0.5 text-[8px] leading-tight ${isUS ? "text-purple-200" : "text-gold-light"}`}>
-                              {getCardDisplayName(card, config.locale)}
-                            </span>
-                            <span className={`text-[7px] ${isUS ? "text-purple-400" : "text-gold/60"}`}>
-                              ●{dir.short}
-                            </span>
-                          </motion.div>
+                          <div className={`flex h-full flex-col items-center justify-center p-1.5 ${isUS ? "bg-purple-500/15" : "bg-gold/10"}`}>
+                            <span className={`text-lg font-bold ${isUS ? "text-purple-300" : "text-gold"}`}>{getCardDisplayName(card, config.locale)[0]}</span>
+                          </div>
                         ) : (
-                          <img
-                            src={cardBackImg}
-                            alt="tarot card"
-                            className={`h-full w-full object-cover transition-all duration-300 ${isUS
-                                ? "opacity-60 group-hover:opacity-100 group-hover:brightness-110"
-                                : "opacity-70 group-hover:opacity-100"
-                              }`}
-                          />
+                          <img src={cardBackImg} alt="" className="h-full w-full object-cover opacity-60" />
                         )}
                       </motion.button>
                     );
                   })}
                 </div>
+                {picked.length === 5 && (
+                  <Button className="mt-8 w-full rounded-xl bg-primary text-primary-foreground" onClick={handleSubmit}>
+                    {config.submitButton}
+                  </Button>
+                )}
               </motion.div>
             )}
 
-            {/* Step 4: Completion */}
             {(step === "loading" || step === "result") && (
               <motion.div key="result">
                 {error ? (
                   <Card className="mx-auto max-w-lg border-destructive/30 bg-card/80 backdrop-blur-xl">
                     <CardContent className="py-10 px-8 text-center">
-                      <div className="mb-4 text-3xl">⚠️</div>
-                      <h2 className="text-xl font-semibold text-foreground"
-                        style={{ fontFamily: config.displayFont }}>
-                        {config.errorTitle}
-                      </h2>
+                      <h2 className="text-xl font-semibold text-foreground">{config.errorTitle}</h2>
                       <p className="mt-3 text-sm text-muted-foreground">{error}</p>
-                      <Button
-                        variant="secondary"
-                        className="mt-6 rounded-full"
-                        onClick={resetAll}
-                      >
-                        {config.resetButton}
-                      </Button>
+                      <Button variant="secondary" className="mt-6 rounded-full" onClick={resetAll}>{config.resetButton}</Button>
                     </CardContent>
                   </Card>
-                ) : step === "loading" ? (
-                  <Card className={`mx-auto max-w-lg border-border/50 bg-card/80 backdrop-blur-xl animate-pulse-glow`}>
+                ) : step === "loading" || (step === "result" && !aiReading) ? (
+                  <Card className="mx-auto max-w-lg border-border/50 bg-card/80 backdrop-blur-xl">
                     <CardContent className="py-16 px-8 text-center">
-                      <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-t-transparent ${config.locale === 'us' ? 'border-purple-400' : 'border-gold'}" />
-                      <h2 className="text-xl font-semibold text-foreground"
-                        style={{ fontFamily: config.displayFont }}>
-                        {config.loadingTitle}
-                      </h2>
-                      <p className="mt-3 text-sm text-muted-foreground">
-                        {config.loadingSubtitle}
-                      </p>
+                      <div className={`mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-t-transparent ${config.locale === 'us' ? 'border-purple-400' : 'border-gold'}`} />
+                      <h2 className="text-xl font-semibold text-foreground">{aiReading ? config.completionTitle : config.loadingTitle}</h2>
+                      <p className="mt-3 text-sm text-muted-foreground">{aiReading ? config.completionMessage : config.loadingSubtitle}</p>
                     </CardContent>
                   </Card>
                 ) : (
-                  <motion.div
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6 }}
-                    className="mx-auto max-w-lg"
-                  >
-                    <Card className={`border-border/50 bg-card/80 backdrop-blur-xl ${config.locale === "us" ? "glow-cosmic" : "glow-gold"
-                      }`}>
-                      <CardContent className="py-12 px-8 text-center">
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          transition={{ type: "spring", delay: 0.2 }}
-                          className="mb-6 text-5xl"
-                        >
-                          ✦
-                        </motion.div>
-                        <h2 className="text-xl font-semibold text-foreground"
-                          style={{ fontFamily: config.displayFont }}>
-                          {birthInfo?.name
-                            ? config.locale === "kr"
-                              ? `${birthInfo.name}님의 리딩이 접수되었습니다`
-                              : config.locale === "jp"
-                                ? `${birthInfo.name}様のリーディングを受け付けました`
-                                : `${birthInfo.name}'s Reading Submitted`
-                            : config.completionTitle}
-                        </h2>
-                        <p className="mt-4 text-sm leading-relaxed text-muted-foreground whitespace-pre-line">
-                          {config.completionMessage}
-                        </p>
-                        <div className={`mx-auto my-6 h-px w-32 bg-gradient-to-r from-transparent ${config.locale === "us" ? "via-purple-400/40" : "via-gold/40"
-                          } to-transparent`} />
-                        <p className="text-xs leading-relaxed text-muted-foreground/70 whitespace-pre-line">
-                          {config.completionSubMessage}
-                        </p>
-
-                        {/* Show selected cards summary */}
-                        <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-                          {picked.map((card, idx) => {
-                            const dir = getCardDirectionLabel(card.isReversed, config.locale);
-                            return (
-                              <Badge
-                                key={card.id}
-                                variant="outline"
-                                className={`rounded-full px-3 py-1 text-xs ${config.locale === "us"
-                                    ? "border-purple-400/30 text-purple-300"
-                                    : "border-gold/30 text-gold"
-                                  }`}
-                              >
-                                {idx + 1}. {getCardDisplayName(card, config.locale)} ({dir.short})
-                              </Badge>
-                            );
-                          })}
-                        </div>
-
-                        <Button
-                          variant="secondary"
-                          className="mt-8 rounded-full border border-border/50 bg-secondary/50 backdrop-blur"
-                          onClick={resetAll}
-                        >
-                          {config.resetButton}
-                        </Button>
-                      </CardContent>
-                    </Card>
+                  <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-2xl">
+                    <LocalizedReadingResult
+                      config={config}
+                      reading={aiReading}
+                      isLoading={false}
+                      onReset={resetAll}
+                      hasBirthInfo={!!birthInfo}
+                      onUpgrade={handleUpgrade}
+                      sessionId={sessionId!}
+                    />
                   </motion.div>
                 )}
               </motion.div>

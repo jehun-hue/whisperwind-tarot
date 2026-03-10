@@ -1,10 +1,34 @@
-// BUILD FORCE v5 - sajuCalc 새 파일
+// sajuCalc.ts
 import {
   calculateSaju,
   lunarToSolar,
   InvalidDateError,
   OutOfRangeError
 } from '@fullstackfamily/manseryeok';
+
+// 한국 서머타임 보정 (1987~1988년만 해당)
+function applyKoreaDST(year: number, month: number, day: number, hour: number, minute: number): { hour: number; minute: number } {
+  const dstPeriods: Record<number, { start: [number, number]; end: [number, number] }> = {
+    1987: { start: [5, 10], end: [10, 11] },
+    1988: { start: [5, 8], end: [10, 9] },
+  };
+
+  const dst = dstPeriods[year];
+  if (!dst) return { hour, minute };
+
+  const birthMMDD = month * 100 + day;
+  const startMMDD = dst.start[0] * 100 + dst.start[1];
+  const endMMDD = dst.end[0] * 100 + dst.end[1];
+
+  if (birthMMDD >= startMMDD && birthMMDD <= endMMDD) {
+    // 서머타임 기간: 시계가 1시간 앞당겨져 있으므로, 실제 태양시는 -60분
+    let totalMinutes = hour * 60 + minute - 60;
+    if (totalMinutes < 0) totalMinutes += 1440;
+    return { hour: Math.floor(totalMinutes / 60), minute: totalMinutes % 60 };
+  }
+
+  return { hour, minute };
+}
 
 export function getManseryeok(
   year: number,
@@ -15,8 +39,6 @@ export function getManseryeok(
   isLunar: boolean = false,
   isLeapMonth: boolean = false
 ) {
-  // build-cache-bust: 2026-03-10T09:30
-  console.log('야자시 체크: getManseryeok 진입', { year, month, day, hour, minute, isLunar, isLeapMonth });
   try {
     let solarYear = year;
     let solarMonth = month;
@@ -27,7 +49,6 @@ export function getManseryeok(
       solarYear = converted.solar.year;
       solarMonth = converted.solar.month;
       solarDay = converted.solar.day;
-      console.log(`음력→양력 변환: ${year}-${month}-${day} → ${solarYear}-${solarMonth}-${solarDay}`);
     }
 
     const originalHour = Number(hour);
@@ -35,8 +56,7 @@ export function getManseryeok(
     let calcHour = originalHour;
     let calcMinute = originalMinute;
 
-    console.log('[야자시 판단] originalHour:', originalHour, '→', originalHour >= 23 ? '야자시 YES' : '야자시 NO');
-
+    // 1. 야자시 보정
     if (originalHour >= 23) {
       const nextDay = new Date(solarYear, solarMonth - 1, solarDay + 1);
       solarYear = nextDay.getFullYear();
@@ -44,27 +64,24 @@ export function getManseryeok(
       solarDay = nextDay.getDate();
       calcHour = 0;
       calcMinute = originalMinute;
-      console.log(`[야자시 보정 완료] ${solarYear}-${solarMonth}-${solarDay}, calcHour=0`);
     }
 
-    // 표시용 경도 보정 계산 (사주 계산에는 미반영)
-    const longitudeOffset = (126.98 - 135) * 4; // 약 -32분
+    // 2. 한국 서머타임 보정 (1987~1988)
+    const dstCorrected = applyKoreaDST(solarYear, solarMonth, solarDay, calcHour, calcMinute);
+    calcHour = dstCorrected.hour;
+    calcMinute = dstCorrected.minute;
+
+    // 표시용 경도 보정 계산 (약 -32분)
+    const longitudeOffset = (126.98 - 135) * 4; 
     const rawTotalMinutes = calcHour * 60 + calcMinute + longitudeOffset;
     const correctedHour = Math.floor(rawTotalMinutes / 60);
     const correctedMin = Math.round(rawTotalMinutes % 60);
     const correctedTimeStr = `${correctedHour}:${String(Math.abs(correctedMin)).padStart(2, '0')}`;
 
-    // 사주 계산: 경도 보정 없이 원래 입력 시간 사용 (시주 지지 보존)
+    // 3. 사주 계산
     const saju = calculateSaju(solarYear, solarMonth, solarDay, calcHour, calcMinute, {
       longitude: 126.98,
       applyTimeCorrection: false
-    });
-
-    console.log('[sajuCalc 결과]', {
-      yearPillar: saju.yearPillarHanja,
-      monthPillar: saju.monthPillarHanja,
-      dayPillar: saju.dayPillarHanja,
-      hourPillar: saju.hourPillarHanja
     });
 
     return {
@@ -93,7 +110,7 @@ export function getManseryeok(
         full: saju.hourPillar || ''
       },
       isTimeCorrected: true,
-      correctedTime: correctedTimeStr, // 표시용만 (사주 계산 미반영)
+      correctedTime: correctedTimeStr,
       originalInput: { year, month, day, hour: originalHour, minute: originalMinute, isLunar, isLeapMonth },
       solarDate: { year: solarYear, month: solarMonth, day: solarDay }
     };

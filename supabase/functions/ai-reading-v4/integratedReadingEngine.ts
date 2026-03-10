@@ -229,19 +229,71 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     `
     : "- 대운 정보: 데이터 부족으로 생략";
 
+  // Step 2-B: Mapping Saju Data for Prompt
+  const dbSaju = input.sajuData;
+  const sajuDisplay = {
+    fourPillars: sajuRaw?.year ? 
+      `년주 ${sajuRaw.year.stem}${sajuRaw.year.branch}, 월주 ${sajuRaw.month.stem}${sajuRaw.month.branch}, 일주 ${sajuRaw.day.stem}${sajuRaw.day.branch}, 시주 ${sajuRaw.hour.stem}${sajuRaw.hour.branch}` :
+      (dbSaju?.yearPillar ? `년주 ${dbSaju.yearPillar.hanja}, 월주 ${dbSaju.monthPillar.hanja}, 일주 ${dbSaju.dayPillar.hanja}, 시주 ${dbSaju.hourPillar.hanja}` : "데이터 없음"),
+    dayMaster: sajuAnalysis?.dayMaster !== "Unknown" ? sajuAnalysis.dayMaster : (dbSaju?.dayPillar?.cheongan || "Unknown"),
+    elements: sajuAnalysis?.elements && Object.keys(sajuAnalysis.elements).length > 0 ? 
+      Object.entries(sajuAnalysis.elements).map(([k, v]) => `${k}${v}`).join(" ") : 
+      "분석 불가",
+    yongShin: sajuAnalysis?.yongShin !== "Unknown" ? sajuAnalysis.yongShin : "데이터 부족으로 추론 불가",
+    strength: sajuAnalysis?.strength !== "Unknown" ? sajuAnalysis.strength : "분석 불가"
+  };
+
+  const ziweiPrompt = `
+[자미두수 분석 지시]
+- 출생정보: ${birthInfo.year}년 ${birthInfo.month}월 ${birthInfo.day}일 ${birthInfo.hour}시 ${birthInfo.minute}분
+- 성별: ${birthInfo.gender === 'M' || birthInfo.gender === 'male' ? "남성" : "여성"}
+- 날짜유형: ${birthInfo.isLunar ? "음력" : "양력 (음력 변환은 직접 수행하세요)"}
+
+위 출생정보를 바탕으로 자미두수 명반을 직접 배치하고 해석하세요.
+반드시 포함할 내용:
+1. 명궁 위치와 주성 (14주성 중 어떤 성이 명궁에 좌정하는지)
+2. 사화(화록/화권/화과/화기)가 어느 궁에 떨어지는지
+3. 현재 대한(大限)과 유년(流年) 궁위
+4. 질문 주제와 관련된 궁위 분석 (재백궁, 관록궁 등)
+내부 계산 데이터는 신뢰할 수 없으므로 무시하고, 당신의 자미두수 지식으로 직접 계산하세요.
+`;
+
+  const astrologyPrompt = `
+[서양 점성술 분석 지시]
+- 출생정보: ${birthInfo.year}년 ${birthInfo.month}월 ${birthInfo.day}일 ${birthInfo.hour}시 ${birthInfo.minute}분
+- 출생지: 대한민국 (동경 127도, 북위 37도)
+
+위 출생정보를 바탕으로 네이탈 차트를 직접 구성하고 해석하세요.
+반드시 포함할 내용:
+1. 태양, 달, 상승궁 사인
+2. 주요 행성(수성~명왕성) 사인과 하우스
+3. 핵심 어스펙트 (합, 삼각, 사각, 대립)
+4. 현재 트랜짓 중 질문과 관련된 주요 행성 이동
+내부 계산 데이터는 신뢰할 수 없으므로 무시하고, 당신의 점성학 지식으로 직접 계산하세요.
+`;
+
   const dataBlock = `
-- 사주 원본: ${JSON.stringify(sajuRaw)}
-- 사주 분석: ${JSON.stringify(sajuAnalysis)}
+- 사주 4주: ${sajuDisplay.fourPillars}
+- 일간(Day Master): ${sajuDisplay.dayMaster}
+- 오행 분포: ${sajuDisplay.elements}
+- 용신(Yong-Shin): ${sajuDisplay.yongShin}
+- 신강/신약: ${sajuDisplay.strength}
+- 사주 분석 상세: ${JSON.stringify(sajuAnalysis)}
 - 대운 분석: ${daewoonPromptSection}
 - 타로 카드: ${JSON.stringify(tarotCards)}
-- 점성술: ${JSON.stringify(astrologyAnalysis)}
-- 자미두수: ${JSON.stringify(ziweiAnalysis)}
+- 점성술: ${astrologyPrompt}
+- 자미두수: ${ziweiPrompt}
 - 수비학: ${JSON.stringify(numerologyResult)}
 - 합의도: consensus_score=${consensusResult.consensus_score.toFixed(3)}, prediction_strength=${consensusResult.prediction_strength.toFixed(3)}
 - 시간축 예측: ${JSON.stringify(temporalResult)}
 - 검증 상태: ${JSON.stringify(validationResult)}
 - 질문: ${input.question}
 - 질문 유형: ${questionType}
+
+[수렴 분석 지침]
+수렴 분석 시, 데이터 부족이나 계산 오류로 실질적 분석이 불가능한 체계는 수렴/분기 카운트에서 제외하세요. 
+예를 들어 사주 데이터가 없어 분석이 불가하면 '4개 체계 중 N개 수렴'으로 표기하고, '사주: 데이터 미제공으로 제외'라고 별도 표기하세요.
+분석 불가 체계를 분기(divergent)로 분류하지 마세요.
 `;
 
   const modelInput = buildLocalizedNarrativePrompt(input.locale || 'kr', dataBlock);

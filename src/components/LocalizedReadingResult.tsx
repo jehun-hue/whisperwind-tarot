@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import type { LocaleConfig } from "@/config/locales";
+import ReadingResultV3, { type V3ReadingData } from "./ReadingResultV3";
 
 interface AIReadingResult {
   conclusion: string;
@@ -40,6 +41,8 @@ interface LocalizedReadingResultProps {
   isLoading: boolean;
   onReset: () => void;
   hasBirthInfo: boolean;
+  onUpgrade?: (targetGrade: string) => void;
+  sessionId?: string;
 }
 
 function ScoreBar({ label, score, isUS = false }: { label: string; score: number; isUS?: boolean }) {
@@ -92,7 +95,7 @@ const EXTRA_SECTION_TITLES: Record<string, Record<string, string>> = {
   },
 };
 
-export default function LocalizedReadingResult({ config, reading, isLoading, onReset, hasBirthInfo }: LocalizedReadingResultProps) {
+export default function LocalizedReadingResult({ config, reading, isLoading, onReset, hasBirthInfo, onUpgrade, sessionId }: LocalizedReadingResultProps) {
   if (isLoading) {
     return (
       <motion.div
@@ -118,6 +121,27 @@ export default function LocalizedReadingResult({ config, reading, isLoading, onR
   }
 
   if (!reading) return null;
+
+  // V3 포맷 감지: tarot_reading.waite 또는 convergence.grade 존재 시
+  const isV3Format = reading && (
+    (reading as any).tarot_reading?.waite || 
+    (reading as any).convergence?.grade ||
+    (reading as any).reading_info?.grade
+  );
+
+  if (isV3Format) {
+    // V3 렌더러에 위임
+    return (
+      <ReadingResultV3
+        reading={reading as unknown as V3ReadingData}
+        isLoading={isLoading}
+        onReset={onReset}
+        grade={(reading as any).reading_info?.grade || (reading as any).convergence?.grade}
+        onUpgrade={onUpgrade}
+        sessionId={sessionId}
+      />
+    );
+  }
 
   const extraTitles = EXTRA_SECTION_TITLES[config.locale] || EXTRA_SECTION_TITLES.kr;
 

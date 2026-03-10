@@ -43,7 +43,14 @@ export function getFullSaju(
 ) {
   // 1. Longitude & DST Correction
   let dstOffset = 0;
-  if ((year === 1987 || year === 1988) && month >= 5 && month <= 10) dstOffset = -60;
+  const mmdd = month * 100 + day;
+  if (year === 1987) {
+    // 1987: 5/10 02:00 ~ 10/11 03:00
+    if (mmdd >= 510 && mmdd <= 1011) dstOffset = -60;
+  } else if (year === 1988) {
+    // 1988: 5/8 02:00 ~ 10/9 03:00
+    if (mmdd >= 508 && mmdd <= 1009) dstOffset = -60;
+  }
   
   const solarTimeMinute = minute + (longitude - 135) * 4 + dstOffset;
   const correctedDate = new Date(Date.UTC(year, month - 1, day, hour, 0));

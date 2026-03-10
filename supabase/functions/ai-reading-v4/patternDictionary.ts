@@ -59,18 +59,53 @@ export const PATTERN_DICTIONARY: Record<string, DivinationPattern> = {
 
 export const SYMBOL_MAPPINGS: SymbolMapping[] = [
   // Tarot (Target 1000 items - Representative samples here)
-  { symbol_id: "T016", system: "Tarot", symbol_name: "Tower", linked_patterns: ["P016", "P020"], semantic_values: { life_transition: 1.0, risk: 0.9, stability: -1.0 } },
-  { symbol_id: "T013", system: "Tarot", symbol_name: "Death", linked_patterns: ["P016", "P003"], semantic_values: { life_transition: 0.9, relationship: -0.8, risk: 0.5 } },
+  { symbol_id: "T000", system: "Tarot", symbol_name: "Fool", linked_patterns: ["P017", "P022"], semantic_values: { life_transition: 0.8, opportunity: 0.7, risk: 0.5 } },
+  { symbol_id: "T001", system: "Tarot", symbol_name: "Magician", linked_patterns: ["P006", "P022"], semantic_values: { career: 0.8, opportunity: 0.8, growth: 0.7 } },
+  { symbol_id: "T002", system: "Tarot", symbol_name: "High Priestess", linked_patterns: ["P005", "P018"], semantic_values: { emotion: 0.6, life_transition: 0.5 } },
+  { symbol_id: "T003", system: "Tarot", symbol_name: "Empress", linked_patterns: ["P002", "P012"], semantic_values: { relationship: 0.8, growth: 0.9, finance: 0.7 } },
+  { symbol_id: "T004", system: "Tarot", symbol_name: "Emperor", linked_patterns: ["P009", "P024"], semantic_values: { career: 0.9, stability: 0.9, growth: 0.6 } },
+  { symbol_id: "T006", system: "Tarot", symbol_name: "Lovers", linked_patterns: ["P002", "P004"], semantic_values: { relationship: 1.0, emotion: 0.9, stability: 0.6 } },
+  { symbol_id: "T007", system: "Tarot", symbol_name: "Chariot", linked_patterns: ["P006", "P025"], semantic_values: { career: 0.9, growth: 0.8, conflict: 0.5 } },
+  { symbol_id: "T008", system: "Tarot", symbol_name: "Strength", linked_patterns: ["P009", "P024"], semantic_values: { career: 0.7, stability: 0.9, growth: 0.8 } },
+  { symbol_id: "T009", system: "Tarot", symbol_name: "Hermit", linked_patterns: ["P018", "P008"], semantic_values: { life_transition: 0.6, emotion: 0.5, stability: 0.5 } },
   { symbol_id: "T010", system: "Tarot", symbol_name: "Wheel of Fortune", linked_patterns: ["P022", "P023"], semantic_values: { opportunity: 0.8, life_transition: 0.7 } },
-  { symbol_id: "TC02", system: "Tarot", symbol_name: "Two of Pentacles", linked_patterns: ["P015"], semantic_values: { finance: -0.2, stability: -0.3, risk: 0.5 } },
-  { symbol_id: "TC03", system: "Tarot", symbol_name: "Three of Cups", linked_patterns: ["P002"], semantic_values: { relationship: 0.8, emotion: 0.7 } },
+  { symbol_id: "T011", system: "Tarot", symbol_name: "Justice", linked_patterns: ["P024", "P019"], semantic_values: { stability: 0.8, life_transition: 0.5 } },
+  { symbol_id: "T013", system: "Tarot", symbol_name: "Death", linked_patterns: ["P016", "P003"], semantic_values: { life_transition: 0.9, relationship: -0.8, risk: 0.5 } },
+  { symbol_id: "T014", system: "Tarot", symbol_name: "Temperance", linked_patterns: ["P002", "P024"], semantic_values: { relationship: 0.7, stability: 0.8 } },
+  { symbol_id: "T015", system: "Tarot", symbol_name: "Devil", linked_patterns: ["P020", "P025"], semantic_values: { risk: 0.9, conflict: 0.8, emotion: -0.7 } },
+  { symbol_id: "T016", system: "Tarot", symbol_name: "Tower", linked_patterns: ["P016", "P020"], semantic_values: { life_transition: 1.0, risk: 0.9, stability: -1.0 } },
+  { symbol_id: "T017", system: "Tarot", symbol_name: "Star", linked_patterns: ["P002", "P022"], semantic_values: { relationship: 0.7, opportunity: 0.8, emotion: 0.8 } },
+  { symbol_id: "T018", system: "Tarot", symbol_name: "Moon", linked_patterns: ["P005", "P020"], semantic_values: { relationship: -0.3, emotion: -0.8, risk: 0.7 } },
+  { symbol_id: "T019", system: "Tarot", symbol_name: "Sun", linked_patterns: ["P022", "P023", "P002"], semantic_values: { opportunity: 0.9, growth: 0.9, relationship: 0.8, emotion: 0.9 } },
+  { symbol_id: "T020", system: "Tarot", symbol_name: "Judgement", linked_patterns: ["P016", "P018"], semantic_values: { life_transition: 0.9, growth: 0.7 } },
+  { symbol_id: "T021", system: "Tarot", symbol_name: "World", linked_patterns: ["P024", "P006"], semantic_values: { stability: 1.0, career: 0.8, growth: 0.8 } },
 
-  // Saju
-  { symbol_id: "S001", system: "Saju", symbol_name: "Water deficiency", linked_patterns: ["P005"], semantic_values: { emotion: -0.6, relationship: -0.4 } },
-  { symbol_id: "S002", system: "Saju", symbol_name: "Fire excess", linked_patterns: ["P020", "P025"], semantic_values: { risk: 0.7, emotion: -0.5, conflict: 0.6 } },
-  { symbol_id: "S003", system: "Saju", symbol_name: "Metal strong", linked_patterns: ["P009", "P024"], semantic_values: { career: 0.7, stability: 0.8 } },
-  { symbol_id: "S004", system: "Saju", symbol_name: "Wealth star strong", linked_patterns: ["P011", "P012"], semantic_values: { finance: 0.9, opportunity: 0.7 } },
-  { symbol_id: "S005", system: "Saju", symbol_name: "Day master weak", linked_patterns: ["P005", "P015"], semantic_values: { stability: -0.6, risk: 0.5 } },
+  // Saju (Korean Tags)
+  { symbol_id: "S_MOK_EX", system: "Saju", symbol_name: "목 과다", linked_patterns: ["P022", "P026"], semantic_values: { growth: 0.8, opportunity: 0.6 } },
+  { symbol_id: "S_MOK_DF", system: "Saju", symbol_name: "목 부족", linked_patterns: ["P008"], semantic_values: { growth: -0.5, stability: -0.3 } },
+  { symbol_id: "S_HWA_EX", system: "Saju", symbol_name: "화 과다", linked_patterns: ["P020", "P025"], semantic_values: { risk: 0.7, emotion: -0.5, conflict: 0.6 } },
+  { symbol_id: "S_HWA_DF", system: "Saju", symbol_name: "화 부족", linked_patterns: ["P008"], semantic_values: { emotion: -0.5, growth: -0.4 } },
+  { symbol_id: "S_TO_EX", system: "Saju", symbol_name: "토 과다", linked_patterns: ["P024", "P008"], semantic_values: { stability: 0.9, growth: -0.3 } },
+  { symbol_id: "S_TO_DF", system: "Saju", symbol_name: "토 부족", linked_patterns: ["P015"], semantic_values: { stability: -0.6, risk: 0.5 } },
+  { symbol_id: "S_KEUM_EX", system: "Saju", symbol_name: "금 과다", linked_patterns: ["P009", "P025"], semantic_values: { career: 0.8, conflict: 0.5, stability: 0.7 } },
+  { symbol_id: "S_KEUM_DF", system: "Saju", symbol_name: "금 부족", linked_patterns: ["P005"], semantic_values: { stability: -0.4, career: -0.3 } },
+  { symbol_id: "S_SU_EX", system: "Saju", symbol_name: "수 과다", linked_patterns: ["P005", "P018"], semantic_values: { emotion: 0.7, life_transition: 0.6, stability: -0.4 } },
+  { symbol_id: "S_SU_DF", system: "Saju", symbol_name: "수 부족", linked_patterns: ["P005"], semantic_values: { emotion: -0.6, relationship: -0.4 } },
+
+  { symbol_id: "S_STR_H", system: "Saju", symbol_name: "극신강", linked_patterns: ["P009", "P025"], semantic_values: { career: 0.9, growth: 0.7, conflict: 0.6 } },
+  { symbol_id: "S_STR_MH", system: "Saju", symbol_name: "중신강", linked_patterns: ["P009", "P024"], semantic_values: { career: 0.7, stability: 0.8 } },
+  { symbol_id: "S_STR_ML", system: "Saju", symbol_name: "중신약", linked_patterns: ["P005", "P019"], semantic_values: { stability: 0.5, risk: 0.3 } },
+  { symbol_id: "S_STR_L", system: "Saju", symbol_name: "극신약", linked_patterns: ["P015", "P020"], semantic_values: { stability: -0.7, risk: 0.8, emotion: -0.6 } },
+
+  { symbol_id: "S_DM_MOK", system: "Saju", symbol_name: "목 일간", linked_patterns: ["P026"], semantic_values: { growth: 0.7, emotion: 0.5 } },
+  { symbol_id: "S_DM_HWA", system: "Saju", symbol_name: "화 일간", linked_patterns: ["P022"], semantic_values: { opportunity: 0.7, emotion: 0.6 } },
+  { symbol_id: "S_DM_TO", system: "Saju", symbol_name: "토 일간", linked_patterns: ["P024"], semantic_values: { stability: 0.8 } },
+  { symbol_id: "S_DM_KEUM", system: "Saju", symbol_name: "금 일간", linked_patterns: ["P009"], semantic_values: { career: 0.7, growth: 0.5 } },
+  { symbol_id: "S_DM_SU", system: "Saju", symbol_name: "수 일간", linked_patterns: ["P018"], semantic_values: { life_transition: 0.6, emotion: 0.7 } },
+
+  { symbol_id: "S_CHUNG", system: "Saju", symbol_name: "충 존재", linked_patterns: ["P020", "P016"], semantic_values: { risk: 0.8, life_transition: 0.9, stability: -0.8 } },
+  { symbol_id: "S_HAP", system: "Saju", symbol_name: "합 존재", linked_patterns: ["P024", "P004"], semantic_values: { stability: 0.9, relationship: 0.8 } },
+  { symbol_id: "S_HYUNG", system: "Saju", symbol_name: "형살 존재", linked_patterns: ["P025", "P020"], semantic_values: { conflict: 0.9, risk: 0.7 } },
 
   // Astrology
   { symbol_id: "A001", system: "Astrology", symbol_name: "Pluto Transit", linked_patterns: ["P018", "P026"], semantic_values: { life_transition: 0.9, growth: 0.8 } },
@@ -78,13 +113,7 @@ export const SYMBOL_MAPPINGS: SymbolMapping[] = [
   { symbol_id: "A003", system: "Astrology", symbol_name: "Jupiter Transit", linked_patterns: ["P022", "P023"], semantic_values: { opportunity: 0.9, growth: 0.7 } },
   { symbol_id: "A004", system: "Astrology", symbol_name: "Mars Square", linked_patterns: ["P025", "P020"], semantic_values: { conflict: 0.8, risk: 0.7 } },
 
-  // Ziwei
-  { symbol_id: "Z001", system: "Ziwei", symbol_name: "Po-Jun (破軍)", linked_patterns: ["P016", "P020"], semantic_values: { life_transition: 0.9, risk: 0.8 } },
-  { symbol_id: "Z002", system: "Ziwei", symbol_name: "Zi-Wei (紫微)", linked_patterns: ["P009"], semantic_values: { career: 0.9, growth: 0.7 } },
-  { symbol_id: "Z003", system: "Ziwei", symbol_name: "Tian-Fu (天府)", linked_patterns: ["P024"], semantic_values: { stability: 0.9, finance: 0.8 } },
-  { symbol_id: "Z004", system: "Ziwei", symbol_name: "Qi-Sha (七殺)", linked_patterns: ["P025", "P020"], semantic_values: { risk: 0.9, conflict: 0.8 } },
-
-  // Numerology (Life Path, Destiny, Personal Year)
+  // Numerology
   { symbol_id: "N001", system: "Numerology", symbol_name: "Life Path 1", linked_patterns: ["P009", "P006"], semantic_values: { career: 0.8, growth: 0.7 } },
   { symbol_id: "N005", system: "Numerology", symbol_name: "Personal Year 5", linked_patterns: ["P017", "P022"], semantic_values: { life_transition: 0.8, opportunity: 0.7 } },
   { symbol_id: "N009", system: "Numerology", symbol_name: "Personal Year 9", linked_patterns: ["P016", "P003"], semantic_values: { life_transition: 0.9, emotion: -0.6 } }
