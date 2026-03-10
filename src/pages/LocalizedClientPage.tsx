@@ -226,7 +226,7 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
 
   return (
     <div className={`relative min-h-screen bg-background ${config.themeClass}`}
-         style={{ fontFamily: config.bodyFont }}>
+      style={{ fontFamily: config.bodyFont }}>
       {/* Background: Cosmic for US, standard for others */}
       {config.locale === "us" ? (
         <CosmicBackground />
@@ -252,11 +252,11 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
           >
             <div className="animate-float mb-4 text-4xl">{config.locale === "us" ? "✦" : "☽"}</div>
             <span className={`text-sm italic tracking-[0.3em] ${config.locale === "us" ? "text-cosmic-accent" : "text-gold-light"}`}
-                  style={{ fontFamily: config.displayFont }}>
+              style={{ fontFamily: config.displayFont }}>
               {config.siteSubtitle}
             </span>
             <h1 className="mt-3 text-4xl font-semibold tracking-tight text-foreground sm:text-5xl"
-                style={{ fontFamily: config.displayFont }}>
+              style={{ fontFamily: config.displayFont }}>
               {config.siteTitle}
             </h1>
             <p className="mt-4 text-sm leading-relaxed text-muted-foreground whitespace-pre-line">
@@ -270,22 +270,21 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                 const stepOrder = ["question", "birthInfo", "select", "result"];
                 const currentIdx = stepOrder.indexOf(step === "loading" ? "result" : step);
                 return (
-                    <div key={label} className="flex items-center gap-2">
-                      <div
-                        className={`flex h-7 items-center rounded-full px-3 text-[10px] font-medium transition-all ${
-                          i <= currentIdx
-                            ? config.locale === "us"
-                              ? "bg-purple-500/20 text-purple-300"
-                              : "bg-gold/20 text-gold"
-                            : "bg-secondary/50 text-muted-foreground/40"
+                  <div key={label} className="flex items-center gap-2">
+                    <div
+                      className={`flex h-7 items-center rounded-full px-3 text-[10px] font-medium transition-all ${i <= currentIdx
+                          ? config.locale === "us"
+                            ? "bg-purple-500/20 text-purple-300"
+                            : "bg-gold/20 text-gold"
+                          : "bg-secondary/50 text-muted-foreground/40"
                         }`}
-                      >
-                        {label}
-                      </div>
-                      {i < 3 && (
-                        <div className={`h-px w-4 ${i < currentIdx ? (config.locale === "us" ? "bg-purple-400/40" : "bg-gold/40") : "bg-border/30"}`} />
-                      )}
+                    >
+                      {label}
                     </div>
+                    {i < 3 && (
+                      <div className={`h-px w-4 ${i < currentIdx ? (config.locale === "us" ? "bg-purple-400/40" : "bg-gold/40") : "bg-border/30"}`} />
+                    )}
+                  </div>
                 );
               })}
             </div>
@@ -306,7 +305,7 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                     <div className="mb-6 text-center">
                       <div className="mb-2 text-2xl">✦</div>
                       <h2 className="text-xl font-semibold text-foreground"
-                          style={{ fontFamily: config.displayFont }}>
+                        style={{ fontFamily: config.displayFont }}>
                         {config.questionTitle}
                       </h2>
                       <p className="mt-1 text-xs text-muted-foreground">
@@ -328,11 +327,10 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                         placeholder={config.memoPlaceholder}
                       />
                       <Button
-                        className={`w-full rounded-xl font-medium shadow-lg transition-shadow ${
-                          config.locale === "us"
+                        className={`w-full rounded-xl font-medium shadow-lg transition-shadow ${config.locale === "us"
                             ? "bg-gradient-to-r from-purple-600 to-indigo-500 text-white shadow-purple-500/20 hover:shadow-purple-500/40"
                             : "bg-gradient-to-r from-primary to-gold text-primary-foreground shadow-primary/20 hover:shadow-primary/40"
-                        }`}
+                          }`}
                         onClick={() => setStep(birthInfo ? "select" : "birthInfo")}
                         disabled={!question.trim()}
                       >
@@ -382,10 +380,10 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                         <span>용신: {sajuResult.yongsin}</span>
                         <span>•</span>
                         <span>
-                          {sajuResult.yearPillar.cheongan}{sajuResult.yearPillar.jiji} /
-                          {sajuResult.monthPillar.cheongan}{sajuResult.monthPillar.jiji} /
-                          {sajuResult.dayPillar.cheongan}{sajuResult.dayPillar.jiji} /
-                          {sajuResult.hourPillar.cheongan}{sajuResult.hourPillar.jiji}
+                          {sajuResult?.yearPillar?.cheongan || ""}{sajuResult?.yearPillar?.jiji || ""} /
+                          {sajuResult?.monthPillar?.cheongan || ""}{sajuResult?.monthPillar?.jiji || ""} /
+                          {sajuResult?.dayPillar?.cheongan || ""}{sajuResult?.dayPillar?.jiji || ""} /
+                          {sajuResult?.hourPillar?.cheongan || ""}{sajuResult?.hourPillar?.jiji || ""}
                         </span>
                       </div>
                     </CardContent>
@@ -397,7 +395,7 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                     {config.locale === "kr" ? "카드를 섞었습니다." : config.locale === "jp" ? "カードをシャッフルしました。" : "The cards have been shuffled."}
                   </p>
                   <h2 className="mt-1 text-2xl font-semibold text-foreground"
-                      style={{ fontFamily: config.displayFont }}>
+                    style={{ fontFamily: config.displayFont }}>
                     {config.locale === "kr" ? (<>마음이 끌리는<br />카드 3장을 선택하세요</>) : config.locale === "jp" ? (<>心が惹かれるカードを<br />3枚選んでください</>) : (<>Choose 3 cards<br />that call to you</>)}
                   </h2>
                   <div className="mt-4 flex items-center justify-center gap-3">
@@ -405,21 +403,20 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                       const posLabels = config.locale === "kr"
                         ? ["현재 상황", "핵심 문제", "결과 방향"]
                         : config.locale === "jp"
-                        ? ["現状", "核心", "結果"]
-                        : ["Present", "Challenge", "Outcome"];
+                          ? ["現状", "核心", "結果"]
+                          : ["Present", "Challenge", "Outcome"];
                       return (
                         <div
                           key={i}
                           className={`flex flex-col items-center gap-1`}
                         >
                           <div
-                            className={`flex h-10 w-10 items-center justify-center rounded-full border-2 text-sm transition-all ${
-                              i < picked.length
+                            className={`flex h-10 w-10 items-center justify-center rounded-full border-2 text-sm transition-all ${i < picked.length
                                 ? config.locale === "us"
                                   ? "border-purple-400 bg-purple-500/20 text-purple-300 glow-cosmic"
                                   : "border-gold bg-gold/20 text-gold glow-gold"
                                 : "border-border/30 text-muted-foreground/30"
-                            }`}
+                              }`}
                             style={{ fontFamily: config.displayFont }}
                           >
                             {i < picked.length ? getCardDisplayName(picked[i], config.locale)[0] : i + 1}
@@ -446,11 +443,10 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                           return (
                             <Badge
                               key={card.id}
-                              className={`rounded-full border px-3 py-1.5 text-foreground ${
-                                config.locale === "us"
+                              className={`rounded-full border px-3 py-1.5 text-foreground ${config.locale === "us"
                                   ? "border-purple-400/30 bg-purple-500/10"
                                   : "border-gold/30 bg-gold/10"
-                              }`}
+                                }`}
                             >
                               {idx + 1}. {getCardDisplayName(card, config.locale)}
                               <span className={`ml-1 ${config.locale === "us" ? "text-purple-300" : "text-gold"}`}>
@@ -467,11 +463,10 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                           animate={{ opacity: 1, scale: 1 }}
                         >
                           <Button
-                            className={`w-full rounded-xl font-medium shadow-lg ${
-                              config.locale === "us"
+                            className={`w-full rounded-xl font-medium shadow-lg ${config.locale === "us"
                                 ? "bg-gradient-to-r from-purple-600 to-indigo-500 text-white shadow-purple-500/20"
                                 : "bg-gradient-to-r from-primary to-gold text-primary-foreground shadow-primary/20"
-                            }`}
+                              }`}
                             onClick={handleSubmit}
                           >
                             <CheckCircle2 className="mr-2 h-4 w-4" />
@@ -496,31 +491,29 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                         key={card.id}
                         onClick={() => selectCard(card)}
                         disabled={isDisabled}
-                        className={`group relative aspect-[0.65] overflow-hidden rounded-lg border transition-all duration-300 ${
-                          isSelected
+                        className={`group relative aspect-[0.65] overflow-hidden rounded-lg border transition-all duration-300 ${isSelected
                             ? isUS
                               ? "border-purple-400/60 glow-cosmic animate-card-mystical"
                               : "border-gold/60 glow-gold-strong"
                             : isDisabled
-                            ? "border-border/20 opacity-40 cursor-not-allowed"
-                            : isUS
-                            ? "border-purple-500/20 hover:border-purple-400/40 cursor-pointer hover:shadow-[0_0_25px_-5px_hsl(270_60%_60%/0.3)]"
-                            : "border-border/30 hover:border-gold/30 cursor-pointer"
-                        }`}
+                              ? "border-border/20 opacity-40 cursor-not-allowed"
+                              : isUS
+                                ? "border-purple-500/20 hover:border-purple-400/40 cursor-pointer hover:shadow-[0_0_25px_-5px_hsl(270_60%_60%/0.3)]"
+                                : "border-border/30 hover:border-gold/30 cursor-pointer"
+                          }`}
                       >
                         {isSelected ? (
                           <motion.div
                             initial={{ rotateY: 180, opacity: 0 }}
                             animate={{ rotateY: 0, opacity: 1 }}
                             transition={{ duration: 0.6, ease: "easeOut" }}
-                            className={`flex h-full flex-col items-center justify-center p-1.5 ${
-                              isUS
+                            className={`flex h-full flex-col items-center justify-center p-1.5 ${isUS
                                 ? "bg-gradient-to-b from-purple-500/15 via-indigo-500/10 to-blue-500/15"
                                 : "bg-gradient-to-b from-gold/10 to-accent/10"
-                            }`}
+                              }`}
                           >
                             <span className={`text-lg font-bold ${isUS ? "text-purple-300" : "text-gold"}`}
-                                  style={{ fontFamily: config.displayFont }}>
+                              style={{ fontFamily: config.displayFont }}>
                               {getCardDisplayName(card, config.locale)[0]}
                             </span>
                             <span className={`mt-0.5 text-[8px] leading-tight ${isUS ? "text-purple-200" : "text-gold-light"}`}>
@@ -534,11 +527,10 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                           <img
                             src={cardBackImg}
                             alt="tarot card"
-                            className={`h-full w-full object-cover transition-all duration-300 ${
-                              isUS
+                            className={`h-full w-full object-cover transition-all duration-300 ${isUS
                                 ? "opacity-60 group-hover:opacity-100 group-hover:brightness-110"
                                 : "opacity-70 group-hover:opacity-100"
-                            }`}
+                              }`}
                           />
                         )}
                       </motion.button>
@@ -556,7 +548,7 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                     <CardContent className="py-10 px-8 text-center">
                       <div className="mb-4 text-3xl">⚠️</div>
                       <h2 className="text-xl font-semibold text-foreground"
-                          style={{ fontFamily: config.displayFont }}>
+                        style={{ fontFamily: config.displayFont }}>
                         {config.errorTitle}
                       </h2>
                       <p className="mt-3 text-sm text-muted-foreground">{error}</p>
@@ -574,7 +566,7 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                     <CardContent className="py-16 px-8 text-center">
                       <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-t-transparent ${config.locale === 'us' ? 'border-purple-400' : 'border-gold'}" />
                       <h2 className="text-xl font-semibold text-foreground"
-                          style={{ fontFamily: config.displayFont }}>
+                        style={{ fontFamily: config.displayFont }}>
                         {config.loadingTitle}
                       </h2>
                       <p className="mt-3 text-sm text-muted-foreground">
@@ -589,9 +581,8 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                     transition={{ duration: 0.6 }}
                     className="mx-auto max-w-lg"
                   >
-                    <Card className={`border-border/50 bg-card/80 backdrop-blur-xl ${
-                      config.locale === "us" ? "glow-cosmic" : "glow-gold"
-                    }`}>
+                    <Card className={`border-border/50 bg-card/80 backdrop-blur-xl ${config.locale === "us" ? "glow-cosmic" : "glow-gold"
+                      }`}>
                       <CardContent className="py-12 px-8 text-center">
                         <motion.div
                           initial={{ scale: 0 }}
@@ -602,21 +593,20 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                           ✦
                         </motion.div>
                         <h2 className="text-xl font-semibold text-foreground"
-                            style={{ fontFamily: config.displayFont }}>
+                          style={{ fontFamily: config.displayFont }}>
                           {birthInfo?.name
                             ? config.locale === "kr"
                               ? `${birthInfo.name}님의 리딩이 접수되었습니다`
                               : config.locale === "jp"
-                              ? `${birthInfo.name}様のリーディングを受け付けました`
-                              : `${birthInfo.name}'s Reading Submitted`
+                                ? `${birthInfo.name}様のリーディングを受け付けました`
+                                : `${birthInfo.name}'s Reading Submitted`
                             : config.completionTitle}
                         </h2>
                         <p className="mt-4 text-sm leading-relaxed text-muted-foreground whitespace-pre-line">
                           {config.completionMessage}
                         </p>
-                        <div className={`mx-auto my-6 h-px w-32 bg-gradient-to-r from-transparent ${
-                          config.locale === "us" ? "via-purple-400/40" : "via-gold/40"
-                        } to-transparent`} />
+                        <div className={`mx-auto my-6 h-px w-32 bg-gradient-to-r from-transparent ${config.locale === "us" ? "via-purple-400/40" : "via-gold/40"
+                          } to-transparent`} />
                         <p className="text-xs leading-relaxed text-muted-foreground/70 whitespace-pre-line">
                           {config.completionSubMessage}
                         </p>
@@ -629,11 +619,10 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                               <Badge
                                 key={card.id}
                                 variant="outline"
-                                className={`rounded-full px-3 py-1 text-xs ${
-                                  config.locale === "us"
+                                className={`rounded-full px-3 py-1 text-xs ${config.locale === "us"
                                     ? "border-purple-400/30 text-purple-300"
                                     : "border-gold/30 text-gold"
-                                }`}
+                                  }`}
                               >
                                 {idx + 1}. {getCardDisplayName(card, config.locale)} ({dir.short})
                               </Badge>

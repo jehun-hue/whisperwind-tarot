@@ -561,14 +561,24 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       { title: "💡 현실 조언", content: reading.advice },
     ].filter(s => s.content);
 
+    const pillarsHtml = saju ? [
+      { label: "연주", p: saju.yearPillar || saju.연주 },
+      { label: "월주", p: saju.monthPillar || saju.월주 },
+      { label: "일주", p: saju.dayPillar || saju.일주 },
+      { label: "시주", p: saju.hourPillar || saju.시주 }
+    ].map(({ label, p }) => `
+      <div class="pillar">
+        <div class="pillar-label">${label}</div>
+        <div class="pillar-value">${p ? `${p.cheongan || p.천간 || "미상"}${p.jiji || p.지지 || ""}` : "데이터 없음"}</div>
+        <div class="pillar-element">${p ? `${p.cheonganElement || p.오행?.split('/')[0] || "-"}/${p.jijiElement || p.오행?.split('/')[1] || "-"}` : "-"}</div>
+      </div>
+    `).join('') : "";
+
     const sajuHtml = saju ? `
       <div class="info-grid">
-        <div class="pillar"><div class="pillar-label">연주</div><div class="pillar-value">${saju.yearPillar?.cheongan}${saju.yearPillar?.jiji}</div><div class="pillar-element">${saju.yearPillar?.cheonganElement}/${saju.yearPillar?.jijiElement}</div></div>
-        <div class="pillar"><div class="pillar-label">월주</div><div class="pillar-value">${saju.monthPillar?.cheongan}${saju.monthPillar?.jiji}</div><div class="pillar-element">${saju.monthPillar?.cheonganElement}/${saju.monthPillar?.jijiElement}</div></div>
-        <div class="pillar"><div class="pillar-label">일주</div><div class="pillar-value">${saju.dayPillar?.cheongan}${saju.dayPillar?.jiji}</div><div class="pillar-element">${saju.dayPillar?.cheonganElement}/${saju.dayPillar?.jijiElement}</div></div>
-        <div class="pillar"><div class="pillar-label">시주</div><div class="pillar-value">${saju.hourPillar?.cheongan}${saju.hourPillar?.jiji}</div><div class="pillar-element">${saju.hourPillar?.cheonganElement}/${saju.hourPillar?.jijiElement}</div></div>
+        ${pillarsHtml}
       </div>
-      <p style="margin-top:8px;font-size:12px;color:#666;">일간: ${saju.ilgan}(${saju.ilganElement}) | ${saju.strength} | 용신: ${saju.yongsin}</p>
+      <p style="margin-top:8px;font-size:12px;color:#666;">일간: ${saju.ilgan || saju.일간 || "미상"}(${saju.ilganElement || "미상"}) | ${saju.strength || ""} | 용신: ${saju.yongsin || saju.용신 || "미상"}</p>
     ` : "";
 
     const scoresHtml = reading.scores ? `
@@ -847,33 +857,35 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
           <CardContent className="space-y-3">
             <div className="grid grid-cols-4 gap-2">
               {[
-                { label: "연주", p: saju.yearPillar },
-                { label: "월주", p: saju.monthPillar },
-                { label: "일주", p: saju.dayPillar },
-                { label: "시주", p: saju.hourPillar },
+                { label: "연주", p: saju?.yearPillar || saju?.연주 },
+                { label: "월주", p: saju?.monthPillar || saju?.월주 },
+                { label: "일주", p: saju?.dayPillar || saju?.일주 },
+                { label: "시주", p: saju?.hourPillar || saju?.시주 },
               ].map(({ label, p }) => (
                 <div key={label} className="rounded-lg border border-border bg-secondary p-2 text-center">
                   <div className="text-[10px] text-muted-foreground">{label}</div>
                   <div className="mt-1 text-lg font-semibold text-foreground">
-                    {p.cheongan}{p.jiji}
+                    {p ? `${p.cheongan || p.천간 || ""}${p.jiji || p.지지 || ""}` : "데이터 없음"}
                   </div>
                   <div className="text-[10px] text-gold">
-                    {p.cheonganElement}/{p.jijiElement}
+                    {p ? `${p.cheonganElement || p.오행?.split('/')[0] || "-"}/${p.jijiElement || p.오행?.split('/')[1] || "-"}` : "-"}
                   </div>
                 </div>
               ))}
             </div>
             <div className="flex flex-wrap gap-2">
-              <Badge variant="secondary" className="text-[10px]">일간: {saju.ilgan}({saju.ilganElement})</Badge>
-              <Badge variant="secondary" className="text-[10px]">{saju.strength}</Badge>
-              <Badge variant="secondary" className="text-[10px]">용신: {saju.yongsin}</Badge>
+              <Badge variant="secondary" className="text-[10px]">일간: {saju?.ilgan || saju?.일간 || "미상"}({saju?.ilganElement || "미상"})</Badge>
+              {saju?.strength && <Badge variant="secondary" className="text-[10px]">{saju.strength}</Badge>}
+              {(saju?.yongsin || saju?.용신) && <Badge variant="secondary" className="text-[10px]">용신: {saju.yongsin || saju.용신}</Badge>}
             </div>
-            {saju.fiveElementDist && (
+            {(saju?.fiveElementDist || saju?.오행비율) && (
               <div className="flex gap-1">
-                {Object.entries(saju.fiveElementDist as Record<string, number>).map(([el, count]) => (
+                {Object.entries((saju.fiveElementDist || saju.오행비율) as Record<string, number>).map(([el, count]) => (
                   <div key={el} className="flex-1 rounded bg-secondary p-1.5 text-center">
                     <div className="text-[10px] text-muted-foreground">{el}</div>
-                    <div className="text-xs font-medium text-foreground">{(count as number).toFixed(1)}</div>
+                    <div className="text-xs font-medium text-foreground">
+                      {typeof count === "number" ? count.toFixed(1) : count}
+                    </div>
                   </div>
                 ))}
               </div>
