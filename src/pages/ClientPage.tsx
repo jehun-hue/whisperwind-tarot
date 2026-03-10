@@ -20,7 +20,7 @@ import { tarotCards, makeDeckCard, type DeckCard } from "@/data/tarotCards";
 import { calculateSaju, getSajuTarotCrossKeywords, getSajuForQuestion, type SajuResult } from "@/lib/saju";
 import { calculateNatalChart, getAstrologyForQuestion, getCurrentTransits, type AstrologyResult } from "@/lib/astrology";
 import { calculateZiWei, getZiWeiForQuestion, type ZiWeiResult } from "@/lib/ziwei";
-import { getManseryeok, type ManseryeokResult } from "@/lib/manseryeokCalc";
+import { getManseryeok } from "@/lib/manseryeokCalc";
 import { getCombinationSummary } from "@/data/tarotCombinations";
 import { supabase } from "@/integrations/supabase/client";
 import ReadingResultV3 from "@/components/ReadingResultV3";
@@ -160,7 +160,7 @@ export default function ClientPage() {
   const [selectedGrade, setSelectedGrade] = useState<Grade>("S");
 
   // Analysis data (internal)
-  const [manseryeokResult, setManseryeokResult] = useState<ManseryeokResult | null>(null);
+  const [manseryeokResult, setManseryeokResult] = useState<any>(null);
   const [sajuResult, setSajuResult] = useState<SajuResult | null>(null);
   const [astroResult, setAstroResult] = useState<AstrologyResult | null>(null);
   const [ziweiResult, setZiweiResult] = useState<ZiWeiResult | null>(null);
@@ -186,7 +186,8 @@ export default function ClientPage() {
     const minute = 0;
 
     try {
-      const ms = getManseryeok(y, m, d, hour, minute, isLunar, gender as 'male' | 'female');
+      const isLunarBool = isLunar === true || String(isLunar) === "true";
+      const ms = getManseryeok(y, m, d, hour, minute, isLunarBool, false);
       if (!ms) {
         console.warn("사주 자동 계산 실패: 입력된 날짜/시간으로 만세력을 계산할 수 없습니다.");
       }
