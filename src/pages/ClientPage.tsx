@@ -774,13 +774,6 @@ export default function ClientPage() {
                     const isSelected = picked.some((p) => p.id === card.id);
                     const isDisabled = card.isPicked || picked.length >= requiredCards;
 
-                    // 슈트별 그라데이션 색상
-                    let suitBg = 'from-purple-600 to-indigo-900'; // Major
-                    if (card.suit === 'Pentacles') suitBg = 'from-yellow-500 to-amber-900';
-                    else if (card.suit === 'Wands') suitBg = 'from-red-600 to-rose-900';
-                    else if (card.suit === 'Cups') suitBg = 'from-blue-600 to-cyan-900';
-                    else if (card.suit === 'Swords') suitBg = 'from-slate-500 to-gray-800';
-
                     return (
                       <motion.button
                         whileHover={!isDisabled ? { y: -4, scale: 1.05 } : {}}
@@ -788,53 +781,11 @@ export default function ClientPage() {
                         key={card.id}
                         onClick={() => selectCard(card)}
                         disabled={isDisabled}
-                        className={`group relative aspect-[0.65] w-full [perspective:1000px] ${isDisabled && !isSelected ? "cursor-not-allowed opacity-40" : "cursor-pointer"
-                          }`}
+                        className={`group relative aspect-[0.65] w-full transition-all duration-500 ${isDisabled && !isSelected ? "cursor-not-allowed opacity-40" : "cursor-pointer"} ${isSelected ? "opacity-0 scale-90 pointer-events-none" : "opacity-100 scale-100"}`}
                       >
-                        <motion.div
-                          className="w-full h-full relative [transform-style:preserve-3d]"
-                          initial={false}
-                          animate={{
-                            rotateY: isSelected ? 180 : 0,
-                            y: isSelected ? -8 : 0,
-                          }}
-                          transition={{ duration: 0.6, type: "spring", stiffness: 200, damping: 20 }}
-                        >
-                          {/* 1. 카드 뒷면 (선택 전) */}
-                          <div className={`absolute inset-0 w-full h-full rounded-lg border flex flex-col items-center justify-center [backface-visibility:hidden] overflow-hidden transition-all duration-300 ${!isSelected && !isDisabled ? "border-border/30 hover:border-gold/30" : "border-border/20"
-                            }`}>
-                            <img src={cardBackImg} alt="" className="absolute inset-0 h-full w-full object-cover opacity-60 transition-opacity group-hover:opacity-90" />
-                          </div>
-
-                          {/* 2. 카드 앞면 (선택 후 뒤집힌 상태) */}
-                          <div className={`absolute inset-0 w-full h-full rounded-lg border flex flex-col items-center justify-center [backface-visibility:hidden] [transform:rotateY(180deg)] overflow-hidden transition-all duration-300 ${isSelected && card.isReversed
-                            ? "border-purple-500/70 shadow-[0_0_20px_rgba(168,85,247,0.3)] bg-purple-950/20"
-                            : "border-gold/70 glow-gold-strong bg-gold/5"
-                            }`}>
-
-                            {/* 배경 이미지 */}
-                            {card.image && (
-                              <img src={card.image} alt={card.korean} className="absolute inset-0 h-full w-full object-cover" />
-                            )}
-
-                            {/* 오버레이 (이미지 위 반투명) */}
-                            <div className={`absolute inset-0 opacity-50 bg-gradient-to-br ${suitBg}`} />
-                            <div className="absolute inset-0 bg-background/60 backdrop-blur-[1px]" />
-
-                            <div className="relative z-10 flex flex-col items-center justify-center p-1 sm:p-2 text-center w-full h-full">
-                              <span className={`font-display text-xs sm:text-sm font-bold tracking-tight leading-tight px-1 drop-shadow-md ${isSelected && card.isReversed ? "text-purple-300" : "text-gold"
-                                }`}>
-                                {card.korean}
-                              </span>
-                              <span className={`mt-1.5 flex items-center justify-center gap-1 text-[9px] font-medium px-2 py-0.5 rounded-full border shadow-sm ${isSelected && card.isReversed
-                                ? "text-purple-200 border-purple-500/50 bg-purple-500/20"
-                                : "text-gold-light border-gold/50 bg-gold/20"
-                                }`}>
-                                {card.isReversed ? <>▼ 역방향</> : <>▲ 정방향</>}
-                              </span>
-                            </div>
-                          </div>
-                        </motion.div>
+                        <div className={`absolute inset-0 w-full h-full rounded-lg border flex flex-col items-center justify-center overflow-hidden transition-all duration-300 ${!isSelected && !isDisabled ? "border-border/30 hover:border-gold/30" : "border-border/20"}`}>
+                          <img src={cardBackImg} alt="" className="absolute inset-0 h-full w-full object-cover opacity-60 transition-opacity group-hover:opacity-90" />
+                        </div>
                       </motion.button>
                     );
                   })}
