@@ -436,7 +436,8 @@ async function fetchGemini(apiKey: string, model: string, system: string, _user:
     body: JSON.stringify({
       contents: [{ parts: [{ text: system }] }],
       generationConfig: { 
-        response_mime_type: "application/json" 
+        response_mime_type: "application/json",
+        maxOutputTokens: 8192
       }
     })
   });

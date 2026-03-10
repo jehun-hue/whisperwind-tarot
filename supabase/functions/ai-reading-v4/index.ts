@@ -21,6 +21,8 @@ const READING_VERSION = "v9_symbolic_prediction_engine";
  * JSON 문자열 리터럴 내부에 포함되어 JSON.parse가 실패하는 문제를 방지.
  */
 function safeParseGeminiJSON(rawText: string): any {
+  if (!rawText || typeof rawText !== 'string') return {};
+
   // 1단계: 코드블록(```json ... ```) 추출
   let jsonString = '';
   const codeBlockMatch = rawText.match(/```(?:json)?\s*([\s\S]*?)```/);
@@ -33,14 +35,14 @@ function safeParseGeminiJSON(rawText: string): any {
     if (start !== -1 && end !== -1 && end > start) {
       jsonString = rawText.substring(start, end + 1);
     } else {
-      jsonString = rawText;
+      jsonString = rawText.trim();
     }
   }
 
   // 2단계: JSON 문자열 값 내부의 실제 줄바꿈/탭을 이스케이프 처리
   // (JSON 스펙에서 문자열 내 raw \n \r \t는 허용되지 않음)
   jsonString = jsonString.replace(
-    /"(?:[^"\\]|\\.)*"/g,
+    /"(?:[^"\\]|\\.)*"/gs, 
     (match) => match
       .replace(/\n/g, '\\n')
       .replace(/\r/g, '\\r')
@@ -54,15 +56,29 @@ function safeParseGeminiJSON(rawText: string): any {
   try {
     return JSON.parse(jsonString);
   } catch (firstError) {
-    // 최후 수단: 모든 제어 문자를 공백으로 치환 후 재시도
-    console.warn('[safeParseGeminiJSON] First parse failed, attempting aggressive cleanup...');
-    const aggressive = jsonString.replace(/[\x00-\x1F\x7F]/g, ' ');
+    console.warn('[safeParseGeminiJSON] First parse failed. Length:', jsonString.length);
+    
+    // truncation 대응: 닫는 중괄호가 부족할 경우 강제로 닫아보기
+    let fixedString = jsonString;
+    const openBraces = (fixedString.match(/\{/g) || []).length;
+    const closeBraces = (fixedString.match(/\}/g) || []).length;
+    if (openBraces > closeBraces) {
+      console.warn(`[safeParseGeminiJSON] Missing ${openBraces - closeBraces} closing braces. Padding...`);
+      fixedString += '}'.repeat(openBraces - closeBraces);
+    }
+
     try {
-      return JSON.parse(aggressive);
+      return JSON.parse(fixedString);
     } catch (secondError) {
-      console.error('[safeParseGeminiJSON] All parse attempts failed.');
-      console.error('Raw text (first 500 chars):', rawText.substring(0, 500));
-      throw new Error(`JSON 파싱 실패: ${(firstError as Error).message}`);
+      // 최후 수단: 모든 제어 문자를 공백으로 치환 후 재시도
+      const aggressive = fixedString.replace(/[\x00-\x1F\x7F]/g, ' ');
+      try {
+        return JSON.parse(aggressive);
+      } catch (thirdError) {
+        console.error('[safeParseGeminiJSON] All parse attempts failed.');
+        console.error('Final attempt string (last 200 chars):', aggressive.slice(-200));
+        throw new Error(`JSON 파싱 실패: ${(firstError as Error).message}`);
+      }
     }
   }
 }
