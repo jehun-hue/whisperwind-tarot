@@ -34,12 +34,17 @@ export function getManseryeok(
     const correctionMinutes = (126.98 - 135) * 4; // -32.08분
     const totalMinutes = hour * 60 + minute + correctionMinutes;
     const correctedHour = Math.floor(totalMinutes / 60);
+    const correctedMinute = Math.round(totalMinutes % 60);
+    const thresholdMinutes = 23 * 60 - correctionMinutes; // 야자시 임계: 보정 전 기준
+    const thresholdH = Math.floor(thresholdMinutes / 60);
+    const thresholdM = Math.round(thresholdMinutes % 60);
+    console.log(`🕐 경도보정 상세: 보정값=${correctionMinutes.toFixed(1)}분 | 입력=${hour}:${String(minute).padStart(2,'0')} → 보정후=${correctedHour}:${String(correctedMinute).padStart(2,'0')} | 야자시 임계=${thresholdH}:${String(thresholdM).padStart(2,'0')} | 발동=${correctedHour >= 23 || correctedHour < 0 ? '⭕YES' : '❌NO'}`);
     if (correctedHour >= 23 || correctedHour < 0) {
       const nextDay = new Date(solarYear, solarMonth - 1, solarDay + 1);
       solarYear = nextDay.getFullYear();
       solarMonth = nextDay.getMonth() + 1;
       solarDay = nextDay.getDate();
-      console.log(`야자시 보정: ${year}-${month}-${day} ${hour}:${minute} → 날짜 ${solarYear}-${solarMonth}-${solarDay}로 변경 (보정시각 ${correctedHour}시)`);
+      console.log(`🌙 야자시 보정 발동! ${year}-${month}-${day} → ${solarYear}-${solarMonth}-${solarDay} (다음날로 변경)`);
     }
 
     // calculateSaju는 반드시 양력을 받음
