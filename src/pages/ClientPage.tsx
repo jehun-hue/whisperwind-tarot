@@ -277,7 +277,7 @@ export default function ClientPage() {
           question, question_type: questionType, memo: memo || null,
           gender: birthInfo?.gender || null, birth_date: birthInfo?.birthDate || null,
           birth_time: birthInfo?.birthTime || null, is_lunar: birthInfo?.isLunar || false,
-          cards: cardData as any, saju_data: sajuDataForAI as any, status: "analyzing",
+          cards: cardData as any, saju_data: sajuDataForAI as any, status: "pending",
         })
         .select().single();
 
@@ -286,36 +286,8 @@ export default function ClientPage() {
       // 2) 즉시 접수완료 화면으로 전환 (사용자는 더 이상 기다리지 않음)
       setStep("submitted");
 
-      // 3) AI 호출은 백그라운드로 실행 (사용자에게 영향 없음)
-      supabase.functions.invoke("ai-reading-v4", {
-        body: {
-          question, questionType, memo,
-          cards: cardData, sajuData: sajuDataForAI, birthInfo,
-          astrologyData: astroDataForAI, ziweiData: ziweiDataForAI,
-          combinationSummary,
-          manseryeokData: manseryeokResult,
-          forcetellData: manualSajuData.trim() || null,
-          romanceStatus,
-          grade: selectedGrade,
-        },
-      }).then(({ data: aiData, error: fnError }) => {
-        if (fnError) {
-          console.error("AI 백그라운드 에러:", fnError);
-          return;
-        }
-        const reading = aiData?.reading;
-        if (session?.id && reading) {
-          supabase.from("reading_sessions").update({
-            ai_reading: reading as any,
-            final_confidence: reading.convergence?.converged_count ? Math.round((reading.convergence.converged_count / 6) * 100) : 70,
-            status: "completed",
-          }).eq("id", session.id).then(() => {
-            console.log("AI 분석 완료, DB 업데이트됨");
-          });
-        }
-      }).catch((err) => {
-        console.error("AI 백그라운드 에러:", err);
-      });
+
+
 
     } catch (err: any) {
       console.error("Session save error:", err);
