@@ -310,7 +310,6 @@ export default function ClientPage() {
           question_type: questionType, 
           memo: memo || null,
           intent: classification?.intent || null,
-          tone: classification?.tone || null,
           confidence: classification?.confidence || 0,
           analysis_mode: classification?.mode || null,
           gender: birthInfo?.gender || null, 
@@ -454,11 +453,7 @@ export default function ClientPage() {
                           {classification.intent}
                         </Badge>
                       )}
-                      {classification?.tone && (
-                        <Badge variant="outline" className="border-white/10 text-white/40 text-[10px]">
-                          {classification.tone}
-                        </Badge>
-                      )}
+
                     </div>
                   )}
 

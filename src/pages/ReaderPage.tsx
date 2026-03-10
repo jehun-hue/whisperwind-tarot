@@ -50,12 +50,14 @@ interface ReadingSession {
   ziwei_score: number | null;
   final_confidence: number | null;
   intent: string | null;
-  tone: string | null;
+
   confidence: number | null;
   analysis_mode: string | null;
   status: string;
   created_at: string;
   user_name: string | null;
+  locale: string | null;
+  purchased_grade: string | null;
 }
 
 export default function ReaderPage() {
@@ -307,12 +309,17 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
 
       const cards = session.cards as any[];
       const birthInfo = session.birth_date ? {
-        gender: session.gender,
+        gender: session.gender === "male" ? "M" : "F",
         birthDate: session.birth_date,
         birthTime: session.birth_time || "",
         birthPlace: session.birth_place || "",
         isLunar: session.is_lunar || false,
         isLeapMonth: (session.saju_data as any)?.originalInput?.isLeapMonth || false,
+        year: parseInt(session.birth_date.split("-")[0] || "1990"),
+        month: parseInt(session.birth_date.split("-")[1] || "1"),
+        day: parseInt(session.birth_date.split("-")[2] || "1"),
+        hour: parseInt((session.birth_time || "12:00").split(":")[0] || "12"),
+        minute: parseInt((session.birth_time || "12:00").split(":")[1] || "0"),
       } : null;
 
       // [C] 타입 안정성: session.saju_data 직접 참조
@@ -477,6 +484,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
           combinationSummary,
           forcetellData: forcetellData.trim() || null,
           manseryeokData: sajuDataForAI,
+          locale: session.locale || "kr",
         },
       });
 
@@ -690,10 +698,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
               <div className="text-[10px] text-muted-foreground">질문 의도</div>
               <div className="mt-1 text-[13px] font-medium text-accent">{session.intent || "분석 전"}</div>
             </div>
-            <div>
-              <div className="text-[10px] text-muted-foreground">감정 톤</div>
-              <div className="mt-1 text-[13px] font-medium text-foreground">{session.tone || "분석 전"}</div>
-            </div>
+
             <div>
               <div className="text-[10px] text-muted-foreground">정체성</div>
               <div className="mt-1 text-[13px] font-medium text-gold">{session.analysis_mode === "tarot_focus" ? "타로 중심" : "종합 분석"}</div>

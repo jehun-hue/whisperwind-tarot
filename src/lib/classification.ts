@@ -1,12 +1,10 @@
 export type Category = "연애" | "재회" | "사업" | "직업" | "금전" | "종합";
 export type Intent = "연애 시작" | "짝사랑" | "썸" | "관계 지속" | "결혼" | "재회" | "연락 재개" | "전연인 소식" | "이직" | "창업" | "투자" | "기타";
-export type Tone = "불안형" | "확신형" | "결단형" | "평온형";
 export type AnalysisMode = "tarot_focus" | "saju_tarot_combined";
 
 export interface ClassificationResult {
   category: Category;
   intent: Intent;
-  tone: Tone;
   confidence: number;
   mode: AnalysisMode;
 }
@@ -14,6 +12,14 @@ export interface ClassificationResult {
 function normalize(s: string) {
   return s.replace(/[\s\?\!\.\,]+/g, '').toLowerCase();
 }
+
+const GENERAL_PATTERNS = [
+  "올해운세", "전반적인운세", "전체운세", "올해흐름", "종합운",
+  "전반적인흐름", "올한해", "내년운세", "운세전반", "전체적인운세",
+  "총운", "한해운세", "올해전반", "전반적인", "전체적인",
+  "전체적으로", "모든운", "내운세", "나의운세", "운세가궁금",
+  "운세와흐름", "신년운세", "새해운세", "올해운", "내년흐름",
+];
 
 const KEYWORDS: Record<Exclude<Category, "종합">, string[]> = {
   "재회": [
@@ -68,11 +74,14 @@ const INTENT_MAP_COMPLEX: { intent: Intent; keywords: string[] }[] = [
   { intent: "투자", keywords: ["투자", "매출", "수익", "재테크", "로또", "당첨", "돈들어올", "부동산", "주식"] }
 ];
 
-/**
- * 1차 분류: 키워드 기반
- */
 function keywordClassifier(q: string): { category: Category; confidence: number; intent: Intent } {
   const text = normalize(q);
+
+  const isGeneral = GENERAL_PATTERNS.some(p => text.includes(normalize(p)));
+  if (isGeneral) {
+    return { category: "종합", confidence: 0.95, intent: "기타" };
+  }
+
   let bestCategory: Category = "종합";
   let maxMatches = 0;
   const scores: Record<string, number> = {};
@@ -89,30 +98,28 @@ function keywordClassifier(q: string): { category: Category; confidence: number;
     }
   }
 
-  // === 재회 우선 판별 (문맥 기반) ===
   const hasReunionContext =
-    text.includes("다시") || text.includes("전") || text.includes("헤어진") || text.includes("재회") ||
-    text.includes("이별") || text.includes("끝난") || text.includes("끝") ||
-    text.includes("남아있") || text.includes("그리워") || text.includes("미안") ||
-    text.includes("인연이") || text.includes("돌아") || text.includes("우리관계") ||
-    text.includes("전연인") || text.includes("전애인");
+    text.includes("다시만나") || text.includes("다시시작") || text.includes("다시할") ||
+    text.includes("전남친") || text.includes("전여친") || text.includes("전애인") || text.includes("전연인") ||
+    text.includes("헤어진") || text.includes("헤어지") || text.includes("재회") ||
+    text.includes("이별") || text.includes("미련") ||
+    text.includes("남아있") || text.includes("그리워") ||
+    text.includes("돌아올") || text.includes("돌아와") ||
+    text.includes("우리관계");
 
   if (scores["재회"] > 0 && hasReunionContext) {
     bestCategory = "재회";
   } else if (scores["재회"] === 0 && scores["연애"] > 0 && hasReunionContext) {
-    // "상대방"이 연애 키워드에 있지만 문맥상 재회인 경우
-    if (text.includes("끝") || text.includes("이별") || text.includes("남아있") ||
+    if (text.includes("이별") || text.includes("남아있") ||
         text.includes("그리워하고") || text.includes("미안함") || text.includes("기다리고")) {
       bestCategory = "재회";
     }
   }
 
-  // === 사업주 관점 충돌 해결 ===
   if (text.includes("직원") && (text.includes("채용") || text.includes("뽑") || text.includes("고용"))) {
     bestCategory = "사업";
   }
 
-  // === 투자 키워드가 사업/금전 양쪽에 있을 때: 문맥으로 판별 ===
   if (scores["사업"] > 0 && scores["금전"] > 0) {
     if (text.includes("사업") || text.includes("창업") || text.includes("매출") || text.includes("투자유치")) {
       bestCategory = "사업";
@@ -121,7 +128,6 @@ function keywordClassifier(q: string): { category: Category; confidence: number;
     }
   }
 
-  // === 기존 연애 우선 로직 유지 ===
   if (bestCategory !== "재회") {
     if (scores["연애"] > 0 && text.includes("결혼")) {
       bestCategory = "연애";
@@ -130,7 +136,6 @@ function keywordClassifier(q: string): { category: Category; confidence: number;
     }
   }
 
-  // Improved intent matching
   let bestIntent: Intent = "기타";
   let maxIntentMatches = 0;
   for (const item of INTENT_MAP_COMPLEX) {
@@ -149,15 +154,12 @@ function keywordClassifier(q: string): { category: Category; confidence: number;
   return { category: bestCategory, confidence, intent: bestIntent };
 }
 
-/**
- * 2차 분류: LLM 보정 (Simulation)
- */
 async function llmClassifier(q: string): Promise<{ category: Category; intent: Intent }> {
   const text = normalize(q);
   let category: Category = "종합";
   let intent: Intent = "기타";
 
-  if (text.match(/다시|연락|전|헤어|이별|재회|미련|차단|끝난|남아있|그리워|미안|돌아|인연이/)) {
+  if (text.match(/다시만나|다시시작|다시할|전남친|전여친|전애인|전연인|헤어진|헤어지|이별|재회|미련|차단풀|끝난걸|끝인가|남아있|그리워|미안해|돌아올|돌아와|인연이남/)) {
     category = "재회";
     intent = text.includes("연락") ? "연락 재개" : "재회";
   } else if (text.match(/사랑|결혼|썸|사람|연애|남친|여친|누구|인연|좋아하|맞을까|관계|행복|다가가|배우자|동반자|이성/)) {
@@ -186,10 +188,9 @@ export async function classifyQuestion(q: string): Promise<ClassificationResult>
   let intent = kInt;
   let confidence = kConf;
 
-  // Confidence is low or category is general -> Try LLM (refined logic)
-  if (confidence < 0.73 || category === "종합") {
+  if (category !== "종합" && confidence < 0.73) {
     const refined = await llmClassifier(q);
-    if (category === "종합" || confidence < 0.6) {
+    if (confidence < 0.6) {
       category = refined.category;
       intent = refined.intent;
       confidence = 0.88;
@@ -204,18 +205,7 @@ export async function classifyQuestion(q: string): Promise<ClassificationResult>
     else if (category === "금전") intent = "투자";
   }
 
-  let tone: Tone = "평온형";
-  if (q.match(/제발|어떡하죠|불안|걱정|전전긍긍|떨려요|힘들어요|보고있어|보구싶|답답해/)) tone = "불안형";
-  else if (q.match(/할까요|마음|확신|결정|어떻게|언제|궁금/)) tone = "확신형";
-  else if (q.match(/했다|그만|정리|끝|차단/)) tone = "결단형";
-
   const mode: AnalysisMode = q.length < 20 ? "tarot_focus" : "saju_tarot_combined";
 
-  return {
-    category,
-    intent,
-    tone,
-    confidence,
-    mode
-  };
+  return { category, intent, confidence, mode };
 }
