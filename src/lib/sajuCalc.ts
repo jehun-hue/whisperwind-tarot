@@ -1,3 +1,4 @@
+// BUILD FORCE v5 - sajuCalc 새 파일
 import {
   calculateSaju,
   lunarToSolar,
@@ -21,36 +22,49 @@ export function getManseryeok(
     let solarMonth = month;
     let solarDay = day;
 
-    // 음력이면 양력으로 변환 먼저
     if (isLunar) {
       const converted = lunarToSolar(year, month, day, isLeapMonth);
       solarYear = converted.solar.year;
       solarMonth = converted.solar.month;
       solarDay = converted.solar.day;
-      console.log(`음력 ${year}-${month}-${day} → 양력 ${solarYear}-${solarMonth}-${solarDay} 변환 완료`);
+      console.log(`음력→양력 변환: ${year}-${month}-${day} → ${solarYear}-${solarMonth}-${solarDay}`);
     }
 
-    // ── 야자시(夜子時) 처리: 경도 보정 후 23시 이상이면 다음날로 ──────────────
-    const correctionMinutes = (126.98 - 135) * 4; // -32.08분
-    const totalMinutes = hour * 60 + minute + correctionMinutes;
-    const correctedHour = Math.floor(totalMinutes / 60);
-    const correctedMinute = Math.round(totalMinutes % 60);
-    const thresholdMinutes = 23 * 60 - correctionMinutes; // 야자시 임계: 보정 전 기준
-    const thresholdH = Math.floor(thresholdMinutes / 60);
-    const thresholdM = Math.round(thresholdMinutes % 60);
-    console.log(`🕐 경도보정 상세: 보정값=${correctionMinutes.toFixed(1)}분 | 입력=${hour}:${String(minute).padStart(2,'0')} → 보정후=${correctedHour}:${String(correctedMinute).padStart(2,'0')} | 야자시 임계=${thresholdH}:${String(thresholdM).padStart(2,'0')} | 발동=${correctedHour >= 23 || correctedHour < 0 ? '⭕YES' : '❌NO'}`);
-    if (correctedHour >= 23 || correctedHour < 0) {
+    const originalHour = Number(hour);
+    const originalMinute = Number(minute);
+    let calcHour = originalHour;
+    let calcMinute = originalMinute;
+
+    console.log('[야자시 판단] originalHour:', originalHour, '→', originalHour >= 23 ? '야자시 YES' : '야자시 NO');
+
+    if (originalHour >= 23) {
       const nextDay = new Date(solarYear, solarMonth - 1, solarDay + 1);
       solarYear = nextDay.getFullYear();
       solarMonth = nextDay.getMonth() + 1;
       solarDay = nextDay.getDate();
-      console.log(`🌙 야자시 보정 발동! ${year}-${month}-${day} → ${solarYear}-${solarMonth}-${solarDay} (다음날로 변경)`);
+      calcHour = 0;
+      calcMinute = originalMinute;
+      console.log(`[야자시 보정 완료] ${solarYear}-${solarMonth}-${solarDay}, calcHour=0`);
     }
 
-    // calculateSaju는 반드시 양력을 받음
-    const saju = calculateSaju(solarYear, solarMonth, solarDay, hour, minute, {
+    // 표시용 경도 보정 계산 (사주 계산에는 미반영)
+    const longitudeOffset = (126.98 - 135) * 4; // 약 -32분
+    const rawTotalMinutes = calcHour * 60 + calcMinute + longitudeOffset;
+    const correctedHour = Math.floor(rawTotalMinutes / 60);
+    const correctedMin = Math.round(rawTotalMinutes % 60);
+    const correctedTimeStr = `${correctedHour}:${String(Math.abs(correctedMin)).padStart(2, '0')}`;
+
+    // 사주 계산: 경도 보정 없이 원래 입력 시간 사용 (시주 지지 보존)
+    const saju = calculateSaju(solarYear, solarMonth, solarDay, calcHour, calcMinute, {
       longitude: 126.98,
-      applyTimeCorrection: true
+      applyTimeCorrection: false
+    });
+
+    console.log('[sajuCalc 결과]', {
+      yearPillar: saju.yearPillarHanja,
+      monthPillar: saju.monthPillarHanja,
+      dayPillar: saju.dayPillarHanja,
+      hourPillar: saju.hourPillarHanja
     });
 
     return {
@@ -78,17 +92,16 @@ export function getManseryeok(
         hanja: saju.hourPillarHanja || '',
         full: saju.hourPillar || ''
       },
-      isTimeCorrected: saju.isTimeCorrected || false,
-      correctedTime: saju.correctedTime || null,
-      originalInput: { year, month, day, hour, minute, isLunar, isLeapMonth },
+      isTimeCorrected: true,
+      correctedTime: correctedTimeStr, // 표시용만 (사주 계산 미반영)
+      originalInput: { year, month, day, hour: originalHour, minute: originalMinute, isLunar, isLeapMonth },
       solarDate: { year: solarYear, month: solarMonth, day: solarDay }
     };
   } catch (error) {
     if (error instanceof InvalidDateError) {
-      console.error(`유효하지 않은 날짜: ${year}-${month}-${day} (${isLunar ? '음력' : '양력'})`);
-      console.error('음력의 경우 해당 월의 일수를 확인하세요 (29일 또는 30일)');
+      console.error(`유효하지 않은 날짜: ${year}-${month}-${day}`);
     } else if (error instanceof OutOfRangeError) {
-      console.error(`지원 범위 밖: ${year}년 (1900~2050만 지원)`);
+      console.error(`지원 범위 밖: ${year}년`);
     } else {
       console.error('만세력 계산 오류:', error);
     }

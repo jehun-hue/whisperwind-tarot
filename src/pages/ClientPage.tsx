@@ -17,10 +17,9 @@ import {
 import { Sparkles, Eye, EyeOff, CheckCircle2, ChevronRight, Star, Crown, ArrowLeft, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { tarotCards, makeDeckCard, type DeckCard } from "@/data/tarotCards";
-import { calculateSaju, getSajuTarotCrossKeywords, getSajuForQuestion, type SajuResult } from "@/lib/saju";
 import { calculateNatalChart, getAstrologyForQuestion, getCurrentTransits, type AstrologyResult } from "@/lib/astrology";
 import { calculateZiWei, getZiWeiForQuestion, type ZiWeiResult } from "@/lib/ziwei";
-import { getManseryeok } from "@/lib/manseryeokCalc";
+import { getManseryeok } from "@/lib/sajuCalc";
 import { getCombinationSummary } from "@/data/tarotCombinations";
 import { supabase } from "@/integrations/supabase/client";
 import ReadingResultV3 from "@/components/ReadingResultV3";
@@ -29,7 +28,7 @@ import cardBackImg from "@/assets/card-back.png";
 
 // ─── Types ───
 type Step = "question" | "birthInfo" | "romance" | "cardSelect" | "submitted";
-type QuestionType = "love" | "career" | "money" | "general";
+type QuestionType = "love" | "reconciliation" | "career" | "money" | "general";
 type Grade = "C" | "B" | "A" | "S";
 type RomanceStatus = "solo" | "some" | "dating" | "breakup" | "marriage";
 
@@ -67,14 +66,19 @@ const BIRTH_HOURS = [
 
 function classifyQuestion(q: string): QuestionType {
   const lower = q.toLowerCase();
-  if (/(연애|재회|썸|남자|여자|상대|연락|결혼|상대방|속마음|사랑|짝사랑|애인|남친|여친)/.test(lower)) return "love";
+  if (/(재회|다시|헤어진|전남친|전여친|reconcile|reunion)/.test(lower)) return "reconciliation";
+  if (/(연애|썸|남자|여자|상대|연락|결혼|상대방|속마음|사랑|짝사랑|애인|남친|여친)/.test(lower)) return "love";
   if (/(이직|직장|사업|취업|회사|일|브랜드|커리어|승진)/.test(lower)) return "career";
   if (/(돈|금전|재물|수익|매출|사업운|투자|재정)/.test(lower)) return "money";
   return "general";
 }
 
-function getRequiredCards(_grade: Grade): number {
-  return 3;
+function getRequiredCards(grade: Grade): number {
+  switch (grade) {
+    case "S": return 6;
+    case "A": return 5;
+    default: return 3;
+  }
 }
 
 // ─── Floating Stars ───
@@ -152,16 +156,21 @@ export default function ClientPage() {
   const [romanceStatus, setRomanceStatus] = useState<RomanceStatus | null>(null);
 
   // Cards
-  const [deck, setDeck] = useState<DeckCard[]>(() => {
-    const shuffled = [...tarotCards].sort(() => Math.random() - 0.5);
+  const shuffleDeck = useCallback(() => {
+    const shuffled = [...tarotCards];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
     return shuffled.map((c) => makeDeckCard(c, false, false, false));
-  });
+  }, []);
+
+  const [deck, setDeck] = useState<DeckCard[]>(shuffleDeck);
   const [picked, setPicked] = useState<DeckCard[]>([]);
   const [selectedGrade, setSelectedGrade] = useState<Grade>("S");
 
   // Analysis data (internal)
   const [manseryeokResult, setManseryeokResult] = useState<any>(null);
-  const [sajuResult, setSajuResult] = useState<SajuResult | null>(null);
   const [astroResult, setAstroResult] = useState<AstrologyResult | null>(null);
   const [ziweiResult, setZiweiResult] = useState<ZiWeiResult | null>(null);
   const [manualSajuData, setManualSajuData] = useState("");
@@ -182,8 +191,17 @@ export default function ClientPage() {
     const y = parseInt(birthYear);
     const m = parseInt(birthMonth);
     const d = parseInt(birthDay);
-    const hour = birthTime !== "unknown" ? parseInt(birthTime.split(":")[0]) : 12;
-    const minute = birthTime !== "unknown" && birthTime.includes(":") ? parseInt(birthTime.split(":")[1]) : 0;
+    let hour = 12
+    let minute = 0
+
+    if (birthTime && birthTime !== "unknown") {
+      const parts = birthTime.split(":")
+      const h = parts[0]
+      const m = parts[1]
+
+      hour = parseInt(h || "12", 10)
+      minute = parseInt(m || "0", 10)
+    }
 
     try {
       const isLunarBool = isLunar === true || String(isLunar) === "true";
@@ -194,20 +212,13 @@ export default function ClientPage() {
         console.warn("사주 자동 계산 실패: 입력된 날짜/시간으로 만세력을 계산할 수 없습니다.");
       }
       setManseryeokResult(ms);
-    } catch (e) {
-      console.warn("사주 자동 계산 에러 (예상치 못한 오류):", e);
-      setManseryeokResult(null);
-    }
 
-    try {
-      const saju = calculateSaju(y, m, d, hour);
-      setSajuResult(saju);
-      const astro = calculateNatalChart(y, m, d, hour);
+      const astro = calculateNatalChart(y, m, d, hour, minute);
       setAstroResult(astro);
-      const ziwei = calculateZiWei(y, m, d, hour, gender);
+      const ziwei = calculateZiWei(y, m, d, hour, minute, gender);
       setZiweiResult(ziwei);
     } catch (e) {
-      console.error("Analysis calc error:", e);
+      console.warn("Analysis data prep error:", e);
     }
   }, [birthYear, birthMonth, birthDay, birthTime, isLunar, isLeapMonth, gender, hasBirthDate]);
 
@@ -303,12 +314,11 @@ export default function ClientPage() {
     setIsLunar(false); setIsLeapMonth(false);
     setRomanceStatus(null);
     setPicked([]); setSelectedGrade("S");
-    setManseryeokResult(null); setSajuResult(null);
+    setManseryeokResult(null);
     setAstroResult(null); setZiweiResult(null);
     setManualSajuData("");
     setError(null);
-    const shuffled = [...tarotCards].sort(() => Math.random() - 0.5);
-    setDeck(shuffled.map((c) => makeDeckCard(c, false, false, false)));
+    setDeck(shuffleDeck());
   };
 
   const goBack = () => {
@@ -398,7 +408,7 @@ export default function ClientPage() {
 
                   {question.trim() && (
                     <Badge variant="outline" className="border-gold/30 text-gold text-xs">
-                      자동 분류: {questionType === "love" ? "💕 연애" : questionType === "career" ? "💼 직업" : questionType === "money" ? "💰 금전" : "🔮 종합"}
+                      자동 분류: {questionType === "love" ? "💕 연애" : questionType === "reconciliation" ? "💔 재회" : questionType === "career" ? "💼 직업" : questionType === "money" ? "💰 금전" : "🔮 종합"}
                     </Badge>
                   )}
 
