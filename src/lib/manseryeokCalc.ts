@@ -14,6 +14,8 @@ export function getManseryeok(
   isLunar: boolean = false,
   isLeapMonth: boolean = false
 ) {
+  // build-cache-bust: 2026-03-10T09:30
+  console.log('야자시 체크: getManseryeok 진입', { year, month, day, hour, minute, isLunar, isLeapMonth });
   try {
     let solarYear = year;
     let solarMonth = month;
