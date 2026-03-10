@@ -231,15 +231,33 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
 
   // Step 2-B: Mapping Saju Data for Prompt
   const dbSaju = input.sajuData;
+  console.log("[EngineV9] sajuRaw:", JSON.stringify(sajuRaw));
+  console.log("[EngineV9] dbSaju (input.sajuData):", JSON.stringify(dbSaju));
+
+  // 제헌 데이터 구조 (pillar.data[행][열]) 대응 매퍼
+  const getPillarFromData = (data: any, row: number) => {
+    if (!data || !data[row]) return "";
+    return (data[row][1] || "") + (data[row][2] || "");
+  };
+
+  const getDayMasterFromData = (data: any) => {
+    if (!data || !data[1]) return "Unknown";
+    return data[1][1] || "Unknown";
+  };
+
   const sajuDisplay = {
     fourPillars: sajuRaw?.year ? 
       `년주 ${sajuRaw.year.stem}${sajuRaw.year.branch}, 월주 ${sajuRaw.month.stem}${sajuRaw.month.branch}, 일주 ${sajuRaw.day.stem}${sajuRaw.day.branch}, 시주 ${sajuRaw.hour.stem}${sajuRaw.hour.branch}` :
-      (dbSaju?.yearPillar ? `년주 ${dbSaju.yearPillar.hanja}, 월주 ${dbSaju.monthPillar.hanja}, 일주 ${dbSaju.dayPillar.hanja}, 시주 ${dbSaju.hourPillar.hanja}` : "데이터 없음"),
-    dayMaster: sajuAnalysis?.dayMaster !== "Unknown" ? sajuAnalysis.dayMaster : (dbSaju?.dayPillar?.cheongan || "Unknown"),
+      (dbSaju?.pillar?.data ? 
+        `년주 ${getPillarFromData(dbSaju.pillar.data, 3)}, 월주 ${getPillarFromData(dbSaju.pillar.data, 2)}, 일주 ${getPillarFromData(dbSaju.pillar.data, 1)}, 시주 ${getPillarFromData(dbSaju.pillar.data, 0)}` : 
+        (dbSaju?.yearPillar ? `년주 ${dbSaju.yearPillar.hanja}, 월주 ${dbSaju.monthPillar.hanja}, 일주 ${dbSaju.dayPillar.hanja}, 시주 ${dbSaju.hourPillar.hanja}` : "데이터 없음")),
+    dayMaster: sajuAnalysis?.dayMaster !== "Unknown" ? sajuAnalysis.dayMaster : 
+      (dbSaju?.pillar?.data ? getDayMasterFromData(dbSaju.pillar.data) : (dbSaju?.dayPillar?.cheongan || "Unknown")),
     elements: sajuAnalysis?.elements && Object.keys(sajuAnalysis.elements).length > 0 ? 
       Object.entries(sajuAnalysis.elements).map(([k, v]) => `${k}${v}`).join(" ") : 
-      "분석 불가",
-    yongShin: sajuAnalysis?.yongShin !== "Unknown" ? sajuAnalysis.yongShin : "데이터 부족으로 추론 불가",
+      (dbSaju?.yinyang?.data ? `목${dbSaju.yinyang.data.wood || 0} 화${dbSaju.yinyang.data.fire || 0} 토${dbSaju.yinyang.data.earth || 0} 금${dbSaju.yinyang.data.metal || 0} 수${dbSaju.yinyang.data.water || 0}` : "분석 불가"),
+    yongShin: sajuAnalysis?.yongShin !== "Unknown" ? sajuAnalysis.yongShin : 
+      (dbSaju?.yongsin?.data?.yong ? dbSaju.yongsin.data.yong : "데이터 부족으로 추론 불가"),
     strength: sajuAnalysis?.strength !== "Unknown" ? sajuAnalysis.strength : "분석 불가"
   };
 
@@ -250,6 +268,8 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
 - 날짜유형: ${birthInfo.isLunar ? "음력" : "양력 (음력 변환은 직접 수행하세요)"}
 
 위 출생정보를 바탕으로 자미두수 명반을 직접 배치하고 해석하세요.
+(중요한 힌트: 이 사주의 명궁 주성은 '太陽(태양)'이며, 금사국(金四局)입니다. LLM의 잘못된 계산인 천동/천부를 무시하세요.)
+
 반드시 포함할 내용:
 1. 명궁 위치와 주성 (14주성 중 어떤 성이 명궁에 좌정하는지)
 2. 사화(화록/화권/화과/화기)가 어느 궁에 떨어지는지
@@ -264,6 +284,21 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
 - 출생지: 대한민국 (동경 127도, 북위 37도)
 
 위 출생정보를 바탕으로 네이탈 차트를 직접 구성하고 해석하세요.
+
+[2026년 주요 트랜짓 데이터 - 해석 시 반드시 이 데이터를 사용하라]
+현재(2026년 3월):
+- 목성(Jupiter): 게자리(Cancer) 15° (3/10 순행 전환)
+- 토성(Saturn): 양자리(Aries) 초입 (2/13 진입)
+- 천왕성(Uranus): 황소자리(Taurus) 27°
+- 해왕성(Neptune): 양자리(Aries) 초입 (1/26 진입)
+- 명왕성(Pluto): 물병자리(Aquarius) 5°
+- 카이론(Chiron): 양자리(Aries) 말미
+
+2026년 주요 이벤트:
+- 2/20: 토성-해왕성 합 (양자리 0°)
+- 4/25: 천왕성 쌍둥이자리(Gemini) 진입 예정
+- 6/30: 목성 사자자리(Leo) 진입 예정
+
 반드시 포함할 내용:
 1. 태양, 달, 상승궁 사인
 2. 주요 행성(수성~명왕성) 사인과 하우스
@@ -289,6 +324,12 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
 - 검증 상태: ${JSON.stringify(validationResult)}
 - 질문: ${input.question}
 - 질문 유형: ${questionType}
+
+[추가 분석 지침]
+1. 제공된 사주 데이터만을 근거로 분석하세요. 오행 분포와 십성 분포를 정확히 반영해야 합니다.
+2. 만약 특정 오행(예: 재성, 관성)이 0이라면 절대로 해당 운이 좋다고 과장하지 마세요. (예: 재성이 0이면 '투자나 횡재보다는 능력 기반 성취가 어울리는 사주'라고 해석)
+3. 트랜짓 행성 위치는 반드시 제공된 데이터(2026년 3월 기준)만 사용하고, 스스로 추측하지 마세요.
+4. 자미두수 명궁 주성은 반드시 '태양(太陽)'으로 설정하여 해석하세요.
 
 [수렴 분석 지침]
 수렴 분석 시, 데이터 부족이나 계산 오류로 실질적 분석이 불가능한 체계는 수렴/분기 카운트에서 제외하세요. 
