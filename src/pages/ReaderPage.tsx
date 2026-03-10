@@ -760,53 +760,96 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
         </Button>
       </div>
 
-      {session.birth_date && (
-        <Card className="border-border bg-card">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base text-foreground">🔮 사주 데이터</CardTitle>
-              <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 text-[10px]">
-                자동 계산 적용
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-xs text-muted-foreground">
-              출생 정보를 기반으로 만세력 라이브러리가 사주를 자동 계산합니다.
-            </p>
-            <div className="mt-2">
-              <button
-                onClick={() => setShowForcetellInput(!showForcetellInput)}
-                className="text-xs text-muted-foreground/70 hover:text-muted-foreground underline underline-offset-2 decoration-dashed transition-colors"
-              >
-                사주 결과가 다르게 느껴지시나요? {showForcetellInput ? "▲" : "▼"}
-              </button>
-            </div>
-            {showForcetellInput && (
-              <div className="space-y-2 pt-2">
-                <p className="text-xs text-muted-foreground">
-                  포스텔러 만세력에서 확인한 결과를 붙여넣어 주세요. 수동 입력값이 있으면 자동 계산 대신 이 데이터를 사용합니다.
-                </p>
-                <a
-                  href="https://pro.forceteller.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary px-3 py-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  🔗 포스텔러 바로가기
-                </a>
-                <Textarea
-                  value={forcetellData}
-                  onChange={(e) => setForcetellData(e.target.value.slice(0, 3000))}
-                  className="min-h-[120px] border-border bg-secondary text-xs font-mono"
-                  placeholder={`예시:\n연주: 갑자(甲子) / 월주: 정묘(丁卯) / 일주: 임오(壬午) / 시주: 경술(庚戌)\n일간: 임수(壬水), 신약\n오행: 목2 화3 토1 금1 수1\n용신: 금(金)\n합충: 자오충, 묘술합`}
-                />
-                <p className="text-[10px] text-muted-foreground">{forcetellData.length}/3000자</p>
+      {session.birth_date && (() => {
+        const sd = session.saju_data as any;
+        const hasNewFormat = sd?.yearPillar?.cheongan;
+        return (
+          <Card className="border-border bg-card">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base text-foreground">🔮 사주 데이터</CardTitle>
+                {hasNewFormat ? (
+                  <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 text-[10px]">
+                    ✓ 자동 계산 완료
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="border-yellow-500/30 text-yellow-400 text-[10px]">
+                    수동 입력 필요
+                  </Badge>
+                )}
               </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {hasNewFormat ? (
+                <>
+                  {/* 사주 원국 표시 */}
+                  <div className="grid grid-cols-4 gap-2">
+                    {[
+                      { label: "연주", p: sd.yearPillar },
+                      { label: "월주", p: sd.monthPillar },
+                      { label: "일주", p: sd.dayPillar },
+                      { label: "시주", p: sd.hourPillar },
+                    ].map(({ label, p }) => (
+                      <div key={label} className="rounded-lg border border-border bg-secondary p-2 text-center">
+                        <div className="text-[10px] text-muted-foreground">{label}</div>
+                        <div className="mt-1 text-base font-bold text-foreground">{p?.full || "?"}</div>
+                        <div className="text-[10px] text-gold">{p?.hanja || ""}</div>
+                      </div>
+                    ))}
+                  </div>
+                  {/* 음력→양력 변환 정보 */}
+                  {sd.originalInput?.isLunar && sd.solarDate && (
+                    <p className="text-xs text-muted-foreground">
+                      🗓 음력 {sd.originalInput.year}-{sd.originalInput.month}-{sd.originalInput.day} → 양력 {sd.solarDate.year}-{sd.solarDate.month}-{sd.solarDate.day}
+                    </p>
+                  )}
+                  {/* 시간 보정 표시 */}
+                  {sd.isTimeCorrected && sd.correctedTime && (
+                    <p className="text-xs text-amber-400">
+                      ⏱ 경도 시간 보정: {sd.originalInput?.hour ?? "?"}:{String(sd.originalInput?.minute ?? 0).padStart(2, "0")} → {sd.correctedTime.hour}:{String(sd.correctedTime.minute).padStart(2, "0")}
+                    </p>
+                  )}
+                  {/* 포스텔러 수동입력 토글 */}
+                  <div>
+                    <button
+                      onClick={() => setShowForcetellInput(!showForcetellInput)}
+                      className="text-xs text-muted-foreground/70 hover:text-muted-foreground underline underline-offset-2 decoration-dashed transition-colors"
+                    >
+                      사주 결과가 다르게 느껴지시나요? {showForcetellInput ? "▲" : "▼"}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  출생 정보를 기반으로 만세력 라이브러리가 사주를 자동 계산합니다. 계산 데이터가 없으면 아래에서 직접 입력해 주세요.
+                </p>
+              )}
+              {(!hasNewFormat || showForcetellInput) && (
+                <div className="space-y-2 pt-2">
+                  <p className="text-xs text-muted-foreground">
+                    포스텔러 만세력에서 확인한 결과를 붙여넣어 주세요. 수동 입력값이 있으면 자동 계산 대신 이 데이터를 사용합니다.
+                  </p>
+                  <a
+                    href="https://pro.forceteller.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary px-3 py-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    🔗 포스텔러 바로가기
+                  </a>
+                  <Textarea
+                    value={forcetellData}
+                    onChange={(e) => setForcetellData(e.target.value.slice(0, 3000))}
+                    className="min-h-[120px] border-border bg-secondary text-xs font-mono"
+                    placeholder={`예시:\n연주: 갑자(甲子) / 월주: 정묘(丁卯) / 일주: 임오(壬午) / 시주: 경술(庚戌)\n일간: 임수(壬水), 신약\n오행: 목2 화3 토1 금1 수1\n용신: 금(金)\n합충: 자오충, 묘술합`}
+                  />
+                  <p className="text-[10px] text-muted-foreground">{forcetellData.length}/3000자</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       {/* AI Analysis Buttons - 수동 분석 (항상 표시) */}
       <Card className="border-border bg-card">
