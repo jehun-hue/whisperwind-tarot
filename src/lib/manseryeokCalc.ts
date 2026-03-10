@@ -74,13 +74,15 @@ export function getManseryeok(
   gender: 'male' | 'female' = 'male'
 ): ManseryeokResult | null {
   try {
-    // 음력이면 양력으로 변환
-    let solarY = year;
-    let solarM = month;
-    let solarD = day;
+    // 음력이면 양력으로 변환 (DB에서 문자열 "false"로 넘어오는 경우를 방어)
+    let solarY = Number(year);
+    let solarM = Number(month);
+    let solarD = Number(day);
 
-    if (isLunar) {
-      const res = lunarToSolar(year, month, day, false);
+    const isActuallyLunar = isLunar === true || String(isLunar) === "true";
+
+    if (isActuallyLunar) {
+      const res = lunarToSolar(solarY, solarM, solarD, false);
       if (res) {
         solarY = res.solar.year;
         solarM = res.solar.month;
