@@ -424,7 +424,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       "⚠️ API 비용이 발생합니다!\n\n" +
       "고객: " + (session.user_name || "이름없음") + "\n" +
       "질문: " + session.question + "\n\n" +
-      "Professional v4 파이프라인(4대 점술 독립 분석 + 통합 리딩)을 실행하시겠습니까?"
+      "v8 Symbolic Prediction Engine 분석을 실행하시겠습니까?"
     );
     if (!ok) return;
 
@@ -858,7 +858,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       <Card className="border-border bg-card">
         <CardContent className="p-5 space-y-3">
           <div className="flex items-center justify-between">
-            <div className="text-sm font-medium text-foreground">🔮 AI 분석 실행 (수동)</div>
+            <div className="text-sm font-medium text-foreground">🔮 AI 분석 실행 (v8)</div>
             {reading && (
               <Badge variant="outline" className="border-green-500/30 text-green-400 text-[10px]">
                 분석 완료됨
@@ -886,7 +886,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
             ) : (
               <>
                 <Sparkles className="mr-2 h-4 w-4" />
-                {reading ? "✦ AI 재분석 (v2)" : "✦ AI 분석 실행 (v2)"}
+                {reading ? "✦ AI 재분석 (v8)" : "✦ AI 분석 실행 (v8)"}
                 {forcetellData.trim() && <Badge variant="outline" className="ml-2 text-[10px] border-gold/30 text-gold">포스텔러</Badge>}
               </>
             )}
