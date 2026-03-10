@@ -22,13 +22,13 @@ import { calculateZiWei, getZiWeiForQuestion, type ZiWeiResult } from "@/lib/ziw
 import { getManseryeok } from "@/lib/sajuCalc";
 import { getCombinationSummary } from "@/data/tarotCombinations";
 import { supabase } from "@/integrations/supabase/client";
+import { classifyQuestion, type QuestionType } from "@/lib/classification";
 import ReadingResultV3 from "@/components/ReadingResultV3";
 import SajuManualOverride from "@/components/SajuManualOverride";
 import cardBackImg from "@/assets/card-back.png";
 
 // ─── Types ───
 type Step = "question" | "birthInfo" | "romance" | "cardSelect" | "submitted";
-type QuestionType = "love" | "reconciliation" | "career" | "money" | "general";
 type Grade = "C" | "B" | "A" | "S";
 type RomanceStatus = "solo" | "some" | "dating" | "breakup" | "marriage";
 
@@ -64,23 +64,6 @@ const BIRTH_HOURS = [
   })),
 ];
 
-function classifyQuestion(q: string): QuestionType {
-  const text = q.toLowerCase();
-
-  if (text.match(/재회|다시|헤어진|전남친|전여친|reconcile|reunion|연락 올/))
-    return "reconciliation";
-
-  if (text.match(/연애|사랑|썸|결혼|짝사랑|남자|여자|상대|연락|상대방|속마음|애인|남친|여친/))
-    return "love";
-
-  if (text.match(/이직|직장|회사|취업|승진|커리어|사업|일|브랜드/))
-    return "career";
-
-  if (text.match(/돈|재물|금전|투자|매출|수익|사업운|재정/))
-    return "money";
-
-  return "general";
-}
 
 function getRequiredCards(grade: Grade): number {
   switch (grade) {

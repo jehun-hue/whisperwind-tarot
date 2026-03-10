@@ -550,9 +550,9 @@ export function calculateZiWei(
 // ─── 질문 유형별 분석 ───
 export function getZiWeiForQuestion(
   ziwei: ZiWeiResult,
-  questionType: "love" | "reconciliation" | "career" | "money" | "general"
+  questionType: "love" | "reconciliation" | "business" | "career" | "money" | "general" | "feelings"
 ): string {
-  const palaceMap: Record<string, number> = { love: 2, reconciliation: 2, career: 8, money: 4 };
+  const palaceMap: Record<string, number> = { love: 2, reconciliation: 2, business: 8, career: 8, money: 4 };
   const idx = palaceMap[questionType];
 
   let result = "";

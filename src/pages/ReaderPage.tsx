@@ -19,12 +19,13 @@ import { getCombinationSummary } from "@/data/tarotCombinations";
 
 const READER_PIN = "1234";
 
-type QuestionType = "love" | "reconciliation" | "career" | "money" | "general";
+type QuestionType = "love" | "reconciliation" | "business" | "career" | "money" | "general" | "feelings";
 
 const questionTypeLabels: Record<string, string> = {
   love: "💕 연애",
   reconciliation: "💔 재회",
-  career: "💼 직업/사업",
+  career: "💼 직업",
+  business: "🏢 사업",
   money: "💰 금전",
   general: "🔮 종합",
   feelings: "💭 기持ち",

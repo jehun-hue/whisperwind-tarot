@@ -1,0 +1,602 @@
+[
+  {
+    "birth": "1978-02-04 07:11",
+    "gender": "male",
+    "question": "좋아하는 사람과 사귈 수 있을까요?",
+    "expectedCategory": "연애"
+  },
+  {
+    "birth": "1974-06-16 17:41",
+    "gender": "female",
+    "question": "소개팅 결과가 어떨까요?",
+    "expectedCategory": "연애"
+  },
+  {
+    "birth": "1988-04-05 05:16",
+    "gender": "female",
+    "question": "미래의 배우자는 어떤 사람일까요?",
+    "expectedCategory": "연애"
+  },
+  {
+    "birth": "1973-04-05 07:24",
+    "gender": "female",
+    "question": "운명의 상대를 언제 만날까요?",
+    "expectedCategory": "연애"
+  },
+  {
+    "birth": "2003-07-10 18:43",
+    "gender": "female",
+    "question": "지금 썸타는 사람과 연인이 될까요?",
+    "expectedCategory": "연애"
+  },
+  {
+    "birth": "1993-01-06 10:48",
+    "gender": "female",
+    "question": "짝사랑이 이루어질까요?",
+    "expectedCategory": "연애"
+  },
+  {
+    "birth": "1997-11-08 04:04",
+    "gender": "female",
+    "question": "연애운이 언제쯤 들어올까요?",
+    "expectedCategory": "연애"
+  },
+  {
+    "birth": "1979-06-04 06:20",
+    "gender": "female",
+    "question": "올해 안에 연애할 수 있을까요?",
+    "expectedCategory": "연애"
+  },
+  {
+    "birth": "1979-08-03 22:36",
+    "gender": "male",
+    "question": "짝사랑하는 그 사람의 속마음은?",
+    "expectedCategory": "연애"
+  },
+  {
+    "birth": "1973-11-04 04:51",
+    "gender": "female",
+    "question": "곧 새로운 연인이 생길까요?",
+    "expectedCategory": "연애"
+  },
+  {
+    "birth": "1993-07-16 00:17",
+    "gender": "female",
+    "question": "지금 만나는 사람과 결혼까지 갈까요?",
+    "expectedCategory": "연애"
+  },
+  {
+    "birth": "1976-02-02 06:20",
+    "gender": "female",
+    "question": "연애를 시작하기 좋은 시기는?",
+    "expectedCategory": "연애"
+  },
+  {
+    "birth": "1983-04-12 02:20",
+    "gender": "female",
+    "question": "어떤 스타일의 이성이 저와 잘 맞을까요?",
+    "expectedCategory": "연애"
+  },
+  {
+    "birth": "1999-08-22 20:51",
+    "gender": "male",
+    "question": "지인 중에 저를 좋아하는 사람이 있을까요?",
+    "expectedCategory": "연애"
+  },
+  {
+    "birth": "1970-01-29 11:53",
+    "gender": "female",
+    "question": "다음 달 연애운이 궁금해요.",
+    "expectedCategory": "연애"
+  },
+  {
+    "birth": "1971-07-30 22:20",
+    "gender": "female",
+    "question": "소개팅에서 어떤 대화를 하는 게 좋을까요?",
+    "expectedCategory": "연애"
+  },
+  {
+    "birth": "1982-10-11 06:57",
+    "gender": "female",
+    "question": "제가 먼저 고백해도 될까요?",
+    "expectedCategory": "연애"
+  },
+  {
+    "birth": "1976-07-10 16:45",
+    "gender": "female",
+    "question": "상대방이 저에게 호감이 있나요?",
+    "expectedCategory": "연애"
+  },
+  {
+    "birth": "1971-10-24 03:00",
+    "gender": "male",
+    "question": "연애 고민이 있는데 해결될까요?",
+    "expectedCategory": "연애"
+  },
+  {
+    "birth": "1975-12-03 19:08",
+    "gender": "male",
+    "question": "저의 연애 성향은 어떤가요?",
+    "expectedCategory": "연애"
+  },
+  {
+    "birth": "2001-07-16 05:41",
+    "gender": "female",
+    "question": "최근에 만난 사람과 잘 될까요?",
+    "expectedCategory": "연애"
+  },
+  {
+    "birth": "1984-02-05 16:51",
+    "gender": "female",
+    "question": "솔로 탈출 언제쯤 가능할까요?",
+    "expectedCategory": "연애"
+  },
+  {
+    "birth": "1997-06-30 16:11",
+    "gender": "male",
+    "question": "좋은 인연을 만날 수 있는 장소는?",
+    "expectedCategory": "연애"
+  },
+  {
+    "birth": "1989-07-16 17:12",
+    "gender": "female",
+    "question": "평생 동반자를 만날 수 있을까요?",
+    "expectedCategory": "연애"
+  },
+  {
+    "birth": "1976-04-15 18:44",
+    "gender": "female",
+    "question": "연애운을 높이는 방법은 무엇인가요?",
+    "expectedCategory": "연애"
+  },
+  {
+    "birth": "1998-04-26 11:24",
+    "gender": "female",
+    "question": "헤어진 여자친구와 다시 만날 수 있을까요?",
+    "expectedCategory": "재회"
+  },
+  {
+    "birth": "1973-09-10 21:07",
+    "gender": "female",
+    "question": "전 남자친구에게 연락이 올까요?",
+    "expectedCategory": "재회"
+  },
+  {
+    "birth": "1979-10-20 03:23",
+    "gender": "female",
+    "question": "재회 가능성이 있을까요?",
+    "expectedCategory": "재회"
+  },
+  {
+    "birth": "1973-03-15 01:10",
+    "gender": "male",
+    "question": "상대방이 저를 그리워하고 있나요?",
+    "expectedCategory": "재회"
+  },
+  {
+    "birth": "1971-04-01 02:56",
+    "gender": "male",
+    "question": "다시 시작한다면 잘 지낼 수 있을까요?",
+    "expectedCategory": "재회"
+  },
+  {
+    "birth": "2004-10-15 01:11",
+    "gender": "male",
+    "question": "헤어진 지 오래됐는데 재회할 수 있을까요?",
+    "expectedCategory": "재회"
+  },
+  {
+    "birth": "1995-04-24 09:02",
+    "gender": "female",
+    "question": "상대방에게 먼저 연락해도 될까요?",
+    "expectedCategory": "재회"
+  },
+  {
+    "birth": "1970-11-20 14:19",
+    "gender": "female",
+    "question": "전 애인의 현재 심정은 어떤가요?",
+    "expectedCategory": "재회"
+  },
+  {
+    "birth": "1999-09-05 20:21",
+    "gender": "female",
+    "question": "우리 관계는 정말 끝난 걸까요?",
+    "expectedCategory": "재회"
+  },
+  {
+    "birth": "1995-02-05 11:23",
+    "gender": "male",
+    "question": "재회가 이루어지는 시기는 언제인가요?",
+    "expectedCategory": "재회"
+  },
+  {
+    "birth": "1999-07-18 09:02",
+    "gender": "male",
+    "question": "상대방이 새로운 사람을 만났을까요?",
+    "expectedCategory": "재회"
+  },
+  {
+    "birth": "1976-03-25 18:08",
+    "gender": "male",
+    "question": "어떻게 하면 재회할 수 있을까요?",
+    "expectedCategory": "재회"
+  },
+  {
+    "birth": "1970-09-15 19:06",
+    "gender": "male",
+    "question": "전 연인이 저를 잊었을까요?",
+    "expectedCategory": "재회"
+  },
+  {
+    "birth": "1973-03-01 00:13",
+    "gender": "male",
+    "question": "우연히 다시 만날 기회가 있을까요?",
+    "expectedCategory": "재회"
+  },
+  {
+    "birth": "1970-04-08 08:59",
+    "gender": "female",
+    "question": "재회운이 이번 달에 있나요?",
+    "expectedCategory": "재회"
+  },
+  {
+    "birth": "1995-12-08 02:35",
+    "gender": "female",
+    "question": "다시 만나면 예전 같은 문제가 반복될까요?",
+    "expectedCategory": "재회"
+  },
+  {
+    "birth": "1976-02-17 17:53",
+    "gender": "female",
+    "question": "상대방이 저의 연락을 기다리고 있나요?",
+    "expectedCategory": "재회"
+  },
+  {
+    "birth": "1981-06-10 02:33",
+    "gender": "female",
+    "question": "이별의 원인을 해결하고 다시 만날 수 있을까요?",
+    "expectedCategory": "재회"
+  },
+  {
+    "birth": "1979-07-15 16:37",
+    "gender": "male",
+    "question": "상대방이 저에게 미안함을 느끼고 있나요?",
+    "expectedCategory": "재회"
+  },
+  {
+    "birth": "1996-01-01 01:46",
+    "gender": "female",
+    "question": "우리는 인연이 더 남아있나요?",
+    "expectedCategory": "재회"
+  },
+  {
+    "birth": "2001-04-26 18:00",
+    "gender": "male",
+    "question": "사업 시작해도 될까요?",
+    "expectedCategory": "사업"
+  },
+  {
+    "birth": "2002-06-01 11:20",
+    "gender": "male",
+    "question": "새로운 아이템으로 창업 준비 중인데 성공할까요?",
+    "expectedCategory": "사업"
+  },
+  {
+    "birth": "1970-06-20 23:12",
+    "gender": "female",
+    "question": "동업자와의 관계가 괜찮을까요?",
+    "expectedCategory": "사업"
+  },
+  {
+    "birth": "1992-03-01 09:37",
+    "gender": "female",
+    "question": "사업 확장 시기는 언제쯤이 좋을까요?",
+    "expectedCategory": "사업"
+  },
+  {
+    "birth": "1993-03-28 07:48",
+    "gender": "female",
+    "question": "매출이 언제쯤 오를까요?",
+    "expectedCategory": "사업"
+  },
+  {
+    "birth": "2000-08-30 14:24",
+    "gender": "male",
+    "question": "투자 유치를 받을 수 있을까요?",
+    "expectedCategory": "사업"
+  },
+  {
+    "birth": "1977-04-26 05:36",
+    "gender": "male",
+    "question": "현재 하는 사업을 계속해도 될까요?",
+    "expectedCategory": "사업"
+  },
+  {
+    "birth": "1972-08-13 18:38",
+    "gender": "male",
+    "question": "새로운 거래처가 생길까요?",
+    "expectedCategory": "사업"
+  },
+  {
+    "birth": "1976-11-16 22:55",
+    "gender": "male",
+    "question": "사업장에서 주의해야 할 점은?",
+    "expectedCategory": "사업"
+  },
+  {
+    "birth": "1994-06-20 04:37",
+    "gender": "female",
+    "question": "운세가 사업 성공을 돕고 있나요?",
+    "expectedCategory": "사업"
+  },
+  {
+    "birth": "1978-08-10 19:50",
+    "gender": "female",
+    "question": "직원 채용운이 좋은 시기는?",
+    "expectedCategory": "사업"
+  },
+  {
+    "birth": "2003-09-24 01:00",
+    "gender": "male",
+    "question": "프랜차이즈 가맹점 계약 괜찮을까요?",
+    "expectedCategory": "사업"
+  },
+  {
+    "birth": "1995-10-16 05:41",
+    "gender": "male",
+    "question": "온라인 비즈니스 시작해도 좋을까요?",
+    "expectedCategory": "사업"
+  },
+  {
+    "birth": "1979-04-10 19:20",
+    "gender": "male",
+    "question": "수출 사업으로 확장하고 싶은데 가능할까요?",
+    "expectedCategory": "사업"
+  },
+  {
+    "birth": "1999-05-16 13:28",
+    "gender": "male",
+    "question": "사업 파트너를 믿어도 될까요?",
+    "expectedCategory": "사업"
+  },
+  {
+    "birth": "1981-05-17 19:30",
+    "gender": "male",
+    "question": "경쟁 업체와의 상황이 어떻게 될까요?",
+    "expectedCategory": "사업"
+  },
+  {
+    "birth": "1985-06-29 10:35",
+    "gender": "male",
+    "question": "상표권이나 계약 문제가 잘 해결될까요?",
+    "expectedCategory": "사업"
+  },
+  {
+    "birth": "1977-03-09 09:33",
+    "gender": "male",
+    "question": "사업 자금이 부족한데 해결책이 보일까요?",
+    "expectedCategory": "사업"
+  },
+  {
+    "birth": "1977-10-02 06:46",
+    "gender": "male",
+    "question": "사무실 이전을 고려 중인데 시기가 맞나요?",
+    "expectedCategory": "사업"
+  },
+  {
+    "birth": "2001-06-08 04:07",
+    "gender": "male",
+    "question": "사업의 장기적인 전망은 어떤가요?",
+    "expectedCategory": "사업"
+  },
+  {
+    "birth": "1984-06-07 03:21",
+    "gender": "male",
+    "question": "이직 제안이 왔는데 옮기는 게 좋을까요?",
+    "expectedCategory": "직업"
+  },
+  {
+    "birth": "1983-11-27 18:17",
+    "gender": "male",
+    "question": "올해 승진운이 있나요?",
+    "expectedCategory": "직업"
+  },
+  {
+    "birth": "1976-01-17 12:40",
+    "gender": "female",
+    "question": "취업 준비 중인데 언제쯤 합격할까요?",
+    "expectedCategory": "직업"
+  },
+  {
+    "birth": "1972-10-10 12:03",
+    "gender": "female",
+    "question": "직장 상사와 갈등이 있는데 해결될까요?",
+    "expectedCategory": "직업"
+  },
+  {
+    "birth": "1971-04-30 00:53",
+    "gender": "male",
+    "question": "제 적성에 맞는 직업은 무엇일까요?",
+    "expectedCategory": "직업"
+  },
+  {
+    "birth": "1975-10-26 02:17",
+    "gender": "male",
+    "question": "시험 합격운이 궁금합니다.",
+    "expectedCategory": "직업"
+  },
+  {
+    "birth": "2004-01-10 16:38",
+    "gender": "male",
+    "question": "퇴사하고 싶은데 시기가 적절할까요?",
+    "expectedCategory": "직업"
+  },
+  {
+    "birth": "1986-07-15 05:09",
+    "gender": "male",
+    "question": "해외 취업 기회가 올까요?",
+    "expectedCategory": "직업"
+  },
+  {
+    "birth": "2001-05-29 22:30",
+    "gender": "male",
+    "question": "공무원 시험 준비해도 될까요?",
+    "expectedCategory": "직업"
+  },
+  {
+    "birth": "1984-11-20 13:52",
+    "gender": "male",
+    "question": "전문직 자격증 취득할 수 있을까요?",
+    "expectedCategory": "직업"
+  },
+  {
+    "birth": "1972-07-19 10:56",
+    "gender": "female",
+    "question": "지금 직장에서 인정받을 수 있을까요?",
+    "expectedCategory": "직업"
+  },
+  {
+    "birth": "1994-02-04 10:48",
+    "gender": "male",
+    "question": "연봉 협상이 잘 이루어질까요?",
+    "expectedCategory": "직업"
+  },
+  {
+    "birth": "1978-12-13 11:40",
+    "gender": "female",
+    "question": "다른 직무로 전환하고 싶은데 괜찮을까요?",
+    "expectedCategory": "직업"
+  },
+  {
+    "birth": "1984-01-22 04:49",
+    "gender": "female",
+    "question": "프리랜서로 전향해도 먹고 살만할까요?",
+    "expectedCategory": "직업"
+  },
+  {
+    "birth": "1988-02-12 13:46",
+    "gender": "male",
+    "question": "면접 결과가 어떨까요?",
+    "expectedCategory": "직업"
+  },
+  {
+    "birth": "1997-12-20 05:46",
+    "gender": "female",
+    "question": "직장 내 인간관계가 좋아질까요?",
+    "expectedCategory": "직업"
+  },
+  {
+    "birth": "1973-04-17 10:36",
+    "gender": "male",
+    "question": "중요한 프로젝트를 성공적으로 마칠 수 있을까요?",
+    "expectedCategory": "직업"
+  },
+  {
+    "birth": "1998-05-25 14:57",
+    "gender": "male",
+    "question": "대학원에 진학하는 게 커리어에 도움이 될까요?",
+    "expectedCategory": "직업"
+  },
+  {
+    "birth": "2002-08-21 23:29",
+    "gender": "female",
+    "question": "재취업을 준비 중인데 좋은 곳에 갈 수 있을까요?",
+    "expectedCategory": "직업"
+  },
+  {
+    "birth": "1998-04-27 18:25",
+    "gender": "male",
+    "question": "직장에서 핵심 인재로 거듭날 수 있을까요?",
+    "expectedCategory": "직업"
+  },
+  {
+    "birth": "1988-06-21 00:20",
+    "gender": "male",
+    "question": "조만간 큰 돈이 들어올까요?",
+    "expectedCategory": "금전"
+  },
+  {
+    "birth": "1984-02-09 19:01",
+    "gender": "male",
+    "question": "부동산 투자를 고려 중인데 이익이 날까요?",
+    "expectedCategory": "금전"
+  },
+  {
+    "birth": "2005-02-13 02:06",
+    "gender": "female",
+    "question": "주식 투자 결과가 어떨까요?",
+    "expectedCategory": "금전"
+  },
+  {
+    "birth": "1988-10-05 02:33",
+    "gender": "male",
+    "question": "빌려준 돈을 받을 수 있을까요?",
+    "expectedCategory": "금전"
+  },
+  {
+    "birth": "1984-09-13 21:27",
+    "gender": "female",
+    "question": "로또 당첨운이 이번 주에 있나요?",
+    "expectedCategory": "금전"
+  },
+  {
+    "birth": "1983-07-28 09:27",
+    "gender": "male",
+    "question": "재물복이 언제쯤 크게 올까요?",
+    "expectedCategory": "금전"
+  },
+  {
+    "birth": "1988-08-10 09:19",
+    "gender": "female",
+    "question": "빚을 빨리 청산할 수 있을까요?",
+    "expectedCategory": "금전"
+  },
+  {
+    "birth": "1986-02-10 03:27",
+    "gender": "male",
+    "question": "갑작스러운 지출을 조심해야 할까요?",
+    "expectedCategory": "금전"
+  },
+  {
+    "birth": "1974-05-25 17:00",
+    "gender": "male",
+    "question": "상속이나 증여 관련 문제가 잘 풀릴까요?",
+    "expectedCategory": "금전"
+  },
+  {
+    "birth": "1987-10-18 14:36",
+    "gender": "male",
+    "question": "재테크 수단으로 무엇이 좋을까요?",
+    "expectedCategory": "금전"
+  },
+  {
+    "birth": "1989-05-13 09:21",
+    "gender": "male",
+    "question": "저축을 늘릴 수 있는 상황이 올까요?",
+    "expectedCategory": "금전"
+  },
+  {
+    "birth": "2001-06-07 13:30",
+    "gender": "male",
+    "question": "경제적 자유를 얻을 수 있을까요?",
+    "expectedCategory": "금전"
+  },
+  {
+    "birth": "1984-04-12 12:19",
+    "gender": "male",
+    "question": "보너스나 인센티브를 기대해도 될까요?",
+    "expectedCategory": "금전"
+  },
+  {
+    "birth": "1975-05-18 21:36",
+    "gender": "female",
+    "question": "소송이나 보상금 문제가 승소로 끝날까요?",
+    "expectedCategory": "금전"
+  },
+  {
+    "birth": "1986-11-24 08:22",
+    "gender": "male",
+    "question": "재정 상태가 안 좋은데 나아질 기미가 보이나요?",
+    "expectedCategory": "금전"
+  }
+]
