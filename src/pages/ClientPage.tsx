@@ -187,7 +187,8 @@ export default function ClientPage() {
 
     try {
       const isLunarBool = isLunar === true || String(isLunar) === "true";
-      const ms = getManseryeok(y, m, d, hour, minute, isLunarBool, false);
+      const isLeapBool = isLeapMonth === true;
+      const ms = getManseryeok(y, m, d, hour, minute, isLunarBool, isLeapBool);
       if (!ms) {
         console.warn("사주 자동 계산 실패: 입력된 날짜/시간으로 만세력을 계산할 수 없습니다.");
       }
@@ -249,6 +250,7 @@ export default function ClientPage() {
       birthTime: birthTime !== "unknown" ? birthTime : "",
       birthPlace: "",
       isLunar,
+      isLeapMonth,
     } : null;
 
     let sajuDataForAI: any = null;

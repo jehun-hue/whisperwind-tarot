@@ -309,6 +309,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
         birthTime: session.birth_time || "",
         birthPlace: session.birth_place || "",
         isLunar: session.is_lunar || false,
+        isLeapMonth: (session.saju_data as any)?.originalInput?.isLeapMonth || false,
       } : null;
 
       // Calculate astrology & ziwei data from birth info
@@ -326,7 +327,8 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
           // Manseryeok auto-calculation
           try {
             const isLunarBool = birthInfo.isLunar === true || String(birthInfo.isLunar) === "true";
-            manseryeokDataForAI = getManseryeok(y, m, d, hour, minute, isLunarBool, false);
+            const isLeapBool = birthInfo.isLeapMonth === true || String(birthInfo.isLeapMonth) === "true";
+            manseryeokDataForAI = getManseryeok(y, m, d, hour, minute, isLunarBool, isLeapBool);
             if (!manseryeokDataForAI) {
               console.warn("사주 자동 계산 실패: ReaderPage v1");
             }
@@ -439,6 +441,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
         birthTime: session.birth_time || "",
         birthPlace: session.birth_place || "",
         isLunar: session.is_lunar || false,
+        isLeapMonth: (session.saju_data as any)?.originalInput?.isLeapMonth || false,
       } : null;
 
       let astroDataForAI = null;
@@ -455,7 +458,8 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
           // Manseryeok auto-calculation
           try {
             const isLunarBool = birthInfo.isLunar === true || String(birthInfo.isLunar) === "true";
-            manseryeokDataForAI = getManseryeok(y, m, d, hour, minute, isLunarBool, false);
+            const isLeapBool = birthInfo.isLeapMonth === true || String(birthInfo.isLeapMonth) === "true";
+            manseryeokDataForAI = getManseryeok(y, m, d, hour, minute, isLunarBool, isLeapBool);
             if (!manseryeokDataForAI) {
               console.warn("사주 자동 계산 실패: ReaderPage v2");
             }
