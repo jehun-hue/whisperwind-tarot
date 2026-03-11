@@ -15,59 +15,73 @@ export interface EventWindow {
 // ═══════════════════════════════════════
 // 사주 시간축 신호 추출
 // ═══════════════════════════════════════
-function extractSajuTimingSignal(sajuResult: any): { score: number; factors: string[] } {
-  let score = 0.5; // 기본값
+function extractSajuTimingSignal(sajuResult: any, category?: string): { score: number; factors: string[] } {
+  let score = 0.55; // 기본값 상향
   const factors: string[] = [];
 
   if (!sajuResult) return { score, factors };
 
   const chars: string[] = sajuResult.characteristics || [];
+  const tenGods: Record<string, number> = sajuResult.tenGods || {};
+  const daewoon = sajuResult.daewoon?.currentDaewoon;
 
-  // 충(沖)이 있으면 변동성 높음 → 단기 이벤트 확률 증가
+  // 1. 충(沖) 감지 (강력한 변화 신호)
   const hasChung = chars.some((c: string) => c.includes("충"));
   if (hasChung) {
-    score += 0.15;
-    factors.push("사주 충(沖) 구조 — 단기 변동 가능성 증가");
+    score += 0.20;
+    factors.push("사주 원국/대운 충(沖) — 강력한 변동성과 전환점 감지");
   }
 
-  // 형살이 있으면 리스크 가중
-  const hasHyung = chars.some((c: string) => c.includes("형살"));
-  if (hasHyung) {
-    score += 0.05;
-    factors.push("사주 형살 — 마찰/건강 주의 시기");
-  }
-
-  // 삼합/방합이 있으면 안정적 흐름 → 중장기 안정
-  const hasHarmony = chars.some((c: string) => c.includes("삼합") || c.includes("방합"));
+  // 2. 합(合) 감지 (안정 및 결실)
+  const hasHarmony = chars.some((c: string) => c.includes("합") || c.includes("방합"));
   if (hasHarmony) {
     score += 0.10;
-    factors.push("사주 합(合) 구조 — 에너지 결집으로 장기 안정");
+    factors.push("사주 합(合) — 에너지 응집으로 인한 안정적 성취 기반");
   }
 
-  // 신강/신약에 따른 보정
-  if (sajuResult.strength === "극신강" || sajuResult.strength === "중신강") {
-    score += 0.05;
-    factors.push(`${sajuResult.strength} — 자기 주도적 실행력 유리`);
-  } else if (sajuResult.strength === "극신약") {
-    score -= 0.05;
-    factors.push("극신약 — 외부 환경 의존도 높아 시기 변동 민감");
+  // 3. 질문 유형별 십성/대운 매칭
+  if (category) {
+    const isWealth = ["재물", "사업", "money", "career", "wealth"].some(k => category.includes(k));
+    const isLove = ["연애", "결혼", "relationship", "love"].some(k => category.includes(k));
+
+    if (isWealth) {
+      if (tenGods["재성"] && tenGods["재성"] >= 1.5) {
+        score += 0.12;
+        factors.push("사주 내 재성(財星) 발달 — 재물 운용 역량 우수");
+      }
+      if (daewoon && (daewoon.tenGodStem === "재성" || daewoon.tenGodBranch === "재성" || daewoon.tenGodStem === "식상" || daewoon.tenGodBranch === "식상")) {
+        score += 0.15;
+        factors.push(`현재 대운(${daewoon.full})이 재성/식상 흐름 — 재물운 활성기`);
+      }
+    }
+
+    if (isLove) {
+      const loveGod = sajuResult.gender === 'M' ? "재성" : "관성";
+      if (tenGods[loveGod] && tenGods[loveGod] >= 1.5) {
+        score += 0.12;
+        factors.push(`사주 내 ${loveGod} 발달 — 이성운 기틀 견고`);
+      }
+      if (daewoon && (daewoon.tenGodStem === loveGod || daewoon.tenGodBranch === loveGod)) {
+        score += 0.15;
+        factors.push(`현재 대운이 ${loveGod} 흐름 — 인연운 및 관계 진전 시기`);
+      }
+    }
   }
 
-  // 오행 과다/부족 개수
-  const imbalanceCount = chars.filter((c: string) => c.includes("과다") || c.includes("부족")).length;
-  if (imbalanceCount >= 2) {
-    score -= 0.05;
-    factors.push(`오행 불균형(${imbalanceCount}개) — 에너지 편중으로 예측 변동폭 확대`);
+  // 4. 용신/희신 합치 여부
+  if (chars.includes("대운-용신 합치")) {
+    score += 0.15;
+    factors.push("현재 대운이 용신(用神)과 합치 — 인생의 황금기/발복 시기");
   }
 
-  return { score: Math.max(0.1, Math.min(0.95, score)), factors };
+  return { score: Math.max(0.1, Math.min(0.98, score)), factors };
 }
 
 // ═══════════════════════════════════════
 // 점성술 Transit 신호 추출
 // ═══════════════════════════════════════
-function extractAstrologyTimingSignal(astroResult: any): { score: number; factors: string[] } {
-  let score = 0.5;
+function extractAstrologyTimingSignal(astroResult: any, category?: string): { score: number; factors: string[] } {
+  let score = 0.55; // 기본값 상향
   const factors: string[] = [];
 
   if (!astroResult) return { score, factors };
@@ -75,46 +89,38 @@ function extractAstrologyTimingSignal(astroResult: any): { score: number; factor
   const chars: string[] = astroResult.characteristics || [];
   const transits = astroResult.transits || [];
 
-  // 외행성 transit (Pluto, Neptune, Uranus, Saturn, Jupiter) 감지
-  const outerPlanetTransits = chars.filter((c: string) =>
-    /pluto|neptune|uranus|saturn|jupiter/i.test(c) && /transit/i.test(c)
-  );
-  if (outerPlanetTransits.length > 0) {
-    score += outerPlanetTransits.length * 0.08;
-    factors.push(`외행성 Transit ${outerPlanetTransits.length}개 — 중장기 변화 에너지 활성`);
+  // 1. 주요 Transit (Jupiter/Saturn) 감지
+  if (chars.some(c => /jupiter/i.test(c))) {
+    score += 0.15;
+    factors.push("Jupiter Transit — 확장, 기회, 행운의 에너지 활성");
   }
-
-  // Jupiter Transit 특별 처리 (확장/기회)
-  if (chars.some((c: string) => /jupiter/i.test(c))) {
+  if (chars.some(c => /saturn/i.test(c))) {
     score += 0.10;
-    factors.push("Jupiter Transit — 확장과 기회의 시기");
+    factors.push("Saturn 정렬 — 내실을 다지고 구조를 재정비하는 시기");
   }
 
-  // Saturn Aspect (제약/구조화)
-  if (chars.some((c: string) => /saturn/i.test(c))) {
-    score += 0.05;
-    factors.push("Saturn 영향 — 구조적 변화와 책임의 시기");
+  // 2. 외행성(Outer Planet) 영향
+  const outerImpact = chars.filter(c => /pluto|neptune|uranus/i.test(c)).length;
+  if (outerImpact > 0) {
+    score += outerImpact * 0.10;
+    factors.push(`외행성(${outerImpact}개) 강력한 관여 — 운명의 근본적 변형과 거시적 흐름 형성`);
   }
 
-  // aspect 기반 (trine=조화, square=긴장)
-  const trines = chars.filter((c: string) => /trine/i.test(c)).length;
-  const squares = chars.filter((c: string) => /square/i.test(c)).length;
-  if (trines > 0) {
-    score += trines * 0.05;
-    factors.push(`Trine aspect ${trines}개 — 순조로운 흐름`);
-  }
-  if (squares > 0) {
-    score += squares * 0.03; // 긴장도 이벤트 촉발 요인
-    factors.push(`Square aspect ${squares}개 — 긴장을 통한 변화 촉발`);
-  }
-
-  // 실제 transit 배열이 있는 경우
-  if (transits.length > 0) {
-    score += Math.min(0.15, transits.length * 0.03);
-    factors.push(`활성 Transit ${transits.length}개 감지`);
+  // 3. 질문 유형 기반 행성 매팅
+  if (category) {
+    const isWealth = ["재물", "사업", "money", "wealth"].some(k => category.includes(k));
+    if (isWealth && chars.some(c => /venus|jupiter/i.test(c) && /trine|sextile|conjunction/i.test(c))) {
+      score += 0.15;
+      factors.push("금융/가치 행성(Venus, Jupiter)의 조화로운 각도 — 재물운 상승 신호");
+    }
+    const isLove = ["연애", "relationship", "love"].some(k => category.includes(k));
+    if (isLove && chars.some(c => /venus|mars/i.test(c) && /trine|conjunction/i.test(c))) {
+      score += 0.15;
+      factors.push("사랑과 열정의 행성(Venus, Mars) 활성화 — 인연운 강화");
+    }
   }
 
-  return { score: Math.max(0.1, Math.min(0.95, score)), factors };
+  return { score: Math.max(0.1, Math.min(0.98, score)), factors };
 }
 
 // ═══════════════════════════════════════
@@ -233,7 +239,7 @@ function extractTarotTimingSignal(tarotResult: any): { score: number; factors: s
 // ═══════════════════════════════════════
 // 메인 시간축 예측 함수
 // ═══════════════════════════════════════
-export function predictTemporalV8(consensus: any, systemResults: any[]): EventWindow[] {
+export function predictTemporalV8(consensus: any, systemResults: any[], category?: string): EventWindow[] {
   const { consensus_score, prediction_strength } = consensus;
 
   // 각 시스템에서 timing 신호 추출
@@ -243,14 +249,14 @@ export function predictTemporalV8(consensus: any, systemResults: any[]): EventWi
   const numResult = systemResults.find(s => s.system === "numerology");
   const tarotResult = systemResults.find(s => s.system === "tarot");
 
-  const sajuSignal = extractSajuTimingSignal(sajuResult);
-  const astroSignal = extractAstrologyTimingSignal(astroResult);
+  category = category || "general";
+  const sajuSignal = extractSajuTimingSignal(sajuResult, category);
+  const astroSignal = extractAstrologyTimingSignal(astroResult, category);
   const ziweiSignal = extractZiweiTimingSignal(ziweiResult);
   const numSignal = extractNumerologyTimingSignal(numResult);
   const tarotSignal = extractTarotTimingSignal(tarotResult);
 
   // 각 시스템별 가중 평균 타이밍 감도 계산
-  // 사주(25%), 자미두수(20%), 점성술(20%), 타로(20%), 수비학(15%)
   const transitAlignment =
     sajuSignal.score * 0.25 +
     ziweiSignal.score * 0.20 +
@@ -258,16 +264,15 @@ export function predictTemporalV8(consensus: any, systemResults: any[]): EventWi
     tarotSignal.score * 0.20 +
     numSignal.score * 0.15;
 
-  // 1% 버그 수정: 엄격한 곱연산 대신 가중치 부여된 선형 결합 및 부스트 적용
-  // event_probability가 0.1(10%) 이하로 떨어지는 것을 방지하여 '의미 없는 예측' 회피
-  const pattern_factor = Math.max(0.2, prediction_strength || 0.5);
-  const consensus_factor = Math.max(0.3, consensus_score || 0.4);
+  // 1% 버그 완전 방지: 0.25(25%) 이하로 내려가지 않도록 하한선 설정
+  const pattern_factor = Math.max(0.3, prediction_strength || 0.5);
+  const consensus_factor = Math.max(0.4, consensus_score || 0.5);
   
-  // 기본 확률 = (패턴강도 * 0.4) + (타이밍일치 * 0.4) + (합의도 * 0.2)
-  let base_event_probability = (pattern_factor * 0.4) + (transitAlignment * 0.4) + (consensus_factor * 0.2);
+  // 기본 확률 = (패턴강도 * 0.3) + (타이밍일치 * 0.5) + (합의도 * 0.2)
+  let base_event_probability = (pattern_factor * 0.3) + (transitAlignment * 0.5) + (consensus_factor * 0.2);
   
-  // 보정: 너무 낮은 확률은 20% 수준으로 보정 (최한나 해석 스타일 특성상 1%는 부적절)
-  base_event_probability = Math.max(0.2, Math.min(0.9, base_event_probability));
+  // 보정: 하한선을 35% 정도로 상향 (최한나/모나드 브랜드 특성상 '매우 낮은' 확률은 사용자 경험 저해)
+  base_event_probability = Math.max(0.35, Math.min(0.92, base_event_probability));
 
   // 기여 요인 통합
   const allFactors = [

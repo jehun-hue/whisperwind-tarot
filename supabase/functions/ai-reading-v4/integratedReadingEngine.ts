@@ -453,9 +453,10 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     return false;
   });
 
+  const questionType = tarotSymbolic.category;
   const patternVectors = generatePatternVectors(systemResults);
   const consensusResult = calculateConsensusV8(patternVectors);
-  const temporalResult = predictTemporalV8(consensusResult, systemResults);
+  const temporalResult = predictTemporalV8(consensusResult, systemResults, questionType);
   const validationResult = validateEngineOutput(consensusResult, patternVectors);
 
   // Step 2: Scale & Grade Logic
@@ -472,7 +473,6 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
   };
 
   // Step 3: Narrative Engine (Gemini JSON) + Monitoring
-  const questionType = tarotSymbolic.category;
   
   // Step 2-B: Mapping Saju Data for Prompt
   const { sajuDisplay, luckyFactors, ziweiPrompt, astrologyPrompt, sajuSymbolic } = buildEnginePrompts(input, sajuRaw, sajuAnalysis, ziweiAnalysis, astrologyAnalysis);
