@@ -249,7 +249,7 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
     let pollTimer: NodeJS.Timeout;
     if (isPolling && sessionId) {
       const poll = async () => {
-        const { data } = await supabase
+        const { data } = await (supabase as any)
           .from("reading_sessions")
           .select("ai_reading, status, purchased_grade")
           .eq("id", sessionId)
