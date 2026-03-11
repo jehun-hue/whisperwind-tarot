@@ -38,7 +38,7 @@ export function calculateAstrologyV9(input: AstrologyCalculationInput) {
 
   // 2. Planet Positions (Simulating high-precision with astronomy-engine as placeholder for Swiss Ephemeris logic)
   const observer = new Astronomy.Observer(37.5665, 126.9780, 0); // Defaults to Seoul
-  const time = new Astronomy.Time(date);
+  const time = new Astronomy.AstroTime(date);
   
   const planets = [
     "Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"
@@ -65,7 +65,7 @@ export function calculateAstrologyV9(input: AstrologyCalculationInput) {
 
   // 3. Transits (Current Transits)
   const now = new Date();
-  const timeNow = new Astronomy.Time(now);
+  const timeNow = new Astronomy.AstroTime(now);
   const transits = planets.map(p => {
     // @ts-ignore
     const body = Astronomy.Body[p];

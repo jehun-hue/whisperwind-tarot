@@ -83,8 +83,12 @@ export function getLocalePromptConfig(locale: string): LocalePromptConfig {
 /**
  * locale에 따라 Gemini 시스템 프롬프트를 동적으로 생성
  */
-export function buildLocalizedNarrativePrompt(locale: string, dataBlock: string, totalSystems: number): string {
+export function buildLocalizedNarrativePrompt(locale: string, dataBlock: string, totalSystems: number, style: 'hanna' | 'monad' = 'hanna'): string {
   const cfg = getLocalePromptConfig(locale);
+  const isMonad = style === 'monad';
+  const tarotStyleStr = isMonad ? cfg.tarotStyle.third : cfg.tarotStyle.second;
+  const tarotName = isMonad ? cfg.sectionNames.third : cfg.sectionNames.second;
+  const tarotKey = isMonad ? "monad" : "choihanna";
   
   // 연애 관련 love_analysis 스키마는 동일 (단, 출력 언어만 변경)
   const loveSchemaNote = locale === "kr" 
@@ -121,27 +125,17 @@ JSON 외의 다른 텍스트(설명, 인사 등)를 절대 포함하지 마세�
 {
   "reading_info": { "question": "...", "grade": "S|A|B|C", "date": "YYYY-MM-DD", "card_count": N },
   "tarot_reading": {
-    "waite": {
+    "${tarotKey}": {
       "cards": [{"name":"...","position":"...","reversed":boolean}],
-      "story": "${cfg.tarotStyle.waite}. 400자/400文字/400 words 이상.",
+      "story": "${tarotStyleStr}. 400자/400文字/400 words 이상.",
       "key_message": "핵심 한 줄"
-    },
-    "choihanna": {
-      "cards": [...],
-      "story": "${cfg.tarotStyle.second}. 400+.",
-      "key_message": "..."
-    },
-    "monad": {
-      "cards": [...],
-      "story": "${cfg.tarotStyle.third}. 400+.",
-      "key_message": "..."
     }
   },
   "convergence": {
     "total_systems": \${totalSystems},
     "converged_count": N,
     "grade": "S|A|B|C",
-    "tarot_convergence": { "count": 3, "systems": ["${cfg.sectionNames.waite}","${cfg.sectionNames.second}","${cfg.sectionNames.third}"], "common_keywords": [...] },
+    "tarot_convergence": { "count": 1, "systems": ["${tarotName}"], "common_keywords": [...] },
     "internal_validation": "통과|passed|合格",
     "common_message": "...(100+ chars)",
     "divergent_note": "..."

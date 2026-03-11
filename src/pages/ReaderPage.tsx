@@ -277,6 +277,13 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
     setAnalysisError(null);
   }, [session.id, session.counselor_comment, session.user_name]);
 
+  // 세션이 처음 열렸을 때 pending 상태면 자동으로 최한나 해석 생성
+  useEffect(() => {
+    if (session.status === "pending" && !analyzing) {
+      runAIAnalysisV2('hanna', true);
+    }
+  }, [session.id, session.status]);
+
   const saveUserName = async () => {
     setSavingName(true);
     const value = userName.trim() || null;
@@ -429,14 +436,27 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
     }
   };
 
-  const runAIAnalysisV2 = async () => {
-    const ok = window.confirm(
-      "⚠️ API 비용이 발생합니다!\n\n" +
-      "고객: " + (session.user_name || "이름없음") + "\n" +
-      "질문: " + session.question + "\n\n" +
-      "v8 Symbolic Prediction Engine 분석을 실행하시겠습니까?"
-    );
-    if (!ok) return;
+  const runAIAnalysisV2 = async (style: 'hanna' | 'monad' = 'hanna', isAutoRun = false) => {
+    // 가드 로직: 해당 해석이 이미 존재하면 재생성 방지
+    if (style === 'hanna' && session.ai_reading?.tarot_reading?.choihanna) {
+      if (!isAutoRun) alert("최한나 해석이 이미 생성되어 있습니다.");
+      return;
+    }
+    if (style === 'monad' && session.ai_reading?.tarot_reading?.monad) {
+      if (!isAutoRun) alert("모나드 해석이 이미 생성되어 있습니다.");
+      return;
+    }
+
+    if (!isAutoRun) {
+      const ok = window.confirm(
+        "⚠️ API 비용이 발생합니다!\n\n" +
+        "고객: " + (session.user_name || "이름없음") + "\n" +
+        "질문: " + session.question + "\n" +
+        `해석 스타일: ${style === 'monad' ? '모나드' : '최한나'}\n\n` +
+        "v8 Symbolic Prediction Engine 분석을 실행하시겠습니까?"
+      );
+      if (!ok) return;
+    }
 
     setAnalysisError(null);
     setAnalyzing(true);
@@ -494,6 +514,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
         forcetellData: forcetellData.trim() || null,
         manseryeokData: sajuDataForAI,
         locale: session.locale || "kr",
+        style,
       };
 
       const { data: aiData, error: fnError } = await supabase.functions.invoke("ai-reading-v4", {
@@ -514,15 +535,26 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
         result.management_tracks = aiData.management_tracks;
       }
 
+      // 기존 데이터와 병합 (다른 스타일 리딩 덮어쓰기 방지)
+      const existingReading = session.ai_reading || {};
+      const mergedReading = {
+        ...existingReading,
+        ...result,
+        tarot_reading: {
+          ...(existingReading.tarot_reading || {}),
+          ...(result.tarot_reading || {}),
+        }
+      };
+
       await supabase.from("reading_sessions").update({
-        ai_reading: result as any,
+        ai_reading: mergedReading as any,
         saju_data: sajuDataForAI as any,
         status: "completed",
       }).eq("id", session.id);
 
       onUpdate({
         ...session,
-        ai_reading: result,
+        ai_reading: mergedReading,
         saju_data: sajuDataForAI,
         status: "completed",
       });
@@ -991,24 +1023,43 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
           )}
 
           {/* 메인 버튼: AI 분석 (v2) */}
-          <Button
-            className="w-full rounded-xl bg-gradient-to-r from-purple-600 to-violet-500 text-white font-medium shadow-lg"
-            onClick={runAIAnalysisV2}
-            disabled={analyzing}
-          >
-            {analyzing ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                AI 분석 진행 중... (1~2분 소요)
-              </>
-            ) : (
-              <>
-                <Sparkles className="mr-2 h-4 w-4" />
-                {session.status === "completed" ? "✦ AI 재분석 (v8)" : "✦ AI 분석 실행 (v8)"}
-                {forcetellData.trim() && <Badge variant="outline" className="ml-2 text-[10px] border-gold/30 text-gold">포스텔러</Badge>}
-              </>
-            )}
-          </Button>
+          <div className="flex gap-2 w-full">
+            <Button
+              className="w-1/2 rounded-xl bg-gradient-to-r from-purple-600 to-violet-500 text-white font-medium shadow-lg"
+              onClick={() => runAIAnalysisV2('hanna')}
+              disabled={analyzing}
+            >
+              {analyzing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  진행 중...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  {session.status === "completed" && session.ai_reading?.tarot_reading?.choihanna ? "최한나 완료" : "최한나 분석 실행"}
+                </>
+              )}
+            </Button>
+
+            <Button
+              className="w-1/2 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-medium shadow-lg"
+              onClick={() => runAIAnalysisV2('monad')}
+              disabled={analyzing}
+            >
+              {analyzing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  진행 중...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  {session.status === "completed" && session.ai_reading?.tarot_reading?.monad ? "모나드 재분석" : "모나드 분석 실행"}
+                </>
+              )}
+            </Button>
+          </div>
         </CardContent>
       </Card>
 

@@ -426,7 +426,6 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     },
     { system: "numerology", ...numerologyResult },
     {
-      system: "astrology",
       ...astrologyAnalysis,
       characteristics: [
         ...(astrologyAnalysis?.characteristics || []),
@@ -436,7 +435,6 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
       ].filter(Boolean)
     },
     {
-      system: "ziwei",
       ...ziweiAnalysis,
       characteristics: [
         ...(ziweiAnalysis?.characteristics || []),
@@ -446,7 +444,7 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     }
   ];
 
-  const activeEngines = systemResults.filter(r => {
+  const activeEngines = systemResults.filter((r: any) => {
     if (r.system === "tarot") return !!r.category;
     if (r.system === "saju") return !!r.dayMaster;
     if (r.system === "astrology") return !!r.planet_positions;
@@ -531,8 +529,9 @@ ${sajuSymbolic}
 출력 JSON의 "total_systems"는 위 유효 엔진 수를, "converged_count"는 그중 일치도가 높은 엔진 수를 기입하세요.
 `;
 
-  const totalSystems = activeEngines.length + (activeEngines.some(e => e.system === "tarot") ? 2 : 0); // Tarot counts as 3
-  const modelInput = buildLocalizedNarrativePrompt(input.locale || 'kr', dataBlock, totalSystems);
+  const totalSystems = activeEngines.length; // Tarot counts as 1 now
+  const requestedStyle = input.style === 'monad' ? 'monad' : 'hanna';
+  const modelInput = buildLocalizedNarrativePrompt(input.locale || 'kr', dataBlock, totalSystems, requestedStyle);
 
   // [CRITICAL DIAGNOSTICS - DEPLOYMENT VERIFICATION]
   console.log("[PlatformV9] sajuRaw Check:", JSON.stringify(sajuRaw));
@@ -558,7 +557,7 @@ ${sajuSymbolic}
       rawNarrative = "FETCH_ERROR: " + (e as Error).message;
     }
 
-  const initialFallback = buildFallbackReading("", grade, scores, tarotCards, input.question);
+  const initialFallback = buildFallbackReading("", grade, scores, tarotCards, input.question, requestedStyle);
   let parsed: any;
   
   try {
@@ -745,15 +744,19 @@ function calculateSystemScore(systemResults: any[], systemName: string): number 
   return Math.min(1, magnitude / 2);
 }
 
-function buildFallbackReading(text: string, grade: string, scores: any, cards: any[], question: string) {
+function buildFallbackReading(text: string, grade: string, scores: any, cards: any[], question: string, style: 'hanna'|'monad' = 'hanna') {
   const defaultText = text || "인공지능 모델의 응답을 파싱하는 과정에서 오류가 발생했습니다. 요약된 정보를 기반으로 조언 드립니다.";
+  
+  const tarotReading: any = {};
+  if (style === 'monad') {
+    tarotReading.monad = { cards: cards?.map((c: any) => ({ name: c.name, position: c.position || "", reversed: c.isReversed || false })) || [], story: defaultText, key_message: "" };
+  } else {
+    tarotReading.choihanna = { cards: cards?.map((c: any) => ({ name: c.name, position: c.position || "", reversed: c.isReversed || false })) || [], story: defaultText, key_message: "" };
+  }
+
   return {
     reading_info: { question, grade, date: new Date().toISOString().slice(0, 10), card_count: cards?.length || 0 },
-    tarot_reading: {
-      waite: { cards: cards?.map((c: any) => ({ name: c.name, position: c.position || "", reversed: c.isReversed || false })) || [], story: defaultText, key_message: "" },
-      choihanna: null,
-      monad: null,
-    },
+    tarot_reading: tarotReading,
     convergence: { 
       total_systems: 6, 
       converged_count: Math.round((scores.overall / 100) * 6), 
