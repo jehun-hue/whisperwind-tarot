@@ -198,11 +198,11 @@ function calculatePrecisePlanetPositions(year: number, month: number, day: numbe
   const mercuryLong = ((168.6562 + 4.0923344368 * jd + 0.3 * Math.sin((sunAnomaly + 30) * Math.PI / 180)) % 360 + 360) % 360;
   const venusLong = ((76.6799 + 1.6021302244 * jd + 0.2 * Math.sin((sunAnomaly * 0.6 + 45) * Math.PI / 180)) % 360 + 360) % 360;
   const marsLong = ((49.5574 + 0.5240207766 * jd + 0.15 * Math.sin(sunAnomaly * Math.PI / 180)) % 360 + 360) % 360;
-  const jupiterLong = ((34.40438 + 0.0831 * (jd - 2451545) / 365.25) % 360 + 360) % 360;
-  const saturnLong = ((49.94432 + 0.0335 * (jd - 2451545) / 365.25) % 360 + 360) % 360;
-  const uranusLong = ((313.23218 + 0.01173 * (jd - 2451545) / 365.25) % 360 + 360) % 360;
-  const neptuneLong = ((304.88003 + 0.006 * (jd - 2451545) / 365.25) % 360 + 360) % 360;
-  const plutoLong = ((238.92881 + 0.004 * (jd - 2451545) / 365.25) % 360 + 360) % 360;
+  const jupiterLong = ((34.40438 + 0.0831 * (jd - 2451545)) % 360 + 360) % 360;
+  const saturnLong = ((49.94432 + 0.0335 * (jd - 2451545)) % 360 + 360) % 360;
+  const uranusLong = ((313.23218 + 0.01173 * (jd - 2451545)) % 360 + 360) % 360;
+  const neptuneLong = ((304.88003 + 0.006 * (jd - 2451545)) % 360 + 360) % 360;
+  const plutoLong = ((238.92881 + 0.004 * (jd - 2451545)) % 360 + 360) % 360;
 
   return [
     { planet: "태양" as Planet, longitude: sunTrue },

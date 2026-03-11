@@ -106,15 +106,23 @@ export const SYMBOL_MAPPINGS: SymbolMapping[] = [
   { symbol_id: "S_CHUNG", system: "Saju", symbol_name: "충 존재", linked_patterns: ["P020", "P016"], semantic_values: { risk: 0.8, life_transition: 0.9, stability: -0.8 } },
   { symbol_id: "S_HAP", system: "Saju", symbol_name: "합 존재", linked_patterns: ["P024", "P004"], semantic_values: { stability: 0.9, relationship: 0.8 } },
   { symbol_id: "S_HYUNG", system: "Saju", symbol_name: "형살 존재", linked_patterns: ["P025", "P020"], semantic_values: { conflict: 0.9, risk: 0.7 } },
+  { symbol_id: "S_DM_JEONG", system: "Saju", symbol_name: "丁", linked_patterns: ["P022"], semantic_values: { opportunity: 0.7, emotion: 0.6 } },
 
   // Astrology
   { symbol_id: "A001", system: "Astrology", symbol_name: "Pluto Transit", linked_patterns: ["P018", "P026"], semantic_values: { life_transition: 0.9, growth: 0.8 } },
   { symbol_id: "A002", system: "Astrology", symbol_name: "Saturn Aspect", linked_patterns: ["P019", "P024"], semantic_values: { stability: 0.8, career: 0.6 } },
   { symbol_id: "A003", system: "Astrology", symbol_name: "Jupiter Transit", linked_patterns: ["P022", "P023"], semantic_values: { opportunity: 0.9, growth: 0.7 } },
   { symbol_id: "A004", system: "Astrology", symbol_name: "Mars Square", linked_patterns: ["P025", "P020"], semantic_values: { conflict: 0.8, risk: 0.7 } },
+  { symbol_id: "A005", system: "Astrology", symbol_name: "게자리 태양", linked_patterns: ["P002", "P005"], semantic_values: { relationship: 0.6, emotion: 0.7 } },
+  { symbol_id: "A006", system: "Astrology", symbol_name: "양자리 달", linked_patterns: ["P017", "P025"], semantic_values: { life_transition: 0.5, conflict: 0.6 } },
+
+  // Ziwei
+  { symbol_id: "Z001", system: "Ziwei", symbol_name: "토오국", linked_patterns: ["P024"], semantic_values: { stability: 0.8 } },
+  { symbol_id: "Z002", system: "Ziwei", symbol_name: "자 명궁", linked_patterns: ["P018"], semantic_values: { life_transition: 0.6, emotion: 0.7 } },
 
   // Numerology
   { symbol_id: "N001", system: "Numerology", symbol_name: "Life Path 1", linked_patterns: ["P009", "P006"], semantic_values: { career: 0.8, growth: 0.7 } },
   { symbol_id: "N005", system: "Numerology", symbol_name: "Personal Year 5", linked_patterns: ["P017", "P022"], semantic_values: { life_transition: 0.8, opportunity: 0.7 } },
+  { symbol_id: "N007", system: "Numerology", symbol_name: "Personal Year 7", linked_patterns: ["P018", "P009"], semantic_values: { life_transition: 0.7, growth: 0.5 } },
   { symbol_id: "N009", system: "Numerology", symbol_name: "Personal Year 9", linked_patterns: ["P016", "P003"], semantic_values: { life_transition: 0.9, emotion: -0.6 } }
 ];

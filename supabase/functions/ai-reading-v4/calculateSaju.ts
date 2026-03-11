@@ -23,6 +23,10 @@ export function calculateSaju(
     day: result.pillars.day,
     hour: result.pillars.hour,
     dayMaster: result.dayMaster,
-    elements: result.elements
+    elements: result.elements,
+    jd: result.jd,
+    sunLong: result.sunLong,
+    termIdx: result.termIdx,
+    gender
   };
 }

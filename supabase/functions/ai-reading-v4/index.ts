@@ -15,94 +15,7 @@ const corsHeaders = {
 
 const READING_VERSION = "v9_symbolic_prediction_engine";
 
-/**
- * Gemini 응답에서 JSON을 안전하게 파싱하는 유틸.
- * LLM이 반환한 문자열에 raw 제어 문자(\\n, \\t, \\r 등)가
- * JSON 문자열 리터럴 내부에 포함되어 JSON.parse가 실패하는 문제를 방지.
- */
-function safeParseGeminiJSON(rawText: string): any {
-  if (!rawText || typeof rawText !== 'string') return {};
-
-  // Step 1: 코드블록 추출
-  let jsonString = '';
-  const codeBlockMatch = rawText.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (codeBlockMatch) {
-    jsonString = codeBlockMatch[1].trim();
-  } else {
-    const start = rawText.indexOf('{');
-    const end = rawText.lastIndexOf('}');
-    if (start !== -1 && end !== -1 && end > start) {
-      jsonString = rawText.substring(start, end + 1);
-    } else {
-      jsonString = rawText.trim();
-    }
-  }
-
-  // Step 2: 첫 시도 — 그대로 파싱
-  try {
-    return JSON.parse(jsonString);
-  } catch (e1) {
-    console.warn('[safeParseGeminiJSON] Step 2 failed:', (e1 as Error).message);
-  }
-
-  // Step 3: 문자열 내부 줄바꿈/탭 이스케이프
-  try {
-    const escaped = jsonString.replace(
-      /"(?:[^"\\]|\\.)*"/gs,
-      (match) => match
-        .replace(/\n/g, '\\n')
-        .replace(/\r/g, '\\r')
-        .replace(/\t/g, '\\t')
-    );
-    return JSON.parse(escaped);
-  } catch (e2) {
-    console.warn('[safeParseGeminiJSON] Step 3 failed');
-  }
-
-  // Step 4: 제어 문자 전체 제거
-  try {
-    const cleaned = jsonString.replace(/[\x00-\x1F\x7F]/g, ' ');
-    return JSON.parse(cleaned);
-  } catch (e3) {
-    console.warn('[safeParseGeminiJSON] Step 4 failed');
-  }
-
-  // Step 5: jsonrepair 패턴 — 콤마 누락, 따옴표 깨짐 수정
-  try {
-    let repaired = jsonString;
-    // 콤마 누락 수정: }" 또는 ]" 패턴 → }," 또는 ],"
-    repaired = repaired.replace(/}\s*"/g, '}, "');
-    repaired = repaired.replace(/]\s*"/g, '], "');
-    // 값 뒤 콤마 누락: "value" "key" → "value", "key"
-    repaired = repaired.replace(/"\s+"/g, '", "');
-    // 숫자/bool 뒤 콤마 누락
-    repaired = repaired.replace(/(true|false|null|\d+\.?\d*)\s*\n\s*"/g, '$1,\n"');
-    // 문자열 값 끝 뒤 콤마 누락
-    repaired = repaired.replace(/"\s*\n\s*"/g, '",\n"');
-    // 제어 문자 제거
-    repaired = repaired.replace(/[\x00-\x1F\x7F]/g, ' ');
-    return JSON.parse(repaired);
-  } catch (e4) {
-    console.warn('[safeParseGeminiJSON] Step 5 repair failed');
-  }
-
-  // Step 6: 잘린 JSON 복구 — 닫는 괄호 부족 시 추가
-  try {
-    let truncFixed = jsonString.replace(/[\x00-\x1F\x7F]/g, ' ');
-    const openBraces = (truncFixed.match(/{/g) || []).length;
-    const closeBraces = (truncFixed.match(/}/g) || []).length;
-    const openBrackets = (truncFixed.match(/\[/g) || []).length;
-    const closeBrackets = (truncFixed.match(/]/g) || []).length;
-    for (let i = 0; i < openBrackets - closeBrackets; i++) truncFixed += ']';
-    for (let i = 0; i < openBraces - closeBraces; i++) truncFixed += '}';
-    return JSON.parse(truncFixed);
-  } catch (e5) {
-    console.error('[safeParseGeminiJSON] ALL attempts failed');
-    console.error('Raw (first 500):', rawText.substring(0, 500));
-    throw new Error('JSON 파싱 완전 실패: ' + rawText.substring(0, 200));
-  }
-}
-
+import { safeParseGeminiJSON } from "./jsonUtils.ts";
 
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -111,9 +24,15 @@ serve(async (req: Request) => {
     const API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
     if (!API_KEY) throw new Error("API_KEY not configured");
 
-    const payload = await req.json();
+    let payload: any;
+    try {
+      payload = await req.json();
+    } catch (pe: any) {
+      throw new Error(`Invalid JSON payload: ${pe.message}`);
+    }
+
     const { sessionId, question, mode = "full", locale = "kr" } = payload;
-    payload.locale = locale; // 엔진에 locale 전달 보장
+    payload.locale = locale;
 
     if (mode === "chat") {
       const chatResponse = await processChat(API_KEY, question, payload.context);
@@ -146,10 +65,16 @@ serve(async (req: Request) => {
 
     // Run Production Engine v9
     console.log(`[PlatformV9] Starting Analysis Path: ${READING_VERSION}...`);
-    const result = await runFullProductionEngineV8(supabase, API_KEY, payload);
+    let result: any;
+    try {
+      result = await runFullProductionEngineV8(supabase, API_KEY, payload);
+    } catch (engineErr: any) {
+      // Re-throw to be caught by the outer catch to return 200 degraded
+      throw engineErr;
+    }
 
     // Cache logic
-    if (sessionId && question) {
+    if (sessionId && question && result.status === "success") {
       await supabase.from("reading_results").insert({
         session_id: sessionId,
         question,
@@ -165,9 +90,27 @@ serve(async (req: Request) => {
     });
 
   } catch (err: any) {
-    console.error(`[PlatformV8] Fatal Trace: ${err.message}`);
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
+    console.error(`[PlatformV9] Resilient Handler Caught: ${err.message}`);
+    
+    // Final defensive return: ALWAYS HTTP 200 with degraded status
+    const recoveryPayload = {
+      status: "success",
+      result_status: "degraded",
+      error_type: "engine_exception",
+      error: err.message,
+      debug_raw: err.rawNarrative || "", 
+      reading: {
+        reading_info: { grade: "C", date: new Date().toISOString().slice(0, 10), card_count: 0 },
+        final_message: { 
+          title: "운세 분석 안내", 
+          summary: "현재 인공지능 분석 가동량이 많아 심층 분석이 일시적으로 제한되었습니다. 상담 내용을 바탕으로 요약된 결과를 제공해 드립니다." 
+        },
+        action_guide: { do_list: [], dont_list: [], lucky: {} }
+      }
+    };
+
+    return new Response(JSON.stringify(recoveryPayload), {
+      status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

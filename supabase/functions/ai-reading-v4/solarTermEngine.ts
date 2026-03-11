@@ -47,14 +47,23 @@ export function getSunLongitude(jd: number): number {
 }
 
 export function findSolarTermJD(year: number, targetLong: number): number {
-  const startDay = new Date(Date.UTC(year, 0, 1)).getTime() / (1000 * 60 * 60 * 24) + 2440587.5;
-  let jd = startDay + (targetLong / 360) * 365.25 + 80; // Offset around 春分
+  // Chun-bun (0 degrees) is roughly March 21st (day 80)
+  const jan1JD = new Date(Date.UTC(year, 0, 1)).getTime() / 86400000 + 2440587.5;
   
-  // High precision iterative convergence (Newton-Raphson-like)
-  for (let i = 0; i < 10; i++) {
+  // Calculate approximate days from Jan 1st based on target longitude
+  // Longitude 0 is ~day 80.
+  let daysFromChunbun = (targetLong - 0 + 360) % 360 * (365.2422 / 360);
+  let jd = jan1JD + 79 + daysFromChunbun;
+  
+  // Ensure we stay within the target year's neighborhood
+  if (jd > jan1JD + 366) jd -= 365.2422;
+  if (jd < jan1JD) jd += 365.2422;
+
+  // Iterative refinement
+  for (let i = 0; i < 8; i++) {
     const currentLong = getSunLongitude(jd);
     let diff = (currentLong - targetLong + 180) % 360 - 180;
-    jd -= diff / 0.9856; // Sun moves ~0.9856 deg/day
+    jd -= diff / 0.9856;
   }
   
   return jd;

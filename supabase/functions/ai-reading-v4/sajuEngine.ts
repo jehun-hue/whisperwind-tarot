@@ -53,7 +53,8 @@ export function getFullSaju(
   }
   
   const solarTimeMinute = minute + (longitude - 135) * 4 + dstOffset;
-  const correctedDate = new Date(Date.UTC(year, month - 1, day, hour, 0));
+  // 입력 hour는 KST(UTC+9) 기준이므로 UTC로 변환 (9시간 차감)
+  const correctedDate = new Date(Date.UTC(year, month - 1, day, hour - 9, 0));
   correctedDate.setUTCMinutes(solarTimeMinute);
 
   const jd = calculateJD(correctedDate);
@@ -79,7 +80,9 @@ export function getFullSaju(
   const dayMaster = dayPillar.stem;
 
   // 5. Hour Pillar
-  const hBranchIdx = Math.floor((correctedDate.getUTCHours() + 1) % 24 / 2);
+  // Use solar time (local hour adjusted for longitude/DST)
+  const solarHourValue = hour + (solarTimeMinute / 60);
+  const hBranchIdx = Math.floor(((solarHourValue + 1) % 24) / 2);
   const hStemBase = (dIdx % 10 * 2) % 10;
   const hStemIdx = (hStemBase + hBranchIdx) % 10;
   const hourPillar = { stem: STEMS[hStemIdx], branch: BRANCHES[hBranchIdx] };

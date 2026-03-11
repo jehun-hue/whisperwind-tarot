@@ -242,17 +242,23 @@ export async function analyzeSajuStructure(
   else strength = "극신약";
 
   // ── 3. 용신(用神) 추론 ──
-  // 신강 → 식상/재성/관성이 용신 (에너지 배출)
-  // 신약 → 비겁/인성이 용신 (에너지 보충)
+  // 신강 → 식상(설)/재성(극)/관성(극)이 용신
+  // 신약 → 비겁(부)/인성(생)이 용신
   let yongsin: string;
   if (strength === "극신강" || strength === "중신강") {
-    // 가장 약한 극설(洩) 오행 찾기
-    const drainMap: Record<string, string> = { "식상": getProducedElement(myElement), "재성": getConqueredElement(myElement) };
-    const weakest = Object.entries(elements).sort((a, b) => a[1] - b[1])[0];
-    yongsin = weakest ? weakest[0] : getProducedElement(myElement);
+    const drainElements = [getProducedElement(myElement), getConqueredElement(myElement), getConqueringElement(myElement)];
+    // 조후(Temperature) 고려: 화(火)가 강하면 수(水)를 우선 탐색
+    if (myElement === "화" || elements["화"] >= 3) {
+      yongsin = elements["수"] <= 1 ? "수" : drainElements[1]; 
+    } else {
+      // 일반적인 경우 가장 약한 극설 오행
+      const candidates = drainElements.sort((a, b) => (elements[a] || 0) - (elements[b] || 0));
+      yongsin = candidates[0];
+    }
   } else {
-    // 비겁 또는 인성 → 나와 같거나 나를 생하는 오행
-    yongsin = elements[myElement] <= (elements[getProducingElement(myElement)] || 0) ? myElement : getProducingElement(myElement);
+    // 신약: 나를 돕는 비겁(myElement)과 나를 생하는 인성(getProducingElement) 중 선택
+    const supportElements = [myElement, getProducingElement(myElement)];
+    yongsin = (elements[myElement] || 0) <= (elements[getProducingElement(myElement)] || 0) ? myElement : getProducingElement(myElement);
   }
 
   // ── 4. Characteristics 생성 ──
@@ -399,6 +405,12 @@ function getProducedElement(myEl: string): string {
 /** 내가 극하는 오행 (재성) */
 function getConqueredElement(myEl: string): string {
   const map: Record<string, string> = { "목": "토", "화": "금", "토": "수", "금": "목", "수": "화" };
+  return map[myEl] || myEl;
+}
+
+/** 나를 극하는 오행 (관성) */
+function getConqueringElement(myEl: string): string {
+  const map: Record<string, string> = { "목": "금", "화": "수", "토": "목", "금": "화", "수": "토" };
   return map[myEl] || myEl;
 }
 

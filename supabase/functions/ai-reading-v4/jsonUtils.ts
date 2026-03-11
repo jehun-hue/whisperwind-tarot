@@ -3,10 +3,10 @@
  * Gemini 응답에서 JSON을 안전하게 파싱하는 유틸 전용 파일.
  */
 
-export function safeParseGeminiJSON(rawText: string): any {
-  if (!rawText || typeof rawText !== 'string') return {};
+export function safeParseGeminiJSON(rawText: string, fallback: any = {}): any {
+  if (!rawText || typeof rawText !== 'string') return fallback;
 
-  // Step 1: 코드블록 추출
+  // Step 1: Extract JSON candidate
   let jsonString = '';
   const codeBlockMatch = rawText.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (codeBlockMatch) {
@@ -21,67 +21,51 @@ export function safeParseGeminiJSON(rawText: string): any {
     }
   }
 
-  // Step 2: 첫 시도 — 그대로 파싱
+  // Step 2: Try standard parse
   try {
     return JSON.parse(jsonString);
   } catch (e1) {
-    console.warn('[safeParseGeminiJSON] Step 2 failed:', (e1 as Error).message);
+    console.warn('[safeParseGeminiJSON] Standard parse failed, attempting repair...');
   }
 
-  // Step 3: 문자열 내부 줄바꿈/탭 이스케이프
+  // Step 3: Clean control characters and escape special characters in strings
   try {
-    const escaped = jsonString.replace(
-      /"(?:[^"\\]|\\.)*"/gs,
-      (match) => match
-        .replace(/\n/g, '\\n')
-        .replace(/\r/g, '\\r')
-        .replace(/\t/g, '\\t')
-    );
-    return JSON.parse(escaped);
-  } catch (e2) {
-    console.warn('[safeParseGeminiJSON] Step 3 failed');
-  }
-
-  // Step 4: 제어 문자 전체 제거
-  try {
-    const cleaned = jsonString.replace(/[\x00-\x1F\x7F]/g, ' ');
+    const cleaned = jsonString
+      .replace(/[\x00-\x1F\x7F]/g, ' ') // Remove control characters
+      .replace(/"(?:[^"\\]|\\.)*"/gs, (match) => 
+        match.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t')
+      );
     return JSON.parse(cleaned);
-  } catch (e3) {
-    console.warn('[safeParseGeminiJSON] Step 4 failed');
+  } catch (e2) {
+    console.warn('[safeParseGeminiJSON] Step 3 cleaning failed');
   }
 
-  // Step 5: jsonrepair 패턴 — 콤마 누락, 따옴표 깨짐 수정
+  // Step 4: Repair common JSON syntax errors
   try {
-    let repaired = jsonString;
-    // 콤마 누락 수정: }" 또는 ]" 패턴 → }," 또는 ],"
+    let repaired = jsonString.replace(/[\x00-\x1F\x7F]/g, ' ');
+    
+    // Fix missing commas between properties/elements
     repaired = repaired.replace(/}\s*"/g, '}, "');
     repaired = repaired.replace(/]\s*"/g, '], "');
-    // 값 뒤 콤마 누락: "value" "key" → "value", "key"
     repaired = repaired.replace(/"\s+"/g, '", "');
-    // 숫자/bool 뒤 콤마 누락
-    repaired = repaired.replace(/(true|false|null|\d+\.?\d*)\s*\n\s*"/g, '$1,\n"');
-    // 문자열 값 끝 뒤 콤마 누락
-    repaired = repaired.replace(/"\s*\n\s*"/g, '",\n"');
-    // 제어 문자 제거
-    repaired = repaired.replace(/[\x00-\x1F\x7F]/g, ' ');
+    repaired = repaired.replace(/(true|false|null|\d+)\s+"/g, '$1, "');
+    
+    // Fix trailing commas
+    repaired = repaired.replace(/,\s*}/g, '}').replace(/,\s*]/g, ']');
+    
+    // Ensure properly closed braces
+    const openBraces = (repaired.match(/{/g) || []).length;
+    const closeBraces = (repaired.match(/}/g) || []).length;
+    const openBrackets = (repaired.match(/\[/g) || []).length;
+    const closeBrackets = (repaired.match(/]/g) || []).length;
+    
+    if (openBrackets > closeBrackets) repaired += ']'.repeat(openBrackets - closeBrackets);
+    if (openBraces > closeBraces) repaired += '}'.repeat(openBraces - closeBraces);
+    
     return JSON.parse(repaired);
-  } catch (e4) {
-    console.warn('[safeParseGeminiJSON] Step 5 repair failed');
-  }
-
-  // Step 6: 잘린 JSON 복구 — 닫는 괄호 부족 시 추가
-  try {
-    let truncFixed = jsonString.replace(/[\x00-\x1F\x7F]/g, ' ');
-    const openBraces = (truncFixed.match(/{/g) || []).length;
-    const closeBraces = (truncFixed.match(/}/g) || []).length;
-    const openBrackets = (truncFixed.match(/\[/g) || []).length;
-    const closeBrackets = (truncFixed.match(/]/g) || []).length;
-    for (let i = 0; i < openBrackets - closeBrackets; i++) truncFixed += ']';
-    for (let i = 0; i < openBraces - closeBraces; i++) truncFixed += '}';
-    return JSON.parse(truncFixed);
-  } catch (e5) {
-    console.error('[safeParseGeminiJSON] ALL attempts failed');
-    console.error('Raw (first 500):', rawText.substring(0, 500));
-    throw new Error('JSON 파싱 완전 실패: ' + rawText.substring(0, 200));
+  } catch (e3) {
+    console.error('[safeParseGeminiJSON] ALL repair attempts failed');
+    console.error('Raw preview:', rawText.substring(0, 300));
+    return fallback;
   }
 }
