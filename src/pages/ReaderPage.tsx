@@ -578,6 +578,20 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
     if (reading.merged_reading) {
       // 신규 v4 형식
       sections.push({ title: "✦ 통합 분석 요약", content: reading.merged_reading.coreReading });
+
+      if (reading.tarot_reading?.choihanna) {
+        sections.push({
+          title: "💫 최한나 타로 해석",
+          content: reading.tarot_reading.choihanna.story + (reading.tarot_reading.choihanna.key_message ? `\n\n💎 핵심: ${reading.tarot_reading.choihanna.key_message}` : "")
+        });
+      }
+      if (reading.tarot_reading?.monad) {
+        sections.push({
+          title: "🔷 모나드 타로 해석",
+          content: reading.tarot_reading.monad.story + (reading.tarot_reading.monad.key_message ? `\n\n💎 핵심: ${reading.tarot_reading.monad.key_message}` : "")
+        });
+      }
+
       sections.push({ title: "🔮 사주 통찰", content: reading.merged_reading.structureInsight });
       sections.push({ title: "🃏 타로 상황", content: reading.merged_reading.currentSituation });
       sections.push({ title: "⭐ 점성술 타이밍", content: reading.merged_reading.timingInsight });
@@ -1117,6 +1131,28 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                 <div className="mb-3 text-xs font-bold text-gold tracking-widest uppercase">✨ 통합 분석 요약 (Integrated Summary)</div>
                 <p className="text-sm leading-relaxed text-foreground whitespace-pre-line font-medium">{renderSafe(reading.merged_reading.coreReading)}</p>
               </div>
+
+              {/* 1-1. Choi Hanna Tarot (v4 Detail) */}
+              {reading.tarot_reading?.choihanna && (
+                <div className="p-6 border-b border-border/10">
+                  <div className="mb-3 text-xs font-bold text-purple-400 tracking-widest uppercase">💫 최한나 타로 상세 해석 (Choi Hanna Reading)</div>
+                  <p className="text-sm leading-relaxed text-foreground whitespace-pre-line mb-3">{renderSafe(reading.tarot_reading.choihanna.story)}</p>
+                  {reading.tarot_reading.choihanna.key_message && (
+                    <p className="text-xs text-gold font-medium italic">💎 {renderSafe(reading.tarot_reading.choihanna.key_message)}</p>
+                  )}
+                </div>
+              )}
+
+              {/* 1-2. Monad Tarot (v4 Detail) */}
+              {reading.tarot_reading?.monad && (
+                <div className="p-6 border-b border-border/10 bg-secondary/5">
+                  <div className="mb-3 text-xs font-bold text-blue-400 tracking-widest uppercase">🔷 모나드 타로 상세 해석 (Monad Reading)</div>
+                  <p className="text-sm leading-relaxed text-foreground whitespace-pre-line mb-3">{renderSafe(reading.tarot_reading.monad.story)}</p>
+                  {reading.tarot_reading.monad.key_message && (
+                    <p className="text-xs text-gold font-medium italic">💎 {renderSafe(reading.tarot_reading.monad.key_message)}</p>
+                  )}
+                </div>
+              )}
 
               {/* 2. Engine Calculation Layer */}
               {reading.engine && (
