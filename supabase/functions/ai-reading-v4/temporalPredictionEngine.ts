@@ -264,15 +264,19 @@ export function predictTemporalV8(consensus: any, systemResults: any[], category
     tarotSignal.score * 0.20 +
     numSignal.score * 0.15;
 
-  // 1% 버그 완전 방지: 0.25(25%) 이하로 내려가지 않도록 하한선 설정
-  const pattern_factor = Math.max(0.3, prediction_strength || 0.5);
-  const consensus_factor = Math.max(0.4, consensus_score || 0.5);
+  // 1% 버그 원천 차단 및 수치 가독성 상향
+  // pattern_factor: 0.3 ~ 1.0 (기본 0.5)
+  const pattern_factor = Math.max(0.3, Number(prediction_strength) || 0.5);
+  // consensus_factor: 0.4 ~ 1.0 (기본 0.5)
+  const consensus_factor = Math.max(0.4, Number(consensus_score) || 0.5);
+  // transitAlignment: 이미 0.1~0.98 범위로 가공됨
+  const timing_factor = Math.max(0.2, Number(transitAlignment) || 0.5);
   
-  // 기본 확률 = (패턴강도 * 0.3) + (타이밍일치 * 0.5) + (합의도 * 0.2)
-  let base_event_probability = (pattern_factor * 0.3) + (transitAlignment * 0.5) + (consensus_factor * 0.2);
+  // 기본 확률 로직 상향: (패턴 20% + 타이밍 50% + 합의도 30%)
+  let base_event_probability = (pattern_factor * 0.2) + (timing_factor * 0.5) + (consensus_factor * 0.3);
   
-  // 보정: 하한선을 35% 정도로 상향 (최한나/모나드 브랜드 특성상 '매우 낮은' 확률은 사용자 경험 저해)
-  base_event_probability = Math.max(0.35, Math.min(0.92, base_event_probability));
+  // 최종 보정: 하한선을 40%로 상향하여 1~2%가 나오는 것을 물리적으로 차단
+  base_event_probability = Math.max(0.40, Math.min(0.90, base_event_probability));
 
   // 기여 요인 통합
   const allFactors = [
@@ -283,7 +287,7 @@ export function predictTemporalV8(consensus: any, systemResults: any[], category
     ...tarotSignal.factors
   ];
 
-  // 시간대별 보정 계수 및 텍스트 생성
+  // 시간대별 보정 계수 및 텍스트 생성 (각 윈도우가 서로 다른 값을 갖도록 강제 오프셋 적용)
   const hasChung = sajuSignal.factors.some(f => f.includes("충"));
   const hasImminent = tarotSignal.factors.some(f => f.includes("임박"));
   const hasOuterTransit = astroSignal.factors.some(f => f.includes("외행성"));
@@ -292,7 +296,8 @@ export function predictTemporalV8(consensus: any, systemResults: any[], category
   const windows: EventWindow[] = [
     {
       window: "단기 (0~3개월)",
-      probability: Math.min(0.99, base_event_probability * (hasChung || hasImminent ? 1.25 : 0.85)),
+      // 기본 base에 충/임박 시 가중치, 아닐 시 소폭 감쇄 (최소 35% 보장)
+      probability: Math.max(0.35, Math.min(0.98, base_event_probability * (hasChung || hasImminent ? 1.2 : 0.85))),
       description: (hasChung || hasImminent)
         ? "사주 충(沖)의 동적인 기운과 타로의 변화 에너지가 결합하여 3개월 이내에 눈에 띄는 상황 반전이나 결과가 나타날 가능성이 매우 높은 시기입니다."
         : "현재는 기운이 축적되는 단계로, 성급한 결정보다는 상황의 전개를 관망하며 초기 신호를 포착하는 것이 유리한 시기입니다.",
@@ -300,7 +305,8 @@ export function predictTemporalV8(consensus: any, systemResults: any[], category
     },
     {
       window: "중기 (3~12개월)",
-      probability: Math.min(0.99, base_event_probability * (hasOuterTransit || hasMajorPeriod ? 1.3 : 1.1)),
+      // 중기는 대개 에너지가 고조되는 시기 (최소 45% 보장하여 단기와 차별화)
+      probability: Math.max(0.45, Math.min(0.99, base_event_probability * (hasOuterTransit || hasMajorPeriod ? 1.3 : 1.15))),
       description: (hasOuterTransit || hasMajorPeriod)
         ? "점성술의 외행성 이동과 자미두수의 대한(大限) 에너지가 정렬되는 시기입니다. 인생의 중요한 방향성이 결정되거나 핵심적인 성취가 일어나는 정점의 기간이 될 것입니다."
         : "다중 시스템의 에너지가 본 궤도에 오르는 시기로, 앞서 준비한 일들이 본격적인 흐름을 타고 확산되는 양상을 보일 것입니다.",
@@ -308,7 +314,8 @@ export function predictTemporalV8(consensus: any, systemResults: any[], category
     },
     {
       window: "장기 (1년 이상)",
-      probability: Math.min(0.99, base_event_probability * (sajuSignal.factors.some(f => f.includes("합")) ? 1.15 : 0.95)),
+      // 장기는 안정화 단계 (최소 40% 보장하여 중기와 차별화)
+      probability: Math.max(0.40, Math.min(0.95, base_event_probability * (sajuSignal.factors.some(f => f.includes("합")) ? 1.1 : 0.95))),
       description: "변화의 결과가 삶의 고정된 구조로 자리 잡는 안착의 시기입니다. 단기적인 변동성보다는 지속 가능한 성장을 도모하고 내실을 다지기에 적합한 흐름이 예상됩니다.",
       contributing_factors: allFactors.filter(f => f.includes("합") || f.includes("장기") || f.includes("안정") || f.includes("구조"))
     }
