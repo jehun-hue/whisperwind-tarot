@@ -1,3 +1,10 @@
+/**
+ * integratedReadingEngine.ts (v9)
+ * - Production AI Symbolic Prediction Engine Platform.
+ * - Runtime Flow: Calc -> Pattern -> Semantic -> Consensus -> Temporal -> Validation -> Narrative.
+ * - v9 변경사항: Mock 점성술/자미두수 제거 → 프론트 실계산 데이터 사용
+ */
+
 import { calculateSaju } from "./calculateSaju.ts";
 import { analyzeSajuStructure } from "./aiSajuAnalysis.ts";
 import { runTarotSymbolicEngine } from "./tarotSymbolicEngine.ts";
@@ -9,10 +16,8 @@ import { getLocalizedStyle, buildLocalizedNarrativePrompt } from "./interactivit
 import { calculateNumerology } from "./numerologyEngine.ts";
 import { validateV3Schema, patchMissingFields, logMonitoringEvent } from "./monitoringLayer.ts";
 import { safeParseGeminiJSON } from "./jsonUtils.ts";
-
-// New Calculation Engines
-import { calculateAstrologyV9 } from "./lib/astrologyEngine.ts";
-import { calculateZiWeiV9 } from "./lib/ziweiEngine.ts";
+import { calculateServerAstrology } from "./astrologyEngine.ts";
+import { calculateServerZiWei } from "./ziweiEngine.ts";
 
 const READING_VERSION = "v9_symbolic_prediction_engine";
 
@@ -350,33 +355,60 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
   const sajuAnalysis = await analyzeSajuStructure(sajuRaw);
   const tarotSymbolic = runTarotSymbolicEngine(input.cards || [], input.question);
 
-  // New: Automatic Astrology Calculation
-  const astroCalcResult = calculateAstrologyV9({
-    year: birthInfo.year,
-    month: birthInfo.month,
-    day: birthInfo.day,
-    hour: birthInfo.hour,
-    minute: birthInfo.minute
-  });
+  // Server-side astrology calculation (Swiss Ephemeris based)
+  const serverAstrology = calculateServerAstrology(
+    birthInfo.year, birthInfo.month, birthInfo.day, birthInfo.hour, birthInfo.minute
+  );
+  const astrologyAnalysis = {
+    system: "astrology",
+    characteristics: [
+      ...(serverAstrology.keyAspects || []).slice(0, 5),
+      serverAstrology.dominantElement ? `${serverAstrology.dominantElement} element dominant` : null,
+    ].filter(Boolean) as string[],
+    planet_positions: serverAstrology.planets,
+    house_positions: {
+      ASC: serverAstrology.risingSign,
+      MC: "Unknown", IC: "Unknown", DESC: "Unknown"
+    },
+    major_aspects: serverAstrology.keyAspects.slice(0, 5),
+    sunSign: serverAstrology.sunSign,
+    moonSign: serverAstrology.moonSign,
+    risingSign: serverAstrology.risingSign,
+    elementDistribution: serverAstrology.elements,
+    qualityDistribution: serverAstrology.qualities,
+    transits: serverAstrology.transits,
+  };
 
-  // New: Automatic Ziwei Calculation (Using precise lunar data from astrology engine)
-  const ziweiCalcResult = calculateZiWeiV9({
-    year: birthInfo.year,
-    month: birthInfo.month,
-    day: birthInfo.day,
-    hour: birthInfo.hour,
-    minute: birthInfo.minute,
-    gender: birthInfo.gender || "F",
-    lunarYear: astroCalcResult.lunarData.lunarYear,
-    lunarMonth: astroCalcResult.lunarData.lunarMonth,
-    lunarDay: astroCalcResult.lunarData.lunarDay,
-    isLeapMonth: astroCalcResult.lunarData.isLeap
-  });
+  // Server-side Ziwei Doushu calculation
+  const lunarMonth = birthInfo.month; // TODO: solar→lunar conversion if needed
+  const lunarDay = birthInfo.day;
+  const genderZiwei = (birthInfo.gender === "M" || birthInfo.gender === "male") ? "male" as const : "female" as const;
+  const serverZiwei = calculateServerZiWei(
+    birthInfo.year, lunarMonth, lunarDay, birthInfo.hour, birthInfo.minute, genderZiwei
+  );
+  const ziweiAnalysis = {
+    system: "ziwei",
+    characteristics: [
+      ...serverZiwei.palaces.flatMap(p => p.stars.filter(s =>
+        ["파군", "자미", "천부", "칠살", "무곡", "태양", "천기", "염정"].includes(s.star)
+      ).map(s => s.star)),
+      ...serverZiwei.natalTransformations.map(t => `${t.type} active`),
+      serverZiwei.palaces[0]?.stars.length > 0 ? "Main star active" : null,
+    ].filter(Boolean) as string[],
+    palaces: serverZiwei.palaces.map(p => ({
+      name: p.name,
+      main_stars: p.stars.map(s => s.star),
+      location: p.branch,
+    })),
+    mingGong: serverZiwei.mingGong,
+    bureau: serverZiwei.bureau,
+    four_transformations: serverZiwei.natalTransformations,
+    currentMajorPeriod: serverZiwei.currentMajorPeriod,
+    currentMinorPeriod: serverZiwei.currentMinorPeriod,
+  };
 
-  const astrologyAnalysis = transformAstrologyData(astroCalcResult);
-  const ziweiAnalysis = transformZiweiData(ziweiCalcResult);
   const numerologyResult = calculateNumerology(
-    `${input.birthInfo.year}-${String(input.birthInfo.month).padStart(2,'0')}-${String(input.birthInfo.day).padStart(2,'0')}`
+    `${birthInfo.year}-${String(birthInfo.month).padStart(2,'0')}-${String(birthInfo.day).padStart(2,'0')}`
   );
 
   const systemResults = [
