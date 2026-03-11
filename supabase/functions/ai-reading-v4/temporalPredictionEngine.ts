@@ -152,6 +152,49 @@ function extractNumerologyTimingSignal(numResult: any): { score: number; factors
 }
 
 // ═══════════════════════════════════════
+// 자미두수 시간축 신호 추출
+// ═══════════════════════════════════════
+function extractZiweiTimingSignal(ziweiResult: any): { score: number; factors: string[] } {
+  let score = 0.5;
+  const factors: string[] = [];
+
+  if (!ziweiResult) return { score, factors };
+
+  const cmp = ziweiResult.currentMajorPeriod;
+  const cmi = ziweiResult.currentMinorPeriod;
+  const chars = ziweiResult.characteristics || [];
+
+  // 대한(Major Period) 분석
+  if (cmp) {
+    const hasLuckyStar = cmp.main_stars?.some((s: string) => ["자미", "천부", "태양", "무곡", "천동", "천기"].includes(s));
+    if (hasLuckyStar) {
+      score += 0.12;
+      factors.push(`자미두수 대한(${cmp.startAge}~${cmp.endAge}세) — 길성(吉星) 영향권 진입`);
+    }
+
+    const ft = ziweiResult.four_transformations || [];
+    // 화록(化祿)은 강력한 발생 신호
+    if (Array.isArray(ft) && ft.some((t: any) => t.type === "화록" && t.palace === cmp.name)) {
+      score += 0.18;
+      factors.push(`대한 화록(化祿) — ${cmp.name} 중심의 긍정적 변화 촉발`);
+    }
+  }
+
+  // 소한/유년 신호
+  if (chars.includes("화록 active")) {
+    score += 0.10;
+    factors.push("유년 화록 — 가시적인 기회 신호");
+  }
+
+  if (chars.includes("화기 active")) {
+    score -= 0.05;
+    factors.push("유년 화기 — 신중한 접근이 필요한 변곡점");
+  }
+
+  return { score: Math.max(0.1, Math.min(0.95, score)), factors };
+}
+
+// ═══════════════════════════════════════
 // 타로 Timing 차원 추출
 // ═══════════════════════════════════════
 function extractTarotTimingSignal(tarotResult: any): { score: number; factors: string[] } {
@@ -160,7 +203,8 @@ function extractTarotTimingSignal(tarotResult: any): { score: number; factors: s
 
   if (!tarotResult) return { score, factors };
 
-  const patterns = tarotResult.dominant_patterns || tarotResult.characteristics || {};
+  const patterns = tarotResult.dominant_patterns || {};
+  const chars = Array.isArray(tarotResult.characteristics) ? tarotResult.characteristics : [];
 
   // timing_event, cycle_change, life_transition 차원 확인
   const timingDimensions = ["timing_event", "cycle_change", "life_transition", "sudden_change", "movement"];
@@ -169,18 +213,18 @@ function extractTarotTimingSignal(tarotResult: any): { score: number; factors: s
     if (patterns[dim]) timingSum += patterns[dim];
   });
 
-  if (timingSum > 1.0) {
-    score += 0.15;
+  if (timingSum > 1.0 || chars.includes("임박")) {
+    score += 0.20;
     factors.push("타로 시간축 차원 강함 — 변화 이벤트 임박");
   } else if (timingSum > 0.5) {
-    score += 0.08;
+    score += 0.10;
     factors.push("타로 시간축 차원 중간 — 점진적 변화 진행");
   }
 
   // 정체(stagnation) 차원이 높으면 이벤트 지연
   if (patterns["stagnation"] && patterns["stagnation"] > 0.5) {
-    score -= 0.10;
-    factors.push("타로 정체 에너지 감지 — 이벤트 지연 가능성");
+    score -= 0.12;
+    factors.push("타로 정체 에너지 — 상황의 숙성 및 대기 필요");
   }
 
   return { score: Math.max(0.1, Math.min(0.95, score)), factors };
@@ -195,68 +239,72 @@ export function predictTemporalV8(consensus: any, systemResults: any[]): EventWi
   // 각 시스템에서 timing 신호 추출
   const sajuResult = systemResults.find(s => s.system === "saju");
   const astroResult = systemResults.find(s => s.system === "astrology");
+  const ziweiResult = systemResults.find(s => s.system === "ziwei");
   const numResult = systemResults.find(s => s.system === "numerology");
   const tarotResult = systemResults.find(s => s.system === "tarot");
 
   const sajuSignal = extractSajuTimingSignal(sajuResult);
   const astroSignal = extractAstrologyTimingSignal(astroResult);
+  const ziweiSignal = extractZiweiTimingSignal(ziweiResult);
   const numSignal = extractNumerologyTimingSignal(numResult);
   const tarotSignal = extractTarotTimingSignal(tarotResult);
 
-  // 가중 평균 transit alignment
-  // 사주 30%, 점성술 25%, 타로 20%, 수비학 15%, 기본 10%
+  // 각 시스템별 가중 평균 타이밍 감도 계산
+  // 사주(25%), 자미두수(20%), 점성술(20%), 타로(20%), 수비학(15%)
   const transitAlignment =
-    sajuSignal.score * 0.30 +
-    astroSignal.score * 0.25 +
+    sajuSignal.score * 0.25 +
+    ziweiSignal.score * 0.20 +
+    astroSignal.score * 0.20 +
     tarotSignal.score * 0.20 +
-    numSignal.score * 0.15 +
-    0.5 * 0.10; // 기본 바이어스
+    numSignal.score * 0.15;
 
-  // 핵심 공식: event_probability = pattern_strength × transit_alignment × consensus_score
-  const pattern_strength = Math.max(0, prediction_strength || (consensus_score * 0.8));
-  const base_event_probability = Math.max(0, pattern_strength * transitAlignment * Math.max(consensus_score, 0.1));
+  // 1% 버그 수정: 엄격한 곱연산 대신 가중치 부여된 선형 결합 및 부스트 적용
+  // event_probability가 0.1(10%) 이하로 떨어지는 것을 방지하여 '의미 없는 예측' 회피
+  const pattern_factor = Math.max(0.2, prediction_strength || 0.5);
+  const consensus_factor = Math.max(0.3, consensus_score || 0.4);
+  
+  // 기본 확률 = (패턴강도 * 0.4) + (타이밍일치 * 0.4) + (합의도 * 0.2)
+  let base_event_probability = (pattern_factor * 0.4) + (transitAlignment * 0.4) + (consensus_factor * 0.2);
+  
+  // 보정: 너무 낮은 확률은 20% 수준으로 보정 (최한나 해석 스타일 특성상 1%는 부적절)
+  base_event_probability = Math.max(0.2, Math.min(0.9, base_event_probability));
 
   // 기여 요인 통합
   const allFactors = [
     ...sajuSignal.factors,
+    ...ziweiSignal.factors,
     ...astroSignal.factors,
     ...numSignal.factors,
     ...tarotSignal.factors
   ];
 
-  // 시간대별 보정 계수 (실데이터 기반 동적 계산)
+  // 시간대별 보정 계수 및 텍스트 생성
   const hasChung = sajuSignal.factors.some(f => f.includes("충"));
-  const hasHarmony = sajuSignal.factors.some(f => f.includes("합"));
+  const hasImminent = tarotSignal.factors.some(f => f.includes("임박"));
   const hasOuterTransit = astroSignal.factors.some(f => f.includes("외행성"));
-
-  // 단기: 충이 있으면 확률↑, 중장기: 합/transit 있으면 확률↑
-  const shortTermMultiplier = hasChung ? 1.15 : 1.0;
-  const midTermMultiplier = hasOuterTransit ? 1.3 : 1.1;
-  const longTermMultiplier = hasHarmony ? 1.2 : 0.9;
+  const hasMajorPeriod = ziweiSignal.factors.some(f => f.includes("대한"));
 
   const windows: EventWindow[] = [
     {
       window: "단기 (0~3개월)",
-      probability: Math.min(0.99, base_event_probability * shortTermMultiplier),
-      description: shortTermMultiplier > 1.0
-        ? "사주 충(沖) 구조와 타로 변화 에너지가 결합하여 빠른 시일 내 상황 변동이 예상되는 시기입니다."
-        : "에너지의 초기 발현 단계로, 주변 환경에서 미세한 신호가 감지되기 시작하는 시기입니다.",
-      contributing_factors: allFactors.filter(f => f.includes("단기") || f.includes("충") || f.includes("임박"))
+      probability: Math.min(0.99, base_event_probability * (hasChung || hasImminent ? 1.25 : 0.85)),
+      description: (hasChung || hasImminent)
+        ? "사주 충(沖)의 동적인 기운과 타로의 변화 에너지가 결합하여 3개월 이내에 눈에 띄는 상황 반전이나 결과가 나타날 가능성이 매우 높은 시기입니다."
+        : "현재는 기운이 축적되는 단계로, 성급한 결정보다는 상황의 전개를 관망하며 초기 신호를 포착하는 것이 유리한 시기입니다.",
+      contributing_factors: allFactors.filter(f => f.includes("단기") || f.includes("충") || f.includes("임박") || f.includes("유년"))
     },
     {
       window: "중기 (3~12개월)",
-      probability: Math.min(0.99, base_event_probability * midTermMultiplier),
-      description: midTermMultiplier > 1.1
-        ? "외행성 Transit과 수비학 에너지가 정렬되어 핵심적인 변화가 가속화되는 정점 시기입니다."
-        : "다중 체계의 기운이 서서히 모여들며, 의미 있는 변화의 윤곽이 잡히는 시기입니다.",
-      contributing_factors: allFactors.filter(f => f.includes("Transit") || f.includes("Year") || f.includes("확장"))
+      probability: Math.min(0.99, base_event_probability * (hasOuterTransit || hasMajorPeriod ? 1.3 : 1.1)),
+      description: (hasOuterTransit || hasMajorPeriod)
+        ? "점성술의 외행성 이동과 자미두수의 대한(大限) 에너지가 정렬되는 시기입니다. 인생의 중요한 방향성이 결정되거나 핵심적인 성취가 일어나는 정점의 기간이 될 것입니다."
+        : "다중 시스템의 에너지가 본 궤도에 오르는 시기로, 앞서 준비한 일들이 본격적인 흐름을 타고 확산되는 양상을 보일 것입니다.",
+      contributing_factors: allFactors.filter(f => f.includes("Transit") || f.includes("Year") || f.includes("확장") || f.includes("대한"))
     },
     {
       window: "장기 (1년 이상)",
-      probability: Math.min(0.99, base_event_probability * longTermMultiplier),
-      description: longTermMultiplier > 1.0
-        ? "사주 합(합) 구조가 장기적 안정을 뒷받침하여, 변화의 결과가 새로운 삶의 구조로 정착되는 시기입니다."
-        : "변화의 결과가 서서히 안정화되어 일상에 통합되는 시기입니다. 급격한 변동보다는 점진적 정착이 예상됩니다.",
+      probability: Math.min(0.99, base_event_probability * (sajuSignal.factors.some(f => f.includes("합")) ? 1.15 : 0.95)),
+      description: "변화의 결과가 삶의 고정된 구조로 자리 잡는 안착의 시기입니다. 단기적인 변동성보다는 지속 가능한 성장을 도모하고 내실을 다지기에 적합한 흐름이 예상됩니다.",
       contributing_factors: allFactors.filter(f => f.includes("합") || f.includes("장기") || f.includes("안정") || f.includes("구조"))
     }
   ];
