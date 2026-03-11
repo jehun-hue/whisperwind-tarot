@@ -249,7 +249,8 @@ export default function ReaderPage() {
 }
 
 function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdate: (s: ReadingSession) => void }) {
-  const [analyzing, setAnalyzing] = useState(false);
+  const [analyzingStyle, setAnalyzingStyle] = useState<'hanna' | 'monad' | 'v1' | null>(null);
+  const analyzing = !!analyzingStyle;
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [counselorComment, setCounselorComment] = useState(session.counselor_comment || "");
   const [savingComment, setSavingComment] = useState(false);
@@ -312,7 +313,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
     if (!ok) return;
 
     setAnalysisError(null);
-    setAnalyzing(true);
+    setAnalyzingStyle('v1');
     try {
       // 상태 DB만 업데이트 (onUpdate 호출 생략 - 중간 re-render로 인한 cascade 방지)
       await supabase.from("reading_sessions").update({ status: "analyzing" }).eq("id", session.id);
@@ -425,7 +426,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       setAnalysisError(err instanceof Error ? err.message : "분석 중 오류가 발생했습니다.");
       await supabase.from("reading_sessions").update({ status: "error" }).eq("id", session.id);
     } finally {
-      setAnalyzing(false);
+      setAnalyzingStyle(null);
     }
   };
 
@@ -452,7 +453,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
     }
 
     setAnalysisError(null);
-    setAnalyzing(true);
+    setAnalyzingStyle(style);
     try {
       await supabase.from("reading_sessions").update({ status: "analyzing" }).eq("id", session.id);
 
@@ -557,7 +558,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       await supabase.from("reading_sessions").update({ status: "error" }).eq("id", session.id);
       onUpdate({ ...session, status: "error" });
     } finally {
-      setAnalyzing(false);
+      setAnalyzingStyle(null);
     }
   };
 
@@ -1036,7 +1037,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
               onClick={() => runAIAnalysisV2('hanna')}
               disabled={analyzing}
             >
-              {analyzing ? (
+              {analyzingStyle === 'hanna' ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   진행 중...
@@ -1054,7 +1055,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
               onClick={() => runAIAnalysisV2('monad')}
               disabled={analyzing}
             >
-              {analyzing ? (
+              {analyzingStyle === 'monad' ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   진행 중...
@@ -1062,7 +1063,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
               ) : (
                 <>
                   <Sparkles className="mr-2 h-4 w-4" />
-                  {session.status === "completed" && session.ai_reading?.tarot_reading?.monad ? "모나드 재분석" : "모나드 분석 실행"}
+                  {session.status === "completed" && session.ai_reading?.tarot_reading?.monad ? "모나드 완료" : "모나드 분석 실행"}
                 </>
               )}
             </Button>
@@ -1503,12 +1504,37 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                         ))}
                       </div>
                     )}
-                    <div className="rounded-lg border border-border bg-secondary p-4">
-                      <p className="text-sm leading-relaxed text-foreground whitespace-pre-line">{renderSafe(sys.detail)}</p>
+                    <div className="rounded-lg border border-border bg-secondary p-4 text-foreground">
+                      <p className="text-sm leading-relaxed whitespace-pre-line">{renderSafe(sys.detail)}</p>
                     </div>
                   </div>
                 );
               })}
+
+              {/* Tarot Deep Details (Hanna/Monad) in Legacy UI */}
+              {reading.tarot_reading?.choihanna && (
+                <div className="space-y-2">
+                  <div className="text-xs font-semibold text-purple-400 tracking-wider uppercase">💫 최한나 타로 상세</div>
+                  <div className="rounded-lg border border-border bg-purple-500/5 p-4 text-foreground">
+                    <p className="text-sm leading-relaxed whitespace-pre-line">{renderSafe(reading.tarot_reading.choihanna.story)}</p>
+                    {reading.tarot_reading.choihanna.key_message && (
+                      <p className="mt-3 text-xs text-gold font-medium italic">💎 {renderSafe(reading.tarot_reading.choihanna.key_message)}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {reading.tarot_reading?.monad && (
+                <div className="space-y-2">
+                  <div className="text-xs font-semibold text-blue-400 tracking-wider uppercase">🔷 모나드 타로 상세</div>
+                  <div className="rounded-lg border border-border bg-blue-500/5 p-4 text-foreground">
+                    <p className="text-sm leading-relaxed whitespace-pre-line">{renderSafe(reading.tarot_reading.monad.story)}</p>
+                    {reading.tarot_reading.monad.key_message && (
+                      <p className="mt-3 text-xs text-gold font-medium italic">💎 {renderSafe(reading.tarot_reading.monad.key_message)}</p>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Time Flow */}
               {reading.final_reading?.time_flow && (
