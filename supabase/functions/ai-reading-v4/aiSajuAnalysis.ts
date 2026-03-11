@@ -337,16 +337,18 @@ export async function analyzeSajuStructure(
   // === 대운 분석 ===
   let daewoon: DaewoonResult | null = null;
   try {
-    const yearStemIdx = STEMS.indexOf(sajuRaw.year?.stem);
+    const yearStemIdx = STEMS.indexOf(sajuRaw.year?.stem || (typeof sajuRaw.year === 'string' ? sajuRaw.year[0] : undefined));
     const monthStemIdx = STEMS.indexOf(sajuRaw.month?.stem);
     const monthBranchIdx = BRANCHES.indexOf(sajuRaw.month?.branch);
-    const gender = sajuRaw.gender === 'F' || sajuRaw.gender === 'female' ? 'F' : 'M';
+    const gender = (sajuRaw.gender === 'F' || sajuRaw.gender === 'female') ? 'F' : 'M';
     const birthYear = Number(sajuRaw.year?.year || sajuRaw.year);
-    const currentAge = new Date().getFullYear() - birthYear;
+    const currentAge = new Date().getFullYear() - (Number.isFinite(birthYear) ? birthYear : 1990);
+    const sLong = sajuRaw.sunLong ?? sajuRaw.sun_long ?? 0;
+    const jdVal = sajuRaw.jd ?? sajuRaw.julian_day ?? 0;
 
-    if (yearStemIdx >= 0 && monthStemIdx >= 0 && monthBranchIdx >= 0 && sajuRaw.sunLong !== undefined) {
+    if (yearStemIdx >= 0 && monthStemIdx >= 0 && monthBranchIdx >= 0) {
       const { age: startAge, isForward } = getDaewoonInfo(
-        yearStemIdx, gender, sajuRaw.sunLong, sajuRaw.jd, birthYear
+        yearStemIdx, gender, sLong, jdVal, birthYear
       );
       daewoon = calculateFullDaewoon(monthStemIdx, monthBranchIdx, dm, startAge, isForward, currentAge);
 

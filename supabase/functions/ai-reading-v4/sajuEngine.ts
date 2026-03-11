@@ -65,10 +65,11 @@ export function getFullSaju(
   let pYear = correctedDate.getUTCFullYear();
   if (jd < ipChunJD) pYear -= 1;
   const yIdx = (pYear - 4) % 60;
-  const yearPillar: any = new Number(pYear);
-  yearPillar.stem = STEMS[(yIdx % 10 + 10) % 10];
-  yearPillar.branch = BRANCHES[(yIdx % 12 + 12) % 12];
-  yearPillar.year = pYear;
+  const yearPillar = {
+    stem: STEMS[(yIdx % 10 + 10) % 10],
+    branch: BRANCHES[(yIdx % 12 + 12) % 12],
+    year: pYear
+  };
 
   // 3. Month Pillar (Jeol-gi)
   const termIdx = Math.floor((sunLong - 315 + 360) % 360 / 30);

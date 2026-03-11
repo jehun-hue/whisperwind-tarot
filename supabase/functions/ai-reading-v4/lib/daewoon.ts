@@ -31,21 +31,28 @@ export function getDaewoonInfo(
   jd: number, 
   year: number
 ): { age: number; isForward: boolean } {
-  const isYangYear = yearStemIdx % 2 === 0;
+  // Ensure we have numbers
+  const sLong = Number(sunLong) || 0;
+  const jval = Number(jd) || 0;
+  const yval = Number(year) || 2000;
+
+  const isYangYear = (Number(yearStemIdx) || 0) % 2 === 0;
   const isForward = (isYangYear && gender === 'M') || (!isYangYear && gender === 'F');
 
-  const termIdx = Math.floor((sunLong - 315 + 360) % 360 / 30);
+  const termIdx = Math.floor((sLong - 315 + 360) % 360 / 30);
   const currentJeolLong = MONTH_JEOL_LONGS[termIdx];
   const nextJeolLong = MONTH_JEOL_LONGS[(termIdx + 1) % 12];
 
-  const currentJeolJD = findSolarTermJD(year - (sunLong < currentJeolLong ? 1 : 0), currentJeolLong);
-  const nextJeolJD = findSolarTermJD(year + (sunLong >= 315 && nextJeolLong < 315 ? 1 : 0), nextJeolLong);
+  const currentJeolJD = findSolarTermJD(yval - (sLong < currentJeolLong ? 1 : 0), currentJeolLong);
+  const nextJeolJD = findSolarTermJD(yval + (sLong >= 315 && nextJeolLong < 315 ? 1 : 0), nextJeolLong);
 
-  let diff = isForward ? (nextJeolJD - jd) : (jd - currentJeolJD);
-  if (isNaN(diff) || diff < 0) diff = 0;
+  let diff = isForward ? (nextJeolJD - jval) : (jval - currentJeolJD);
+  
+  if (!Number.isFinite(diff) || diff < 0) diff = 0;
 
   const daewoonAge = Math.max(1, Math.round(diff / 3));
-  return { age: isNaN(daewoonAge) ? 1 : daewoonAge, isForward };
+  const finalAge = Number.isFinite(daewoonAge) ? daewoonAge : 1;
+  return { age: finalAge, isForward };
 }
 
 /**
