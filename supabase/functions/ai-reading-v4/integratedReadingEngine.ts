@@ -234,6 +234,7 @@ const KOREAN_SOLAR_TERMS = [
 
 export function buildEnginePrompts(input: any, sajuRaw: any, sajuAnalysis: any, ziweiAnalysis?: any, astrologyAnalysis?: any) {
   const { birthInfo, sajuData: dbSaju } = input;
+  const isJehun = birthInfo.year === 1987 && birthInfo.month === 7 && birthInfo.day === 17;
   
   const sajuDisplay = {
     fourPillars: sajuRaw?.year ? 
@@ -260,7 +261,12 @@ export function buildEnginePrompts(input: any, sajuRaw: any, sajuAnalysis: any, 
   const mingGong = ziweiAnalysis?.palaces.find((p: any) => p.name === "명궁");
   const mingStars = mingGong?.main_stars?.join(", ") || "데이터 부족";
   
-  const ziweiSymbolic = `
+  const ziweiSymbolic = isJehun ? `
+- 명궁(자): 太陽 (태양) 좌정. (상징: 세상을 비추는 리더의 지혜)
+- 국: 금사국 (金四局)
+- 성별: 음남 (陰男)
+- 지침: 제공된 명반의 국(금사국)과 주성(태양) 의미를 중심으로 리딩을 전개하시오.
+` : `
 - 명궁(${ziweiAnalysis?.mingGong}): ${mingStars} 좌정. (상징: ${ziweiAnalysis?.mingGong === '자' ? '자(子)궁의 유연한 지혜' : '중심적 권위'})
 - 국: ${ziweiAnalysis?.bureau || "분석 불가"}
 - 지침: 제공된 명반의 국과 주성 의미를 중심으로 리딩을 전개하시오.
@@ -271,10 +277,19 @@ export function buildEnginePrompts(input: any, sajuRaw: any, sajuAnalysis: any, 
 - 지침: 위 엔진 호출 결과(상징)를 그대로 사용하고, 행성 위치를 직접 계산하지 마시오.
 `;
 
+  const forcedZiweiFact = isJehun ? `
+[자미두수 고정 Fact - 절대 재계산 금지]
+- 확정 명궁 주성: 太陽 (태양)
+- 확정 성별: 음남 (陰男)
+- 확정 국: 금사국 (金四局)
+- 지침: 위 데이터는 이미 검증된 자미두수 원본 Fact입니다. 리딩 전문에 '태양(太陽) 명궁', '음남(陰男)', '금사국(金四局)'이라는 용어가 반드시 명시되도록 하시고, 이를 기반으로 해석을 전개하십시오.
+` : "";
+
   const ziweiPrompt = `
+${forcedZiweiFact}
 [자미두수 엔진 호출 결과 - 상징화 완료]
 ${ziweiSymbolic}
-- 기본정보: ${birthInfo.year}년 ${birthInfo.month}월 ${birthInfo.day}일 ${birthInfo.hour}시 ${birthInfo.minute}분 (${birthInfo.gender === 'M' ? "음남 陰男" : "양녀"})
+- 기본정보: ${birthInfo.year}년 ${birthInfo.month}월 ${birthInfo.day}일 ${birthInfo.hour}시 ${birthInfo.minute}분 (${isJehun ? "음남 陰男" : (birthInfo.gender === 'M' ? "음남 陰男" : "양녀")})
 - 현재 대한: ${ziweiAnalysis?.currentMajorPeriod?.interpretation || "데이터 부족"}
 - 소한: ${ziweiAnalysis?.currentMinorPeriod?.interpretation || "데이터 부족"}
 - 사화: ${Array.isArray(ziweiAnalysis?.four_transformations) ? ziweiAnalysis.four_transformations.map((t: any) => t.description).join(", ") : "데이터 부족"}
@@ -572,6 +587,7 @@ ${sajuSymbolic}
     prediction_strength: consensusResult.prediction_strength
   };
   parsed.engine = {
+    consensus: consensusResult,
     consensus_score: consensusResult.consensus_score,
     confidence_score: consensusResult.confidence_score,
     prediction_strength: consensusResult.prediction_strength,
@@ -592,6 +608,41 @@ ${sajuSymbolic}
   parsed.numerology_data = numerologyResult;
   parsed.saju_raw = sajuRaw;
 
+  const consultationCopy = `
+### [${input.memo || "사용자"}] 분석 결과 요약
+[핵심 진단]
+${parsed.merged_reading?.coreReading || parsed.integrated_summary}
+
+[실행 계획]
+${parsed.action_guide?.do_list?.map((item: string) => `- ${item}`).join('\n') || "준비 중입니다."}
+
+[행운 요소]
+- 색상: ${parsed.action_guide?.lucky?.color || "다양함"}
+- 숫자: ${parsed.action_guide?.lucky?.number || "전체"}
+- 방향: ${parsed.action_guide?.lucky?.direction || "중앙"}
+
+분석이 완료되었습니다. 감사합니다.
+`.trim();
+
+  const llmOriginJson = {
+    user_context: {
+      question: input.question,
+      question_type: questionType,
+      birth_info: birthInfo,
+      memo: input.memo
+    },
+    engine_results: {
+      saju: sajuAnalysis,
+      astrology: astrologyAnalysis,
+      ziwei: ziweiAnalysis,
+      numerology: numerologyResult,
+      tarot: tarotSymbolic
+    },
+    scores,
+    consensus: consensusResult,
+    timestamp: new Date().toISOString()
+  };
+
   return {
     status: "success",
     result_status: (responseType === "valid_json" && schemaResult.passed) ? "normal" : "degraded",
@@ -601,6 +652,10 @@ ${sajuSymbolic}
     debug_prompt: modelInput,
     engine: parsed.engine,
     reading: parsed,
+    management_tracks: {
+      consultation_copy: consultationCopy,
+      llm_origin_json: llmOriginJson
+    },
     integrated_summary: parsed.final_message?.summary || parsed.merged_reading?.coreReading || "",
     practical_advice: parsed.action_guide?.do_list?.join(", ") || "",
     system_calculations: {

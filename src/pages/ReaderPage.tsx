@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Lock, Trash2, RefreshCw, Sparkles, Loader2, Download, Search, ChevronRight, ArrowLeft, Settings } from "lucide-react";
+import { Lock, Trash2, RefreshCw, Sparkles, Loader2, Download, Search, ChevronRight, ArrowLeft, Settings, ClipboardCopy, Code } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { calculateNatalChart, getAstrologyForQuestion, getCurrentTransits } from "@/lib/astrology";
 import { calculateZiWei, getZiWeiForQuestion } from "@/lib/ziwei";
@@ -1402,6 +1402,34 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                 <Button variant="outline" size="sm" className="rounded-full border-gold/30 text-gold text-xs" onClick={downloadPDF}>
                   <Download className="mr-1.5 h-3 w-3" />PDF 다운로드
                 </Button>
+
+                {/* 관리자 전용 도구 */}
+                <div className="flex gap-2 ml-auto">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="rounded-full border-emerald-500/30 text-emerald-400 text-xs bg-emerald-500/5 hover:bg-emerald-500/10"
+                    onClick={() => {
+                      const text = reading.management_tracks?.consultation_copy || reading.integrated_summary;
+                      navigator.clipboard.writeText(text);
+                      alert("상담사용 문구가 클립보드에 복사되었습니다.");
+                    }}
+                  >
+                    <ClipboardCopy className="mr-1.5 h-3 w-3" />상담문구 복사
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="rounded-full border-slate-500/30 text-slate-400 text-xs bg-slate-500/5 hover:bg-slate-500/10"
+                    onClick={() => {
+                      const json = reading.management_tracks?.llm_origin_json || reading;
+                      navigator.clipboard.writeText(JSON.stringify(json, null, 2));
+                      alert("LLM 원본 JSON이 클립보드에 복사되었습니다.");
+                    }}
+                  >
+                    <Code className="mr-1.5 h-3 w-3" />원본 JSON 복사
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
