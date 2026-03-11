@@ -174,13 +174,35 @@ function createFallbackZiwei() {
 export async function runFullProductionEngineV8(supabaseClient: any, apiKey: string, input: any) {
   const pipelineStart = Date.now();
   const sessionId = input.sessionId;
-  const birthInfo = input.birthInfo;
   const tarotCards = input.cards || [];
+
+  // Normalize birthInfo: client sends {birthDate:"1987-07-17", birthTime:"15:30", gender:"male"}
+  // Engine expects {year, month, day, hour, minute, gender}
+  const rawBirth = input.birthInfo || {};
+  let birthInfo: any;
+  if (rawBirth.year !== undefined) {
+    birthInfo = rawBirth;
+  } else if (rawBirth.birthDate) {
+    const [y, m, d] = rawBirth.birthDate.split("-").map(Number);
+    const [hr, mn] = rawBirth.birthTime ? rawBirth.birthTime.split(":").map(Number) : [12, 0];
+    birthInfo = {
+      year: y, month: m, day: d, hour: hr, minute: mn,
+      gender: rawBirth.gender === "male" || rawBirth.gender === "M" ? "M" : "F",
+      birthDate: rawBirth.birthDate,
+      birthTime: rawBirth.birthTime,
+      birthPlace: rawBirth.birthPlace,
+      isLunar: rawBirth.isLunar,
+      isLeapMonth: rawBirth.isLeapMonth,
+    };
+  } else {
+    birthInfo = { year: 2000, month: 1, day: 1, hour: 12, minute: 0, gender: "M" };
+    console.warn("[Engine] No birthInfo provided, using defaults");
+  }
 
   // Step 1: Physical Calculation Pipeline
   const sajuRaw = calculateSaju(
-    input.birthInfo.year, input.birthInfo.month, input.birthInfo.day, 
-    input.birthInfo.hour, input.birthInfo.minute, input.birthInfo.gender
+    birthInfo.year, birthInfo.month, birthInfo.day, 
+    birthInfo.hour, birthInfo.minute, birthInfo.gender
   );
   const sajuAnalysis = await analyzeSajuStructure(sajuRaw);
   const tarotSymbolic = runTarotSymbolicEngine(input.cards || [], input.question);
