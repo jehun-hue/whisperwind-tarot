@@ -16,6 +16,8 @@ import { getLocalizedStyle, buildLocalizedNarrativePrompt } from "./interactivit
 import { calculateNumerology } from "./numerologyEngine.ts";
 import { validateV3Schema, patchMissingFields, logMonitoringEvent } from "./monitoringLayer.ts";
 import { safeParseGeminiJSON } from "./jsonUtils.ts";
+import { calculateServerAstrology } from "./astrologyEngine.ts";
+import { calculateServerZiWei } from "./ziweiEngine.ts";
 
 const READING_VERSION = "v9_symbolic_prediction_engine";
 
