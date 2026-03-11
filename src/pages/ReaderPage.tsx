@@ -277,13 +277,6 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
     setAnalysisError(null);
   }, [session.id, session.counselor_comment, session.user_name]);
 
-  // 세션이 처음 열렸을 때 pending 상태면 자동으로 최한나 해석 생성
-  useEffect(() => {
-    if (session.status === "pending" && !analyzing) {
-      runAIAnalysisV2('hanna', true);
-    }
-  }, [session.id, session.status]);
-
   const saveUserName = async () => {
     setSavingName(true);
     const value = userName.trim() || null;
