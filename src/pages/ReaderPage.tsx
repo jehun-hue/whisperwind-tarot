@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Lock, Trash2, RefreshCw, Sparkles, Loader2, Download, Search, ChevronRight, ArrowLeft, Settings, ClipboardCopy, Code } from "lucide-react";
+import { Lock, Trash2, RefreshCw, Sparkles, Loader2, Download, Search, ChevronRight, ArrowLeft, Settings, ClipboardCopy, Code, FileJson } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { calculateNatalChart, getAstrologyForQuestion, getCurrentTransits } from "@/lib/astrology";
 import { calculateZiWei, getZiWeiForQuestion } from "@/lib/ziwei";
@@ -509,6 +509,11 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
         throw new Error("AI 응답이 비어 있습니다. 잠시 후 다시 시도해주세요.");
       }
 
+      // management_tracks 누락 방지: reading 객체 내에 병합 후 저장
+      if (aiData.management_tracks) {
+        result.management_tracks = aiData.management_tracks;
+      }
+
       await supabase.from("reading_sessions").update({
         ai_reading: result as any,
         saju_data: sajuDataForAI as any,
@@ -660,6 +665,105 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       printWindow.document.write(html);
       printWindow.document.close();
       setTimeout(() => printWindow.print(), 500);
+    }
+  };
+
+  const downloadJSON = () => {
+    try {
+      // 1. 기본 세션 데이터 추출
+      const {
+        id, user_name, gender, birth_date, birth_time, birth_place, is_lunar,
+        question, question_type, memo, counselor_comment, intent,
+        cards, saju_data, ai_reading, status, created_at
+      } = session;
+
+      // 2. 점성술 및 자미두수 실시간 계산 (트랜짓 포함 실시간 컨텍스트 생성)
+      let calculated_context: any = {};
+      if (birth_date) {
+        try {
+          const [y, m, d] = birth_date.split("-").map(Number);
+          const [hour, minute] = birth_time ? birth_time.split(":").map(Number) : [12, 0];
+          
+          const natal = calculateNatalChart(y, m, d, hour, minute);
+          const transits = getCurrentTransits(natal);
+          const ziwei = calculateZiWei(y, m, d, hour, minute, (gender as "male" | "female") || "female");
+
+          calculated_context = {
+            astrology: {
+              natal_chart: natal,
+              transits: transits,
+              summary: natal.chartSummary,
+            },
+            ziwei: {
+              chart: ziwei,
+              key_palaces: ziwei.palaces?.slice(0, 3) || [],
+            }
+          };
+        } catch (e) {
+          console.error("Context calculation error for JSON export:", e);
+        }
+      }
+
+      // 3. 표준 포맷 구조화 (V4 Dataset Standard)
+      const standardFormat = {
+        version: "v4.0-dataset-standard",
+        export_metadata: {
+          exported_at: new Date().toISOString(),
+          source: "WhisperWind-Admin",
+          session_id: id
+        },
+        user_profile: {
+          name: user_name || "Anonymous",
+          gender: gender || "unknown",
+          birth: {
+            date: birth_date,
+            time: birth_time,
+            place: birth_place,
+            is_lunar: is_lunar
+          }
+        },
+        input_data: {
+          question: {
+            text: question,
+            type: question_type,
+            intent: intent,
+            memo: memo
+          },
+          tarot_cards: Array.isArray(cards) ? cards.map((c: any) => ({
+            id: c.id,
+            name: c.name,
+            korean: c.korean,
+            isReversed: c.isReversed
+          })) : [],
+          saju_data: saju_data // DB에 저장된 사주 데이터
+        },
+        calculated_context: calculated_context, // 실시간 계산된 점성술/자미두수 (트랜짓 포함)
+        ai_analysis_result: ai_reading, // AI 응답 원본
+        counselor_feedback: {
+          comment: counselor_comment,
+          final_scores: {
+            tarot: session.tarot_score,
+            saju: session.saju_score,
+            astrology: session.astrology_score,
+            ziwei: session.ziwei_score,
+            overall: session.final_confidence
+          }
+        },
+        status: status,
+        created_at: created_at
+      };
+
+      const filename = `whisperwind_std_${user_name || "reading"}_${new Date(created_at).toISOString().split("T")[0]}.json`;
+      const blob = new Blob([JSON.stringify(standardFormat, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("JSON export error:", err);
+      alert("JSON 내보내기 중 오류가 발생했습니다.");
     }
   };
 
@@ -865,7 +969,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
               )}
             </CardContent>
           </Card>
-        );
+        )
       })()}
 
       {/* AI Analysis Buttons - 수동 분석 (항상 표시) */}
@@ -873,14 +977,14 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
         <CardContent className="p-5 space-y-3">
           <div className="flex items-center justify-between">
             <div className="text-sm font-medium text-foreground">🔮 AI 분석 실행 (v8)</div>
-            {reading && (
+            {session.status === "completed" && (
               <Badge variant="outline" className="border-green-500/30 text-green-400 text-[10px]">
                 분석 완료됨
               </Badge>
             )}
           </div>
 
-          {reading && (
+          {session.status === "completed" && (
             <p className="text-xs text-yellow-400/80">
               ⚠️ 이미 분석이 완료되었습니다. 다시 실행하면 기존 결과를 덮어씁니다.
             </p>
@@ -900,7 +1004,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
             ) : (
               <>
                 <Sparkles className="mr-2 h-4 w-4" />
-                {reading ? "✦ AI 재분석 (v8)" : "✦ AI 분석 실행 (v8)"}
+                {session.status === "completed" ? "✦ AI 재분석 (v8)" : "✦ AI 분석 실행 (v8)"}
                 {forcetellData.trim() && <Badge variant="outline" className="ml-2 text-[10px] border-gold/30 text-gold">포스텔러</Badge>}
               </>
             )}
@@ -1217,16 +1321,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                 </div>
               )}
 
-              {/* Action buttons */}
-              <div className="flex gap-2 p-4 border-t border-border/10">
-                <Button variant="outline" size="sm" className="rounded-full border-border/50 text-xs"
-                  onClick={() => { onUpdate({ ...session, ai_reading: null, status: "pending" }); }}>
-                  <RefreshCw className="mr-1.5 h-3 w-3" />재분석
-                </Button>
-                <Button variant="outline" size="sm" className="rounded-full border-gold/30 text-gold text-xs" onClick={downloadPDF}>
-                  <Download className="mr-1.5 h-3 w-3" />리포트 저장
-                </Button>
-              </div>
+              {/* System Interpretations (Detailed Logs) */}
             </CardContent>
           </Card>
         )
@@ -1393,44 +1488,6 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                 </div>
               )}
 
-              {/* Action buttons */}
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="rounded-full border-border/50 text-xs"
-                  onClick={() => { onUpdate({ ...session, ai_reading: null, status: "pending" }); }}>
-                  <RefreshCw className="mr-1.5 h-3 w-3" />재분석
-                </Button>
-                <Button variant="outline" size="sm" className="rounded-full border-gold/30 text-gold text-xs" onClick={downloadPDF}>
-                  <Download className="mr-1.5 h-3 w-3" />PDF 다운로드
-                </Button>
-
-                {/* 관리자 전용 도구 */}
-                <div className="flex gap-2 ml-auto">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="rounded-full border-emerald-500/30 text-emerald-400 text-xs bg-emerald-500/5 hover:bg-emerald-500/10"
-                    onClick={() => {
-                      const text = reading.management_tracks?.consultation_copy || reading.integrated_summary;
-                      navigator.clipboard.writeText(text);
-                      alert("상담사용 문구가 클립보드에 복사되었습니다.");
-                    }}
-                  >
-                    <ClipboardCopy className="mr-1.5 h-3 w-3" />상담문구 복사
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="rounded-full border-slate-500/30 text-slate-400 text-xs bg-slate-500/5 hover:bg-slate-500/10"
-                    onClick={() => {
-                      const json = reading.management_tracks?.llm_origin_json || reading;
-                      navigator.clipboard.writeText(JSON.stringify(json, null, 2));
-                      alert("LLM 원본 JSON이 클립보드에 복사되었습니다.");
-                    }}
-                  >
-                    <Code className="mr-1.5 h-3 w-3" />원본 JSON 복사
-                  </Button>
-                </div>
-              </div>
             </CardContent>
           </Card>
         )
@@ -1482,19 +1539,59 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                   <Badge variant="outline" className="border-gold/30 text-gold text-[10px]">종합: {reading.scores.overall}%</Badge>
                 </div>
               )}
+            </CardContent>
+          </Card>
+        )
+      }
+
+      {/* Global Reading Actions - (FORCED ADMIN TOOLS) */}
+      {session.status === "completed" && (
+        <Card className="border-border bg-card glow-gold">
+          <CardContent className="p-5">
+            <div className="flex flex-wrap items-center gap-3">
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" className="rounded-full border-border/50 text-xs"
                   onClick={() => { onUpdate({ ...session, ai_reading: null, status: "pending" }); }}>
                   <RefreshCw className="mr-1.5 h-3 w-3" />재분석
                 </Button>
                 <Button variant="outline" size="sm" className="rounded-full border-gold/30 text-gold text-xs" onClick={downloadPDF}>
-                  <Download className="mr-1.5 h-3 w-3" />PDF 다운로드
+                  <Download className="mr-1.5 h-3 w-3" />리포트 저장 (PDF)
+                </Button>
+                <Button variant="outline" size="sm" className="rounded-full border-blue-500/30 text-blue-400 text-xs bg-blue-500/5 hover:bg-blue-500/10" onClick={downloadJSON}>
+                  <FileJson className="mr-1.5 h-3 w-3" />JSON 내보내기
                 </Button>
               </div>
-            </CardContent>
-          </Card>
-        )
-      }
+
+              <div className="flex gap-2 ml-auto">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="rounded-full border-emerald-500/30 text-emerald-400 text-xs bg-emerald-500/5 hover:bg-emerald-500/10"
+                  onClick={() => {
+                    const text = reading.management_tracks?.consultation_copy || reading.integrated_summary;
+                    navigator.clipboard.writeText(text);
+                    alert("상담사용 문구가 클립보드에 복사되었습니다.");
+                  }}
+                >
+                  <ClipboardCopy className="mr-1.5 h-3 w-3" />상담문구 복사
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="rounded-full border-slate-500/30 text-slate-400 text-xs bg-slate-500/5 hover:bg-slate-500/10"
+                  onClick={() => {
+                    const json = reading.management_tracks?.llm_origin_json || reading;
+                    navigator.clipboard.writeText(JSON.stringify(json, null, 2));
+                    alert("LLM 원본 JSON이 클립보드에 복사되었습니다.");
+                  }}
+                >
+                  <Code className="mr-1.5 h-3 w-3" />원본 JSON 복사
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {
         analyzing && (
@@ -1508,4 +1605,6 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       }
     </div >
   );
+
 }
+
