@@ -471,8 +471,8 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
 
       const combinationSummary = getCombinationSummary(cardsInput.map((c: any) => c.id), qType as any);
 
-      const { data: aiData, error: fnError } = await supabase.functions.invoke("ai-reading-v4", {
-        body: {
+      const functionUrl = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/ai-reading-v4`;
+      const fnBody = {
           question: session.question,
           questionType: qType,
           memo: session.memo,
@@ -485,10 +485,24 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
           forcetellData: forcetellData.trim() || null,
           manseryeokData: sajuDataForAI,
           locale: session.locale || "kr",
+      };
+
+      const fnResponse = await fetch(functionUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
+        body: JSON.stringify(fnBody),
       });
 
-      if (fnError) throw fnError;
+      if (!fnResponse.ok) {
+        const errBody = await fnResponse.text();
+        throw new Error(`Edge function returned ${fnResponse.status}: ${errBody}`);
+      }
+
+      const aiData = await fnResponse.json();
 
       const result = aiData?.reading;
       if (!result) {
