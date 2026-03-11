@@ -79,9 +79,7 @@ export type Database = {
           gender: string | null
           id: string
           is_lunar: boolean | null
-          locale: string | null
           memo: string | null
-          purchased_grade: string | null
           question: string
           question_type: string
           saju_data: Json | null
@@ -106,9 +104,7 @@ export type Database = {
           gender?: string | null
           id?: string
           is_lunar?: boolean | null
-          locale?: string | null
           memo?: string | null
-          purchased_grade?: string | null
           question: string
           question_type?: string
           saju_data?: Json | null
@@ -133,9 +129,7 @@ export type Database = {
           gender?: string | null
           id?: string
           is_lunar?: boolean | null
-          locale?: string | null
           memo?: string | null
-          purchased_grade?: string | null
           question?: string
           question_type?: string
           saju_data?: Json | null
@@ -148,96 +142,6 @@ export type Database = {
           ziwei_score?: number | null
         }
         Relationships: []
-      }
-      reading_products: {
-        Row: {
-          id: string
-          name: string
-          description: string | null
-          price_krw: number
-          price_usd: number | null
-          price_jpy: number | null
-          grade: string
-          credits_required: number
-          is_active: boolean
-          created_at: string
-        }
-        Insert: {
-          id: string
-          name: string
-          description?: string | null
-          price_krw: number
-          price_usd?: number | null
-          price_jpy?: number | null
-          grade: string
-          credits_required?: number
-          is_active?: boolean
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          name?: string
-          description?: string | null
-          price_krw?: number
-          price_usd?: number | null
-          price_jpy?: number | null
-          grade?: string
-          credits_required?: number
-          is_active?: boolean
-          created_at?: string
-        }
-        Relationships: []
-      }
-      reading_purchases: {
-        Row: {
-          id: number
-          user_id: string | null
-          session_id: string | null
-          product_id: string | null
-          grade: string
-          credits_used: number
-          payment_method: string | null
-          payment_status: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: number
-          user_id?: string | null
-          session_id?: string | null
-          product_id?: string | null
-          grade: string
-          credits_used: number
-          payment_method?: string | null
-          payment_status?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: number
-          user_id?: string | null
-          session_id?: string | null
-          product_id?: string | null
-          grade?: string
-          credits_used?: number
-          payment_method?: string | null
-          payment_status?: string | null
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "reading_purchases_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reading_purchases_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "reading_products"
-            referencedColumns: ["id"]
-          }
-        ]
       }
     }
     Views: {

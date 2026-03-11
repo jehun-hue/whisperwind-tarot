@@ -249,7 +249,7 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
     let pollTimer: NodeJS.Timeout;
     if (isPolling && sessionId) {
       const poll = async () => {
-        const { data } = await supabase
+        const { data } = await (supabase as any)
           .from("reading_sessions")
           .select("ai_reading, status, purchased_grade")
           .eq("id", sessionId)
@@ -279,7 +279,7 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
     if (res.success) {
       toast.success(`${targetGrade}등급으로 업그레이드되었습니다.`);
       setPurchasedGrade(targetGrade);
-      await supabase.from("reading_sessions").update({ purchased_grade: targetGrade }).eq("id", sessionId);
+      await (supabase as any).from("reading_sessions").update({ purchased_grade: targetGrade }).eq("id", sessionId);
     } else {
       toast.error(res.error || "업그레이드 실패");
     }

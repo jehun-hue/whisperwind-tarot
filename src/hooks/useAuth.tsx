@@ -95,8 +95,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const purchaseGrade = async (sessionId: string, grade: string): Promise<{ success: boolean; error?: string }> => {
     if (!user || !profile) return { success: false, error: "로그인이 필요합니다" };
 
-    // 상품 정보 조회
-    const { data: product } = await supabase
+    // 상품 정보 조회 (table not in generated types, use any cast)
+    const { data: product } = await (supabase as any)
       .from("reading_products")
       .select("*")
       .eq("id", `grade_${grade.toLowerCase()}`)
@@ -106,7 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     // 무료 (C등급)
     if (product.credits_required === 0) {
-      await supabase.from("reading_purchases").insert({
+      await (supabase as any).from("reading_purchases").insert({
         user_id: user.id, session_id: sessionId, product_id: product.id,
         grade, credits_used: 0, payment_method: "free",
       });
@@ -132,7 +132,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (upError) return { success: false, error: "크레딧 업데이트 오류" };
     
     // 구매 기록
-    await supabase.from("reading_purchases").insert({
+    await (supabase as any).from("reading_purchases").insert({
       user_id: user.id, session_id: sessionId, product_id: product.id,
       grade, credits_used: product.credits_required, payment_method: "credit",
     });
@@ -143,7 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const getSessionGrade = async (sessionId: string): Promise<string> => {
     if (!user) return "C";
-    const { data } = await supabase
+    const { data } = await (supabase as any)
       .from("reading_purchases")
       .select("grade")
       .eq("user_id", user.id)
