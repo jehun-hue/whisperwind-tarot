@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.ai-reading-v3]
 verify_jwt = false
+
+[functions.ai-reading-v4]
+verify_jwt = false
