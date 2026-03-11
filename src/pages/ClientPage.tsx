@@ -148,6 +148,7 @@ export default function ClientPage() {
   const [memo, setMemo] = useState("");
 
   // Birth info
+  const [userName, setUserName] = useState("");
   const [birthYear, setBirthYear] = useState("");
   const [birthMonth, setBirthMonth] = useState("");
   const [birthDay, setBirthDay] = useState("");
@@ -318,6 +319,7 @@ export default function ClientPage() {
           is_lunar: birthInfo?.isLunar || false,
           cards: cardData as any, 
           saju_data: sajuDataForAI as any, 
+          user_name: userName || null,
           status: "pending",
         })
         .select().single();
@@ -338,7 +340,7 @@ export default function ClientPage() {
 
   const resetAll = () => {
     setStep("question");
-    setQuestion(""); setMemo("");
+    setQuestion(""); setMemo(""); setUserName("");
     setBirthYear(""); setBirthMonth(""); setBirthDay("");
     setBirthTime("unknown"); setBirthHourInput(""); setBirthMinInput(""); setBirthAmPm("am"); setGender("female");
     setIsLunar(false); setIsLeapMonth(false);
@@ -481,6 +483,16 @@ export default function ClientPage() {
                   <div className="text-center">
                     <h2 className="font-display text-2xl font-semibold text-foreground">출생 정보를 알려주세요</h2>
                     <p className="mt-1 text-xs text-muted-foreground">더 정밀한 분석을 위해 필요합니다</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm text-muted-foreground">이름/닉네임</label>
+                    <Input
+                      value={userName}
+                      onChange={(e) => setUserName(e.target.value)}
+                      className="rounded-xl border-border/50 bg-background/50 backdrop-blur text-foreground placeholder:text-muted-foreground/50"
+                      placeholder="이름 또는 닉네임을 입력해주세요 (선택)"
+                    />
                   </div>
 
                   <div className="space-y-2">

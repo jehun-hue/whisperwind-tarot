@@ -182,7 +182,7 @@ export default function ReaderPage() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <div className="truncate text-sm font-medium text-foreground">
-                          {s.user_name ? `[${s.user_name}] ` : ""}{s.question || "질문 없음"}
+                          {s.user_name || s.question || "질문 없음"}
                         </div>
                         {s.status === "pending" && (
                           <Badge variant="outline" className="text-[9px] border-yellow-500/30 text-yellow-400 shrink-0">

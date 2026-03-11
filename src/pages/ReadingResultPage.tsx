@@ -170,6 +170,7 @@ export default function ReadingResultPage() {
           <CardContent className="p-5 space-y-3">
             <h3 className="text-sm font-semibold text-foreground">📌 상담 정보</h3>
             <div className="grid grid-cols-2 gap-2 text-xs">
+              <div><span className="text-muted-foreground">이름:</span> <span className="text-foreground">{session.user_name || "없음"}</span></div>
               <div><span className="text-muted-foreground">질문:</span> <span className="text-foreground">{session.question}</span></div>
               <div><span className="text-muted-foreground">유형:</span> <Badge variant="outline" className="text-[10px]">{session.question_type}</Badge></div>
               <div><span className="text-muted-foreground">성별:</span> <span className="text-foreground">{session.gender === "male" ? "남" : "여"}</span></div>
