@@ -26,7 +26,7 @@ interface MonitoringEvent {
 
 // V3ReadingData 필수 필드 목록
 const REQUIRED_TOP_FIELDS = ["reading_info", "tarot_reading", "convergence", "action_guide", "final_message", "scores"];
-const REQUIRED_TAROT_FIELDS = ["waite"];
+const REQUIRED_TAROT_FIELDS = ["choihanna", "monad"]; // At least one should be present
 const REQUIRED_SCORE_FIELDS = ["tarot", "saju", "astrology", "ziwei", "overall"];
 const REQUIRED_CONVERGENCE_FIELDS = ["grade", "converged_count", "common_message"];
 const REQUIRED_ACTION_FIELDS = ["do_list", "dont_list", "lucky"];
@@ -49,10 +49,11 @@ export function validateV3Schema(parsed: any): { passed: boolean; missing: strin
     if (parsed[f] === undefined || parsed[f] === null) missing.push(f);
   }
 
-  // tarot_reading.waite
+  // tarot_reading check (하나라도 있으면 인정)
   if (parsed.tarot_reading) {
-    for (const f of REQUIRED_TAROT_FIELDS) {
-      if (!parsed.tarot_reading[f]) missing.push(`tarot_reading.${f}`);
+    const hasStyle = REQUIRED_TAROT_FIELDS.some(f => !!parsed.tarot_reading[f]);
+    if (!hasStyle) {
+      missing.push("tarot_reading.style_missing (choihanna or monad)");
     }
   }
 
@@ -111,13 +112,9 @@ export function patchMissingFields(parsed: any, scores: any, grade: string, card
   // tarot_reading
   if (!parsed.tarot_reading) {
     parsed.tarot_reading = {
-      waite: { cards: [], story: parsed.final_message?.summary || "", key_message: "" },
       choihanna: null,
       monad: null,
     };
-  }
-  if (!parsed.tarot_reading.waite) {
-    parsed.tarot_reading.waite = { cards: [], story: "", key_message: "" };
   }
 
   // convergence
@@ -142,7 +139,7 @@ export function patchMissingFields(parsed: any, scores: any, grade: string, card
   if (!parsed.merged_reading) {
     parsed.merged_reading = {
       coreReading: parsed.final_message?.summary || "",
-      structureInsight: parsed.tarot_reading?.waite?.story || "",
+      structureInsight: parsed.tarot_reading?.choihanna?.story || parsed.tarot_reading?.monad?.story || "",
       currentSituation: "",
       timingInsight: "",
       longTermFlow: "",
