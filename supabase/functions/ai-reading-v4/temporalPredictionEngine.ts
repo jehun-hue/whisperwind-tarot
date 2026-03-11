@@ -213,8 +213,8 @@ export function predictTemporalV8(consensus: any, systemResults: any[]): EventWi
     0.5 * 0.10; // 기본 바이어스
 
   // 핵심 공식: event_probability = pattern_strength × transit_alignment × consensus_score
-  const pattern_strength = prediction_strength || (consensus_score * 0.8);
-  const base_event_probability = pattern_strength * transitAlignment * Math.max(consensus_score, 0.1);
+  const pattern_strength = Math.max(0, prediction_strength || (consensus_score * 0.8));
+  const base_event_probability = Math.max(0, pattern_strength * transitAlignment * Math.max(consensus_score, 0.1));
 
   // 기여 요인 통합
   const allFactors = [

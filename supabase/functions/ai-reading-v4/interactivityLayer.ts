@@ -83,7 +83,7 @@ export function getLocalePromptConfig(locale: string): LocalePromptConfig {
 /**
  * locale에 따라 Gemini 시스템 프롬프트를 동적으로 생성
  */
-export function buildLocalizedNarrativePrompt(locale: string, dataBlock: string): string {
+export function buildLocalizedNarrativePrompt(locale: string, dataBlock: string, totalSystems: number): string {
   const cfg = getLocalePromptConfig(locale);
   
   // 연애 관련 love_analysis 스키마는 동일 (단, 출력 언어만 변경)
@@ -138,7 +138,7 @@ JSON 외의 다른 텍스트(설명, 인사 등)를 절대 포함하지 마세�
     }
   },
   "convergence": {
-    "total_systems": 6,
+    "total_systems": \${totalSystems},
     "converged_count": N,
     "grade": "S|A|B|C",
     "tarot_convergence": { "count": 3, "systems": ["${cfg.sectionNames.waite}","${cfg.sectionNames.second}","${cfg.sectionNames.third}"], "common_keywords": [...] },

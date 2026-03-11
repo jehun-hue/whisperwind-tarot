@@ -60,14 +60,16 @@ export function calculateConsensusV8(vectors: SymbolicVector[]): ConsensusOutput
     }
   }
 
-  const consensus_score = totalWeight > 0 ? totalConsensus / totalWeight : 0;
+  const consensus_score = Math.max(0, totalWeight > 0 ? totalConsensus / totalWeight : 0);
   
-  // 3. Confidence Score (Based on distribution and 5 reporting systems)
+  // 3. Confidence Score (Based on distribution and reporting systems)
+  // Higher reporting systems count increases confidence up to 1.0
   const reportingSystemsCount = systems.length;
-  const confidence_score = Math.min(1.0, (reportingSystemsCount / 5) * (1 + consensus_score) / 2);
+  const rawConfidence = (reportingSystemsCount / 5) * (1 + consensus_score) / 2;
+  const confidence_score = Math.max(0, Math.min(1.0, rawConfidence));
   
   // 4. Final Prediction Strength
-  const prediction_strength = consensus_score * confidence_score;
+  const prediction_strength = Math.max(0, consensus_score * confidence_score);
 
   // 5. Aggregate Dominant Vector (Weighted by system weights)
   const dominantVector: Record<string, number> = {};

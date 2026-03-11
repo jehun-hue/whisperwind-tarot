@@ -378,6 +378,15 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     }
   ];
 
+  const activeEngines = systemResults.filter(r => {
+    if (r.system === "tarot") return !!r.category;
+    if (r.system === "saju") return !!r.dayMaster;
+    if (r.system === "astrology") return !!r.planet_positions;
+    if (r.system === "ziwei") return !!r.palaces;
+    if (r.system === "numerology") return !!r.life_path_number;
+    return false;
+  });
+
   const patternVectors = generatePatternVectors(systemResults);
   const consensusResult = calculateConsensusV8(patternVectors);
   const temporalResult = predictTemporalV8(consensusResult, systemResults);
@@ -430,8 +439,8 @@ ${sajuSymbolic}
 - 수비학: ${JSON.stringify(numerologyResult)}
 - 합의도: consensus_score=${consensusResult.consensus_score.toFixed(3)}
 - 시간축 예측: ${JSON.stringify(temporalResult)}
-- 질문: ${input.question}
 - 질문 유형: ${questionType}
+- 유효 분석 시스템 수: ${activeEngines.length} (전체 ${systemResults.length}개 중)
 
 [추가 분석 지침]
 1. 제공된 사주 데이터만을 근거로 분석하세요. 오행 분포와 십성 분포를 정확히 반영해야 합니다.
@@ -454,7 +463,8 @@ ${sajuSymbolic}
 출력 JSON의 "total_systems"는 위 유효 엔진 수를, "converged_count"는 그중 일치도가 높은 엔진 수를 기입하세요.
 `;
 
-  const modelInput = buildLocalizedNarrativePrompt(input.locale || 'kr', dataBlock);
+  const totalSystems = activeEngines.length + (activeEngines.some(e => e.system === "tarot") ? 2 : 0); // Tarot counts as 3
+  const modelInput = buildLocalizedNarrativePrompt(input.locale || 'kr', dataBlock, totalSystems);
 
   // [CRITICAL DIAGNOSTICS - DEPLOYMENT VERIFICATION]
   console.log("[PlatformV9] sajuRaw Check:", JSON.stringify(sajuRaw));
@@ -568,7 +578,7 @@ ${sajuSymbolic}
     timeline: temporalResult,
     validation: validationResult,
     vectors: patternVectors,
-    system_weights: { saju: 30, astrology: 25, tarot: 20, ziwei: 15, numerology: 10 },
+    system_weights: { saju: 0.30, astrology: 0.25, tarot: 0.20, ziwei: 0.15, numerology: 0.10 },
   };
 
   // Professional V4 Detail Mapping (Required by ReaderPage.tsx)
