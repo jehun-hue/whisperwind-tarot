@@ -261,6 +261,16 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
   const reading = session.ai_reading;
   const saju = session.saju_data;
 
+  const renderSafe = (val: any): string => {
+    if (val === null || val === undefined) return "";
+    if (typeof val === "string") return val;
+    if (typeof val === "number") return String(val);
+    if (typeof val === "object") {
+      return val.description || val.star || val.palace || JSON.stringify(val);
+    }
+    return String(val);
+  };
+
   useEffect(() => {
     setCounselorComment(session.counselor_comment || "");
     setUserName(session.user_name || "");
@@ -950,7 +960,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
               {/* 1. Integrated Summary */}
               <div className="p-6 bg-gold/5 border-b border-border/10">
                 <div className="mb-3 text-xs font-bold text-gold tracking-widest uppercase">✨ 통합 분석 요약 (Integrated Summary)</div>
-                <p className="text-sm leading-relaxed text-foreground whitespace-pre-line font-medium">{reading.merged_reading.coreReading}</p>
+                <p className="text-sm leading-relaxed text-foreground whitespace-pre-line font-medium">{renderSafe(reading.merged_reading.coreReading)}</p>
               </div>
 
               {/* 2. Engine Calculation Layer */}
@@ -1038,7 +1048,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                       <div key={i} className="rounded-xl border border-border bg-background p-3 shadow-sm">
                         <div className="mb-1 text-[10px] font-bold text-emerald-400">{node.window || node.period}</div>
                         <div className="mb-2 text-lg font-bold text-foreground">{(node.probability * 100).toFixed(0)}%</div>
-                        <p className="text-[10px] leading-relaxed text-muted-foreground">{node.description || node.eventDescriptor}</p>
+                        <p className="text-[10px] leading-relaxed text-muted-foreground">{renderSafe(node.description || node.eventDescriptor)}</p>
                       </div>
                     ))}
                   </div>
@@ -1065,8 +1075,8 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                           <div className="rounded-lg bg-background p-4 border border-border/50">
                             <div className="mb-2 text-[10px] font-semibold text-muted-foreground uppercase">Calculation Summary</div>
                             <div className="space-y-2">
-                              <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">일간(Day Master)</span><span className="font-bold">{reading.saju_analysis.dayMaster}</span></div>
-                              <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">강약(Strength)</span><span className="text-primary font-bold">{reading.saju_analysis.strength}</span></div>
+                              <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">일간(Day Master)</span><span className="font-bold">{renderSafe(reading.saju_analysis.dayMaster)}</span></div>
+                              <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">강약(Strength)</span><span className="text-primary font-bold">{renderSafe(reading.saju_analysis.strength)}</span></div>
                               <div className="pt-2">
                                 <div className="mb-1 text-[9px] text-muted-foreground italic">오행 분포 (Elements)</div>
                                 <div className="flex gap-1">
@@ -1082,7 +1092,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                           </div>
                           <div className="space-y-2">
                             <div className="text-[10px] font-semibold text-muted-foreground uppercase">Narrative Logic</div>
-                            <p className="text-[11px] leading-relaxed text-foreground/80 bg-background p-3 rounded-lg border border-border/50">{reading.saju_analysis.narrative}</p>
+                            <p className="text-[11px] leading-relaxed text-foreground/80 bg-background p-3 rounded-lg border border-border/50">{renderSafe(reading.saju_analysis.narrative)}</p>
                           </div>
                         </div>
                       </div>
@@ -1097,14 +1107,14 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                             <div className="mb-2 text-[10px] font-semibold text-muted-foreground uppercase">Planet Positions</div>
                             <div className="grid grid-cols-3 gap-2">
                               {reading.astrology_data.planet_positions?.map((p: any, i: number) => (
-                                <div key={i} className="text-[11px]"><span className="text-muted-foreground">{p.planet}:</span> <span className="font-medium">{p.sign} {p.degree}°</span></div>
+                                <div key={i} className="text-[11px]"><span className="text-muted-foreground">{renderSafe(p.planet)}:</span> <span className="font-medium">{renderSafe(p.sign)} {p.degree}°</span></div>
                               ))}
                             </div>
                           </div>
                           <div className="rounded-lg bg-background p-3 border border-border/50">
                             <div className="mb-2 text-[10px] font-semibold text-muted-foreground uppercase">House Systems</div>
                             {Object.entries(reading.astrology_data.house_positions || {}).map(([h, s]) => (
-                              <div key={h} className="text-[11px] flex justify-between"><span className="text-muted-foreground">{h}:</span> <span>{s as string}</span></div>
+                              <div key={h} className="text-[11px] flex justify-between"><span className="text-muted-foreground">{h}:</span> <span>{renderSafe(s)}</span></div>
                             ))}
                           </div>
                         </div>
@@ -1120,7 +1130,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                             <div className="mb-2 text-[10px] font-semibold text-muted-foreground uppercase">Key Palaces</div>
                             <div className="space-y-1">
                               {reading.ziwei_data.palaces?.map((p: any, i: number) => (
-                                <div key={i} className="text-[11px] flex justify-between"><span className="text-muted-foreground">{p.name} ({p.location}):</span> <span className="font-bold">{p.main_stars.join(', ')}</span></div>
+                                <div key={i} className="text-[11px] flex justify-between"><span className="text-muted-foreground">{renderSafe(p.name)} ({renderSafe(p.location)}):</span> <span className="font-bold">{Array.isArray(p.main_stars) ? p.main_stars.map((s: any) => renderSafe(s)).join(', ') : renderSafe(p.main_stars)}</span></div>
                               ))}
                             </div>
                           </div>
@@ -1128,7 +1138,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                             <div className="mb-2 text-[10px] font-semibold text-muted-foreground uppercase">Four Transformations (사화)</div>
                             <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                               {Object.entries(reading.ziwei_data.four_transformations || {}).map(([k, v]) => (
-                                <div key={k} className="text-[11px] flex justify-between"><span className="text-muted-foreground">{k === 'rok' ? '화록' : k === 'gwon' ? '화권' : k === 'gwa' ? '화과' : '화기'}:</span> <span>{v as string}</span></div>
+                                <div key={k} className="text-[11px] flex justify-between"><span className="text-muted-foreground">{k === 'rok' ? '화록' : k === 'gwon' ? '화권' : k === 'gwa' ? '화과' : '화기'}:</span> <span>{renderSafe(v)}</span></div>
                               ))}
                             </div>
                           </div>
@@ -1190,7 +1200,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
               {/* 6. Practical Advice */}
               <div className="p-6 bg-accent/5 border-b border-border/10">
                 <div className="mb-3 text-sm font-bold text-accent">💡 최종 전략적 제언 (Practical Advice)</div>
-                <p className="text-sm leading-relaxed text-foreground whitespace-pre-line italic">"{reading.merged_reading.finalAdvice}"</p>
+                <p className="text-sm leading-relaxed text-foreground whitespace-pre-line italic">"{renderSafe(reading.merged_reading.finalAdvice)}"</p>
               </div>
 
               {/* 7. Validation Score */}
@@ -1246,7 +1256,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                 <div className="rounded-lg border border-gold/20 bg-gold/5 p-5">
                   <h3 className="mb-2 text-base font-bold text-gold">{reading.final_reading.title}</h3>
                   {reading.final_reading.summary && (
-                    <p className="text-sm leading-relaxed text-foreground whitespace-pre-line">{reading.final_reading.summary}</p>
+                    <p className="text-sm leading-relaxed text-foreground whitespace-pre-line">{renderSafe(reading.final_reading.summary)}</p>
                   )}
                 </div>
               )}
@@ -1275,7 +1285,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                     </div>
                   )}
                   {reading.convergence.common_message && (
-                    <p className="text-sm text-foreground">{reading.convergence.common_message}</p>
+                    <p className="text-sm text-foreground">{renderSafe(reading.convergence.common_message)}</p>
                   )}
                   {reading.convergence.divergent_reason && (
                     <p className="text-xs text-orange-400/80 italic">{reading.convergence.divergent_reason}</p>
@@ -1298,12 +1308,12 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                   <div key={key} className="space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="text-xs font-semibold text-muted-foreground tracking-wider uppercase">{icon} {label}</div>
-                      {sys.direction && <span className="text-[10px] text-gold italic">{sys.direction}</span>}
+                      {sys.direction && <span className="text-[10px] text-gold italic">{renderSafe(sys.direction)}</span>}
                     </div>
                     {sys.keywords?.length > 0 && (
                       <div className="flex flex-wrap gap-1">
                         {sys.keywords.map((kw: string, i: number) => (
-                          <Badge key={i} variant="outline" className="border-gold/30 text-gold text-[10px]">{kw}</Badge>
+                          <Badge key={i} variant="outline" className="border-gold/30 text-gold text-[10px]">{renderSafe(kw)}</Badge>
                         ))}
                       </div>
                     )}
@@ -1311,15 +1321,15 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                       <div className="flex flex-wrap gap-1.5">
                         {sys.cards.map((c: any, i: number) => (
                           <div key={i} className="rounded bg-secondary/50 px-2 py-1 text-[11px]">
-                            <span className="text-muted-foreground">{c.position} </span>
-                            <span className="font-medium text-foreground">{c.card}</span>
-                            <span className={c.orientation === "역" ? "text-red-400" : "text-emerald-400"}> ({c.orientation})</span>
+                            <span className="text-muted-foreground">{renderSafe(c.position)} </span>
+                            <span className="font-medium text-foreground">{renderSafe(c.card)}</span>
+                            <span className={c.orientation === "역" ? "text-red-400" : "text-emerald-400"}> ({renderSafe(c.orientation)})</span>
                           </div>
                         ))}
                       </div>
                     )}
                     <div className="rounded-lg border border-border bg-secondary p-4">
-                      <p className="text-sm leading-relaxed text-foreground whitespace-pre-line">{sys.detail}</p>
+                      <p className="text-sm leading-relaxed text-foreground whitespace-pre-line">{renderSafe(sys.detail)}</p>
                     </div>
                   </div>
                 );
@@ -1338,7 +1348,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                     ].filter(item => item.value).map((item, i) => (
                       <div key={i} className="rounded-lg bg-secondary/30 p-3">
                         <div className={`text-[10px] font-medium ${item.color}`}>{item.label}</div>
-                        <p className="mt-1 text-xs text-foreground leading-relaxed">{item.value}</p>
+                        <p className="mt-1 text-xs text-foreground leading-relaxed">{renderSafe(item.value)}</p>
                       </div>
                     ))}
                   </div>
@@ -1349,7 +1359,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
               {reading.final_reading?.advice && (
                 <div className="rounded-lg border border-green-500/20 bg-green-500/5 p-5">
                   <div className="mb-2 text-xs font-semibold text-green-400">💡 실천 조언</div>
-                  <p className="text-sm leading-relaxed text-foreground whitespace-pre-line">{reading.final_reading.advice}</p>
+                  <p className="text-sm leading-relaxed text-foreground whitespace-pre-line">{renderSafe(reading.final_reading.advice)}</p>
                 </div>
               )}
 
@@ -1357,7 +1367,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
               {reading.final_reading?.caution && (
                 <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4">
                   <div className="mb-1 text-[11px] text-destructive">⚠️ 주의사항</div>
-                  <p className="text-sm leading-relaxed text-foreground whitespace-pre-line">{reading.final_reading.caution}</p>
+                  <p className="text-sm leading-relaxed text-foreground whitespace-pre-line">{renderSafe(reading.final_reading.caution)}</p>
                 </div>
               )}
 
@@ -1409,7 +1419,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
               {reading.conclusion && (
                 <div className="rounded-lg border border-gold/20 bg-gold/5 p-5">
                   <div className="mb-2 text-xs font-semibold text-gold">✦ 최종 결론</div>
-                  <p className="text-sm leading-relaxed text-foreground whitespace-pre-line">{reading.conclusion}</p>
+                  <p className="text-sm leading-relaxed text-foreground whitespace-pre-line">{renderSafe(reading.conclusion)}</p>
                 </div>
               )}
               {[
@@ -1432,7 +1442,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
               ].filter(s => s.content).map((section, i) => (
                 <div key={i} className="rounded-lg border border-border bg-secondary p-4">
                   <div className="mb-1 text-[11px] text-muted-foreground">{section.label}</div>
-                  <p className="text-sm leading-relaxed text-foreground whitespace-pre-line">{section.content}</p>
+                  <p className="text-sm leading-relaxed text-foreground whitespace-pre-line">{renderSafe(section.content)}</p>
                 </div>
               ))}
               {reading.scores && (
