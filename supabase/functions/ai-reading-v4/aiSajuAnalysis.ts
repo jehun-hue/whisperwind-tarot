@@ -337,11 +337,11 @@ export async function analyzeSajuStructure(
   // === 대운 분석 ===
   let daewoon: DaewoonResult | null = null;
   try {
-    const yearStemIdx = STEMS.indexOf(sajuRaw.yearPillar?.stem || sajuRaw.year?.stem);
-    const monthStemIdx = STEMS.indexOf(sajuRaw.monthPillar?.stem || sajuRaw.month?.stem);
-    const monthBranchIdx = BRANCHES.indexOf(sajuRaw.monthPillar?.branch || sajuRaw.month?.branch);
+    const yearStemIdx = STEMS.indexOf(sajuRaw.year?.stem);
+    const monthStemIdx = STEMS.indexOf(sajuRaw.month?.stem);
+    const monthBranchIdx = BRANCHES.indexOf(sajuRaw.month?.branch);
     const gender = sajuRaw.gender === 'F' || sajuRaw.gender === 'female' ? 'F' : 'M';
-    const birthYear = sajuRaw.yearPillar?.year || sajuRaw.birthYear || sajuRaw.year || new Date().getFullYear() - 30;
+    const birthYear = Number(sajuRaw.year?.year || sajuRaw.year);
     const currentAge = new Date().getFullYear() - birthYear;
 
     if (yearStemIdx >= 0 && monthStemIdx >= 0 && monthBranchIdx >= 0 && sajuRaw.sunLong !== undefined) {

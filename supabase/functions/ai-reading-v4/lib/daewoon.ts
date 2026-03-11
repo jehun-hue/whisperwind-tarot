@@ -42,10 +42,10 @@ export function getDaewoonInfo(
   const nextJeolJD = findSolarTermJD(year + (sunLong >= 315 && nextJeolLong < 315 ? 1 : 0), nextJeolLong);
 
   let diff = isForward ? (nextJeolJD - jd) : (jd - currentJeolJD);
-  if (diff < 0) diff = 0;
+  if (isNaN(diff) || diff < 0) diff = 0;
 
   const daewoonAge = Math.max(1, Math.round(diff / 3));
-  return { age: daewoonAge, isForward };
+  return { age: isNaN(daewoonAge) ? 1 : daewoonAge, isForward };
 }
 
 /**
