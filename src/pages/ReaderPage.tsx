@@ -1200,7 +1200,10 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                     {reading.engine.timeline.map((node: any, i: number) => (
                       <div key={i} className="rounded-xl border border-border bg-background p-3 shadow-sm">
                         <div className="mb-1 text-[10px] font-bold text-emerald-400">{node.window || node.period}</div>
-                        <div className="mb-2 text-lg font-bold text-foreground">{(node.probability * 100).toFixed(0)}%</div>
+                        <div className="mb-2 text-lg font-bold text-foreground">
+                          {(node.probability * 100).toFixed(0)}% 
+                          <span className="ml-1.5 text-xs font-normal text-muted-foreground">({node.label || "변화 가능성"})</span>
+                        </div>
                         <p className="text-[10px] leading-relaxed text-muted-foreground">{renderSafe(node.description || node.eventDescriptor)}</p>
                       </div>
                     ))}

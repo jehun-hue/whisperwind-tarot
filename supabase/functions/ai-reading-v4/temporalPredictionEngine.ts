@@ -8,6 +8,7 @@
 export interface EventWindow {
   window: string;
   probability: number;
+  label: string;
   description: string;
   contributing_factors: string[];
 }
@@ -296,6 +297,7 @@ export function predictTemporalV8(consensus: any, systemResults: any[], category
   const windows: EventWindow[] = [
     {
       window: "단기 (0~3개월)",
+      label: "긍정적 변화 가능성",
       // 기본 base에 충/임박 시 가중치, 아닐 시 소폭 감쇄 (최소 35% 보장)
       probability: Math.max(0.35, Math.min(0.98, base_event_probability * (hasChung || hasImminent ? 1.2 : 0.85))),
       description: (hasChung || hasImminent)
@@ -305,6 +307,7 @@ export function predictTemporalV8(consensus: any, systemResults: any[], category
     },
     {
       window: "중기 (3~12개월)",
+      label: "긍정적 변화 가능성",
       // 중기는 대개 에너지가 고조되는 시기 (최소 45% 보장하여 단기와 차별화)
       probability: Math.max(0.45, Math.min(0.99, base_event_probability * (hasOuterTransit || hasMajorPeriod ? 1.3 : 1.15))),
       description: (hasOuterTransit || hasMajorPeriod)
@@ -314,6 +317,7 @@ export function predictTemporalV8(consensus: any, systemResults: any[], category
     },
     {
       window: "장기 (1년 이상)",
+      label: "긍정적 변화 가능성",
       // 장기는 안정화 단계 (최소 40% 보장하여 중기와 차별화)
       probability: Math.max(0.40, Math.min(0.95, base_event_probability * (sajuSignal.factors.some(f => f.includes("합")) ? 1.1 : 0.95))),
       description: "변화의 결과가 삶의 고정된 구조로 자리 잡는 안착의 시기입니다. 단기적인 변동성보다는 지속 가능한 성장을 도모하고 내실을 다지기에 적합한 흐름이 예상됩니다.",
