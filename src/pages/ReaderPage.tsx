@@ -713,31 +713,31 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       const result = aiData?.reading; 
       if (!result) throw new Error("엔진 응답이 비어 있습니다.");
 
-      const existingReading = session.ai_reading || {};
+      const existingReading = (session.ai_reading as any) || {};
       const mergedReading = {
         ...existingReading,
         ...result,
-        // 데이터 분석 실행 시에도 기존 타로/내러티브 필드 보호
+        // 데이터 분석 실행 시 기존 내러티브 데이터 보호 (이미 있으면 유지)
         tarot_reading: {
           ...(existingReading.tarot_reading || {}),
           ...(result.tarot_reading || {}),
         },
-        merged_reading: {
-          ...(existingReading.merged_reading || {}),
-          ...(result.merged_reading || {}),
-        },
-        convergence: {
-          ...(existingReading.convergence || {}),
-          ...(result.convergence || {}),
-        },
-        action_guide: {
-          ...(existingReading.action_guide || {}),
-          ...(result.action_guide || {}),
-        },
-        final_message: {
-          ...(existingReading.final_message || {}),
-          ...(result.final_message || {}),
-        }
+        merged_reading: (existingReading.merged_reading && Object.keys(existingReading.merged_reading).length > 0)
+          ? existingReading.merged_reading
+          : result.merged_reading,
+        convergence: (existingReading.convergence && Object.keys(existingReading.convergence).length > 0)
+          ? existingReading.convergence
+          : result.convergence,
+        action_guide: (existingReading.action_guide && Object.keys(existingReading.action_guide).length > 0)
+          ? existingReading.action_guide
+          : result.action_guide,
+        final_message: (existingReading.final_message && Object.keys(existingReading.final_message).length > 0)
+          ? existingReading.final_message
+          : result.final_message,
+        // integrated_summary 필드도 있다면 보호
+        integrated_summary: (existingReading.integrated_summary)
+          ? existingReading.integrated_summary
+          : result.integrated_summary,
       };
 
       const hasNarrative = !!(mergedReading.tarot_reading?.choihanna || mergedReading.tarot_reading?.monad);

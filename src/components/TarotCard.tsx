@@ -59,21 +59,19 @@ export const TarotCard: React.FC<TarotCardProps> = ({
         "relative z-10 h-full w-full flex flex-col items-center justify-center p-1.5",
         isReversed && "rotate-180"
       )}>
-        {image ? (
-          <img 
-            src={image} 
-            alt={name} 
-            className="h-full w-full object-cover rounded-lg opacity-80 group-hover:opacity-100 transition-all duration-500 saturate-[0.8] group-hover:saturate-100" 
-          />
-        ) : (
-          <div className="flex flex-col items-center justify-center gap-2">
-            <span className="text-gold/60 text-3xl font-light animate-pulse">✦</span>
-            <span className="text-[8px] text-muted-foreground/40 italic uppercase tracking-tighter">mystic arcana</span>
-          </div>
-        )}
+        <div className={cn(
+          "flex flex-col items-center justify-center gap-2",
+          isReversed && "rotate-180"
+        )}>
+          <span className="text-gold/60 text-3xl font-light animate-pulse">✦</span>
+          <span className="text-[8px] text-muted-foreground/40 italic uppercase tracking-tighter">mystic arcana</span>
+        </div>
 
         {showName && (
-          <div className="absolute bottom-1 left-1 right-1 rounded-lg bg-black/60 backdrop-blur-md py-1 border border-white/5">
+          <div className={cn(
+            "absolute bottom-1 left-1 right-1 rounded-lg bg-black/60 backdrop-blur-md py-1 border border-white/5",
+            isReversed && "rotate-180"
+          )}>
             <span className="font-display font-medium text-white block truncate px-1 text-center animate-shimmer bg-clip-text text-transparent bg-gradient-to-r from-gold-light via-white to-gold-light whitespace-nowrap break-keep">
               {koreanName || name}
             </span>
