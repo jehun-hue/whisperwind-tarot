@@ -227,10 +227,13 @@ export interface ServerAstrologyResult {
 }
 
 export function calculateServerAstrology(
-  year: number, month: number, day: number, hour: number, minute: number = 0
+  year: number, month: number, day: number, hour: number, minute: number = 0,
+  latitude?: number, longitude?: number
 ): ServerAstrologyResult {
   const natalDate = new Date(Date.UTC(year, month - 1, day, hour - 9, minute));
-  const observer = new Astronomy.Observer(37.5665, 126.9780, 0); // Seoul
+  const lat = (latitude && latitude !== 0) ? latitude : 37.5665;
+  const lon = (longitude && longitude !== 0) ? longitude : 126.9780;
+  const observer = new Astronomy.Observer(lat, lon, 0);
   
   const rawPositions = getHighPrecisionPositions(natalDate, observer);
   const houseData = calculateHousesManual(natalDate, observer);

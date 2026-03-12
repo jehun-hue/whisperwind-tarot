@@ -339,6 +339,8 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
       birthDate: rawBirth.birthDate,
       birthTime: rawBirth.birthTime,
       birthPlace: rawBirth.birthPlace,
+      latitude: rawBirth.latitude,
+      longitude: rawBirth.longitude,
       isLunar: rawBirth.isLunar,
       isLeapMonth: rawBirth.isLeapMonth,
     };
@@ -357,7 +359,8 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
 
   // Server-side astrology calculation (Swiss Ephemeris based)
   const serverAstrology = calculateServerAstrology(
-    birthInfo.year, birthInfo.month, birthInfo.day, birthInfo.hour, birthInfo.minute
+    birthInfo.year, birthInfo.month, birthInfo.day, birthInfo.hour, birthInfo.minute,
+    birthInfo.latitude, birthInfo.longitude
   );
   const astrologyAnalysis = {
     system: "astrology",
