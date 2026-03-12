@@ -45,22 +45,20 @@ export function calculateConsensusV8(vectors: SymbolicVector[]): ConsensusOutput
   const alignmentMatrix: any[] = [];
   const systems = Object.keys(systemGroups);
 
-  // Calculate dynamic weights based on vector magnitude
-  const dynamicWeights: Record<string, number> = {};
-  systems.forEach(sys => {
-    const vec = systemGroups[sys];
-    const magnitude = Math.sqrt(Object.values(vec).reduce((sum, val) => sum + val * val, 0));
-    let weight = SYSTEM_WEIGHTS[sys] || 0.1;
-    if (magnitude < 0.1) {
-      weight *= 0.5; // Reduce impact of sparse data systems
-    }
-    dynamicWeights[sys] = weight;
-  });
+  // 벡터 크기 계산
+  const getMagnitude = (vec: Record<string, number>) =>
+    Math.sqrt(Object.values(vec).reduce((sum, v) => sum + v * v, 0));
 
   for (let i = 0; i < systems.length; i++) {
     for (let j = i + 1; j < systems.length; j++) {
       const similarity = cosineSimilarity(systemGroups[systems[i]], systemGroups[systems[j]]);
-      const pairWeight = dynamicWeights[systems[i]] * dynamicWeights[systems[j]];
+      
+      // pairWeight 계산 시 magnitude 기반 동적 가중치 적용
+      const magI = getMagnitude(systemGroups[systems[i]]);
+      const magJ = getMagnitude(systemGroups[systems[j]]);
+      const weightI = (SYSTEM_WEIGHTS[systems[i]] || 0.1) * (magI < 0.1 ? 0.5 : 1.0);
+      const weightJ = (SYSTEM_WEIGHTS[systems[j]] || 0.1) * (magJ < 0.1 ? 0.5 : 1.0);
+      const pairWeight = weightI * weightJ;
       
       totalConsensus += similarity * pairWeight;
       totalWeight += pairWeight;
@@ -86,7 +84,8 @@ export function calculateConsensusV8(vectors: SymbolicVector[]): ConsensusOutput
   // 5. Aggregate Dominant Vector (Weighted by dynamic weights)
   const dominantVector: Record<string, number> = {};
   Object.entries(systemGroups).forEach(([sys, vec]) => {
-    const weight = dynamicWeights[sys] || 0.1;
+    const mag = getMagnitude(vec);
+    const weight = (SYSTEM_WEIGHTS[sys] || 0.1) * (mag < 0.1 ? 0.5 : 1.0);
     Object.entries(vec).forEach(([dim, val]) => {
       dominantVector[dim] = (dominantVector[dim] || 0) + (val * weight);
     });
