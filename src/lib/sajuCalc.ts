@@ -9,8 +9,17 @@ import {
 // 한국 서머타임 보정 (1987~1988년만 해당)
 function applyKoreaDST(year: number, month: number, day: number, hour: number, minute: number): { hour: number; minute: number } {
   const dstPeriods: Record<number, { start: [number, number]; end: [number, number] }> = {
+    1948: { start: [6, 1], end: [9, 13] },
+    1949: { start: [4, 3], end: [9, 11] },
+    1950: { start: [4, 1], end: [9, 10] },
+    1951: { start: [5, 6], end: [9, 9] },
+    1955: { start: [5, 5], end: [9, 18] },
+    1956: { start: [5, 20], end: [9, 30] },
+    1957: { start: [4, 14], end: [9, 22] },
+    1958: { start: [5, 4], end: [9, 21] },
+    1959: { start: [4, 15], end: [9, 20] },
+    1960: { start: [5, 1], end: [9, 18] },
     1987: { start: [5, 10], end: [10, 11] },
-    1988: { start: [5, 8], end: [10, 9] },
   };
 
   const dst = dstPeriods[year];

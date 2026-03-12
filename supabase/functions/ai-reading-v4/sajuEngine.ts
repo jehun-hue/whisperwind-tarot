@@ -44,9 +44,19 @@ export function getFullSaju(
   // 1. Longitude & DST Correction
   let dstOffset = 0;
   const mmdd = month * 100 + day;
-  if (year === 1988) {
-    // 1988: 5/8 02:00 ~ 10/9 03:00
-    if (mmdd >= 508 && mmdd <= 1009) dstOffset = -60;
+  const dstYears = [1948, 1949, 1950, 1951, 1955, 1956, 1957, 1958, 1959, 1960, 1987];
+  if (dstYears.includes(year)) {
+    if (year === 1948 && mmdd >= 601 && mmdd <= 913) dstOffset = -60;
+    else if (year === 1949 && mmdd >= 403 && mmdd <= 911) dstOffset = -60;
+    else if (year === 1950 && mmdd >= 401 && mmdd <= 910) dstOffset = -60;
+    else if (year === 1951 && mmdd >= 506 && mmdd <= 909) dstOffset = -60;
+    else if (year === 1955 && mmdd >= 505 && mmdd <= 918) dstOffset = -60;
+    else if (year === 1956 && mmdd >= 520 && mmdd <= 930) dstOffset = -60;
+    else if (year === 1957 && mmdd >= 414 && mmdd <= 922) dstOffset = -60;
+    else if (year === 1958 && mmdd >= 504 && mmdd <= 921) dstOffset = -60;
+    else if (year === 1959 && mmdd >= 415 && mmdd <= 920) dstOffset = -60;
+    else if (year === 1960 && mmdd >= 501 && mmdd <= 918) dstOffset = -60;
+    else if (year === 1987 && mmdd >= 510 && mmdd <= 1011) dstOffset = -60;
   }
   
   const solarTimeMinute = minute + (longitude - 135) * 4 + dstOffset;
