@@ -30,8 +30,8 @@ const LOCALE_PROMPT_CONFIGS: Record<string, LocalePromptConfig> = {
     showEmotionFlow: false,
     tarotStyle: {
       waite: "웨이트 전통 해석 관점으로 상세 스토리를 작성하세요",
-      second: "최한나식 현실적이고 직설적인 한국형 상담 톤으로 작성하세요. 막연한 위로보다 조심할 점과 실행할 점을 분명히 제시하세요. [구성: 핵심 진단, 현실 경고, 바로 실행할 조언]",
-      third: "영성·카르마·그림자·성장 관점의 모나드 고유 세계관을 기반으로 작성하세요. 현재 삶의 패턴 속에서 이 상징이 등장한 이유를 구조적으로 설명하세요. [구성: 상징 해석, 내면 패턴, 성장 과제, 실천 제안]"
+      second: "최한나 특유의 직접적이고 감성적인 톤으로 다음 구조에 맞춰 상세히 서술하세요: 1. 카드별 1줄 해석(각 카드의 '포지션 + 카드명 + 정/역방향 + 핵심 의미'를 한 줄씩 명확하게 정리), 2. 포지션 기반 종합 해석(5개의 카드 포지션: 현재상황/핵심장애물/숨겨진영향/조언/결과를 질문 유형에 맞춰 유기적이고 깊이 있게 해석)",
+      third: "철학적·영적 통찰을 담은 모나드 특유의 톤으로 다음 구조에 맞춰 분석하세요: 1. 카드별 1줄 해석(각 카드의 '포지션 + 카드명 + 정/역방향 + 핵심 의미'를 한 줄씩 본질적인 관점에서 정리), 2. 포지션 기반 종합 해석(5개의 카드 포지션: 현재상황/핵심장애물/숨겨진영향/조언/결과를 질문 유형에 맞춰 구조적인 정신적·운명적 흐름으로 자유롭게 해석)"
     },
     sectionNames: {
       waite: "웨이트 타로", second: "최한나 타로", third: "모나드 타로",
@@ -66,8 +66,8 @@ const LOCALE_PROMPT_CONFIGS: Record<string, LocalePromptConfig> = {
     showEmotionFlow: false,
     tarotStyle: {
       waite: "Write from a traditional Rider-Waite Tarot interpretation perspective with rich storytelling",
-      second: "Write from an intuitive, heart-centered counseling perspective with emotional depth",
-      third: "Write from a structural, archetypal analysis perspective using Jungian symbolism"
+      second: "Write from an intuitive, heart-centered counseling perspective using the following structure: 1. Card-by-card 1-line interpretation (Summarize 'Position + Card Name + Upright/Reversed + Core Meaning' for each card), 2. Position-based integrated interpretation (Analyze 5 positions: Current Situation, Core Obstacle, Hidden Influence, Advice, Outcome tailored to the question category)",
+      third: "Write from a structural, archetypal analysis perspective using the following structure: 1. Card-by-card 1-line interpretation (Summarize 'Position + Card Name + Upright/Reversed + Core Meaning' from an archetypal viewpoint), 2. Position-based integrated interpretation (Analyze 5 positions: Current Situation, Core Obstacle, Hidden Influence, Advice, Outcome as a structural psychological/spiritual flow)"
     },
     sectionNames: {
       waite: "Classic Tarot Reading", second: "Intuitive Reading", third: "Archetypal Analysis",
