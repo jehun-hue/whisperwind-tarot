@@ -482,13 +482,14 @@ export default function ClientPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm text-muted-foreground">이름/닉네임</label>
+                    <label className="text-sm text-muted-foreground">이름(실명)</label>
                     <Input
                       value={userName}
                       onChange={(e) => setUserName(e.target.value)}
                       className="rounded-xl border-border/50 bg-background/50 backdrop-blur text-foreground placeholder:text-muted-foreground/50"
-                      placeholder="이름 또는 닉네임을 입력해주세요"
+                      placeholder="이름(실명)을 입력해주세요"
                     />
+                    <p className="text-[10px] text-accent/70 mt-1">ⓘ 실명을 입력해주세요</p>
                   </div>
 
                   <div className="space-y-2">
@@ -682,19 +683,9 @@ export default function ClientPage() {
                     <Button
                       className="w-full rounded-xl bg-gradient-to-r from-accent to-gold text-primary-foreground font-medium shadow-lg"
                       onClick={proceedFromBirth}
-                      disabled={!hasBirthDate}
+                      disabled={!hasBirthDate || !userName.trim()}
                     >
                       다음 <ChevronRight className="ml-1 h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      className="w-full rounded-xl text-muted-foreground hover:text-foreground"
-                      onClick={() => {
-                        if (isLoveQuestion) setStep("romance");
-                        else setStep("cardSelect");
-                      }}
-                    >
-                      건너뛰고 타로만 진행
                     </Button>
                   </div>
                 </CardContent>
