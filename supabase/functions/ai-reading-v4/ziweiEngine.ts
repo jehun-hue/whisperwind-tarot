@@ -157,12 +157,12 @@ function calculateZiWeiPosition(lunarDay: number, bureau: Bureau): number {
 function placeMajorStars(ziWeiPos: number): Map<number, MajorStar[]> {
   const placements = new Map<number, MajorStar[]>();
   const ziWeiGroup: [MajorStar, number][] = [
-    ["자미", 0], ["천기", -1], ["태양", -2], ["무곡", -3], ["천동", -4], ["염정", -6],
+    ["자미", 0], ["천기", -1], ["태양", -3], ["무곡", -4], ["천동", -5], ["염정", -8],
   ];
   const tianFuPos = (12 - ziWeiPos + 4) % 12;
   const tianFuGroup: [MajorStar, number][] = [
     ["천부", 0], ["태음", 1], ["탐랑", 2], ["거문", 3],
-    ["천상", 4], ["천량", 5], ["칠살", 6], ["파군", 8],
+    ["천상", 4], ["천량", 5], ["칠살", 6], ["파군", 10],
   ];
   for (const [star, offset] of ziWeiGroup) {
     const pos = ((ziWeiPos + offset) % 12 + 12) % 12;

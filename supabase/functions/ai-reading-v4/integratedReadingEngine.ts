@@ -562,7 +562,8 @@ ${sajuSymbolic}
 `;
 
   const totalSystems = activeEngines.length; // Tarot counts as 1 now
-  const requestedStyle = input.style === 'monad' ? 'monad' : 'hanna';
+  const validStyles = ['hanna', 'monad', 'e7l3', 'e5l5', 'l7e3'];
+  const requestedStyle = validStyles.includes(input.style) ? input.style : 'hanna';
   const modelInput = buildLocalizedNarrativePrompt(input.locale || 'kr', dataBlock, totalSystems, requestedStyle);
 
   // Gemini 호출 전 타이밍 시작
@@ -780,12 +781,18 @@ function calculateSystemScore(systemResults: any[], systemName: string): number 
   return Math.min(1, magnitude / 2);
 }
 
-function buildFallbackReading(text: string, grade: string, scores: any, cards: any[], question: string, style: 'hanna'|'monad' = 'hanna') {
+function buildFallbackReading(text: string, grade: string, scores: any, cards: any[], question: string, style: string = 'hanna') {
   const defaultText = text || "인공지능 모델의 응답을 파싱하는 과정에서 오류가 발생했습니다. 요약된 정보를 기반으로 조언 드립니다.";
   
   const tarotReading: any = {};
   if (style === 'monad') {
     tarotReading.monad = { cards: cards?.map((c: any) => ({ name: c.name, position: c.position || "", reversed: c.isReversed || false })) || [], story: defaultText, key_message: "" };
+  } else if (style === 'e7l3') {
+    tarotReading.e7l3 = { cards: cards?.map((c: any) => ({ name: c.name, position: c.position || "", reversed: c.isReversed || false })) || [], story: defaultText, key_message: "" };
+  } else if (style === 'e5l5') {
+    tarotReading.e5l5 = { cards: cards?.map((c: any) => ({ name: c.name, position: c.position || "", reversed: c.isReversed || false })) || [], story: defaultText, key_message: "" };
+  } else if (style === 'l7e3') {
+    tarotReading.l7e3 = { cards: cards?.map((c: any) => ({ name: c.name, position: c.position || "", reversed: c.isReversed || false })) || [], story: defaultText, key_message: "" };
   } else {
     tarotReading.choihanna = { cards: cards?.map((c: any) => ({ name: c.name, position: c.position || "", reversed: c.isReversed || false })) || [], story: defaultText, key_message: "" };
   }

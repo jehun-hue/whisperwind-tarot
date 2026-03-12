@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { calculateNatalChart, getAstrologyForQuestion, getCurrentTransits } from "@/lib/astrology";
 import { calculateZiWei, getZiWeiForQuestion } from "@/lib/ziwei";
 import { getCombinationSummary } from "@/data/tarotCombinations";
+import { toast } from "sonner";
 
 // ============================================================
 // ⚠️  사주 재계산 최엄 금지 (SAJU RECALCULATION GUARD)
@@ -250,7 +251,7 @@ export default function ReaderPage() {
 }
 
 function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdate: (s: ReadingSession) => void }) {
-  const [analyzingStyle, setAnalyzingStyle] = useState<'hanna' | 'monad' | 'v1' | 'data-only' | 'seq_hanna' | 'seq_monad' | 'seq_data' | null>(null);
+  const [analyzingStyle, setAnalyzingStyle] = useState<'hanna' | 'monad' | 'v1' | 'data-only' | 'seq_hanna' | 'seq_monad' | 'seq_data' | 'e7l3' | 'e5l5' | 'l7e3' | null>(null);
   const analyzing = !!analyzingStyle;
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [counselorComment, setCounselorComment] = useState(session.counselor_comment || "");
@@ -437,7 +438,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
     }
   };
 
-  const runAIAnalysisV2 = async (style: 'hanna' | 'monad' = 'hanna', isAutoRun = false) => {
+  const runAIAnalysisV2 = async (style: 'hanna' | 'monad' | 'e7l3' | 'e5l5' | 'l7e3' = 'hanna', isAutoRun = false) => {
     // 가드 로직: 해당 해석이 이미 존재하면 재생성 방지
     if (style === 'hanna' && session.ai_reading?.tarot_reading?.choihanna) {
       if (!isAutoRun) alert("최한나 해석이 이미 생성되어 있습니다.");
@@ -538,13 +539,32 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       }
 
       // 기존 데이터와 병합 (다른 스타일 리딩 덮어쓰기 방지)
+      // 기존 데이터와 병합 (필드별 통합 로직 적용)
       const existingReading = session.ai_reading || {};
       const mergedReading = {
         ...existingReading,
         ...result,
+        // 타로 리딩 통합 (한나/모나드 공존)
         tarot_reading: {
           ...(existingReading.tarot_reading || {}),
           ...(result.tarot_reading || {}),
+        },
+        // 통합 리딩 필드 병합 (덮어쓰기 방지)
+        merged_reading: {
+          ...(existingReading.merged_reading || {}),
+          ...(result.merged_reading || {}),
+        },
+        convergence: {
+          ...(existingReading.convergence || {}),
+          ...(result.convergence || {}),
+        },
+        action_guide: {
+          ...(existingReading.action_guide || {}),
+          ...(result.action_guide || {}),
+        },
+        final_message: {
+          ...(existingReading.final_message || {}),
+          ...(result.final_message || {}),
         }
       };
 
@@ -571,6 +591,52 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
     } finally {
       if (!isAutoRun) setAnalyzingStyle(null);
     }
+  };
+
+  const applyPersonaMerge = async (style: 'e7l3' | 'e5l5' | 'l7e3') => {
+    if (!session.ai_reading?.tarot_reading?.choihanna || !session.ai_reading?.tarot_reading?.monad) {
+      alert("최한나와 모나드 분석이 모두 완료되어야 병합이 가능합니다.");
+      return;
+    }
+
+    const hanna = session.ai_reading.tarot_reading.choihanna;
+    const monad = session.ai_reading.tarot_reading.monad;
+    
+    const linesH = hanna.story.split('\n').filter(l => l.trim());
+    const linesM = monad.story.split('\n').filter(l => l.trim());
+    
+    let ratioH = 0.5;
+    if (style === 'e7l3') ratioH = 0.7;
+    if (style === 'l7e3') ratioH = 0.3;
+
+    const sliceH = Math.ceil(linesH.length * ratioH);
+    const sliceM = linesM.length - Math.ceil(linesM.length * ratioH);
+    
+    const mergedStory = [
+      ...linesH.slice(0, sliceH),
+      ...linesM.slice(linesM.length - sliceM)
+    ].join('\n\n');
+
+    const mergedKeyMessage = ratioH >= 0.5 ? hanna.key_message : monad.key_message;
+
+    const updatedReading = {
+      ...session.ai_reading,
+      tarot_reading: {
+        ...session.ai_reading.tarot_reading,
+        [style]: {
+          cards: hanna.cards,
+          story: mergedStory,
+          key_message: mergedKeyMessage
+        }
+      }
+    };
+
+    await supabase.from("reading_sessions").update({
+      ai_reading: updatedReading as any
+    }).eq("id", session.id);
+
+    onUpdate({ ...session, ai_reading: updatedReading });
+    toast.success(`${style.toUpperCase()} 스타일 병합 완료`);
   };
 
   const runDataOnlyAnalysis = async (isAutoRun = false) => {
@@ -651,6 +717,27 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       const mergedReading = {
         ...existingReading,
         ...result,
+        // 데이터 분석 실행 시에도 기존 타로/내러티브 필드 보호
+        tarot_reading: {
+          ...(existingReading.tarot_reading || {}),
+          ...(result.tarot_reading || {}),
+        },
+        merged_reading: {
+          ...(existingReading.merged_reading || {}),
+          ...(result.merged_reading || {}),
+        },
+        convergence: {
+          ...(existingReading.convergence || {}),
+          ...(result.convergence || {}),
+        },
+        action_guide: {
+          ...(existingReading.action_guide || {}),
+          ...(result.action_guide || {}),
+        },
+        final_message: {
+          ...(existingReading.final_message || {}),
+          ...(result.final_message || {}),
+        }
       };
 
       const hasNarrative = !!(mergedReading.tarot_reading?.choihanna || mergedReading.tarot_reading?.monad);
@@ -694,9 +781,23 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       setAnalyzingStyle('seq_monad');
       await runAIAnalysisV2('monad', true);
 
-      setAnalyzingStyle('seq_data');
       await runDataOnlyAnalysis(true);
       
+      // 최한나+모나드 완료 후 자동 병합 (프론트엔드)
+      // 최신 데이터를 반영하기 위해 applyPersonaMerge 내의 session 참조가 최신이어야 함
+      // 또는 applyPersonaMerge를 호출하기 전에 상태 업데이트가 반영되도록 함
+      // 여기서는 버튼이 눌린 후 개별적으로 눌러도 되지만, 
+      // 편의를 위해 약간의 지연 후 실행하거나 직접 로직을 수행할 수 있음
+      toast.info("통합 스타일 병합을 시작합니다...");
+      setTimeout(() => {
+        const btnE7 = document.getElementById('btn-merge-e7l3');
+        const btnE5 = document.getElementById('btn-merge-e5l5');
+        const btnL7 = document.getElementById('btn-merge-l7e3');
+        btnE7?.click();
+        btnE5?.click();
+        btnL7?.click();
+      }, 1000);
+
     } catch (err) {
       console.error("Sequential analysis error:", err);
     } finally {
@@ -1195,10 +1296,63 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
             )}
           </Button>
 
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-xl border-purple-500/20 bg-purple-500/5 text-purple-400 hover:bg-purple-500/10 text-[10px]"
+              onClick={() => runAIAnalysisV2('hanna')}
+              disabled={analyzing}
+            >
+              💫 최한나 개별 분석
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-xl border-blue-500/20 bg-blue-500/5 text-blue-400 hover:bg-blue-500/10 text-[10px]"
+              onClick={() => runAIAnalysisV2('monad')}
+              disabled={analyzing}
+            >
+              🔷 모나드 개별 분석
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2">
+            <Button
+              id="btn-merge-e7l3"
+              variant="outline"
+              size="sm"
+              className="rounded-xl border-pink-500/20 bg-pink-500/5 text-pink-400 hover:bg-pink-500/10 text-[10px] h-9"
+              onClick={() => applyPersonaMerge('e7l3')}
+              disabled={analyzing}
+            >
+              🌸 감7논3
+            </Button>
+            <Button
+              id="btn-merge-e5l5"
+              variant="outline"
+              size="sm"
+              className="rounded-xl border-purple-500/20 bg-purple-500/5 text-purple-400 hover:bg-purple-500/10 text-[10px] h-9"
+              onClick={() => applyPersonaMerge('e5l5')}
+              disabled={analyzing}
+            >
+              ⚖️ 감5논5
+            </Button>
+            <Button
+              id="btn-merge-l7e3"
+              variant="outline"
+              size="sm"
+              className="rounded-xl border-blue-500/20 bg-blue-500/5 text-blue-400 hover:bg-blue-500/10 text-[10px] h-9"
+              onClick={() => applyPersonaMerge('l7e3')}
+              disabled={analyzing}
+            >
+              🧊 논7감3
+            </Button>
+          </div>
+
           <Button
             className="w-full rounded-xl border border-border bg-card text-foreground font-medium hover:bg-muted"
             onClick={() => runDataOnlyAnalysis()}
-            disabled={analyzing}
           >
             {analyzingStyle === 'data-only' ? (
               <>
@@ -1228,22 +1382,28 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
 
 
 
-      {/* Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        {(session.cards as any[])?.map((card: any, idx: number) => (
-          <div key={card.id} className="flex flex-col items-center gap-2">
-            <span className="text-[10px] text-muted-foreground uppercase tracking-widest whitespace-nowrap break-keep">
-               {idx === 0 ? "현재 상황" : idx === 1 ? "핵심 문제" : idx === 2 ? "숨겨진 원인" : idx === 3 ? "조언" : "가까운 결과"}
-            </span>
-            <TarotCard 
-              name={card.name} 
-              koreanName={card.korean} 
-              isReversed={card.isReversed} 
-              image={card.image}
-              size="lg"
-            />
-          </div>
-        ))}
+      {/* Cards - Compact Badge Row */}
+      <div className="flex flex-wrap gap-2 py-2">
+        {(session.cards as any[])?.map((card: any, idx: number) => {
+          const spread = ["현재 상황", "핵심 문제", "숨겨진 원인", "조언", "가까운 결과"];
+          const label = spread[idx] || "추가 분석";
+          return (
+            <div 
+              key={card.id} 
+              className={`flex items-center gap-2 rounded-full border px-3 py-1.5 transition-all bg-secondary/30 ${
+                card.isReversed ? "border-purple-500/30 text-purple-400" : "border-gold/30 text-gold"
+              }`}
+            >
+              <span className="text-[10px] uppercase tracking-wider opacity-60 whitespace-nowrap break-keep">
+                {label}
+              </span>
+              <div className="h-3 w-px bg-border/40" />
+              <span className="text-sm font-semibold whitespace-nowrap break-keep">
+                {card.korean}{card.isReversed ? "(역)" : ""}
+              </span>
+            </div>
+          );
+        })}
       </div>
 
       {/* AI Reading - V4 format (4-system stable pipeline) */}
@@ -1287,7 +1447,6 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                 )}
               </div>
 
-              {/* 1-2. Monad Tarot (v4 Detail) */}
               <div className="p-6 border-b border-border/10 bg-secondary/5">
                 <div className="mb-3 text-xs font-bold text-blue-400 tracking-widest uppercase">🔷 모나드 카드별 해석</div>
                 {reading.tarot_reading?.monad ? (
@@ -1301,6 +1460,39 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                   <p className="text-xs text-muted-foreground italic">분석 데이터가 없습니다.</p>
                 )}
               </div>
+
+              {/* 1-3. E7L3 Persona */}
+              {reading.tarot_reading?.e7l3 && (
+                <div className="p-6 border-b border-border/10 bg-pink-500/5">
+                  <div className="mb-3 text-xs font-bold text-pink-400 tracking-widest uppercase">🌸 감성 70% 통합 리딩</div>
+                  <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap mb-3">{renderSafe(reading.tarot_reading.e7l3.story)}</p>
+                  {reading.tarot_reading.e7l3.key_message && (
+                    <p className="text-xs text-gold font-medium italic">💎 {renderSafe(reading.tarot_reading.e7l3.key_message)}</p>
+                  )}
+                </div>
+              )}
+
+              {/* 1-4. E5L5 Persona */}
+              {reading.tarot_reading?.e5l5 && (
+                <div className="p-6 border-b border-border/10 bg-purple-500/5">
+                  <div className="mb-3 text-xs font-bold text-purple-400 tracking-widest uppercase">⚖️ 균형 50% 통합 리딩</div>
+                  <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap mb-3">{renderSafe(reading.tarot_reading.e5l5.story)}</p>
+                  {reading.tarot_reading.e5l5.key_message && (
+                    <p className="text-xs text-gold font-medium italic">💎 {renderSafe(reading.tarot_reading.e5l5.key_message)}</p>
+                  )}
+                </div>
+              )}
+
+              {/* 1-5. L7E3 Persona */}
+              {reading.tarot_reading?.l7e3 && (
+                <div className="p-6 border-b border-border/10 bg-blue-500/5">
+                  <div className="mb-3 text-xs font-bold text-blue-400 tracking-widest uppercase">🧊 이성 70% 통합 리딩</div>
+                  <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap mb-3">{renderSafe(reading.tarot_reading.l7e3.story)}</p>
+                  {reading.tarot_reading.l7e3.key_message && (
+                    <p className="text-xs text-gold font-medium italic">💎 {renderSafe(reading.tarot_reading.l7e3.key_message)}</p>
+                  )}
+                </div>
+              )}
 
 
               {/* 3. Cross-System Consensus */}
