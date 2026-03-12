@@ -20,6 +20,7 @@ function applyKoreaDST(year: number, month: number, day: number, hour: number, m
     1959: { start: [4, 15], end: [9, 20] },
     1960: { start: [5, 1], end: [9, 18] },
     1987: { start: [5, 10], end: [10, 11] },
+    1988: { start: [5, 8], end: [10, 11] },
   };
 
   const dst = dstPeriods[year];
