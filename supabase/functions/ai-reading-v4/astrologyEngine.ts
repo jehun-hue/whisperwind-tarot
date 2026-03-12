@@ -6,7 +6,7 @@
  * - MC/IC/DESC 계산을 위한 Meeus 공식 적용
  */
 
-import * as Astronomy from "https://esm.sh/astronomy-engine";
+import * as Astronomy from "npm:astronomy-engine";
 
 // ═══════════════════════════════════════════════
 // Constants
@@ -144,12 +144,19 @@ function calculateAspects(positions: { planet: string; absoluteDegree: number }[
 }
 
 function getHighPrecisionPositions(date: Date, observer: Astronomy.Observer) {
-  const time = new Astronomy.AstroTime(date);
+  const time = Astronomy.MakeTime(date);
   return PLANET_NAMES.map(name => {
     const body = PLANETS_MAP[name];
-    const equ_vec = Astronomy.Equator(body, time, observer, true, true);
-    const ecl_vec = Astronomy.Ecliptic(equ_vec);
-    return { planet: name, longitude: ecl_vec.elon };
+    try {
+      // Equator 대신 GeoVector → Ecliptic 변환 시도
+      const geoVec = Astronomy.GeoVector(body, time, true);
+      const ecl = Astronomy.Ecliptic(geoVec);
+      return { planet: name, longitude: ecl.elon };
+    } catch (e) {
+      // 폴백: EclipticLongitude 직접 계산
+      const lon = Astronomy.EclipticLongitude(body, time);
+      return { planet: name, longitude: lon };
+    }
   });
 }
 
@@ -158,7 +165,7 @@ function getHighPrecisionPositions(date: Date, observer: Astronomy.Observer) {
  * Formulas from Jean Meeus, Astronomical Algorithms
  */
 function calculateHousesManual(date: Date, observer: Astronomy.Observer) {
-  const time = new Astronomy.AstroTime(date);
+  const time = Astronomy.MakeTime(date);
   const lst = Astronomy.SiderealTime(time) + (observer.longitude / 15.0);
   const ramc = ((lst % 24) * 15) % 360;
   const eps = 23.4392911; // J2000 Obliquity
