@@ -1154,50 +1154,6 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                 </div>
               )}
 
-              {/* 2. Engine Calculation Layer */}
-              {reading.engine && (
-                <div className="p-6 border-b border-border/10">
-                  <div className="mb-4 text-xs font-bold text-accent tracking-widest uppercase">🔢 AI 엔진 계산 데이터 (Engine Calculation)</div>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-3">
-                      <div>
-                        <div className="mb-1 text-[10px] text-muted-foreground uppercase">Pattern Vector</div>
-                        <div className="flex flex-wrap gap-1">
-                          {reading.engine.vectors?.flatMap((v: any) => v.patterns || []).slice(0, 5).map((p: string, i: number) => (
-                            <Badge key={i} variant="secondary" className="text-[10px] bg-accent/10 text-accent border-accent/20">{p}</Badge>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="rounded bg-secondary/30 p-2">
-                          <div className="text-[9px] text-muted-foreground">Consensus Score</div>
-                          <div className="text-sm font-bold text-foreground">{reading.engine.consensus?.consensus_score?.toFixed(2) || "0.00"}</div>
-                        </div>
-                        <div className="rounded bg-secondary/30 p-2">
-                          <div className="text-[9px] text-muted-foreground">Confidence Score</div>
-                          <div className="text-sm font-bold text-gold">{reading.engine.consensus?.confidence_score?.toFixed(2) || "0.00"}</div>
-                        </div>
-                      </div>
-                    </div>
-                    <div>
-                      <div className="mb-1 text-[10px] text-muted-foreground uppercase">Semantic Dimensions</div>
-                      <div className="space-y-1.5">
-                        {Object.entries(reading.engine.consensus?.dominant_vector || {}).slice(0, 5).map(([dim, val]) => (
-                          <div key={dim} className="flex items-center justify-between">
-                            <span className="text-[10px] text-muted-foreground">{dim}</span>
-                            <div className="flex items-center gap-2">
-                              <div className="h-1 w-20 rounded-full bg-secondary">
-                                <div className="h-full rounded-full bg-accent" style={{ width: `${Math.min(100, (val as number) * 100)}%` }} />
-                              </div>
-                              <span className="text-[10px] font-mono">{(val as number).toFixed(2)}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {/* 3. Cross-System Consensus */}
               {reading.engine && (
@@ -1254,6 +1210,54 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                     <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" />
                   </summary>
                   <div className="p-6 space-y-8 bg-secondary/20">
+                    {/* Engine Calculation Data */}
+                    {reading.engine && (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <div className="h-px flex-1 bg-border/50" />
+                          <span className="text-[10px] font-bold text-accent uppercase">Engine Calculation</span>
+                          <div className="h-px flex-1 bg-border/50" />
+                        </div>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          <div className="space-y-3">
+                            <div>
+                              <div className="mb-1 text-[10px] text-muted-foreground uppercase">Pattern Vector</div>
+                              <div className="flex flex-wrap gap-1">
+                                {reading.engine.vectors?.flatMap((v: any) => v.patterns || []).slice(0, 5).map((p: string, i: number) => (
+                                  <Badge key={i} variant="secondary" className="text-[10px] bg-accent/10 text-accent border-accent/20">{p}</Badge>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div className="rounded bg-secondary/30 p-2 border border-border/20">
+                                <div className="text-[9px] text-muted-foreground">Consensus Score</div>
+                                <div className="text-sm font-bold text-foreground">{reading.engine.consensus?.consensus_score?.toFixed(2) || "0.00"}</div>
+                              </div>
+                              <div className="rounded bg-secondary/30 p-2 border border-border/20">
+                                <div className="text-[9px] text-muted-foreground">Confidence Score</div>
+                                <div className="text-sm font-bold text-gold">{reading.engine.consensus?.confidence_score?.toFixed(2) || "0.00"}</div>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="rounded-lg bg-background p-3 border border-border/50">
+                            <div className="mb-2 text-[10px] font-semibold text-muted-foreground uppercase">Semantic Dimensions</div>
+                            <div className="space-y-1.5">
+                              {Object.entries(reading.engine.consensus?.dominant_vector || {}).slice(0, 5).map(([dim, val]) => (
+                                <div key={dim} className="flex items-center justify-between">
+                                  <span className="text-[10px] text-muted-foreground">{dim}</span>
+                                  <div className="flex items-center gap-2">
+                                    <div className="h-1 w-20 rounded-full bg-secondary">
+                                      <div className="h-full rounded-full bg-accent" style={{ width: `${Math.min(100, (val as number) * 100)}%` }} />
+                                    </div>
+                                    <span className="text-[10px] font-mono">{(val as number).toFixed(2)}</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                     {/* Bazi Detail */}
                     {reading.saju_analysis && (
                       <div className="space-y-3">
