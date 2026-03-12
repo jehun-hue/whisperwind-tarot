@@ -264,12 +264,18 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
 
   const renderSafe = (val: any): string => {
     if (val === null || val === undefined) return "";
-    if (typeof val === "string") return val;
-    if (typeof val === "number") return String(val);
-    if (typeof val === "object") {
-      return val.description || val.star || val.palace || JSON.stringify(val);
+    let str = "";
+    if (typeof val === "string") {
+      str = val;
+    } else if (typeof val === "number") {
+      str = String(val);
+    } else if (typeof val === "object") {
+      str = val.description || val.star || val.palace || JSON.stringify(val);
+    } else {
+      str = String(val);
     }
-    return String(val);
+    // Handle literal \n or \\n from JSON/LLM output
+    return str.replace(/\\n/g, "\n");
   };
 
   useEffect(() => {
@@ -1123,14 +1129,14 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
               {/* 1. Integrated Summary */}
               <div className="p-6 bg-gold/5 border-b border-border/10">
                 <div className="mb-3 text-xs font-bold text-gold tracking-widest uppercase">✨ 통합 분석 요약 (Integrated Summary)</div>
-                <p className="text-sm leading-relaxed text-foreground whitespace-pre-line font-medium">{renderSafe(reading.merged_reading.coreReading)}</p>
+                <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap font-medium">{renderSafe(reading.merged_reading.coreReading)}</p>
               </div>
 
               {/* 1-1. Choi Hanna Tarot (v4 Detail) */}
               {reading.tarot_reading?.choihanna && (
                 <div className="p-6 border-b border-border/10">
                   <div className="mb-3 text-xs font-bold text-purple-400 tracking-widest uppercase">💫 최한나 타로 상세 해석 (Choi Hanna Reading)</div>
-                  <p className="text-sm leading-relaxed text-foreground whitespace-pre-line mb-3">{renderSafe(reading.tarot_reading.choihanna.story)}</p>
+                  <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap mb-3">{renderSafe(reading.tarot_reading.choihanna.story)}</p>
                   {reading.tarot_reading.choihanna.key_message && (
                     <p className="text-xs text-gold font-medium italic">💎 {renderSafe(reading.tarot_reading.choihanna.key_message)}</p>
                   )}
@@ -1141,7 +1147,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
               {reading.tarot_reading?.monad && (
                 <div className="p-6 border-b border-border/10 bg-secondary/5">
                   <div className="mb-3 text-xs font-bold text-blue-400 tracking-widest uppercase">🔷 모나드 타로 상세 해석 (Monad Reading)</div>
-                  <p className="text-sm leading-relaxed text-foreground whitespace-pre-line mb-3">{renderSafe(reading.tarot_reading.monad.story)}</p>
+                  <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap mb-3">{renderSafe(reading.tarot_reading.monad.story)}</p>
                   {reading.tarot_reading.monad.key_message && (
                     <p className="text-xs text-gold font-medium italic">💎 {renderSafe(reading.tarot_reading.monad.key_message)}</p>
                   )}
@@ -1385,7 +1391,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
               {/* 6. Practical Advice */}
               <div className="p-6 bg-accent/5 border-b border-border/10">
                 <div className="mb-3 text-sm font-bold text-accent">💡 최종 전략적 제언 (Practical Advice)</div>
-                <p className="text-sm leading-relaxed text-foreground whitespace-pre-line italic">"{renderSafe(reading.merged_reading.finalAdvice)}"</p>
+                <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap italic">"{renderSafe(reading.merged_reading.finalAdvice)}"</p>
               </div>
 
               {/* 7. Validation Score */}
@@ -1432,7 +1438,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                 <div className="rounded-lg border border-gold/20 bg-gold/5 p-5">
                   <h3 className="mb-2 text-base font-bold text-gold">{reading.final_reading.title}</h3>
                   {reading.final_reading.summary && (
-                    <p className="text-sm leading-relaxed text-foreground whitespace-pre-line">{renderSafe(reading.final_reading.summary)}</p>
+                    <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap">{renderSafe(reading.final_reading.summary)}</p>
                   )}
                 </div>
               )}
@@ -1505,7 +1511,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                       </div>
                     )}
                     <div className="rounded-lg border border-border bg-secondary p-4 text-foreground">
-                      <p className="text-sm leading-relaxed whitespace-pre-line">{renderSafe(sys.detail)}</p>
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap">{renderSafe(sys.detail)}</p>
                     </div>
                   </div>
                 );
@@ -1516,7 +1522,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                 <div className="space-y-2">
                   <div className="text-xs font-semibold text-purple-400 tracking-wider uppercase">💫 최한나 타로 상세</div>
                   <div className="rounded-lg border border-border bg-purple-500/5 p-4 text-foreground">
-                    <p className="text-sm leading-relaxed whitespace-pre-line">{renderSafe(reading.tarot_reading.choihanna.story)}</p>
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{renderSafe(reading.tarot_reading.choihanna.story)}</p>
                     {reading.tarot_reading.choihanna.key_message && (
                       <p className="mt-3 text-xs text-gold font-medium italic">💎 {renderSafe(reading.tarot_reading.choihanna.key_message)}</p>
                     )}
@@ -1528,7 +1534,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                 <div className="space-y-2">
                   <div className="text-xs font-semibold text-blue-400 tracking-wider uppercase">🔷 모나드 타로 상세</div>
                   <div className="rounded-lg border border-border bg-blue-500/5 p-4 text-foreground">
-                    <p className="text-sm leading-relaxed whitespace-pre-line">{renderSafe(reading.tarot_reading.monad.story)}</p>
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{renderSafe(reading.tarot_reading.monad.story)}</p>
                     {reading.tarot_reading.monad.key_message && (
                       <p className="mt-3 text-xs text-gold font-medium italic">💎 {renderSafe(reading.tarot_reading.monad.key_message)}</p>
                     )}
@@ -1560,7 +1566,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
               {reading.final_reading?.advice && (
                 <div className="rounded-lg border border-green-500/20 bg-green-500/5 p-5">
                   <div className="mb-2 text-xs font-semibold text-green-400">💡 실천 조언</div>
-                  <p className="text-sm leading-relaxed text-foreground whitespace-pre-line">{renderSafe(reading.final_reading.advice)}</p>
+                  <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap">{renderSafe(reading.final_reading.advice)}</p>
                 </div>
               )}
 
@@ -1568,7 +1574,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
               {reading.final_reading?.caution && (
                 <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4">
                   <div className="mb-1 text-[11px] text-destructive">⚠️ 주의사항</div>
-                  <p className="text-sm leading-relaxed text-foreground whitespace-pre-line">{renderSafe(reading.final_reading.caution)}</p>
+                  <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap">{renderSafe(reading.final_reading.caution)}</p>
                 </div>
               )}
 
