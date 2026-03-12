@@ -250,7 +250,7 @@ export default function ReaderPage() {
 }
 
 function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdate: (s: ReadingSession) => void }) {
-  const [analyzingStyle, setAnalyzingStyle] = useState<'hanna' | 'monad' | 'v1' | 'data-only' | null>(null);
+  const [analyzingStyle, setAnalyzingStyle] = useState<'hanna' | 'monad' | 'v1' | 'data-only' | 'seq_hanna' | 'seq_monad' | 'seq_data' | null>(null);
   const analyzing = !!analyzingStyle;
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [counselorComment, setCounselorComment] = useState(session.counselor_comment || "");
@@ -796,7 +796,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
   .cards { display:flex; gap:12px; margin:20px 0; }
   .card-item { flex:1; border:1px solid #ddd; border-radius:8px; padding:12px; text-align:center; }
   .card-item .pos { font-size:10px; color:#888; white-space:nowrap; word-break:keep-all; }
-  .card-item .name { font-size:14px; font-weight:600; margin:4px 0; }
+  .card-item .name { font-size:14px; font-weight:600; margin:4px 0; white-space:nowrap; word-break:keep-all; }
   .card-item .dir { font-size:11px; color:#c8a864; }
   .info-grid { display:flex; gap:8px; margin:12px 0; }
   .pillar { flex:1; border:1px solid #ddd; border-radius:6px; padding:8px; text-align:center; }
@@ -1232,8 +1232,8 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       <div className="grid gap-4 md:grid-cols-3">
         {(session.cards as any[])?.map((card: any, idx: number) => (
           <div key={card.id} className="flex flex-col items-center gap-2">
-            <span className="text-[10px] text-muted-foreground uppercase tracking-widest">
-               {idx === 0 ? "현재 상황" : idx === 1 ? "핵심 문제" : "결과 및 조언"}
+            <span className="text-[10px] text-muted-foreground uppercase tracking-widest whitespace-nowrap break-keep">
+               {idx === 0 ? "현재 상황" : idx === 1 ? "핵심 문제" : idx === 2 ? "숨겨진 원인" : idx === 3 ? "조언" : "가까운 결과"}
             </span>
             <TarotCard 
               name={card.name} 
@@ -1273,26 +1273,34 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
               </div>
 
               {/* 1-1. Choi Hanna Tarot (v4 Detail) */}
-              {reading.tarot_reading?.choihanna && (
-                <div className="p-6 border-b border-border/10">
-                  <div className="mb-3 text-xs font-bold text-purple-400 tracking-widest uppercase">💫 카드별 1줄 해석</div>
-                  <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap mb-3">{renderSafe(reading.tarot_reading.choihanna.story)}</p>
-                  {reading.tarot_reading.choihanna.key_message && (
-                    <p className="text-xs text-gold font-medium italic">💎 {renderSafe(reading.tarot_reading.choihanna.key_message)}</p>
-                  )}
-                </div>
-              )}
+              <div className="p-6 border-b border-border/10">
+                <div className="mb-3 text-xs font-bold text-purple-400 tracking-widest uppercase">💫 최한나 카드별 해석</div>
+                {reading.tarot_reading?.choihanna ? (
+                  <>
+                    <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap mb-3">{renderSafe(reading.tarot_reading.choihanna.story)}</p>
+                    {reading.tarot_reading.choihanna.key_message && (
+                      <p className="text-xs text-gold font-medium italic">💎 {renderSafe(reading.tarot_reading.choihanna.key_message)}</p>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-xs text-muted-foreground italic">분석 데이터가 없습니다.</p>
+                )}
+              </div>
 
               {/* 1-2. Monad Tarot (v4 Detail) */}
-              {reading.tarot_reading?.monad && (
-                <div className="p-6 border-b border-border/10 bg-secondary/5">
-                  <div className="mb-3 text-xs font-bold text-blue-400 tracking-widest uppercase">🔷 카드별 1줄 해석</div>
-                  <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap mb-3">{renderSafe(reading.tarot_reading.monad.story)}</p>
-                  {reading.tarot_reading.monad.key_message && (
-                    <p className="text-xs text-gold font-medium italic">💎 {renderSafe(reading.tarot_reading.monad.key_message)}</p>
-                  )}
-                </div>
-              )}
+              <div className="p-6 border-b border-border/10 bg-secondary/5">
+                <div className="mb-3 text-xs font-bold text-blue-400 tracking-widest uppercase">🔷 모나드 카드별 해석</div>
+                {reading.tarot_reading?.monad ? (
+                  <>
+                    <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap mb-3">{renderSafe(reading.tarot_reading.monad.story)}</p>
+                    {reading.tarot_reading.monad.key_message && (
+                      <p className="text-xs text-gold font-medium italic">💎 {renderSafe(reading.tarot_reading.monad.key_message)}</p>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-xs text-muted-foreground italic">분석 데이터가 없습니다.</p>
+                )}
+              </div>
 
 
               {/* 3. Cross-System Consensus */}
@@ -1636,8 +1644,8 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
               {/* Individual Systems */}
               {[
                 { key: "tarot", icon: "🃏", label: "웨이트 타로" },
-                { key: "choi_hanna_tarot", icon: "💫", label: "카드별 1줄 해석" },
-                { key: "monad_tarot", icon: "🔷", label: "카드별 1줄 해석" },
+                { key: "choi_hanna_tarot", icon: "💫", label: "최한나 카드별 해석" },
+                { key: "monad_tarot", icon: "🔷", label: "모나드 카드별 해석" },
                 { key: "saju", icon: "🔮", label: "사주팔자" },
                 { key: "astrology", icon: "⭐", label: "서양 점성술" },
                 { key: "ziwei", icon: "🏯", label: "자미두수" },
@@ -1647,7 +1655,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                 return (
                   <div key={key} className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <div className="text-xs font-semibold text-muted-foreground tracking-wider uppercase">{icon} {label}</div>
+                      <div className="text-xs font-bold text-muted-foreground tracking-wider uppercase">{icon} {label}</div>
                       {sys.direction && <span className="text-[10px] text-gold italic">{renderSafe(sys.direction)}</span>}
                     </div>
                     {sys.keywords?.length > 0 && (
@@ -1676,29 +1684,37 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
               })}
 
               {/* Tarot Deep Details (Hanna/Monad) in Legacy UI */}
-              {reading.tarot_reading?.choihanna && (
-                <div className="space-y-2">
-                  <div className="text-xs font-semibold text-purple-400 tracking-wider uppercase">💫 카드별 1줄 해석</div>
-                  <div className="rounded-lg border border-border bg-purple-500/5 p-4 text-foreground">
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{renderSafe(reading.tarot_reading.choihanna.story)}</p>
-                    {reading.tarot_reading.choihanna.key_message && (
-                      <p className="mt-3 text-xs text-gold font-medium italic">💎 {renderSafe(reading.tarot_reading.choihanna.key_message)}</p>
-                    )}
-                  </div>
+              <div className="space-y-2">
+                <div className="text-xs font-bold text-purple-400 tracking-wider uppercase">💫 최한나 카드별 해석</div>
+                <div className="rounded-lg border border-border bg-purple-500/5 p-4 text-foreground">
+                  {reading.tarot_reading?.choihanna ? (
+                    <>
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap">{renderSafe(reading.tarot_reading.choihanna.story)}</p>
+                      {reading.tarot_reading.choihanna.key_message && (
+                        <p className="mt-3 text-xs text-gold font-medium italic">💎 {renderSafe(reading.tarot_reading.choihanna.key_message)}</p>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-xs text-muted-foreground italic">분석 데이터가 없습니다.</p>
+                  )}
                 </div>
-              )}
+              </div>
 
-              {reading.tarot_reading?.monad && (
-                <div className="space-y-2">
-                  <div className="text-xs font-semibold text-blue-400 tracking-wider uppercase">🔷 카드별 1줄 해석</div>
-                  <div className="rounded-lg border border-border bg-blue-500/5 p-4 text-foreground">
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{renderSafe(reading.tarot_reading.monad.story)}</p>
-                    {reading.tarot_reading.monad.key_message && (
-                      <p className="mt-3 text-xs text-gold font-medium italic">💎 {renderSafe(reading.tarot_reading.monad.key_message)}</p>
-                    )}
-                  </div>
+              <div className="space-y-2">
+                <div className="text-xs font-bold text-blue-400 tracking-wider uppercase">🔷 모나드 카드별 해석</div>
+                <div className="rounded-lg border border-border bg-blue-500/5 p-4 text-foreground">
+                  {reading.tarot_reading?.monad ? (
+                    <>
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap">{renderSafe(reading.tarot_reading.monad.story)}</p>
+                      {reading.tarot_reading.monad.key_message && (
+                        <p className="mt-3 text-xs text-gold font-medium italic">💎 {renderSafe(reading.tarot_reading.monad.key_message)}</p>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-xs text-muted-foreground italic">분석 데이터가 없습니다.</p>
+                  )}
                 </div>
-              )}
+              </div>
 
               {/* Time Flow */}
               {reading.final_reading?.time_flow && (

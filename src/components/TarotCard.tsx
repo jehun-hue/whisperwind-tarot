@@ -74,7 +74,7 @@ export const TarotCard: React.FC<TarotCardProps> = ({
 
         {showName && (
           <div className="absolute bottom-1 left-1 right-1 rounded-lg bg-black/60 backdrop-blur-md py-1 border border-white/5">
-            <span className="font-display font-medium text-white block truncate px-1 text-center animate-shimmer bg-clip-text text-transparent bg-gradient-to-r from-gold-light via-white to-gold-light">
+            <span className="font-display font-medium text-white block truncate px-1 text-center animate-shimmer bg-clip-text text-transparent bg-gradient-to-r from-gold-light via-white to-gold-light whitespace-nowrap break-keep">
               {koreanName || name}
             </span>
           </div>

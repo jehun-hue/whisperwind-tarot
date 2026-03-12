@@ -359,13 +359,11 @@ export default function ClientPage() {
   };
 
   const proceedFromBirth = () => {
-    if (!gender) {
-      alert("성별을 선택해주세요");
-      return;
+    if (hasBirthDate && gender) {
+      calculateBirthData();
+      if (isLoveQuestion) setStep("romance");
+      else setStep("cardSelect");
     }
-    calculateBirthData();
-    if (isLoveQuestion) setStep("romance");
-    else setStep("cardSelect");
   };
 
   return (
@@ -687,9 +685,13 @@ export default function ClientPage() {
 
                   <div className="space-y-2 pt-2">
                     <Button
-                      className="w-full rounded-xl bg-gradient-to-r from-accent to-gold text-primary-foreground font-medium shadow-lg"
+                      className={`w-full rounded-xl font-medium shadow-lg transition-all duration-300 ${
+                        hasBirthDate && gender 
+                          ? "bg-gradient-to-r from-accent to-gold text-primary-foreground shadow-accent/20 hover:shadow-accent/40 opacity-100" 
+                          : "bg-muted text-muted-foreground shadow-none opacity-50 cursor-not-allowed"
+                      }`}
                       onClick={proceedFromBirth}
-                      disabled={!hasBirthDate || !userName.trim()}
+                      disabled={!hasBirthDate || !gender}
                     >
                       다음 <ChevronRight className="ml-1 h-4 w-4" />
                     </Button>
