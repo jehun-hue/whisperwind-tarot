@@ -1390,7 +1390,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
 
               {/* 6. Practical Advice */}
               <div className="p-6 bg-accent/5 border-b border-border/10">
-                <div className="mb-3 text-sm font-bold text-accent">💡 최종 전략적 제언 (Practical Advice)</div>
+                <div className="mb-3 text-sm font-bold text-accent">💡 종합 관점 제언</div>
                 <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap italic">"{renderSafe(reading.merged_reading.finalAdvice)}"</p>
               </div>
 

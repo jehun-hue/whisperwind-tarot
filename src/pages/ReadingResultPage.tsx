@@ -90,7 +90,7 @@ export default function ReadingResultPage() {
     }
 
     if (reading.final_message?.summary) {
-      lines.push("━━━ 종합 메시지 ━━━");
+      lines.push("━━━ 종합 관점 제언 ━━━");
       lines.push(reading.final_message.summary);
     }
 
@@ -277,7 +277,7 @@ export default function ReadingResultPage() {
 
               {reading.final_message?.summary && (
                 <div className="space-y-2 border-t border-border/30 pt-4">
-                  <h3 className="text-sm font-semibold text-accent">━━ 종합 메시지 ━━</h3>
+                  <h3 className="text-sm font-semibold text-accent">━━ 종합 관점 제언 ━━</h3>
                   <p className="text-sm text-foreground/90 whitespace-pre-wrap">{reading.final_message.summary}</p>
                 </div>
               )}
