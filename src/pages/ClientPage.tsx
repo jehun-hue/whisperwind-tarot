@@ -310,9 +310,7 @@ export default function ClientPage() {
           question, 
           question_type: questionType, 
           memo: memo || null,
-          intent: classification?.intent || null,
-          confidence: classification?.confidence || 0,
-          analysis_mode: classification?.mode || null,
+          final_confidence: classification?.confidence || 0,
           gender: birthInfo?.gender || null, 
           birth_date: birthInfo?.birthDate || null,
           birth_time: birthInfo?.birthTime || null, 
@@ -326,15 +324,13 @@ export default function ClientPage() {
 
       if (dbError) throw dbError;
 
-      // 2) 즉시 접수완료 화면으로 전환 (사용자는 더 이상 기다리지 않음)
+      // 2) 즉시 접수완료 화면으로 전환
       setStep("submitted");
-
-
-
 
     } catch (err: any) {
       console.error("Session save error:", err);
       setError(err.message || "접수 중 오류가 발생했습니다.");
+      setStep("submitted");
     }
   };
 
