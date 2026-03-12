@@ -36,7 +36,7 @@ const BIRTH_HOURS = Array.from({ length: 24 }, (_, i) => {
 
 export default function BirthInfoForm({ onSubmit, onSkip }: BirthInfoFormProps) {
   const [name, setName] = useState("");
-  const [gender, setGender] = useState<"male" | "female">("female");
+  const [gender, setGender] = useState<"male" | "female" | "">("");
   const [birthDate, setBirthDate] = useState("");
   const [birthTime, setBirthTime] = useState("");
   const [birthPlace, setBirthPlace] = useState("");
@@ -159,9 +159,13 @@ export default function BirthInfoForm({ onSubmit, onSkip }: BirthInfoFormProps) 
             <div className="space-y-2 pt-2">
               <Button
                 className="w-full rounded-xl bg-gradient-to-r from-primary to-gold text-primary-foreground font-medium shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-shadow"
-                onClick={() =>
-                  onSubmit({ name, gender, birthDate, birthTime, birthPlace, isLunar })
-                }
+                onClick={() => {
+                  if (!gender) {
+                    alert("성별을 선택해주세요");
+                    return;
+                  }
+                  onSubmit({ name, gender: gender as "male" | "female", birthDate, birthTime, birthPlace, isLunar });
+                }}
                 disabled={!canSubmit}
               >
                 ✦ 사주 분석 포함하여 진행

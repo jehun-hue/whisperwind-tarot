@@ -7,7 +7,7 @@ interface MonitoringEvent {
   sessionId?: string;
   engineVersion: string;
   geminiModel: string;
-  responseType: "valid_json" | "fallback_text" | "parse_error" | "schema_mismatch" | "timeout";
+  responseType: "valid_json" | "fallback_text" | "parse_error" | "schema_mismatch" | "timeout" | "skipped";
   parseSuccess: boolean;
   schemaValidationPassed: boolean;
   missingFields: string[];

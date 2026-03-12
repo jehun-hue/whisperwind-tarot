@@ -156,7 +156,7 @@ export default function ClientPage() {
   const [birthHourInput, setBirthHourInput] = useState("");
   const [birthMinInput, setBirthMinInput] = useState("");
   const [birthAmPm, setBirthAmPm] = useState<"am" | "pm">("am");
-  const [gender, setGender] = useState<"male" | "female">("female");
+  const [gender, setGender] = useState<"male" | "female" | "">("");
   const [isLunar, setIsLunar] = useState(false);
   const [isLeapMonth, setIsLeapMonth] = useState(false);
 
@@ -231,7 +231,7 @@ export default function ClientPage() {
 
       const astro = calculateNatalChart(y, m, d, hour, minute);
       setAstroResult(astro);
-      const ziwei = calculateZiWei(y, m, d, hour, minute, gender);
+      const ziwei = calculateZiWei(y, m, d, hour, minute, gender as any);
       setZiweiResult(ziwei);
     } catch (e) {
       console.warn("Analysis data prep error:", e);
@@ -338,7 +338,7 @@ export default function ClientPage() {
     setStep("question");
     setQuestion(""); setMemo(""); setUserName("");
     setBirthYear(""); setBirthMonth(""); setBirthDay("");
-    setBirthTime("unknown"); setBirthHourInput(""); setBirthMinInput(""); setBirthAmPm("am"); setGender("female");
+    setBirthTime("unknown"); setBirthHourInput(""); setBirthMinInput(""); setBirthAmPm("am"); setGender("");
     setIsLunar(false); setIsLeapMonth(false);
     setRomanceStatus(null);
     setPicked([]); setSelectedGrade("S");
@@ -357,6 +357,10 @@ export default function ClientPage() {
   };
 
   const proceedFromBirth = () => {
+    if (!gender) {
+      alert("성별을 선택해주세요");
+      return;
+    }
     calculateBirthData();
     if (isLoveQuestion) setStep("romance");
     else setStep("cardSelect");

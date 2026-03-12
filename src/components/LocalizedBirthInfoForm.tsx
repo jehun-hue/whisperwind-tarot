@@ -22,7 +22,7 @@ const unknownLabel: Record<string, string> = {
 
 export default function LocalizedBirthInfoForm({ config, onSubmit, onSkip }: LocalizedBirthInfoFormProps) {
   const [name, setName] = useState("");
-  const [gender, setGender] = useState<"male" | "female">("female");
+  const [gender, setGender] = useState<"male" | "female" | "">("");
   const [birthDate, setBirthDate] = useState("");
   const [birthTime, setBirthTime] = useState("");
   const [birthTimeUnknown, setBirthTimeUnknown] = useState(false);
@@ -183,16 +183,21 @@ export default function LocalizedBirthInfoForm({ config, onSubmit, onSkip }: Loc
             <div className="space-y-2 pt-2">
               <Button
                 className="w-full rounded-xl bg-gradient-to-r from-primary to-gold text-primary-foreground font-medium shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-shadow"
-                onClick={() =>
+                onClick={() => {
+                  if (!gender) {
+                    const msg = config.locale === "kr" ? "성별을 선택해주세요" : config.locale === "jp" ? "性別を選択してください" : "Please select your gender";
+                    alert(msg);
+                    return;
+                  }
                   onSubmit({
                     name,
-                    gender,
+                    gender: gender as "male" | "female",
                     birthDate,
                     birthTime: birthTimeUnknown ? "" : birthTime,
                     birthPlace,
                     isLunar,
                   })
-                }
+                }}
                 disabled={!canSubmit}
               >
                 {config.birthSubmitButton}

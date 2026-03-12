@@ -249,7 +249,7 @@ export default function ReaderPage() {
 }
 
 function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdate: (s: ReadingSession) => void }) {
-  const [analyzingStyle, setAnalyzingStyle] = useState<'hanna' | 'monad' | 'v1' | null>(null);
+  const [analyzingStyle, setAnalyzingStyle] = useState<'hanna' | 'monad' | 'v1' | 'data-only' | null>(null);
   const analyzing = !!analyzingStyle;
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [counselorComment, setCounselorComment] = useState(session.counselor_comment || "");
@@ -567,6 +567,104 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       setAnalyzingStyle(null);
     }
   };
+
+  const runDataOnlyAnalysis = async () => {
+    const ok = window.confirm(
+      "📊 AI 내러티브 없이 데이터 엔진만 호출합니다.\n\n" +
+      "고객: " + (session.user_name || "이름없음") + "\n" +
+      "사주+자미두수+점성술+수비학 데이터를 생성하시겠습니까?"
+    );
+    if (!ok) return;
+
+    setAnalysisError(null);
+    setAnalyzingStyle('data-only');
+    try {
+      await supabase.from("reading_sessions").update({ status: "analyzing" }).eq("id", session.id);
+
+      const birthInfo = session.birth_date ? {
+        gender: session.gender,
+        birthDate: session.birth_date,
+        birthTime: session.birth_time || "",
+        birthPlace: session.birth_place || "",
+        isLunar: session.is_lunar || false,
+        isLeapMonth: (session.saju_data as any)?.originalInput?.isLeapMonth || false,
+      } : null;
+
+      const sajuDataForAI = session.saju_data;
+      let astroDataForAI = null;
+      let ziweiDataForAI = null;
+
+      if (birthInfo && birthInfo.birthDate) {
+        try {
+          const [y, m, d] = birthInfo.birthDate.split("-").map(Number);
+          const [hour, minute] = birthInfo.birthTime ? birthInfo.birthTime.split(":").map(Number) : [12, 0];
+
+          const astro = calculateNatalChart(y, m, d, hour, minute);
+          astroDataForAI = {
+            ...astro,
+            questionAnalysis: getAstrologyForQuestion(astro, qType as any),
+            transits: getCurrentTransits(astro),
+          };
+
+          const ziwei = calculateZiWei(y, m, d, hour, minute, (birthInfo.gender as "male" | "female") || "female");
+          ziweiDataForAI = {
+            ...ziwei,
+            questionAnalysis: getZiWeiForQuestion(ziwei, qType as any),
+          };
+        } catch (e) {
+          console.error("Analysis data prep error:", e);
+        }
+      }
+
+      const fnBody = {
+        question: session.question,
+        questionType: qType,
+        memo: session.memo,
+        cards: [], // 타로 카드 없이
+        sajuData: sajuDataForAI,
+        birthInfo,
+        astrologyData: astroDataForAI,
+        ziweiData: ziweiDataForAI,
+        combinationSummary: "",
+        locale: session.locale || "kr",
+        mode: "data-only",
+      };
+
+      const { data: aiData, error: fnError } = await supabase.functions.invoke("ai-reading-v4", {
+        body: fnBody,
+      });
+
+      if (fnError) throw new Error(`Edge function error: ${fnError.message}`);
+
+      const result = aiData?.reading; 
+      if (!result) throw new Error("엔진 응답이 비어 있습니다.");
+
+      const existingReading = session.ai_reading || {};
+      const mergedReading = {
+        ...existingReading,
+        ...result,
+      };
+
+      await supabase.from("reading_sessions").update({
+        ai_reading: mergedReading as any,
+        status: "completed",
+      }).eq("id", session.id);
+
+      onUpdate({
+        ...session,
+        ai_reading: mergedReading,
+        status: "completed",
+      });
+    } catch (err) {
+      console.error("Data-only analysis error:", err);
+      setAnalysisError(err instanceof Error ? err.message : "분석 중 오류가 발생했습니다.");
+      await supabase.from("reading_sessions").update({ status: "error" }).eq("id", session.id);
+      onUpdate({ ...session, status: "error" });
+    } finally {
+      setAnalyzingStyle(null);
+    }
+  };
+
 
   const downloadPDF = () => {
     if (!reading) return;
@@ -1074,6 +1172,24 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
               )}
             </Button>
           </div>
+
+          <Button
+            className="w-full rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-medium shadow-lg"
+            onClick={() => runDataOnlyAnalysis()}
+            disabled={analyzing}
+          >
+            {analyzingStyle === 'data-only' ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                분석 중...
+              </>
+            ) : (
+              <>
+                <FileJson className="mr-2 h-4 w-4" />
+                📊 데이터 분석 실행
+              </>
+            )}
+          </Button>
         </CardContent>
       </Card>
 

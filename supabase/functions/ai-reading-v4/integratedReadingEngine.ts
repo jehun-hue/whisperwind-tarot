@@ -528,64 +528,63 @@ ${sajuSymbolic}
   const requestedStyle = input.style === 'monad' ? 'monad' : 'hanna';
   const modelInput = buildLocalizedNarrativePrompt(input.locale || 'kr', dataBlock, totalSystems, requestedStyle);
 
-  // [CRITICAL DIAGNOSTICS - DEPLOYMENT VERIFICATION]
-  console.log("[PlatformV9] sajuRaw Check:", JSON.stringify(sajuRaw));
-  console.log("[PlatformV9] dbSaju Check:", JSON.stringify(input.sajuData));
-  console.log("[PlatformV9] FINAL PROMPT FACT BLOCK:", dataBlock);
-
   // Gemini 호출 전 타이밍 시작
   const geminiStart = Date.now();
   let rawNarrative: string = "";
-  let responseType: "valid_json" | "fallback_text" | "parse_error" | "schema_mismatch" | "timeout" = "valid_json";
+  let responseType: "valid_json" | "fallback_text" | "parse_error" | "schema_mismatch" | "timeout" | "skipped" = "valid_json";
   let parseSuccess = true;
   let schemaResult = { passed: true, missing: [] as string[], extra: [] as string[] };
   let fetchErrorMessage: string | null = null;
-
   let geminiLatency = 0;
-  console.log("GPT 호출 시작:", JSON.stringify({model: "gemini-2.5-pro", promptLength: modelInput.length}));
-  try {
-    rawNarrative = await fetchGemini(apiKey, "gemini-2.5-pro", modelInput, "");
-    geminiLatency = Date.now() - geminiStart;
-    
-    console.log("[PlatformV9] Gemini Latency:", geminiLatency, "ms");
-  } catch (e: any) {
-    console.error("Gemini call failed:", e);
-    responseType = "timeout";
-    fetchErrorMessage = (e as Error).message;
-    rawNarrative = "FETCH_ERROR: " + fetchErrorMessage;
-  }
-  console.log("GPT 응답 타입:", responseType, "에러:", fetchErrorMessage);
 
-  const initialFallback = buildFallbackReading("", grade, scores, tarotCards, input.question, requestedStyle);
   let parsed: any;
-  
-  try {
-    console.log("[Parse Stage] safeParseGeminiJSON 시작 (Fallback 수립됨)");
-    parsed = safeParseGeminiJSON(rawNarrative, initialFallback);
-    
-    console.log("[Response Preview]", JSON.stringify(parsed).substring(0, 300), "...");
-    if (!parsed || Object.keys(parsed).length === 0 || !parsed.reading_info) {
-      parseSuccess = false;
-      responseType = "parse_error";
-      parsed = initialFallback;
-    } else {
-      schemaResult = validateV3Schema(parsed);
-      if (!schemaResult.passed) {
-        responseType = "schema_mismatch";
-        parsed = patchMissingFields(parsed, scores, grade, tarotCards);
-      }
+
+  if (input.mode === "data-only") {
+    console.log("[PlatformV9] Skipping Gemini Narrative (Data-Only Mode)");
+    responseType = "skipped";
+    parseSuccess = true;
+    parsed = buildFallbackReading("데이터 분석 전용 모드입니다. AI 내러티브가 생성되지 않았습니다.", grade, scores, tarotCards, input.question, requestedStyle);
+  } else {
+    console.log("GPT 호출 시작:", JSON.stringify({model: "gemini-2.5-pro", promptLength: modelInput.length}));
+    try {
+      rawNarrative = await fetchGemini(apiKey, "gemini-2.5-pro", modelInput, "");
+      geminiLatency = Date.now() - geminiStart;
+      console.log("[PlatformV9] Gemini Latency:", geminiLatency, "ms");
+    } catch (e: any) {
+      console.error("Gemini call failed:", e);
+      responseType = "timeout";
+      fetchErrorMessage = (e as Error).message;
+      rawNarrative = "FETCH_ERROR: " + fetchErrorMessage;
     }
-  } catch (_e) {
-    parseSuccess = false;
-    responseType = "fallback_text";
-    parsed = initialFallback;
+
+    const initialFallback = buildFallbackReading("", grade, scores, tarotCards, input.question, requestedStyle);
+    try {
+      console.log("[Parse Stage] safeParseGeminiJSON 시작 (Fallback 수립됨)");
+      parsed = safeParseGeminiJSON(rawNarrative, initialFallback);
+      
+      if (!parsed || Object.keys(parsed).length === 0 || !parsed.reading_info) {
+        parseSuccess = false;
+        responseType = "parse_error";
+        parsed = initialFallback;
+      } else {
+        schemaResult = validateV3Schema(parsed);
+        if (!schemaResult.passed) {
+          responseType = "schema_mismatch";
+          parsed = patchMissingFields(parsed, scores, grade, tarotCards);
+        }
+      }
+    } catch (_e) {
+      parseSuccess = false;
+      responseType = "fallback_text";
+      parsed = initialFallback;
+    }
   }
 
   // 비동기 모니터링
   logMonitoringEvent(supabaseClient, {
     sessionId,
     engineVersion: READING_VERSION,
-    geminiModel: "gemini-1.5-pro",
+    geminiModel: input.mode === "data-only" ? "none" : "gemini-1.5-pro",
     responseType,
     parseSuccess,
     schemaValidationPassed: schemaResult.passed,
@@ -599,7 +598,7 @@ ${sajuSymbolic}
     grade,
     cardCount: tarotCards?.length || 0,
     hasBirthInfo: !!birthInfo,
-    errorMessage: responseType !== "valid_json" ? `Type: ${responseType}` : undefined,
+    errorMessage: responseType !== "valid_json" && responseType !== "skipped" ? `Type: ${responseType}` : undefined,
     rawResponsePreview: rawNarrative?.slice(0, 500),
   });
 
