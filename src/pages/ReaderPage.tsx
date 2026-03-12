@@ -569,20 +569,22 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       await supabase.from("reading_sessions").update({ status: "error" }).eq("id", session.id);
       onUpdate({ ...session, status: "error" });
     } finally {
-      setAnalyzingStyle(null);
+      if (!isAutoRun) setAnalyzingStyle(null);
     }
   };
 
-  const runDataOnlyAnalysis = async () => {
-    const ok = window.confirm(
-      "📊 AI 내러티브 없이 데이터 엔진만 호출합니다.\n\n" +
-      "고객: " + (session.user_name || "이름없음") + "\n" +
-      "사주+자미두수+점성술+수비학 데이터를 생성하시겠습니까?"
-    );
-    if (!ok) return;
+  const runDataOnlyAnalysis = async (isAutoRun = false) => {
+    if (!isAutoRun) {
+      const ok = window.confirm(
+        "📊 AI 내러티브 없이 데이터 엔진만 호출합니다.\n\n" +
+        "고객: " + (session.user_name || "이름없음") + "\n" +
+        "사주+자미두수+점성술+수비학 데이터를 생성하시겠습니까?"
+      );
+      if (!ok) return;
+    }
 
     setAnalysisError(null);
-    setAnalyzingStyle('data-only');
+    if (!isAutoRun) setAnalyzingStyle('data-only');
     try {
       await supabase.from("reading_sessions").update({ status: "analyzing" }).eq("id", session.id);
 
@@ -669,6 +671,34 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       setAnalysisError(err instanceof Error ? err.message : "분석 중 오류가 발생했습니다.");
       await supabase.from("reading_sessions").update({ status: "error" }).eq("id", session.id);
       onUpdate({ ...session, status: "error" });
+    } finally {
+      if (!isAutoRun) setAnalyzingStyle(null);
+    }
+  };
+
+  const runSequentialAnalysis = async () => {
+    const ok = window.confirm(
+      "⚠️ API 비용이 발생합니다!\n\n" +
+      "고객: " + (session.user_name || "이름없음") + "\n" +
+      "질문: " + session.question + "\n\n" +
+      "최한나 → 모나드 → 데이터분석 순서로 통합 분석을 자동 실행하시겠습니까?"
+    );
+    if (!ok) return;
+
+    try {
+      setAnalysisError(null);
+      
+      setAnalyzingStyle('seq_hanna');
+      await runAIAnalysisV2('hanna', true);
+
+      setAnalyzingStyle('seq_monad');
+      await runAIAnalysisV2('monad', true);
+
+      setAnalyzingStyle('seq_data');
+      await runDataOnlyAnalysis(true);
+      
+    } catch (err) {
+      console.error("Sequential analysis error:", err);
     } finally {
       setAnalyzingStyle(null);
     }
@@ -1143,49 +1173,32 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
             </p>
           )}
 
-          {/* 메인 버튼: AI 분석 (v2) */}
-          <div className="flex gap-2 w-full">
-            <Button
-              className="w-1/2 rounded-xl bg-gradient-to-r from-purple-600 to-violet-500 text-white font-medium shadow-lg"
-              onClick={() => runAIAnalysisV2('hanna')}
-              disabled={analyzing}
-            >
-              {analyzingStyle === 'hanna' ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  진행 중...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  {session.status === "completed" && session.ai_reading?.tarot_reading?.choihanna ? "최한나 완료" : "최한나 분석 실행"}
-                </>
-              )}
-            </Button>
-
-            <Button
-              className="w-1/2 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-medium shadow-lg"
-              onClick={() => runAIAnalysisV2('monad')}
-              disabled={analyzing}
-            >
-              {analyzingStyle === 'monad' ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  진행 중...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  {session.status === "completed" && session.ai_reading?.tarot_reading?.monad ? "모나드 완료" : "모나드 분석 실행"}
-                </>
-              )}
-            </Button>
-          </div>
+          {/* 메인 버튼: 순차 AI 분석 실행 */}
+          <Button
+            className="w-full rounded-xl bg-gradient-to-r from-purple-600 to-blue-500 text-white font-medium shadow-lg"
+            onClick={runSequentialAnalysis}
+            disabled={analyzing}
+          >
+            {analyzing ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {analyzingStyle === 'seq_hanna' ? "1/3 최한나 분석 중..." :
+                 analyzingStyle === 'seq_monad' ? "2/3 모나드 분석 중..." :
+                 analyzingStyle === 'seq_data' ? "3/3 데이터 분석 중..." :
+                 "분석 진행 중..."}
+              </>
+            ) : (
+              <>
+                <Sparkles className="mr-2 h-4 w-4" />
+                🔮 AI 분석 실행 (최한나 → 모나드 → 데이터)
+              </>
+            )}
+          </Button>
 
           <Button
-            className="w-full rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-medium shadow-lg"
+            className="w-full rounded-xl border border-border bg-card text-foreground font-medium hover:bg-muted"
             onClick={() => runDataOnlyAnalysis()}
-            disabled={analyzing || !(session.ai_reading?.tarot_reading?.choihanna || session.ai_reading?.tarot_reading?.monad)}
+            disabled={analyzing}
           >
             {analyzingStyle === 'data-only' ? (
               <>
@@ -1195,7 +1208,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
             ) : (
               <>
                 <FileJson className="mr-2 h-4 w-4" />
-                📊 데이터 분석 실행
+                📊 데이터 분석 단독 실행
               </>
             )}
           </Button>
