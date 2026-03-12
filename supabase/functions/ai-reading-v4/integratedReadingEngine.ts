@@ -236,7 +236,7 @@ const KOREAN_SOLAR_TERMS = [
 
 export function buildEnginePrompts(input: any, sajuRaw: any, sajuAnalysis: any, ziweiAnalysis?: any, astrologyAnalysis?: any) {
   const { birthInfo, sajuData: dbSaju } = input;
-  const isJehun = birthInfo.year === 1987 && birthInfo.month === 7 && birthInfo.day === 17;
+
   
   const sajuDisplay = {
     fourPillars: sajuRaw?.year ? 
@@ -263,14 +263,10 @@ export function buildEnginePrompts(input: any, sajuRaw: any, sajuAnalysis: any, 
   const mingGong = ziweiAnalysis?.palaces.find((p: any) => p.name === "명궁");
   const mingStars = mingGong?.main_stars?.join(", ") || "데이터 부족";
   
-  const ziweiSymbolic = isJehun ? `
-- 명궁(자): 太陽 (태양) 좌정. (상징: 세상을 비추는 리더의 지혜)
-- 국: 금사국 (金四局)
-- 성별: 음남 (陰男)
-- 지침: 제공된 명반의 국(금사국)과 주성(태양) 의미를 중심으로 리딩을 전개하시오.
-` : `
-- 명궁(${ziweiAnalysis?.mingGong}): ${mingStars} 좌정. (상징: ${ziweiAnalysis?.mingGong === '자' ? '자(子)궁의 유연한 지혜' : '중심적 권위'})
+  const ziweiSymbolic = `
+- 명궁(${ziweiAnalysis?.mingGong || "미상"}): ${mingStars} 좌정.
 - 국: ${ziweiAnalysis?.bureau || "분석 불가"}
+- 성별: ${birthInfo.gender === 'M' ? '음남(陰男)' : '양녀(陽女)'}
 - 지침: 제공된 명반의 국과 주성 의미를 중심으로 리딩을 전개하시오.
 `;
 
@@ -279,19 +275,13 @@ export function buildEnginePrompts(input: any, sajuRaw: any, sajuAnalysis: any, 
 - 지침: 위 엔진 호출 결과(상징)를 그대로 사용하고, 행성 위치를 직접 계산하지 마시오.
 `;
 
-  const forcedZiweiFact = isJehun ? `
-[자미두수 고정 Fact - 절대 재계산 금지]
-- 확정 명궁 주성: 太陽 (태양)
-- 확정 성별: 음남 (陰男)
-- 확정 국: 금사국 (金四局)
-- 지침: 위 데이터는 이미 검증된 자미두수 원본 Fact입니다. 리딩 전문에 '태양(太陽) 명궁', '음남(陰男)', '금사국(金四局)'이라는 용어가 반드시 명시되도록 하시고, 이를 기반으로 해석을 전개하십시오.
-` : "";
+
 
   const ziweiPrompt = `
-${forcedZiweiFact}
+
 [자미두수 엔진 호출 결과 - 상징화 완료]
 ${ziweiSymbolic}
-- 기본정보: ${birthInfo.year}년 ${birthInfo.month}월 ${birthInfo.day}일 ${birthInfo.hour}시 ${birthInfo.minute}분 (${isJehun ? "음남 陰男" : (birthInfo.gender === 'M' ? "음남 陰男" : "양녀")})
+- 기본정보: ${birthInfo.year}년 ${birthInfo.month}월 ${birthInfo.day}일 ${birthInfo.hour}시 ${birthInfo.minute}분 (${birthInfo.gender === 'M' ? '음남 陰男' : '양녀 陽女'})
 - 현재 대한: ${ziweiAnalysis?.currentMajorPeriod?.interpretation || "데이터 부족"}
 - 소한: ${ziweiAnalysis?.currentMinorPeriod?.interpretation || "데이터 부족"}
 - 사화: ${Array.isArray(ziweiAnalysis?.four_transformations) ? ziweiAnalysis.four_transformations.map((t: any) => t.description).join(", ") : "데이터 부족"}
