@@ -276,8 +276,9 @@ export function predictTemporalV8(consensus: any, systemResults: any[], category
   // 기본 확률 로직 상향: (패턴 20% + 타이밍 50% + 합의도 30%)
   let base_event_probability = (pattern_factor * 0.2) + (timing_factor * 0.5) + (consensus_factor * 0.3);
   
-  // 최종 보정: 하한선을 40%로 상향하여 1~2%가 나오는 것을 물리적으로 차단
-  base_event_probability = Math.max(0.40, Math.min(0.90, base_event_probability));
+  // 최종 보정: consensus_score 기반 동적 하한선 (낮은 합의도 = 낮은 하한선)
+  const dynamicFloor = Math.max(0.15, Math.min(0.40, Number(consensus_score) * 0.5));
+  base_event_probability = Math.max(dynamicFloor, Math.min(0.90, base_event_probability));
 
   // 기여 요인 통합
   const allFactors = [
@@ -299,7 +300,7 @@ export function predictTemporalV8(consensus: any, systemResults: any[], category
       window: "단기 (0~3개월)",
       label: "긍정적 변화 가능성",
       // 기본 base에 충/임박 시 가중치, 아닐 시 소폭 감쇄 (최소 35% 보장)
-      probability: Math.max(0.35, Math.min(0.98, base_event_probability * (hasChung || hasImminent ? 1.2 : 0.85))),
+      probability: Math.max(dynamicFloor * 0.85, Math.min(0.98, base_event_probability * (hasChung || hasImminent ? 1.2 : 0.85))),
       description: (hasChung || hasImminent)
         ? "사주 충(沖)의 동적인 기운과 타로의 변화 에너지가 결합하여 3개월 이내에 눈에 띄는 상황 반전이나 결과가 나타날 가능성이 매우 높은 시기입니다."
         : "현재는 기운이 축적되는 단계로, 성급한 결정보다는 상황의 전개를 관망하며 초기 신호를 포착하는 것이 유리한 시기입니다.",
@@ -309,7 +310,7 @@ export function predictTemporalV8(consensus: any, systemResults: any[], category
       window: "중기 (3~12개월)",
       label: "긍정적 변화 가능성",
       // 중기는 대개 에너지가 고조되는 시기 (최소 45% 보장하여 단기와 차별화)
-      probability: Math.max(0.45, Math.min(0.99, base_event_probability * (hasOuterTransit || hasMajorPeriod ? 1.3 : 1.15))),
+      probability: Math.max(dynamicFloor * 1.1, Math.min(0.99, base_event_probability * (hasOuterTransit || hasMajorPeriod ? 1.3 : 1.15))),
       description: (hasOuterTransit || hasMajorPeriod)
         ? "점성술의 외행성 이동과 자미두수의 대한(大限) 에너지가 정렬되는 시기입니다. 인생의 중요한 방향성이 결정되거나 핵심적인 성취가 일어나는 정점의 기간이 될 것입니다."
         : "다중 시스템의 에너지가 본 궤도에 오르는 시기로, 앞서 준비한 일들이 본격적인 흐름을 타고 확산되는 양상을 보일 것입니다.",
@@ -319,7 +320,7 @@ export function predictTemporalV8(consensus: any, systemResults: any[], category
       window: "장기 (1년 이상)",
       label: "긍정적 변화 가능성",
       // 장기는 안정화 단계 (최소 40% 보장하여 중기와 차별화)
-      probability: Math.max(0.40, Math.min(0.95, base_event_probability * (sajuSignal.factors.some(f => f.includes("합")) ? 1.1 : 0.95))),
+      probability: Math.max(dynamicFloor, Math.min(0.95, base_event_probability * (sajuSignal.factors.some(f => f.includes("합")) ? 1.1 : 0.95))),
       description: "변화의 결과가 삶의 고정된 구조로 자리 잡는 안착의 시기입니다. 단기적인 변동성보다는 지속 가능한 성장을 도모하고 내실을 다지기에 적합한 흐름이 예상됩니다.",
       contributing_factors: allFactors.filter(f => f.includes("합") || f.includes("장기") || f.includes("안정") || f.includes("구조"))
     }
