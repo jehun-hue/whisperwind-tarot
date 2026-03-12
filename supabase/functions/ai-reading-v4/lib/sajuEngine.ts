@@ -31,7 +31,7 @@ export function calculateSaju(
 ) {
   // 1. Time correction (Longitude + simplified DST)
   let dstOffset = 0;
-  if ((year === 1987 || year === 1988) && month >= 5 && month <= 10) dstOffset = -60;
+  if (year === 1988 && month >= 5 && month <= 10) dstOffset = -60;
 
   const solarTimeMinute = minute + (longitude - 135) * 4 + dstOffset;
   const correctedDate = new Date(year, month - 1, day, hour, 0);

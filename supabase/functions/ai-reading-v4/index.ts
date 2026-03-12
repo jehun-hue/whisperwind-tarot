@@ -97,6 +97,8 @@ serve(async (req: Request) => {
       status: "success",
       result_status: "degraded",
       error_type: "engine_exception",
+      error_message: err.message,
+      stack_trace: err.stack,
       error: err.message,
       debug_raw: err.rawNarrative || "", 
       reading: {

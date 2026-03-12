@@ -544,18 +544,22 @@ ${sajuSymbolic}
   let responseType: "valid_json" | "fallback_text" | "parse_error" | "schema_mismatch" | "timeout" = "valid_json";
   let parseSuccess = true;
   let schemaResult = { passed: true, missing: [] as string[], extra: [] as string[] };
+  let fetchErrorMessage: string | null = null;
 
   let geminiLatency = 0;
-    try {
-      rawNarrative = await fetchGemini(apiKey, "gemini-2.5-pro", modelInput, "");
-      geminiLatency = Date.now() - geminiStart;
-      
-      console.log("[PlatformV9] Gemini Latency:", geminiLatency, "ms");
-    } catch (e: any) {
-      console.error("Gemini call failed:", e);
-      responseType = "timeout";
-      rawNarrative = "FETCH_ERROR: " + (e as Error).message;
-    }
+  console.log("GPT 호출 시작:", JSON.stringify({model: "gemini-2.5-pro", promptLength: modelInput.length}));
+  try {
+    rawNarrative = await fetchGemini(apiKey, "gemini-2.5-pro", modelInput, "");
+    geminiLatency = Date.now() - geminiStart;
+    
+    console.log("[PlatformV9] Gemini Latency:", geminiLatency, "ms");
+  } catch (e: any) {
+    console.error("Gemini call failed:", e);
+    responseType = "timeout";
+    fetchErrorMessage = (e as Error).message;
+    rawNarrative = "FETCH_ERROR: " + fetchErrorMessage;
+  }
+  console.log("GPT 응답 타입:", responseType, "에러:", fetchErrorMessage);
 
   const initialFallback = buildFallbackReading("", grade, scores, tarotCards, input.question, requestedStyle);
   let parsed: any;
@@ -700,6 +704,7 @@ ${parsed.action_guide?.do_list?.map((item: string) => `- ${item}`).join('\n') ||
     result_status: (responseType === "valid_json" && schemaResult.passed) ? "normal" : "degraded",
     response_type: responseType,
     error: (responseType === "timeout") ? "Gemini call failed" : null,
+    error_message: fetchErrorMessage,
     raw_narrative: rawNarrative,
     debug_prompt: modelInput,
     engine: parsed.engine,
