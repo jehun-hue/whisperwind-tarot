@@ -439,15 +439,19 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
   };
 
   const runAIAnalysisV2 = async (style: 'hanna' | 'monad' | 'e7l3' | 'e5l5' | 'l7e3' = 'hanna', isAutoRun = false) => {
-    // 가드 로직: 해당 해석이 이미 존재하면 재생성 방지
-    if (style === 'hanna' && session.ai_reading?.tarot_reading?.choihanna) {
-      if (!isAutoRun) alert("최한나 해석이 이미 생성되어 있습니다.");
-      return;
+    console.log(`[runAIAnalysisV2] Start style=${style}, isAutoRun=${isAutoRun}`);
+    // 가드 로직: 해당 해석이 이미 존재하면 재생성 방지 (수동 실행 시에만 가드 작동)
+    if (!isAutoRun) {
+      if (style === 'hanna' && session.ai_reading?.tarot_reading?.choihanna) {
+        alert("최한나 해석이 이미 생성되어 있습니다.");
+        return;
+      }
+      if (style === 'monad' && session.ai_reading?.tarot_reading?.monad) {
+        alert("모나드 해석이 이미 생성되어 있습니다.");
+        return;
+      }
     }
-    if (style === 'monad' && session.ai_reading?.tarot_reading?.monad) {
-      if (!isAutoRun) alert("모나드 해석이 이미 생성되어 있습니다.");
-      return;
-    }
+    console.log(`[runAIAnalysisV2] Passing guard for style=${style}`);
 
     if (!isAutoRun) {
       const ok = window.confirm(
@@ -461,7 +465,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
     }
 
     setAnalysisError(null);
-    setAnalyzingStyle(style);
+    if (!isAutoRun) setAnalyzingStyle(style);
     try {
       await supabase.from("reading_sessions").update({ status: "analyzing" }).eq("id", session.id);
 
@@ -523,6 +527,8 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       const { data: aiData, error: fnError } = await supabase.functions.invoke("ai-reading-v4", {
         body: fnBody,
       });
+
+      console.log(`[runAIAnalysisV2] Edge function response received for ${style}`);
 
       if (fnError) {
         throw new Error(`Edge function error: ${fnError.message}`);
@@ -775,15 +781,19 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
     try {
       setAnalysisError(null);
       
+      console.log("[runSequentialAnalysis] Step 1: hanna start");
       setAnalyzingStyle('seq_hanna');
       await runAIAnalysisV2('hanna', true);
 
+      console.log("[runSequentialAnalysis] Step 2: monad start");
       setAnalyzingStyle('seq_monad');
       await runAIAnalysisV2('monad', true);
 
+      console.log("[runSequentialAnalysis] Step 3: data-only start");
+      setAnalyzingStyle('seq_data');
       await runDataOnlyAnalysis(true);
       
-      // 최한나+모나드 완료 후 자동 병합 (프론트엔드)
+      console.log("[runSequentialAnalysis] All steps finished");
       // 최신 데이터를 반영하기 위해 applyPersonaMerge 내의 session 참조가 최신이어야 함
       // 또는 applyPersonaMerge를 호출하기 전에 상태 업데이트가 반영되도록 함
       // 여기서는 버튼이 눌린 후 개별적으로 눌러도 되지만, 
