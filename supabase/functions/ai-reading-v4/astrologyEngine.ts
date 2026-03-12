@@ -300,7 +300,19 @@ export function calculateServerAstrology(
   const moonSign = planets[1].sign;
   const dignityReport = planets.filter(p => p.dignity !== "없음").map(p => `${p.planet} ${p.sign}: ${p.dignity}`);
 
-  // Transits
+  // Transits: 개선된 어스펙트 감지 및 정점(exact) 날짜 추정
+  const SLOW_PLANET_SPEEDS: Record<string, number> = {
+    "목성": 0.083, "토성": 0.034, "천왕성": 0.012, "해왕성": 0.006, "명왕성": 0.004,
+  };
+
+  const TRANSIT_ASPECTS = [
+    { name: "합(0°)", angle: 0, icon: "⚡" },
+    { name: "육분(60°)", angle: 60, icon: "✨" },
+    { name: "사각(90°)", angle: 90, icon: "⚠️" },
+    { name: "삼합(120°)", angle: 120, icon: "💎" },
+    { name: "충(180°)", angle: 180, icon: "⚖️" },
+  ];
+
   const now = new Date();
   const currentPositions = getHighPrecisionPositions(now, observer);
   const transits: string[] = [];
@@ -312,14 +324,34 @@ export function calculateServerAstrology(
     const cLng = ((current.longitude % 360) + 360) % 360;
     const currentSign = ZODIAC_SIGNS[Math.floor(cLng / 30) % 12];
     const meaning = PLANET_MEANINGS[sp] || { domain: sp, keyword: sp };
+    const speed = SLOW_PLANET_SPEEDS[sp] || 0.01;
+
     transits.push(`${sp} 트랜짓 ${currentSign}: ${meaning.domain} 영역에서 ${SIGN_MEANINGS[currentSign]?.split(",")[0]}한 에너지 작용.`);
 
-    for (let i = 0; i < 2; i++) {
-      const natalP = aspectInput[i];
-      let diff = Math.abs(cLng - natalP.absoluteDegree);
-      if (diff > 180) diff = 360 - diff;
-      if (diff < 5) transits.push(`⚡ ${sp} 합 출생${natalP.planet}: ${meaning.keyword} 에너지가 직접 영향!`);
-      else if (Math.abs(diff - 90) < 5) transits.push(`⚠️ ${sp} 사각 출생${natalP.planet}: 긴장`);
+    for (const natalP of aspectInput) {
+      const nLng = ((natalP.absoluteDegree % 360) + 360) % 360;
+      const diffFromNatal = (cLng - nLng + 360) % 360;
+
+      for (const ta of TRANSIT_ASPECTS) {
+        // 합/충은 한 방향, 나머지는 두 방향(예: 90도, 270도) 체크
+        const targets = (ta.angle === 0 || ta.angle === 180) ? [ta.angle] : [ta.angle, 360 - ta.angle];
+
+        for (const target of targets) {
+          let angleDiff = target - diffFromNatal;
+          while (angleDiff > 180) angleDiff -= 360;
+          while (angleDiff < -180) angleDiff += 360;
+
+          if (Math.abs(angleDiff) <= 5) { // 트랜짓 허용 오차 5도
+            const daysToExact = angleDiff / speed;
+            const exactDate = new Date(now.getTime() + daysToExact * 24 * 60 * 60 * 1000);
+            const dateStr = exactDate.toISOString().split('T')[0];
+            const timingNote = daysToExact > 0 ? `${dateStr}경 정점 예상` : `${dateStr}경 정점 통과`;
+            const diffDays = Math.abs(Math.round(daysToExact));
+
+            transits.push(`${ta.icon} [트랜짓]${sp} ${ta.name} [출생]${natalP.planet}: ${timingNote} (${diffDays}일 차이)`);
+          }
+        }
+      }
     }
   }
 
