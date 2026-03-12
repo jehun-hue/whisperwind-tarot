@@ -128,8 +128,23 @@ function calculateShenGong(lunarMonth: number, birthHourBranch: number): number 
 }
 
 function determineBureau(mingGongIdx: number, yearGanIdx: number): Bureau {
-  const combo = (yearGanIdx + mingGongIdx) % 5;
-  return (["수이국", "목삼국", "금사국", "토오국", "화육국"] as Bureau[])[combo];
+  // 전통 자미두수 오행국 조견표 (명궁 지지 × 생년 천간)
+  // 천간: 갑(0)을(1)병(2)정(3)무(4)기(5)경(6)신(7)임(8)계(9)
+  // 지지: 자(0)축(1)인(2)묘(3)진(4)사(5)오(6)미(7)신(8)유(9)술(10)해(11)
+  const bureauTable: Bureau[][] = [
+    // 지지 → 자  축  인  묘  진  사  오  미  신  유  술  해
+    /* 갑(0) */ ["수이국","수이국","화육국","화육국","토오국","토오국","화육국","화육국","금사국","금사국","목삼국","목삼국"],
+    /* 을(1) */ ["수이국","수이국","화육국","화육국","토오국","토오국","화육국","화육국","금사국","금사국","목삼국","목삼국"],
+    /* 병(2) */ ["목삼국","목삼국","수이국","수이국","화육국","화육국","토오국","토오국","화육국","화육국","금사국","금사국"],
+    /* 정(3) */ ["목삼국","목삼국","수이국","수이국","화육국","화육국","토오국","토오국","화육국","화육국","금사국","금사국"],
+    /* 무(4) */ ["금사국","금사국","목삼국","목삼국","수이국","수이국","화육국","화육국","토오국","토오국","화육국","화육국"],
+    /* 기(5) */ ["금사국","금사국","목삼국","목삼국","수이국","수이국","화육국","화육국","토오국","토오국","화육국","화육국"],
+    /* 경(6) */ ["화육국","화육국","금사국","금사국","목삼국","목삼국","수이국","수이국","화육국","화육국","토오국","토오국"],
+    /* 신(7) */ ["화육국","화육국","금사국","금사국","목삼국","목삼국","수이국","수이국","화육국","화육국","토오국","토오국"],
+    /* 임(8) */ ["토오국","토오국","화육국","화육국","금사국","금사국","목삼국","목삼국","수이국","수이국","화육국","화육국"],
+    /* 계(9) */ ["토오국","토오국","화육국","화육국","금사국","금사국","목삼국","목삼국","수이국","수이국","화육국","화육국"],
+  ];
+  return bureauTable[yearGanIdx % 10][mingGongIdx % 12];
 }
 
 function calculateZiWeiPosition(lunarDay: number, bureau: Bureau): number {
@@ -216,7 +231,7 @@ function calculateMajorPeriods(
   for (let i = 0; i < 12; i++) {
     const periodStart = startAge + i * 10;
     const periodEnd = periodStart + 9;
-    const palaceIdx = ((mingGongIdx + direction * (i + 1)) % 12 + 12) % 12;
+    const palaceIdx = ((mingGongIdx + direction * i) % 12 + 12) % 12;
     const palaceOffset = ((palaceIdx - mingGongIdx) % 12 + 12) % 12;
     const palace = PALACES[palaceOffset];
     const branch = BRANCHES[palaceIdx];
