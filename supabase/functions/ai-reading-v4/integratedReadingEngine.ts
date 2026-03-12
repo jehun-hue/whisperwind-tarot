@@ -76,7 +76,7 @@ function transformAstrologyData(frontAstro: any): any {
     system: "astrology",
     characteristics,
     planet_positions,
-    house_positions: {
+    house_positions: frontAstro.housePositions || {
       ASC: frontAstro.risingSign || "Unknown",
       MC: "Unknown",
       IC: "Unknown",
@@ -449,7 +449,12 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
   });
 
   const questionType = tarotSymbolic.category;
-  const patternVectors = generatePatternVectors(systemResults);
+  const rawVectors = generatePatternVectors(systemResults);
+  // Symbol 기준 중복 제거 (Set/filter)
+  const patternVectors = rawVectors.filter((v, i, a) => 
+    a.findIndex(t => t.symbol === v.symbol) === i
+  );
+  console.log(`📊 [Vector Merge] 중복 제거 완료: ${rawVectors.length} -> ${patternVectors.length}`);
   const consensusResult = calculateConsensusV8(patternVectors);
   const temporalResult = predictTemporalV8(consensusResult, systemResults, questionType);
   const validationResult = validateEngineOutput(consensusResult, patternVectors, systemResults, questionType);
