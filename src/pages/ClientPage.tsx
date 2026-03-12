@@ -1,6 +1,8 @@
 import React, { useMemo, useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
+import type { BirthInfo } from "@/components/BirthInfoForm";
+import { TarotCard } from "@/components/TarotCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -766,7 +768,7 @@ export default function ClientPage() {
                       if (!card) {
                         return (
                           <div key={idx} className="flex-1 flex flex-col items-center gap-2">
-                            <span className="text-xs font-medium tracking-widest text-muted-foreground/50">{positionLabel}</span>
+                            <span className="text-xs font-medium tracking-widest text-muted-foreground/50 whitespace-nowrap break-keep">{positionLabel}</span>
                             <div className="w-full aspect-[0.65] rounded-xl border-2 border-dashed border-border/40 flex flex-col items-center justify-center text-muted-foreground/30 bg-background/20 relative shadow-inner">
                               <span className="text-3xl font-light opacity-40">?</span>
                             </div>
@@ -782,34 +784,15 @@ export default function ClientPage() {
 
                       return (
                         <div key={card.id} className="flex-1 flex flex-col items-center gap-2">
-                          <span className={`text-xs font-medium tracking-widest ${card.isReversed ? "text-purple-300/80" : "text-gold-light/80"}`}>{positionLabel}</span>
-                          <motion.div
-                            initial={{ scale: 0.8, opacity: 0, y: 10 }}
-                            animate={{ scale: 1, opacity: 1, y: 0 }}
-                            className={`w-full aspect-[0.65] rounded-xl border-2 flex flex-col items-center justify-center overflow-hidden relative shadow-lg ${card.isReversed
-                              ? "border-purple-500/70 shadow-[0_0_20px_rgba(168,85,247,0.2)] bg-purple-950/30"
-                              : "border-gold/70 shadow-[0_0_20px_rgba(200,168,100,0.2)] bg-gold/5"
-                              }`}
-                          >
-                            {card.image && (
-                              <img src={card.image} alt={card.korean} className="absolute inset-0 h-full w-full object-cover" />
-                            )}
-                            <div className={`absolute inset-0 opacity-50 bg-gradient-to-br ${suitBg}`} />
-                            <div className="absolute inset-0 bg-background/60 backdrop-blur-[1px]" />
-
-                            <div className="relative z-10 flex flex-col items-center justify-center p-1 text-center h-full w-full">
-                              <span className={`font-display text-sm md:text-base font-bold tracking-tight leading-tight px-0.5 drop-shadow-md ${card.isReversed ? "text-purple-300" : "text-gold"
-                                }`}>
-                                {card.korean}
-                              </span>
-                              <span className={`mt-2 flex items-center justify-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border shadow-sm ${card.isReversed
-                                ? "text-purple-200 border-purple-500/50 bg-purple-500/20"
-                                : "text-gold-light border-gold/50 bg-gold/20"
-                                }`}>
-                                {card.isReversed ? <>▼ 역</> : <>▲ 정</>}
-                              </span>
-                            </div>
-                          </motion.div>
+                          <span className={`text-xs font-medium tracking-widest ${card.isReversed ? "text-purple-300/80" : "text-gold-light/80"} whitespace-nowrap break-keep`}>{positionLabel}</span>
+                          <TarotCard 
+                            name={card.name} 
+                            koreanName={card.korean} 
+                            isReversed={card.isReversed} 
+                            image={card.image}
+                            className="w-full aspect-[0.65]"
+                            size="md"
+                          />
                         </div>
                       );
                     })}

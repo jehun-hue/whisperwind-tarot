@@ -137,7 +137,7 @@ function SystemReadingCard({ systemKey, reading }: { systemKey: string; reading?
           <div className="flex flex-wrap gap-2">
             {reading.cards.map((c, i) => (
               <div key={i} className="rounded-lg bg-secondary/50 px-3 py-1.5 text-xs">
-                <span className="text-muted-foreground">{c.position}</span>
+                <span className="text-muted-foreground whitespace-nowrap break-keep">{c.position}</span>
                 <span className="mx-1 text-foreground font-medium">{c.card}</span>
                 <span className={`${c.orientation === "역" ? "text-red-400" : "text-emerald-400"}`}>
                   ({c.orientation})

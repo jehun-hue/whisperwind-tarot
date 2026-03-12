@@ -236,6 +236,35 @@ const KOREAN_SOLAR_TERMS = [
 
 export function buildEnginePrompts(input: any, sajuRaw: any, sajuAnalysis: any, ziweiAnalysis?: any, astrologyAnalysis?: any) {
   const { birthInfo, sajuData: dbSaju } = input;
+  
+  // 음양(陰陽) 판별 로직 추가
+  const STEM_LIST = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"];
+  const BRANCH_LIST = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
+  
+  const getPPol = (p: any) => {
+    if (!p || !p.stem || !p.branch) return { s: 0, b: 0 };
+    const sI = STEM_LIST.indexOf(p.stem);
+    const bI = BRANCH_LIST.indexOf(p.branch);
+    return {
+      s: sI !== -1 ? (sI % 2 === 0 ? 1 : -1) : 0,
+      b: bI !== -1 ? (bI % 2 === 0 ? 1 : -1) : 0
+    };
+  };
+
+  const pY = getPPol(sajuRaw?.year);
+  const pM = getPPol(sajuRaw?.month);
+  const pD = getPPol(sajuRaw?.day);
+  const pH = getPPol(sajuRaw?.hour);
+  const pols = [pY.s, pY.b, pM.s, pM.b, pD.s, pD.b, pH.s, pH.b];
+  const yangCount = pols.filter(v => v === 1).length;
+  const yinCount = pols.filter(v => v === -1).length;
+
+  let yinyangMessage = "";
+  if (yinCount >= 7) {
+    yinyangMessage = "- [구조적 특징] 극음 구조 — 내면적 치밀함, 예민한 감수성, 외면보다 내실 추구\n";
+  } else if (yangCount >= 7) {
+    yinyangMessage = "- [구조적 특징] 극양 구조 — 외향적 에너지 과다, 충동성 주의\n";
+  }
 
   
   const sajuDisplay = {
@@ -302,7 +331,7 @@ ${(astrologyAnalysis?.transits || []).map((t: any) => `  * ${t}`).join("\n")}
 `;
 
   const sajuSymbolic = `
-- 핵심 기운: ${sajuDisplay.yongShin} -> [상징: ${SYMBOLIC_MEANINGS[sajuDisplay.yongShin === "水" ? "Water_Su" : sajuDisplay.yongShin === "金" ? "Metal_Keum" : ""] || "전문화된 내면 에너지"}]
+${yinyangMessage}- 핵심 기운: ${sajuDisplay.yongShin} -> [상징: ${SYMBOLIC_MEANINGS[sajuDisplay.yongShin === "水" ? "Water_Su" : sajuDisplay.yongShin === "金" ? "Metal_Keum" : ""] || "전문화된 내면 에너지"}]
 - 요소 균형: ${sajuDisplay.elements}
 `;
 
@@ -403,7 +432,9 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
   };
 
   const numerologyResult = calculateNumerology(
-    `${birthInfo.year}-${String(birthInfo.month).padStart(2,'0')}-${String(birthInfo.day).padStart(2,'0')}`
+    `${birthInfo.year}-${String(birthInfo.month).padStart(2,'0')}-${String(birthInfo.day).padStart(2,'0')}`,
+    new Date().getFullYear(),
+    input.userName
   );
 
   const systemResults = [

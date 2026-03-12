@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Lock, Trash2, RefreshCw, Sparkles, Loader2, Download, Search, ChevronRight, ArrowLeft, Settings, ClipboardCopy, Code, FileJson } from "lucide-react";
+import { Lock, Trash2, RefreshCw, Sparkles, Loader2, Download, Search, ChevronRight, ArrowLeft, Settings, ClipboardCopy, Code, FileJson, Copy, Check, Wand2, TrendingUp, Info } from "lucide-react";
+import { TarotCard } from "@/components/TarotCard";
 import { supabase } from "@/integrations/supabase/client";
 import { calculateNatalChart, getAstrologyForQuestion, getCurrentTransits } from "@/lib/astrology";
 import { calculateZiWei, getZiWeiForQuestion } from "@/lib/ziwei";
@@ -515,6 +516,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
         manseryeokData: sajuDataForAI,
         locale: session.locale || "kr",
         style,
+        userName: session.user_name,
       };
 
       const { data: aiData, error: fnError } = await supabase.functions.invoke("ai-reading-v4", {
@@ -546,17 +548,20 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
         }
       };
 
+      const hasNarrative = !!(mergedReading.tarot_reading?.choihanna || mergedReading.tarot_reading?.monad);
+      const finalStatus = hasNarrative ? "completed" : session.status;
+
       await supabase.from("reading_sessions").update({
         ai_reading: mergedReading as any,
         saju_data: sajuDataForAI as any,
-        status: "completed",
+        status: finalStatus,
       }).eq("id", session.id);
 
       onUpdate({
         ...session,
         ai_reading: mergedReading,
         saju_data: sajuDataForAI,
-        status: "completed",
+        status: finalStatus,
       });
     } catch (err) {
       console.error("AI V4 analysis error:", err);
@@ -628,6 +633,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
         combinationSummary: "",
         locale: session.locale || "kr",
         mode: "data-only",
+        userName: session.user_name,
       };
 
       const { data: aiData, error: fnError } = await supabase.functions.invoke("ai-reading-v4", {
@@ -645,15 +651,18 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
         ...result,
       };
 
+      const hasNarrative = !!(mergedReading.tarot_reading?.choihanna || mergedReading.tarot_reading?.monad);
+      const finalStatus = hasNarrative ? "completed" : session.status;
+
       await supabase.from("reading_sessions").update({
         ai_reading: mergedReading as any,
-        status: "completed",
+        status: finalStatus,
       }).eq("id", session.id);
 
       onUpdate({
         ...session,
         ai_reading: mergedReading,
-        status: "completed",
+        status: finalStatus,
       });
     } catch (err) {
       console.error("Data-only analysis error:", err);
@@ -756,7 +765,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
   .header .badge { display:inline-block; background:#c8a864; color:#fff; padding:2px 12px; border-radius:12px; font-size:11px; margin:6px 4px; }
   .cards { display:flex; gap:12px; margin:20px 0; }
   .card-item { flex:1; border:1px solid #ddd; border-radius:8px; padding:12px; text-align:center; }
-  .card-item .pos { font-size:10px; color:#888; }
+  .card-item .pos { font-size:10px; color:#888; white-space:nowrap; word-break:keep-all; }
   .card-item .name { font-size:14px; font-weight:600; margin:4px 0; }
   .card-item .dir { font-size:11px; color:#c8a864; }
   .info-grid { display:flex; gap:8px; margin:12px 0; }
@@ -1176,7 +1185,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
           <Button
             className="w-full rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-medium shadow-lg"
             onClick={() => runDataOnlyAnalysis()}
-            disabled={analyzing}
+            disabled={analyzing || !(session.ai_reading?.tarot_reading?.choihanna || session.ai_reading?.tarot_reading?.monad)}
           >
             {analyzingStyle === 'data-only' ? (
               <>
@@ -1207,24 +1216,20 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
 
 
       {/* Cards */}
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-3">
         {(session.cards as any[])?.map((card: any, idx: number) => (
-          <Card key={card.id} className="border-border bg-card">
-            <CardContent className="p-4">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-[10px] text-muted-foreground">
-                  {idx === 0 ? "현재" : idx === 1 ? "문제" : "결과"}
-                </span>
-                <Badge variant="outline" className="rounded-full border-gold/30 text-gold text-[10px]">
-                  {card.isReversed ? "역방향" : "정방향"}
-                </Badge>
-              </div>
-              <div className="text-base font-semibold text-foreground">
-                {card.korean}
-                <span className="ml-1 font-display text-sm text-muted-foreground">{card.name}</span>
-              </div>
-            </CardContent>
-          </Card>
+          <div key={card.id} className="flex flex-col items-center gap-2">
+            <span className="text-[10px] text-muted-foreground uppercase tracking-widest">
+               {idx === 0 ? "현재 상황" : idx === 1 ? "핵심 문제" : "결과 및 조언"}
+            </span>
+            <TarotCard 
+              name={card.name} 
+              koreanName={card.korean} 
+              isReversed={card.isReversed} 
+              image={card.image}
+              size="lg"
+            />
+          </div>
         ))}
       </div>
 
@@ -1482,7 +1487,9 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                           </div>
                           <div className="rounded-lg bg-background p-3 border border-border/50 shadow-sm">
                             <div className="text-[9px] text-muted-foreground uppercase font-semibold">Destiny Number</div>
-                            <div className="text-2xl font-black text-purple-400">{reading.numerology_data.destiny_number}</div>
+                            <div className={reading.numerology_data.destiny_number ? "text-2xl font-black text-purple-400" : "text-sm font-medium text-muted-foreground pt-2"}>
+                              {reading.numerology_data.destiny_number ?? "이름 미입력"}
+                            </div>
                             <div className="text-[10px] text-muted-foreground mt-1 text-xs">잠재적 능력과 성취 방향</div>
                           </div>
                         </div>
@@ -1641,7 +1648,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                       <div className="flex flex-wrap gap-1.5">
                         {sys.cards.map((c: any, i: number) => (
                           <div key={i} className="rounded bg-secondary/50 px-2 py-1 text-[11px]">
-                            <span className="text-muted-foreground">{renderSafe(c.position)} </span>
+                            <span className="text-muted-foreground whitespace-nowrap break-keep">{renderSafe(c.position)} </span>
                             <span className="font-medium text-foreground">{renderSafe(c.card)}</span>
                             <span className={c.orientation === "역" ? "text-red-400" : "text-emerald-400"}> ({renderSafe(c.orientation)})</span>
                           </div>

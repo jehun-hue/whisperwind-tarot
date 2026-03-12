@@ -2,6 +2,7 @@
  * Western Astrology 계산 엔진 - 고급 버전
  * Julian Day 기반 정밀 계산, 에센셜 디그니티, 상세 어스펙트
  */
+import * as Astronomy from "astronomy-engine";
 
 export const ZODIAC_SIGNS = [
   "양자리", "황소자리", "쌍둥이자리", "게자리", "사자자리", "처녀자리",
@@ -237,25 +238,57 @@ export interface AstrologyResult {
   aspects: Aspect[];
   elements: Record<Element, number>;
   qualities: Record<Quality, number>;
-  dominantElement: Element;
-  dominantQuality: Quality;
+  dominantElement: string;
+  dominantQuality: string;
   chartSummary: string;
   keyAspects: string[];
   dignityReport: string[];
+  housePositions: {
+    ASC: string;
+    MC: string;
+    IC: string;
+    DESC: string;
+    isConsistent: boolean;
+  };
 }
 
-function calculateRisingSign(month: number, day: number, hour: number, minute: number = 0): number {
-  // LST approximation for rising sign
-  const sunDeg = ((month - 1) * 30 + day) % 360;
-  const hourAngle = (hour + minute / 60 - 6) * 15; // rough RAMC
-  return Math.floor(((sunDeg + hourAngle) % 360 + 360) % 360 / 30) % 12;
+function calculateHouses(year: number, month: number, day: number, hour: number, minute: number = 0) {
+  const date = new Date(Date.UTC(year, month - 1, day, hour - 9, minute));
+  const observer = new Astronomy.Observer(37.5, 127.0, 0); // User requested Seoul default
+  const time = Astronomy.MakeTime(date);
+  
+  const lst = (Astronomy.SiderealTime(time) + (observer.longitude / 15.0) + 24) % 24;
+  const ramc = (lst * 15.0) % 360;
+  const tilt = Astronomy.e_tilt(time);
+  const epsRad = (tilt?.tobl || 23.43929) * Math.PI / 180;
+  const phiRad = observer.latitude * Math.PI / 180;
+  const ramcRad = ramc * Math.PI / 180;
+
+  const mcRad = Math.atan2(Math.sin(ramcRad), Math.cos(ramcRad) * Math.cos(epsRad));
+  const mcDeg = (mcRad * 180 / Math.PI + 360) % 360;
+
+  const x = -(Math.sin(epsRad) * Math.tan(phiRad) + Math.cos(epsRad) * Math.sin(ramcRad));
+  const y = Math.cos(ramcRad);
+  const ascRad = Math.atan2(y, x);
+  const ascDeg = (ascRad * 180 / Math.PI + 360) % 360;
+
+  const angle = (ascDeg - mcDeg + 360) % 360;
+  return {
+    asc: ascDeg,
+    mc: mcDeg,
+    ic: (mcDeg + 180) % 360,
+    desc: (ascDeg + 180) % 360,
+    isConsistent: angle > 40 && angle < 140
+  };
 }
 
 export function calculateNatalChart(
   year: number, month: number, day: number, hour: number, minute: number = 0
 ): AstrologyResult {
+  const jd = toJulianDay(year, month, day, hour, minute);
   const rawPositions = calculatePrecisePlanetPositions(year, month, day, hour, minute);
-  const risingIdx = calculateRisingSign(month, day, hour, minute);
+  const houses = calculateHouses(year, month, day, hour, minute);
+  const risingIdx = Math.floor(houses.asc / 30) % 12;
 
   const planets: PlanetPosition[] = rawPositions.map((p) => {
     const lng = ((p.longitude % 360) + 360) % 360;
@@ -297,8 +330,13 @@ export function calculateNatalChart(
     qualities[SIGN_QUALITY[p.sign]] += weights[i];
   });
 
-  const dominantElement = (Object.entries(elements) as [Element, number][]).sort((a, b) => b[1] - a[1])[0][0];
-  const dominantQuality = (Object.entries(qualities) as [Quality, number][]).sort((a, b) => b[1] - a[1])[0][0];
+  const elementEntries = (Object.entries(elements) as [Element, number][]).sort((a, b) => b[1] - a[1]);
+  const maxElementVal = elementEntries[0][1];
+  const dominantElement = elementEntries.filter(e => e[1] === maxElementVal).map(e => e[0]).join("/");
+
+  const qualityEntries = (Object.entries(qualities) as [Quality, number][]).sort((a, b) => b[1] - a[1]);
+  const maxQualityVal = qualityEntries[0][1];
+  const dominantQuality = qualityEntries.filter(q => q[1] === maxQualityVal).map(q => q[0]).join("/");
 
   const sunSign = planets[0].sign;
   const moonSign = planets[1].sign;
@@ -326,6 +364,13 @@ export function calculateNatalChart(
     planets, aspects, elements, qualities,
     dominantElement, dominantQuality,
     chartSummary, keyAspects, dignityReport,
+    housePositions: {
+      ASC: risingSign,
+      MC: ZODIAC_SIGNS[Math.floor(houses.mc / 30) % 12],
+      IC: ZODIAC_SIGNS[Math.floor(houses.ic / 30) % 12],
+      DESC: ZODIAC_SIGNS[Math.floor(houses.desc / 30) % 12],
+      isConsistent: houses.isConsistent
+    }
   };
 }
 

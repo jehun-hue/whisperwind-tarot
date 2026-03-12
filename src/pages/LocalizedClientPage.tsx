@@ -454,7 +454,7 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
                           >
                             {i < picked.length ? getCardDisplayName(picked[i], config.locale)[0] : i + 1}
                           </div>
-                          <span className={`text-[10px] ${i < picked.length ? (config.locale === "us" ? "text-purple-300" : "text-gold") : "text-muted-foreground/50"}`}>
+                          <span className={`text-[10px] whitespace-nowrap break-keep ${i < picked.length ? (config.locale === "us" ? "text-purple-300" : "text-gold") : "text-muted-foreground/50"}`}>
                             {posLabels[i]}
                           </span>
                         </div>

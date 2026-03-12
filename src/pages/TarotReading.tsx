@@ -7,6 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Shuffle, Sparkles, RotateCcw, Eye, EyeOff, Filter } from "lucide-react";
 import { tarotCards, makeDeckCard, type TarotCardBase, type DeckCard } from "@/data/tarotCards";
+import { TarotCard } from "@/components/TarotCard";
+import { cn } from "@/lib/utils";
 
 const CARD_BACK = "✦";
 const defaultQuestion = "지금 내 흐름에서 가장 중요한 메시지는 무엇인가요?";
@@ -308,43 +310,25 @@ export default function TarotReading() {
                 {filteredDeck.map((card) => {
                   const isSelected = picked.some((p) => p.id === card.id);
                   return (
-                    <motion.button
-                      whileHover={{ y: -3 }}
-                      whileTap={{ scale: 0.97 }}
-                      key={card.id}
-                      onClick={() => selectCard(card)}
-                      disabled={card.isPicked || picked.length >= 3 || step !== 2}
-                      className={`group relative aspect-[0.68] rounded-xl border p-2 text-left transition-all ${
-                        isSelected
-                          ? "border-gold/50 bg-gold/5 glow-gold"
-                          : "border-border bg-secondary hover:border-gold/20 hover:bg-muted"
-                      } ${step !== 2 ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-                    >
-                      <div className="flex h-full flex-col justify-between">
-                        <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                          <span>{card.short}</span>
-                          <span className="font-display italic">{suitShort[card.suit] ?? "?"}</span>
-                        </div>
-                        <div className="flex flex-1 items-center justify-center font-display text-2xl font-light tracking-[0.15em] text-foreground/80">
-                          {card.revealed ? card.name[0] : CARD_BACK}
-                        </div>
-                        <div>
-                          <div className="truncate text-[11px] font-medium text-foreground">
-                            {card.revealed ? card.korean : "unknown"}
-                          </div>
-                          <div className="mt-0.5 flex items-center gap-1 text-[10px] text-muted-foreground">
-                            {card.revealed ? (
-                              <>
-                                {card.isReversed ? <EyeOff className="h-2.5 w-2.5" /> : <Eye className="h-2.5 w-2.5" />}
-                                {card.isReversed ? "역" : "정"}
-                              </>
-                            ) : (
-                              "선택"
-                            )}
-                          </div>
-                        </div>
+                    <div key={card.id} className="flex flex-col items-center gap-1">
+                      <TarotCard
+                        name={card.name}
+                        koreanName={card.revealed ? card.korean : "unknown"}
+                        isReversed={card.revealed ? card.isReversed : false}
+                        image={card.revealed ? card.image : undefined}
+                        size="sm"
+                        showName={card.revealed}
+                        onClick={() => selectCard(card)}
+                        className={cn(
+                          isSelected ? "border-gold glow-gold scale-105" : "opacity-80",
+                          (card.isPicked && !isSelected) ? "opacity-30 grayscale" : "",
+                          step !== 2 ? "pointer-events-none" : "cursor-pointer"
+                        )}
+                      />
+                      <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
+                        <span>{card.short}</span>
                       </div>
-                    </motion.button>
+                    </div>
                   );
                 })}
               </div>

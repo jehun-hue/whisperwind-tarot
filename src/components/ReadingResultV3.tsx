@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Sparkles, Shield, Heart, Calendar, Lightbulb, AlertTriangle, Clover, Share2, Bookmark, ArrowRight, CheckCircle2, XCircle } from "lucide-react";
 import cardBackImg from "@/assets/card-back.png";
+import { TarotCard } from "./TarotCard";
 
 // ─── Types ───
 export interface V3ReadingData {
@@ -134,21 +135,13 @@ function LoadingScreen({ grade }: { grade?: string }) {
 function TarotCardVisual({ card, isWaite }: { card: { name?: string; position?: string; reversed?: boolean }; isWaite: boolean }) {
   return (
     <div className="flex flex-col items-center gap-1 min-w-[70px]">
-      <div className={`relative h-24 w-16 rounded-lg border-2 overflow-hidden ${card.reversed ? "border-red-400/50" : "border-gold/40"}`}>
-        {isWaite ? (
-          <div className={`h-full w-full bg-gradient-to-b from-accent/20 to-gold/10 flex items-center justify-center p-1 ${card.reversed ? "rotate-180" : ""}`}>
-            <span className="text-[9px] text-center text-foreground font-medium leading-tight">{card.name}</span>
-          </div>
-        ) : (
-          <div className={`h-full w-full bg-gradient-to-b from-accent/10 to-secondary/30 border-gold/30 flex items-center justify-center p-1`}>
-            <span className="text-[9px] text-center text-foreground font-medium leading-tight">{card.name}</span>
-          </div>
-        )}
-        {card.reversed && (
-          <div className="absolute top-0 left-0 right-0 bg-red-500/80 text-[7px] text-white text-center py-0.5">역방향</div>
-        )}
-      </div>
-      <span className="text-[9px] text-muted-foreground text-center max-w-[70px] truncate">{card.position}</span>
+      <TarotCard 
+        name={card.name || ""} 
+        isReversed={card.reversed} 
+        size="sm"
+        showName={true}
+      />
+      <span className="text-[9px] text-muted-foreground text-center max-w-[70px] truncate whitespace-nowrap break-keep">{card.position}</span>
     </div>
   );
 }

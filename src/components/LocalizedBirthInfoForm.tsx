@@ -29,7 +29,7 @@ export default function LocalizedBirthInfoForm({ config, onSubmit, onSkip }: Loc
   const [birthPlace, setBirthPlace] = useState("");
   const [isLunar, setIsLunar] = useState(false);
 
-  const canSubmit = birthDate.length > 0;
+  const canSubmit = birthDate.length > 0 && gender !== "";
 
   const handleUnknownToggle = () => {
     setBirthTimeUnknown(!birthTimeUnknown);
@@ -182,21 +182,22 @@ export default function LocalizedBirthInfoForm({ config, onSubmit, onSkip }: Loc
             {/* Actions */}
             <div className="space-y-2 pt-2">
               <Button
-                className="w-full rounded-xl bg-gradient-to-r from-primary to-gold text-primary-foreground font-medium shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-shadow"
+                className={`w-full rounded-xl font-medium shadow-lg transition-all duration-300 ${
+                  canSubmit 
+                    ? "bg-gradient-to-r from-primary to-gold text-primary-foreground shadow-primary/20 hover:shadow-primary/40 opacity-100" 
+                    : "bg-muted text-muted-foreground shadow-none opacity-50 cursor-not-allowed"
+                }`}
                 onClick={() => {
-                  if (!gender) {
-                    const msg = config.locale === "kr" ? "성별을 선택해주세요" : config.locale === "jp" ? "性別を選択してください" : "Please select your gender";
-                    alert(msg);
-                    return;
+                  if (canSubmit) {
+                    onSubmit({
+                      name,
+                      gender: gender as "male" | "female",
+                      birthDate,
+                      birthTime: birthTimeUnknown ? "" : birthTime,
+                      birthPlace,
+                      isLunar,
+                    })
                   }
-                  onSubmit({
-                    name,
-                    gender: gender as "male" | "female",
-                    birthDate,
-                    birthTime: birthTimeUnknown ? "" : birthTime,
-                    birthPlace,
-                    isLunar,
-                  })
                 }}
                 disabled={!canSubmit}
               >

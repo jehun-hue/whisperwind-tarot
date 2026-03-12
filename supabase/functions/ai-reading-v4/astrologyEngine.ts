@@ -166,26 +166,43 @@ function getHighPrecisionPositions(date: Date, observer: Astronomy.Observer) {
  */
 function calculateHousesManual(date: Date, observer: Astronomy.Observer) {
   const time = Astronomy.MakeTime(date);
-  const lst = Astronomy.SiderealTime(time) + (observer.longitude / 15.0);
-  const ramc = ((lst % 24) * 15) % 360;
-  const eps = 23.4392911; // J2000 Obliquity
-  const phi = observer.latitude * Math.PI / 180;
+  const lst = (Astronomy.SiderealTime(time) + (observer.longitude / 15.0) + 24) % 24;
+  const ramc = (lst * 15.0) % 360;
+  
+  // Use astronomical obliquity for precision
+  const tilt = Astronomy.e_tilt(time);
+  const epsRad = (tilt?.tobl || 23.43929) * Math.PI / 180;
+  const phiRad = observer.latitude * Math.PI / 180;
   
   const ramcRad = ramc * Math.PI / 180;
-  const epsRad = eps * Math.PI / 180;
 
-  // Midheaven (MC): λ = atan(tan(α) / cos(ε))
+  // Midheaven (MC): λ = atan2(sin(α), cos(α) * cos(ε))
   const mcRad = Math.atan2(Math.sin(ramcRad), Math.cos(ramcRad) * Math.cos(epsRad));
-  let mcDeg = (mcRad * 180 / Math.PI + 360) % 360;
+  const mcDeg = (mcRad * 180 / Math.PI + 360) % 360;
 
-  // Ascendant (ASC): λ = atan(cos(α) / -(sin(ε)tan(φ) + cos(ε)sin(α)))
-  const ascRad = Math.atan2(Math.cos(ramcRad), -(Math.sin(epsRad) * Math.tan(phi) + Math.cos(epsRad) * Math.sin(ramcRad)));
-  let ascDeg = (ascRad * 180 / Math.PI + 360 + 90) % 360; 
+  // Ascendant (ASC): λ = atan2(cos(α), -(sin(ε)tan(φ) + cos(ε)sin(α)))
+  // Removal of the legacy +90 degree bug
+  const x = -(Math.sin(epsRad) * Math.tan(phiRad) + Math.cos(epsRad) * Math.sin(ramcRad));
+  const y = Math.cos(ramcRad);
+  const ascRad = Math.atan2(y, x);
+  const ascDeg = (ascRad * 180 / Math.PI + 360) % 360; 
 
   const icDeg = (mcDeg + 180) % 360;
   const descDeg = (ascDeg + 180) % 360;
 
-  return { asc: ascDeg, mc: mcDeg, ic: icDeg, desc: descDeg };
+  // Geometric Consistency Verification
+  const angle = (ascDeg - mcDeg + 360) % 360;
+  // Physically valid range for mid-latitudes (37.5N): typically 60-120 degrees
+  const isConsistent = angle > 40 && angle < 140;
+
+  return { 
+    asc: ascDeg, 
+    mc: mcDeg, 
+    ic: icDeg, 
+    desc: descDeg, 
+    isConsistent,
+    angleBetween: angle
+  };
 }
 
 // ═══════════════════════════════════════════════
@@ -231,23 +248,17 @@ export function calculateServerAstrology(
   latitude?: number, longitude?: number
 ): ServerAstrologyResult {
   const natalDate = new Date(Date.UTC(year, month - 1, day, hour - 9, minute));
-  const lat = (latitude && latitude !== 0) ? latitude : 37.5665;
-  const lon = (longitude && longitude !== 0) ? longitude : 126.9780;
+  const lat = (latitude && latitude !== 0) ? latitude : 37.5; // 서울 기본값 (사용자 요청)
+  const lon = (longitude && longitude !== 0) ? longitude : 127.0; // 서울 기본값 (사용자 요청)
   const observer = new Astronomy.Observer(lat, lon, 0);
   
   const rawPositions = getHighPrecisionPositions(natalDate, observer);
   const houseData = calculateHousesManual(natalDate, observer);
-  console.log("🏠 houseData raw:", JSON.stringify({
-    asc: houseData.asc,
-    mc: houseData.mc,
-    ic: houseData.ic,
-    desc: houseData.desc,
-    ascIsNaN: isNaN(houseData.asc),
-    mcIsNaN: isNaN(houseData.mc),
-    lst: Astronomy.SiderealTime(Astronomy.MakeTime(natalDate)),
-    longitude: observer.longitude,
-    latitude: observer.latitude,
-  }));
+  console.log("🏠 [House Calculation] ASC:", houseData.asc.toFixed(2), "MC:", houseData.mc.toFixed(2), "Consistency:", houseData.isConsistent);
+
+  if (!houseData.isConsistent) {
+    console.warn("⚠️ [Geometry Warning] ASC and MC angle is unusual:", houseData.angleBetween.toFixed(2));
+  }
 
   const risingSign = ZODIAC_SIGNS[Math.floor(houseData.asc / 30) % 12];
   const mcSign = ZODIAC_SIGNS[Math.floor(houseData.mc / 30) % 12];
@@ -293,8 +304,13 @@ export function calculateServerAstrology(
     if (SIGN_QUALITY[sign]) qualities[SIGN_QUALITY[sign]] += weights[i] || 0.5;
   });
 
-  const dominantElement = Object.entries(elements).sort((a, b) => b[1] - a[1])[0][0];
-  const dominantQuality = Object.entries(qualities).sort((a, b) => b[1] - a[1])[0][0];
+  const elementEntries = Object.entries(elements).sort((a, b) => b[1] - a[1]);
+  const maxElementVal = elementEntries[0][1];
+  const dominantElement = elementEntries.filter(e => e[1] === maxElementVal).map(e => e[0]).join("/");
+
+  const qualityEntries = Object.entries(qualities).sort((a, b) => b[1] - a[1]);
+  const maxQualityVal = qualityEntries[0][1];
+  const dominantQuality = qualityEntries.filter(q => q[1] === maxQualityVal).map(q => q[0]).join("/");
 
   const sunSign = planets[0].sign;
   const moonSign = planets[1].sign;
