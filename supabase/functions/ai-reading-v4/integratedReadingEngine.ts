@@ -370,8 +370,10 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     ].filter(Boolean) as string[],
     planet_positions: serverAstrology.planets,
     house_positions: {
-      ASC: serverAstrology.risingSign,
-      MC: "Unknown", IC: "Unknown", DESC: "Unknown"
+      ASC: serverAstrology.house_positions?.ASC || serverAstrology.risingSign,
+      MC: serverAstrology.house_positions?.MC || "Unknown",
+      IC: serverAstrology.house_positions?.IC || "Unknown",
+      DESC: serverAstrology.house_positions?.DESC || "Unknown",
     },
     major_aspects: serverAstrology.keyAspects.slice(0, 5),
     sunSign: serverAstrology.sunSign,
