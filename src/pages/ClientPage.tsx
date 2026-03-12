@@ -491,7 +491,7 @@ export default function ClientPage() {
                       value={userName}
                       onChange={(e) => setUserName(e.target.value)}
                       className="rounded-xl border-border/50 bg-background/50 backdrop-blur text-foreground placeholder:text-muted-foreground/50"
-                      placeholder="이름 또는 닉네임을 입력해주세요 (선택)"
+                      placeholder="이름 또는 닉네임을 입력해주세요"
                     />
                   </div>
 

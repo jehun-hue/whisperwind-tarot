@@ -1361,6 +1361,19 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                             <div className="text-[10px] text-muted-foreground mt-1 text-xs">잠재적 능력과 성취 방향</div>
                           </div>
                         </div>
+                        {reading.numerology_data.vibrations && (
+                          <div className="rounded-lg bg-background p-4 border border-border/50">
+                            <div className="mb-2 text-[10px] font-semibold text-muted-foreground uppercase">Energy Vibrations (에너지 흐름)</div>
+                            <div className="flex flex-wrap gap-2">
+                              {Object.entries(reading.numerology_data.vibrations).map(([k, v]) => (
+                                <div key={k} className="rounded bg-blue-500/5 px-2 py-1.5 border border-blue-500/10">
+                                  <div className="text-[9px] text-blue-400 font-bold uppercase">{k}</div>
+                                  <div className="text-[11px] text-foreground font-medium">{renderSafe(v)}</div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                     {/* Tarot Detail */}
