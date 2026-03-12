@@ -14,13 +14,50 @@ export interface ValidationResult {
 
 export function validateEngineOutput(
   consensus: any, 
-  vectors: any[]
+  vectors: any[],
+  systemResults: any[],
+  questionType?: string
 ): ValidationResult {
   const reasons: string[] = [];
 
   // Rule 4.1: If structured_engine_output = NULL, block narrative
   if (vectors.length === 0) {
     return { isValid: false, message: "Engine output is NULL", reasons: ["No pattern vectors generated"] };
+  }
+
+  // ── 1. Tarot Card Validation ──
+  const tarot = systemResults.find(r => r.system === "tarot");
+  if (!tarot || !tarot.characteristics || tarot.characteristics.length === 0) {
+    reasons.push("Tarot data is empty or missing characteristics");
+  }
+
+  // ── 2. Saju Element Validation ──
+  const saju = systemResults.find(r => r.system === "saju");
+  if (saju && saju.elements) {
+    const totalElements = Object.values(saju.elements as Record<string, number>).reduce((a, b) => a + b, 0);
+    if (totalElements === 0) {
+      reasons.push("Saju elements are all zero - potential data calculation error");
+    }
+  }
+
+  // ── 3. Question Category vs Semantic Vector Mismatch ──
+  if (questionType && consensus.dominant_vector) {
+    const CATEGORY_MAP: Record<string, string> = {
+      "연애": "relationship", "love": "relationship", "relationship": "relationship",
+      "재물": "finance", "money": "finance", "wealth": "finance", "finance": "finance",
+      "직업": "career", "career": "career", "business": "career"
+    };
+    const targetDim = CATEGORY_MAP[questionType.toLowerCase()];
+    if (targetDim) {
+      const sortedDims = Object.entries(consensus.dominant_vector as Record<string, number>)
+        .sort((a, b) => b[1] - a[1]);
+      const topDim = sortedDims[0]?.[0];
+      
+      if (topDim && topDim !== targetDim && (consensus.dominant_vector[topDim] > consensus.dominant_vector[targetDim] + 0.5)) {
+        console.warn(`[Validation] Category Mismatch: Question is ${questionType} (target: ${targetDim}), but dominant energy is ${topDim}`);
+        reasons.push(`Dominant energy (${topDim}) significantly differs from question category (${questionType})`);
+      }
+    }
   }
 
   // Rule 4.2: If validation_score < threshold, return uncertainty state

@@ -39,16 +39,28 @@ export function calculateConsensusV8(vectors: SymbolicVector[]): ConsensusOutput
     });
   });
 
-  // 2. Compute Cross-System Alignment (Cosine Similarity)
+  // 2. Compute Cross-System Alignment (Cosine Similarity) with Dynamic Weights
   let totalConsensus = 0;
   let totalWeight = 0;
   const alignmentMatrix: any[] = [];
-
   const systems = Object.keys(systemGroups);
+
+  // Calculate dynamic weights based on vector magnitude
+  const dynamicWeights: Record<string, number> = {};
+  systems.forEach(sys => {
+    const vec = systemGroups[sys];
+    const magnitude = Math.sqrt(Object.values(vec).reduce((sum, val) => sum + val * val, 0));
+    let weight = SYSTEM_WEIGHTS[sys] || 0.1;
+    if (magnitude < 0.1) {
+      weight *= 0.5; // Reduce impact of sparse data systems
+    }
+    dynamicWeights[sys] = weight;
+  });
+
   for (let i = 0; i < systems.length; i++) {
     for (let j = i + 1; j < systems.length; j++) {
       const similarity = cosineSimilarity(systemGroups[systems[i]], systemGroups[systems[j]]);
-      const pairWeight = (SYSTEM_WEIGHTS[systems[i]] || 0.1) * (SYSTEM_WEIGHTS[systems[j]] || 0.1);
+      const pairWeight = dynamicWeights[systems[i]] * dynamicWeights[systems[j]];
       
       totalConsensus += similarity * pairWeight;
       totalWeight += pairWeight;
@@ -71,10 +83,10 @@ export function calculateConsensusV8(vectors: SymbolicVector[]): ConsensusOutput
   // 4. Final Prediction Strength
   const prediction_strength = Math.max(0, consensus_score * confidence_score);
 
-  // 5. Aggregate Dominant Vector (Weighted by system weights)
+  // 5. Aggregate Dominant Vector (Weighted by dynamic weights)
   const dominantVector: Record<string, number> = {};
   Object.entries(systemGroups).forEach(([sys, vec]) => {
-    const weight = SYSTEM_WEIGHTS[sys] || 0.1;
+    const weight = dynamicWeights[sys] || 0.1;
     Object.entries(vec).forEach(([dim, val]) => {
       dominantVector[dim] = (dominantVector[dim] || 0) + (val * weight);
     });

@@ -452,7 +452,7 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
   const patternVectors = generatePatternVectors(systemResults);
   const consensusResult = calculateConsensusV8(patternVectors);
   const temporalResult = predictTemporalV8(consensusResult, systemResults, questionType);
-  const validationResult = validateEngineOutput(consensusResult, patternVectors);
+  const validationResult = validateEngineOutput(consensusResult, patternVectors, systemResults, questionType);
 
   // Step 2: Scale & Grade Logic
   const grade = consensusResult.consensus_score >= 0.7 ? "S"
