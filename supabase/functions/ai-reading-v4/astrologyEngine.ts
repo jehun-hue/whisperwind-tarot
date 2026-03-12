@@ -1,14 +1,15 @@
 /**
  * astrologyEngine.ts
- * Swiss Ephemeris (via swisseph-wasm) 기반 행성 위치 & 트랜짓 계산 엔진
- * - swisseph-wasm 사용으로 정밀도 & 전문성 확보
- * - 하우스 시스템(Placidus), 어스펙트, 에센셜 디그니티 포함
+ * Swiss Ephemeris (via astronomy-engine) 기반 행성 위치 & 트랜짓 계산 엔진
+ * - 고정렬 Astronomy Engine 사용으로 정밀도 & 안정성 확보
+ * - 어스펙트, 에센셜 디그니티, 트랜짓 분석 포함
+ * - MC/IC/DESC 계산을 위한 Meeus 공식 적용
  */
 
-import swisseph from "npm:swisseph-wasm";
+import * as Astronomy from "https://esm.sh/astronomy-engine";
 
 // ═══════════════════════════════════════════════
-// Constants & Types
+// Constants
 // ═══════════════════════════════════════════════
 
 const ZODIAC_SIGNS = [
@@ -21,20 +22,20 @@ const ZODIAC_ENGLISH = [
   "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces",
 ] as const;
 
-const SWISSEPH_PLANETS: Record<string, number> = {
-  "태양": swisseph.SE_SUN,
-  "달": swisseph.SE_MOON,
-  "수성": swisseph.SE_MERCURY,
-  "금성": swisseph.SE_VENUS,
-  "화성": swisseph.SE_MARS,
-  "목성": swisseph.SE_JUPITER,
-  "토성": swisseph.SE_SATURN,
-  "천왕성": swisseph.SE_URANUS,
-  "해왕성": swisseph.SE_NEPTUNE,
-  "명왕성": swisseph.SE_PLUTO,
+const PLANETS_MAP: Record<string, Astronomy.Body> = {
+  "태양": Astronomy.Body.Sun,
+  "달": Astronomy.Body.Moon,
+  "수성": Astronomy.Body.Mercury,
+  "금성": Astronomy.Body.Venus,
+  "화성": Astronomy.Body.Mars,
+  "목성": Astronomy.Body.Jupiter,
+  "토성": Astronomy.Body.Saturn,
+  "천왕성": Astronomy.Body.Uranus,
+  "해왕성": Astronomy.Body.Neptune,
+  "명왕성": Astronomy.Body.Pluto,
 };
 
-const PLANET_NAMES = Object.keys(SWISSEPH_PLANETS);
+const PLANET_NAMES = Object.keys(PLANETS_MAP);
 
 const PLANET_MEANINGS: Record<string, { domain: string; keyword: string }> = {
   태양: { domain: "자아, 의지, 생명력", keyword: "정체성" },
@@ -81,6 +82,19 @@ const EXALTATIONS: Record<string, number> = {
   목성: 3, 토성: 6, 천왕성: 7, 해왕성: 3, 명왕성: 4,
 };
 
+// ═══════════════════════════════════════════════
+// Helper Functions
+// ═══════════════════════════════════════════════
+
+function getPlanetDignity(planet: string, signIdx: number): string {
+  if (RULERSHIPS[planet]?.includes(signIdx)) return "본좌(domicile)";
+  if (EXALTATIONS[planet] === signIdx) return "고양(exaltation)";
+  const detIdx = RULERSHIPS[planet]?.map(r => (r + 6) % 12) || [];
+  if (detIdx.includes(signIdx)) return "데트리먼트(detriment)";
+  if ((EXALTATIONS[planet] + 6) % 12 === signIdx) return "추락(fall)";
+  return "없음";
+}
+
 interface Aspect {
   planet1: string;
   planet2: string;
@@ -99,54 +113,6 @@ const ASPECT_TYPES = [
   { name: "충(opposition)", angle: 180, orb: 8, harmonious: false },
   { name: "퀸컨스(quincunx)", angle: 150, orb: 3, harmonious: false },
 ];
-
-export interface ServerAstrologyResult {
-  sunSign: string;
-  moonSign: string;
-  risingSign: string;
-  planet_positions: any[];
-  house_positions: {
-    ASC: string;
-    MC: string;
-    IC: string;
-    DESC: string;
-    raw: number[];
-    cusps: number[];
-  };
-  major_aspects: string[];
-  planets: {
-    planet: string;
-    sign: string;
-    signEnglish: string;
-    degree: number;
-    absoluteDegree: number;
-    house: number;
-    dignity: string;
-    interpretation: string;
-  }[];
-  aspects: Aspect[];
-  elements: Record<string, number>;
-  qualities: Record<string, number>;
-  dominantElement: string;
-  dominantQuality: string;
-  chartSummary: string;
-  keyAspects: string[];
-  dignityReport: string[];
-  transits: string[];
-}
-
-// ═══════════════════════════════════════════════
-// Helper Functions
-// ═══════════════════════════════════════════════
-
-function getPlanetDignity(planet: string, signIdx: number): string {
-  if (RULERSHIPS[planet]?.includes(signIdx)) return "본좌(domicile)";
-  if (EXALTATIONS[planet] === signIdx) return "고양(exaltation)";
-  const detIdx = RULERSHIPS[planet]?.map(r => (r + 6) % 12) || [];
-  if (detIdx.includes(signIdx)) return "데트리먼트(detriment)";
-  if ((EXALTATIONS[planet] + 6) % 12 === signIdx) return "추락(fall)";
-  return "없음";
-}
 
 function calculateAspects(positions: { planet: string; absoluteDegree: number }[]): Aspect[] {
   const aspects: Aspect[] = [];
@@ -177,42 +143,95 @@ function calculateAspects(positions: { planet: string; absoluteDegree: number }[
   return aspects;
 }
 
+function getHighPrecisionPositions(date: Date, observer: Astronomy.Observer) {
+  const time = new Astronomy.AstroTime(date);
+  return PLANET_NAMES.map(name => {
+    const body = PLANETS_MAP[name];
+    const equ_vec = Astronomy.Equator(body, time, observer, true, true);
+    const ecl_vec = Astronomy.Ecliptic(equ_vec);
+    return { planet: name, longitude: ecl_vec.elon };
+  });
+}
+
+/**
+ * Manual Calculation of ASC, MC, IC, DESC
+ * Formulas from Jean Meeus, Astronomical Algorithms
+ */
+function calculateHousesManual(date: Date, observer: Astronomy.Observer) {
+  const time = new Astronomy.AstroTime(date);
+  const lst = Astronomy.SiderealTime(time) + (observer.longitude / 15.0);
+  const ramc = ((lst % 24) * 15) % 360;
+  const eps = 23.4392911; // J2000 Obliquity
+  const phi = observer.latitude * Math.PI / 180;
+  
+  const ramcRad = ramc * Math.PI / 180;
+  const epsRad = eps * Math.PI / 180;
+
+  // Midheaven (MC): λ = atan(tan(α) / cos(ε))
+  const mcRad = Math.atan2(Math.sin(ramcRad), Math.cos(ramcRad) * Math.cos(epsRad));
+  let mcDeg = (mcRad * 180 / Math.PI + 360) % 360;
+
+  // Ascendant (ASC): λ = atan(cos(α) / -(sin(ε)tan(φ) + cos(ε)sin(α)))
+  const ascRad = Math.atan2(Math.cos(ramcRad), -(Math.sin(epsRad) * Math.tan(phi) + Math.cos(epsRad) * Math.sin(ramcRad)));
+  let ascDeg = (ascRad * 180 / Math.PI + 360 + 90) % 360; 
+
+  const icDeg = (mcDeg + 180) % 360;
+  const descDeg = (ascDeg + 180) % 360;
+
+  return { asc: ascDeg, mc: mcDeg, ic: icDeg, desc: descDeg };
+}
+
 // ═══════════════════════════════════════════════
 // Public Interface
 // ═══════════════════════════════════════════════
 
+export interface ServerAstrologyResult {
+  sunSign: string;
+  moonSign: string;
+  risingSign: string;
+  planet_positions: any[];
+  house_positions: {
+    ASC: string;
+    MC: string;
+    IC: string;
+    DESC: string;
+    raw: number[];
+  };
+  major_aspects: string[];
+  planets: {
+    planet: string;
+    sign: string;
+    signEnglish: string;
+    degree: number;
+    absoluteDegree: number;
+    house: number;
+    dignity: string;
+    interpretation: string;
+  }[];
+  aspects: Aspect[];
+  elements: Record<string, number>;
+  qualities: Record<string, number>;
+  dominantElement: string;
+  dominantQuality: string;
+  chartSummary: string;
+  keyAspects: string[];
+  dignityReport: string[];
+  transits: string[];
+}
+
 export function calculateServerAstrology(
   year: number, month: number, day: number, hour: number, minute: number = 0
 ): ServerAstrologyResult {
-  // 1. Precise Date handling (KST to UTC)
-  const utcDate = new Date(Date.UTC(year, month - 1, day, hour - 9, minute));
-  const julianDay = swisseph.swe_julday(
-    utcDate.getUTCFullYear(),
-    utcDate.getUTCMonth() + 1,
-    utcDate.getUTCDate(),
-    utcDate.getUTCHours() + utcDate.getUTCMinutes() / 60 + utcDate.getUTCSeconds() / 3600,
-    swisseph.SE_GREG_CAL
-  );
+  const natalDate = new Date(Date.UTC(year, month - 1, day, hour - 9, minute));
+  const observer = new Astronomy.Observer(37.5665, 126.9780, 0); // Seoul
+  
+  const rawPositions = getHighPrecisionPositions(natalDate, observer);
+  const houseData = calculateHousesManual(natalDate, observer);
 
-  const lat = 37.5665;
-  const lng = 126.9780;
-
-  // 2. House System calculation (Placidus)
-  const houseResult = swisseph.swe_houses(julianDay, lat, lng, 'P');
-  const ascRaw = houseResult.ascmc[0];
-  const mcRaw = houseResult.ascmc[1];
-  const icRaw = (mcRaw + 180) % 360;
-  const descRaw = (ascRaw + 180) % 360;
-
-  const risingSign = ZODIAC_SIGNS[Math.floor(ascRaw / 30) % 12];
-  const mcSign = ZODIAC_SIGNS[Math.floor(mcRaw / 30) % 12];
-
-  // 3. Planet Positions
-  const rawPositions = PLANET_NAMES.map(name => {
-    const planetId = SWISSEPH_PLANETS[name];
-    const res = swisseph.swe_calc_ut(julianDay, planetId, swisseph.SEFLG_SPEED);
-    return { planet: name, longitude: res.longitude };
-  });
+  const risingSign = ZODIAC_SIGNS[Math.floor(houseData.asc / 30) % 12];
+  const mcSign = ZODIAC_SIGNS[Math.floor(houseData.mc / 30) % 12];
+  const icSign = ZODIAC_SIGNS[Math.floor(houseData.ic / 30) % 12];
+  const descSign = ZODIAC_SIGNS[Math.floor(houseData.desc / 30) % 12];
 
   const planets = rawPositions.map((p) => {
     const lng = ((p.longitude % 360) + 360) % 360;
@@ -220,18 +239,9 @@ export function calculateServerAstrology(
     const degree = Math.round((lng % 30) * 100) / 100;
     const sign = ZODIAC_SIGNS[signIdx];
     
-    // Determine house using cusps
-    let house = 12;
-    for (let h = 1; h <= 12; h++) {
-      const cusp = houseResult.cusps[h];
-      const nextCusp = houseResult.cusps[h === 12 ? 1 : h + 1];
-      if (cusp < nextCusp) {
-        if (lng >= cusp && lng < nextCusp) { house = h; break; }
-      } else {
-        if (lng >= cusp || lng < nextCusp) { house = h; break; }
-      }
-    }
-
+    // Equal House approximation
+    const house = ((signIdx - Math.floor(houseData.asc / 30) + 12) % 12) + 1;
+    
     const dignity = getPlanetDignity(p.planet, signIdx);
     const meaning = PLANET_MEANINGS[p.planet] || { domain: "", keyword: "" };
     const signMeaning = SIGN_MEANINGS[sign]?.split(",")[0] || "";
@@ -247,14 +257,12 @@ export function calculateServerAstrology(
     };
   });
 
-  // Aspects
   const aspectInput = rawPositions.map(p => ({
     planet: p.planet,
     absoluteDegree: p.longitude,
   }));
   const aspects = calculateAspects(aspectInput);
 
-  // Element/Quality distribution
   const elements: Record<string, number> = { 불: 0, 흙: 0, 공기: 0, 물: 0 };
   const qualities: Record<string, number> = { 활동궁: 0, 고정궁: 0, 변통궁: 0 };
   const weights = [3, 2.5, 1.5, 1.5, 1.5, 1, 1, 0.5, 0.5, 0.5];
@@ -269,31 +277,22 @@ export function calculateServerAstrology(
 
   const sunSign = planets[0].sign;
   const moonSign = planets[1].sign;
-
   const dignityReport = planets.filter(p => p.dignity !== "없음").map(p => `${p.planet} ${p.sign}: ${p.dignity}`);
 
-  // Transits (Current using fixed 'now' per call)
+  // Transits
   const now = new Date();
-  const currentJulianDay = swisseph.swe_julday(
-    now.getUTCFullYear(),
-    now.getUTCMonth() + 1,
-    now.getUTCDate(),
-    now.getUTCHours() + now.getUTCMinutes() / 60,
-    swisseph.SE_GREG_CAL
-  );
-  
+  const currentPositions = getHighPrecisionPositions(now, observer);
   const transits: string[] = [];
   const slowPlanets = ["목성", "토성", "천왕성", "해왕성", "명왕성"];
 
   for (const sp of slowPlanets) {
-    const planetId = SWISSEPH_PLANETS[sp];
-    const current = swisseph.swe_calc_ut(currentJulianDay, planetId, swisseph.SEFLG_SPEED);
+    const current = currentPositions.find(p => p.planet === sp);
+    if (!current) continue;
     const cLng = ((current.longitude % 360) + 360) % 360;
     const currentSign = ZODIAC_SIGNS[Math.floor(cLng / 30) % 12];
     const meaning = PLANET_MEANINGS[sp] || { domain: sp, keyword: sp };
     transits.push(`${sp} 트랜짓 ${currentSign}: ${meaning.domain} 영역에서 ${SIGN_MEANINGS[currentSign]?.split(",")[0]}한 에너지 작용.`);
 
-    // Aspects to Sun/Moon
     for (let i = 0; i < 2; i++) {
       const natalP = aspectInput[i];
       let diff = Math.abs(cLng - natalP.absoluteDegree);
@@ -311,29 +310,22 @@ export function calculateServerAstrology(
     dignityReport.length > 0 ? `디그니티: ${dignityReport.join(", ")}` : "",
   ].filter(Boolean).join("\n");
 
+  const majorAspectsStrings = aspects.map(a => a.interpretation);
+
   return {
     sunSign, moonSign, risingSign,
-    planet_positions: planets.map(p => ({
-      planet: p.planet,
-      sign: p.sign,
-      house: p.house,
-      degree: p.degree,
-      absoluteDegree: p.absoluteDegree,
-      dignity: p.dignity,
-      interpretation: p.interpretation
-    })),
+    planet_positions: planets,
     house_positions: {
       ASC: risingSign,
       MC: mcSign,
-      IC: ZODIAC_SIGNS[Math.floor(icRaw / 30) % 12],
-      DESC: ZODIAC_SIGNS[Math.floor(descRaw / 30) % 12],
-      raw: [ascRaw, mcRaw, icRaw, descRaw],
-      cusps: Array.from(houseResult.cusps).slice(1) as number[],
+      IC: icSign,
+      DESC: descSign,
+      raw: [houseData.asc, houseData.mc, houseData.ic, houseData.desc],
     },
-    major_aspects: aspects.map(a => a.interpretation),
+    major_aspects: majorAspectsStrings,
     planets, aspects, elements, qualities,
     dominantElement, dominantQuality,
-    chartSummary, keyAspects: aspects.map(a => a.interpretation), 
+    chartSummary, keyAspects: majorAspectsStrings, 
     dignityReport, transits,
   };
 }
