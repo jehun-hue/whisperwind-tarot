@@ -1141,7 +1141,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
               {/* 1-1. Choi Hanna Tarot (v4 Detail) */}
               {reading.tarot_reading?.choihanna && (
                 <div className="p-6 border-b border-border/10">
-                  <div className="mb-3 text-xs font-bold text-purple-400 tracking-widest uppercase">💫 최한나 타로 상세 해석 (Choi Hanna Reading)</div>
+                  <div className="mb-3 text-xs font-bold text-purple-400 tracking-widest uppercase">💫 카드별 1줄 해석</div>
                   <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap mb-3">{renderSafe(reading.tarot_reading.choihanna.story)}</p>
                   {reading.tarot_reading.choihanna.key_message && (
                     <p className="text-xs text-gold font-medium italic">💎 {renderSafe(reading.tarot_reading.choihanna.key_message)}</p>
@@ -1152,7 +1152,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
               {/* 1-2. Monad Tarot (v4 Detail) */}
               {reading.tarot_reading?.monad && (
                 <div className="p-6 border-b border-border/10 bg-secondary/5">
-                  <div className="mb-3 text-xs font-bold text-blue-400 tracking-widest uppercase">🔷 모나드 타로 상세 해석 (Monad Reading)</div>
+                  <div className="mb-3 text-xs font-bold text-blue-400 tracking-widest uppercase">🔷 카드별 1줄 해석</div>
                   <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap mb-3">{renderSafe(reading.tarot_reading.monad.story)}</p>
                   {reading.tarot_reading.monad.key_message && (
                     <p className="text-xs text-gold font-medium italic">💎 {renderSafe(reading.tarot_reading.monad.key_message)}</p>
@@ -1500,8 +1500,8 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
               {/* Individual Systems */}
               {[
                 { key: "tarot", icon: "🃏", label: "웨이트 타로" },
-                { key: "choi_hanna_tarot", icon: "💫", label: "최한나 타로" },
-                { key: "monad_tarot", icon: "🔷", label: "모나드 타로" },
+                { key: "choi_hanna_tarot", icon: "💫", label: "카드별 1줄 해석" },
+                { key: "monad_tarot", icon: "🔷", label: "카드별 1줄 해석" },
                 { key: "saju", icon: "🔮", label: "사주팔자" },
                 { key: "astrology", icon: "⭐", label: "서양 점성술" },
                 { key: "ziwei", icon: "🏯", label: "자미두수" },
@@ -1542,7 +1542,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
               {/* Tarot Deep Details (Hanna/Monad) in Legacy UI */}
               {reading.tarot_reading?.choihanna && (
                 <div className="space-y-2">
-                  <div className="text-xs font-semibold text-purple-400 tracking-wider uppercase">💫 최한나 타로 상세</div>
+                  <div className="text-xs font-semibold text-purple-400 tracking-wider uppercase">💫 카드별 1줄 해석</div>
                   <div className="rounded-lg border border-border bg-purple-500/5 p-4 text-foreground">
                     <p className="text-sm leading-relaxed whitespace-pre-wrap">{renderSafe(reading.tarot_reading.choihanna.story)}</p>
                     {reading.tarot_reading.choihanna.key_message && (
@@ -1554,7 +1554,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
 
               {reading.tarot_reading?.monad && (
                 <div className="space-y-2">
-                  <div className="text-xs font-semibold text-blue-400 tracking-wider uppercase">🔷 모나드 타로 상세</div>
+                  <div className="text-xs font-semibold text-blue-400 tracking-wider uppercase">🔷 카드별 1줄 해석</div>
                   <div className="rounded-lg border border-border bg-blue-500/5 p-4 text-foreground">
                     <p className="text-sm leading-relaxed whitespace-pre-wrap">{renderSafe(reading.tarot_reading.monad.story)}</p>
                     {reading.tarot_reading.monad.key_message && (
