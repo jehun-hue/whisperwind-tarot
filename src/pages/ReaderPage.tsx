@@ -1691,9 +1691,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                 <Button variant="outline" size="sm" className="rounded-full border-gold/30 text-gold text-xs" onClick={downloadPDF}>
                   <Download className="mr-1.5 h-3 w-3" />리포트 저장 (PDF)
                 </Button>
-                <Button variant="outline" size="sm" className="rounded-full border-blue-500/30 text-blue-400 text-xs bg-blue-500/5 hover:bg-blue-500/10" onClick={downloadJSON}>
-                  <FileJson className="mr-1.5 h-3 w-3" />JSON 내보내기
-                </Button>
+
               </div>
 
               <div className="flex gap-2 ml-auto">
