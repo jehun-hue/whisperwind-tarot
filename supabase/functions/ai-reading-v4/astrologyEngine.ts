@@ -234,6 +234,17 @@ export function calculateServerAstrology(
   
   const rawPositions = getHighPrecisionPositions(natalDate, observer);
   const houseData = calculateHousesManual(natalDate, observer);
+  console.log("🏠 houseData raw:", JSON.stringify({
+    asc: houseData.asc,
+    mc: houseData.mc,
+    ic: houseData.ic,
+    desc: houseData.desc,
+    ascIsNaN: isNaN(houseData.asc),
+    mcIsNaN: isNaN(houseData.mc),
+    lst: Astronomy.SiderealTime(Astronomy.MakeTime(natalDate)),
+    longitude: observer.longitude,
+    latitude: observer.latitude,
+  }));
 
   const risingSign = ZODIAC_SIGNS[Math.floor(houseData.asc / 30) % 12];
   const mcSign = ZODIAC_SIGNS[Math.floor(houseData.mc / 30) % 12];
