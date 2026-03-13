@@ -1,15 +1,18 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import cardBackImg from "@/assets/card-back.png";
 
 interface TarotCardProps {
   name: string;
   koreanName?: string;
   isReversed?: boolean;
   image?: string;
+  cardImage?: string; // Alias for image
   className?: string;
   size?: "xs" | "sm" | "md" | "lg" | "xl";
   showName?: boolean;
+  isFlipped?: boolean;
   onClick?: () => void;
 }
 
@@ -18,11 +21,14 @@ export const TarotCard: React.FC<TarotCardProps> = ({
   koreanName,
   isReversed = false,
   image,
+  cardImage,
   className,
   size = "md",
   showName = true,
+  isFlipped = true,
   onClick,
 }) => {
+  const displayImage = image || cardImage;
   const sizeClasses = {
     xs: "h-20 w-12 text-[7px]",
     sm: "h-24 w-16 text-[8px]",
@@ -55,29 +61,46 @@ export const TarotCard: React.FC<TarotCardProps> = ({
       />
 
       {/* Card Content Wrapper */}
-      <div className={cn(
-        "relative z-10 h-full w-full flex flex-col items-center justify-center p-1.5",
-        isReversed && "rotate-180"
-      )}>
+      {!isFlipped ? (
+        <div className="absolute inset-0 z-10 w-full h-full">
+          <img src={cardBackImg} alt="Card Back" className="w-full h-full object-cover opacity-80" />
+        </div>
+      ) : (
         <div className={cn(
-          "flex flex-col items-center justify-center gap-2",
+          "relative z-10 h-full w-full flex flex-col items-center justify-center p-1.5",
           isReversed && "rotate-180"
         )}>
-          <span className="text-gold/60 text-3xl font-light animate-pulse">✦</span>
-          <span className="text-[8px] text-muted-foreground/40 italic uppercase tracking-tighter">mystic arcana</span>
-        </div>
+          {displayImage && !isReversed ? (
+            <div className="absolute inset-0 z-0 overflow-hidden rounded-lg">
+              <img 
+                src={displayImage} 
+                alt={name} 
+                className="h-full w-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500 scale-110 group-hover:scale-100"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60" />
+            </div>
+          ) : (
+            <div className={cn(
+              "flex flex-col items-center justify-center gap-2",
+              isReversed && "rotate-180"
+            )}>
+              <span className="text-gold/60 text-3xl font-light animate-pulse">✦</span>
+              <span className="text-[8px] text-muted-foreground/40 italic uppercase tracking-tighter">mystic arcana</span>
+            </div>
+          )}
 
-        {showName && (
-          <div className={cn(
-            "absolute bottom-1 left-1 right-1 rounded-lg bg-black/60 backdrop-blur-md py-1 border border-white/5",
-            isReversed && "rotate-180"
-          )}>
-            <span className="font-display font-medium text-white block truncate px-1 text-center animate-shimmer bg-clip-text text-transparent bg-gradient-to-r from-gold-light via-white to-gold-light whitespace-nowrap break-keep">
-              {koreanName || name}
-            </span>
-          </div>
-        )}
-      </div>
+          {showName && (
+            <div className={cn(
+              "absolute bottom-1 left-1 right-1 rounded-lg bg-black/60 backdrop-blur-md py-1 border border-white/5 z-10",
+              isReversed && "rotate-180"
+            )}>
+              <span className="font-display font-medium text-white block truncate px-1 text-center animate-shimmer bg-clip-text text-transparent bg-gradient-to-r from-gold-light via-white to-gold-light whitespace-nowrap break-keep">
+                {koreanName || name}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Premium Border Highlight */}
       <div className={cn(

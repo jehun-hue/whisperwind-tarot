@@ -162,7 +162,7 @@ function placeMajorStars(ziWeiPos: number): Map<number, MajorStar[]> {
   const tianFuPos = (12 - ziWeiPos + 4) % 12;
   const tianFuGroup: [MajorStar, number][] = [
     ["천부", 0], ["태음", 1], ["탐랑", 2], ["거문", 3],
-    ["천상", 4], ["천량", 5], ["칠살", 6], ["파군", 10],
+    ["천상", 4], ["천량", 5], ["칠살", 6], ["파군", 7],
   ];
   for (const [star, offset] of ziWeiGroup) {
     const pos = ((ziWeiPos + offset) % 12 + 12) % 12;
@@ -275,7 +275,7 @@ function calculateMinorPeriod(
   birthYear: number, currentYear: number, mingGongIdx: number,
   gender: "male" | "female", yearGanIdx: number
 ): MinorPeriod {
-  const age = currentYear - birthYear + 1;
+  const age = currentYear - birthYear + 1; // 한국 나이 (Korean age)
   const isForward = (gender === "male" && yearGanIdx % 2 === 0) || (gender === "female" && yearGanIdx % 2 !== 0);
   const direction = isForward ? 1 : -1;
   const palaceIdx = ((mingGongIdx + direction * (age % 12)) % 12 + 12) % 12;
@@ -289,7 +289,7 @@ function calculateMinorPeriod(
   };
   return {
     age, palace, branch: BRANCHES[palaceIdx],
-    interpretation: `올해(${age}세) 소한: ${palace}(${BRANCHES[palaceIdx]}궁) → ${palaceContext[palace]}에 집중.`,
+    interpretation: `올해(${age}세, 한국나이) 소한: ${palace}(${BRANCHES[palaceIdx]}궁) → ${palaceContext[palace]}에 집중.`,
   };
 }
 
@@ -353,7 +353,7 @@ export function calculateServerZiWei(
 
   const majorPeriods = calculateMajorPeriods(bureau, mingGongIdx, gender, yearGanIdx, starMap);
   const currentYear = new Date().getFullYear();
-  const currentAge = currentYear - birthYear + 1;
+  const currentAge = currentYear - birthYear + 1; // Korean age
   const currentMajorPeriod = majorPeriods.find(p => currentAge >= p.startAge && currentAge <= p.endAge) || null;
   const currentMinorPeriod = calculateMinorPeriod(birthYear, currentYear, mingGongIdx, gender, yearGanIdx);
 
@@ -373,7 +373,7 @@ export function calculateServerZiWei(
 
   let periodAnalysis = "";
   if (currentMajorPeriod) {
-    periodAnalysis += `현재 대한(${currentMajorPeriod.startAge}-${currentMajorPeriod.endAge}세): ${currentMajorPeriod.palace}. ${currentMajorPeriod.interpretation} `;
+    periodAnalysis += `현재 대한(${currentMajorPeriod.startAge}-${currentMajorPeriod.endAge}세, 한국나이): ${currentMajorPeriod.palace}. ${currentMajorPeriod.interpretation} `;
   }
   if (currentMinorPeriod) periodAnalysis += currentMinorPeriod.interpretation;
 

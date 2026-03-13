@@ -28,8 +28,18 @@ const CHEONGAN_YINYANG: Record<string, "양" | "음"> = {
 
 // 지지 → 오행
 const JIJI_ELEMENT: Record<string, FiveElement> = {
-  자: "수", 축: "토", 인: "목", 묘: "목", 진: "토", 사: "화",
-  오: "화", 미: "토", 신: "금", 유: "금", 술: "토", 해: "수",
+  자: "수",
+  축: "토",
+  인: "목",
+  묘: "목",
+  진: "토",
+  사: "화",
+  오: "화",
+  미: "토",
+  신: "금",
+  유: "금",
+  술: "토",
+  해: "수",
 };
 
 // 지지 → 음양
@@ -555,14 +565,14 @@ export function calculateSaju(
   // 대운
   const daeun = calculateDaeun(yearGanIdx, monthGanIdx, monthJiIdx, gender, birthYear);
   const currentYear = new Date().getFullYear();
-  const age = currentYear - birthYear + 1; // Korean age approximation
+  const age = currentYear - birthYear + 1; // Korean age
   const currentDaeun = getCurrentDaeun(daeun, age);
 
   // 세운
   const sewun = calculateSewun(currentYear);
 
   // Description
-  let description = `일간 ${ilgan}${CHEONGAN_ELEMENT[ilgan]}(${ilganYinyang}) / ${strength} / ${gyeokguk}`;
+  let description = `${age}세(한국나이) / 일간 ${ilgan}${CHEONGAN_ELEMENT[ilgan]}(${ilganYinyang}) / ${strength} / ${gyeokguk}`;
   if (currentDaeun) {
     description += ` / 현재 대운: ${currentDaeun.cheongan}${currentDaeun.jiji}(${currentDaeun.element})`;
   }

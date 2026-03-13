@@ -438,15 +438,16 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
     }
   };
 
-  const runAIAnalysisV2 = async (style: 'hanna' | 'monad' | 'e7l3' | 'e5l5' | 'l7e3' = 'hanna', isAutoRun = false) => {
+  const runAIAnalysisV2 = async (style: 'hanna' | 'monad' | 'e7l3' | 'e5l5' | 'l7e3' = 'hanna', isAutoRun = false, overrideSession?: ReadingSession) => {
+    const currentSession = overrideSession || session;
     console.log(`[runAIAnalysisV2] Start style=${style}, isAutoRun=${isAutoRun}`);
     // 가드 로직: 해당 해석이 이미 존재하면 재생성 방지 (수동 실행 시에만 가드 작동)
     if (!isAutoRun) {
-      if (style === 'hanna' && session.ai_reading?.tarot_reading?.choihanna) {
+      if (style === 'hanna' && currentSession.ai_reading?.tarot_reading?.choihanna) {
         alert("최한나 해석이 이미 생성되어 있습니다.");
         return;
       }
-      if (style === 'monad' && session.ai_reading?.tarot_reading?.monad) {
+      if (style === 'monad' && currentSession.ai_reading?.tarot_reading?.monad) {
         alert("모나드 해석이 이미 생성되어 있습니다.");
         return;
       }
@@ -467,19 +468,19 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
     setAnalysisError(null);
     if (!isAutoRun) setAnalyzingStyle(style);
     try {
-      await supabase.from("reading_sessions").update({ status: "analyzing" }).eq("id", session.id);
-
-      const cardsInput = (session.cards as any[]) || [];
-      const birthInfo = session.birth_date ? {
-        gender: session.gender,
-        birthDate: session.birth_date,
-        birthTime: session.birth_time || "",
-        birthPlace: session.birth_place || "",
-        isLunar: session.is_lunar || false,
-        isLeapMonth: (session.saju_data as any)?.originalInput?.isLeapMonth || false,
+      await supabase.from("reading_sessions").update({ status: "analyzing" }).eq("id", currentSession.id);
+ 
+      const cardsInput = (currentSession.cards as any[]) || [];
+      const birthInfo = currentSession.birth_date ? {
+        gender: currentSession.gender,
+        birthDate: currentSession.birth_date,
+        birthTime: currentSession.birth_time || "",
+        birthPlace: currentSession.birth_place || "",
+        isLunar: currentSession.is_lunar || false,
+        isLeapMonth: (currentSession.saju_data as any)?.originalInput?.isLeapMonth || false,
       } : null;
-
-      const sajuDataForAI = session.saju_data;
+ 
+      const sajuDataForAI = currentSession.saju_data;
       let astroDataForAI = null;
       let ziweiDataForAI = null;
 
@@ -508,9 +509,9 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       const combinationSummary = getCombinationSummary(cardsInput.map((c: any) => c.id), qType as any);
 
       const fnBody = {
-        question: session.question,
+        question: currentSession.question,
         questionType: qType,
-        memo: session.memo,
+        memo: currentSession.memo,
         cards: cardsInput,
         sajuData: sajuDataForAI,
         birthInfo,
@@ -519,9 +520,9 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
         combinationSummary,
         forcetellData: forcetellData.trim() || null,
         manseryeokData: sajuDataForAI,
-        locale: session.locale || "kr",
+        locale: currentSession.locale || "kr",
         style,
-        userName: session.user_name,
+        userName: currentSession.user_name,
       };
 
       const { data: aiData, error: fnError } = await supabase.functions.invoke("ai-reading-v4", {
@@ -544,9 +545,8 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
         result.management_tracks = aiData.management_tracks;
       }
 
-      // 기존 데이터와 병합 (다른 스타일 리딩 덮어쓰기 방지)
       // 기존 데이터와 병합 (필드별 통합 로직 적용)
-      const existingReading = session.ai_reading || {};
+      const existingReading = currentSession.ai_reading || {};
       const mergedReading = {
         ...existingReading,
         ...result,
@@ -573,27 +573,34 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
           ...(result.final_message || {}),
         }
       };
-
+ 
       const hasNarrative = !!(mergedReading.tarot_reading?.choihanna || mergedReading.tarot_reading?.monad);
-      const finalStatus = hasNarrative ? "completed" : session.status;
-
+      const finalStatus = hasNarrative ? "completed" : currentSession.status;
+ 
       await supabase.from("reading_sessions").update({
         ai_reading: mergedReading as any,
         saju_data: sajuDataForAI as any,
         status: finalStatus,
-      }).eq("id", session.id);
-
+      }).eq("id", currentSession.id);
+ 
       onUpdate({
-        ...session,
+        ...currentSession,
         ai_reading: mergedReading,
         saju_data: sajuDataForAI,
         status: finalStatus,
       });
+      return {
+        ...currentSession,
+        ai_reading: mergedReading,
+        saju_data: sajuDataForAI,
+        status: finalStatus,
+      };
     } catch (err) {
       console.error("AI V4 analysis error:", err);
       setAnalysisError(err instanceof Error ? err.message : "V4 분석 중 오류가 발생했습니다.");
-      await supabase.from("reading_sessions").update({ status: "error" }).eq("id", session.id);
-      onUpdate({ ...session, status: "error" });
+      await supabase.from("reading_sessions").update({ status: "error" }).eq("id", currentSession.id);
+      onUpdate({ ...currentSession, status: "error" });
+      return { ...currentSession, status: "error" };
     } finally {
       if (!isAutoRun) setAnalyzingStyle(null);
     }
@@ -645,7 +652,8 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
     toast.success(`${style.toUpperCase()} 스타일 병합 완료`);
   };
 
-  const runDataOnlyAnalysis = async (isAutoRun = false) => {
+  const runDataOnlyAnalysis = async (isAutoRun = false, overrideSession?: ReadingSession) => {
+    const currentSession = overrideSession || session;
     if (!isAutoRun) {
       const ok = window.confirm(
         "📊 AI 내러티브 없이 데이터 엔진만 호출합니다.\n\n" +
@@ -658,18 +666,18 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
     setAnalysisError(null);
     if (!isAutoRun) setAnalyzingStyle('data-only');
     try {
-      await supabase.from("reading_sessions").update({ status: "analyzing" }).eq("id", session.id);
-
-      const birthInfo = session.birth_date ? {
-        gender: session.gender,
-        birthDate: session.birth_date,
-        birthTime: session.birth_time || "",
-        birthPlace: session.birth_place || "",
-        isLunar: session.is_lunar || false,
-        isLeapMonth: (session.saju_data as any)?.originalInput?.isLeapMonth || false,
+      await supabase.from("reading_sessions").update({ status: "analyzing" }).eq("id", currentSession.id);
+ 
+      const birthInfo = currentSession.birth_date ? {
+        gender: currentSession.gender,
+        birthDate: currentSession.birth_date,
+        birthTime: currentSession.birth_time || "",
+        birthPlace: currentSession.birth_place || "",
+        isLunar: currentSession.is_lunar || false,
+        isLeapMonth: (currentSession.saju_data as any)?.originalInput?.isLeapMonth || false,
       } : null;
-
-      const sajuDataForAI = session.saju_data;
+ 
+      const sajuDataForAI = currentSession.saju_data;
       let astroDataForAI = null;
       let ziweiDataForAI = null;
 
@@ -696,20 +704,20 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       }
 
       const fnBody = {
-        question: session.question,
+        question: currentSession.question,
         questionType: qType,
-        memo: session.memo,
+        memo: currentSession.memo,
         cards: [], // 타로 카드 없이
         sajuData: sajuDataForAI,
         birthInfo,
         astrologyData: astroDataForAI,
         ziweiData: ziweiDataForAI,
         combinationSummary: "",
-        locale: session.locale || "kr",
+        locale: currentSession.locale || "kr",
         mode: "data-only",
-        userName: session.user_name,
+        userName: currentSession.user_name,
       };
-
+ 
       const { data: aiData, error: fnError } = await supabase.functions.invoke("ai-reading-v4", {
         body: fnBody,
       });
@@ -719,7 +727,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       const result = aiData?.reading; 
       if (!result) throw new Error("엔진 응답이 비어 있습니다.");
 
-      const existingReading = (session.ai_reading as any) || {};
+      const existingReading = (currentSession.ai_reading as any) || {};
       const mergedReading = {
         ...existingReading,
         ...result,
@@ -745,25 +753,31 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
           ? existingReading.integrated_summary
           : result.integrated_summary,
       };
-
+ 
       const hasNarrative = !!(mergedReading.tarot_reading?.choihanna || mergedReading.tarot_reading?.monad);
-      const finalStatus = hasNarrative ? "completed" : session.status;
-
+      const finalStatus = hasNarrative ? "completed" : currentSession.status;
+ 
       await supabase.from("reading_sessions").update({
         ai_reading: mergedReading as any,
         status: finalStatus,
-      }).eq("id", session.id);
-
+      }).eq("id", currentSession.id);
+ 
       onUpdate({
-        ...session,
+        ...currentSession,
         ai_reading: mergedReading,
         status: finalStatus,
       });
+      return {
+        ...currentSession,
+        ai_reading: mergedReading,
+        status: finalStatus,
+      };
     } catch (err) {
       console.error("Data-only analysis error:", err);
       setAnalysisError(err instanceof Error ? err.message : "분석 중 오류가 발생했습니다.");
-      await supabase.from("reading_sessions").update({ status: "error" }).eq("id", session.id);
-      onUpdate({ ...session, status: "error" });
+      await supabase.from("reading_sessions").update({ status: "error" }).eq("id", currentSession.id);
+      onUpdate({ ...currentSession, status: "error" });
+      return { ...currentSession, status: "error" };
     } finally {
       if (!isAutoRun) setAnalyzingStyle(null);
     }
@@ -783,15 +797,17 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       
       console.log("[runSequentialAnalysis] Step 1: hanna start");
       setAnalyzingStyle('seq_hanna');
-      await runAIAnalysisV2('hanna', true);
-
+      const s1 = await runAIAnalysisV2('hanna', true);
+ 
       console.log("[runSequentialAnalysis] Step 2: monad start");
       setAnalyzingStyle('seq_monad');
-      await runAIAnalysisV2('monad', true);
-
+      // Use latest session data from Step 1
+      const s2 = await runAIAnalysisV2('monad', true, s1 || undefined);
+ 
       console.log("[runSequentialAnalysis] Step 3: data-only start");
       setAnalyzingStyle('seq_data');
-      await runDataOnlyAnalysis(true);
+      // Use latest session data from Step 2
+      const s3 = await runDataOnlyAnalysis(true, s2 || s1 || undefined);
       
       console.log("[runSequentialAnalysis] All steps finished");
       // 최신 데이터를 반영하기 위해 applyPersonaMerge 내의 session 참조가 최신이어야 함
@@ -1117,7 +1133,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
             </div>
             <div>
               <div className="text-[10px] text-muted-foreground">신뢰도</div>
-              <div className="mt-1 text-[13px] font-medium text-foreground">{session.confidence ? (session.confidence * 100).toFixed(0) + "%" : "0%"}</div>
+              <div className="mt-1 text-[13px] font-medium text-foreground">{session.confidence ? Math.round(session.confidence * 100) + "%" : "0%"}</div>
             </div>
           </div>
 
@@ -1129,7 +1145,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
             <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
               <span>{session.gender === "male" ? "남" : "여"}</span>
               <span>•</span>
-              <span>{session.birth_date}</span>
+              <span>{session.birth_date} ({new Date().getFullYear() - new Date(session.birth_date).getFullYear() + 1}세, 한국나이)</span>
               {session.birth_time && <><span>•</span><span>{session.birth_time}</span></>}
               {session.birth_place && <><span>•</span><span>{session.birth_place}</span></>}
               <span>•</span>
@@ -1516,7 +1532,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                         {Object.entries(reading.engine.system_weights || {}).map(([sys, weight]) => (
                           <div key={sys} className="flex items-center gap-1.5 rounded-full border border-border/50 bg-background px-2 py-0.5">
                             <span className="text-[9px] font-medium text-muted-foreground uppercase">{sys}</span>
-                            <span className="text-[10px] font-bold text-foreground">{(weight as number * 100).toFixed(0)}%</span>
+                            <span className="text-[10px] font-bold text-foreground">{Math.round((weight as number) * 100)}%</span>
                           </div>
                         ))}
                       </div>
@@ -1527,7 +1543,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                         {reading.engine.consensus?.alignment_matrix?.map((item: any, i: number) => (
                           <div key={i} className="flex items-center justify-between text-[10px]">
                             <span className="text-muted-foreground">{item.pair}</span>
-                            <span className={item.similarity > 0.5 ? "text-emerald-400 font-bold" : "text-amber-400"}>{(item.similarity * 100).toFixed(1)}%</span>
+                            <span className={item.similarity > 0.5 ? "text-emerald-400 font-bold" : "text-amber-400"}>{Math.round(item.similarity * 100)}%</span>
                           </div>
                         ))}
                       </div>
@@ -1545,7 +1561,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                       <div key={i} className="rounded-xl border border-border bg-background p-3 shadow-sm">
                         <div className="mb-1 text-[10px] font-bold text-emerald-400">{node.window || node.period}</div>
                         <div className="mb-2 text-lg font-bold text-foreground">
-                          {(node.probability * 100).toFixed(0)}% 
+                          {Math.round(node.probability * 100)}% 
                           <span className="ml-1.5 text-xs font-normal text-muted-foreground">({node.label || "변화 가능성"})</span>
                         </div>
                         <p className="text-[10px] leading-relaxed text-muted-foreground">{renderSafe(node.description || node.eventDescriptor)}</p>
@@ -1584,11 +1600,11 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                             <div className="grid grid-cols-2 gap-2">
                               <div className="rounded bg-secondary/30 p-2 border border-border/20">
                                 <div className="text-[9px] text-muted-foreground">Consensus Score</div>
-                                <div className="text-sm font-bold text-foreground">{reading.engine.consensus?.consensus_score?.toFixed(2) || "0.00"}</div>
+                                <div className="text-sm font-bold text-foreground">{Math.round((reading.engine.consensus?.consensus_score || 0) * 100)}%</div>
                               </div>
                               <div className="rounded bg-secondary/30 p-2 border border-border/20">
                                 <div className="text-[9px] text-muted-foreground">Confidence Score</div>
-                                <div className="text-sm font-bold text-gold">{reading.engine.consensus?.confidence_score?.toFixed(2) || "0.00"}</div>
+                                <div className="text-sm font-bold text-gold">{Math.round((reading.engine.consensus?.confidence_score || 0) * 100)}%</div>
                               </div>
                             </div>
                           </div>
@@ -1602,7 +1618,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                                     <div className="h-1 w-20 rounded-full bg-secondary">
                                       <div className="h-full rounded-full bg-accent" style={{ width: `${Math.min(100, (val as number) * 100)}%` }} />
                                     </div>
-                                    <span className="text-[10px] font-mono">{(val as number).toFixed(2)}</span>
+                                    <span className="text-[10px] font-mono">{Math.round((val as number) * 100)}%</span>
                                   </div>
                                 </div>
                               ))}
@@ -1631,7 +1647,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                                   {Object.entries(reading.saju_analysis.elements || {}).map(([el, count]) => (
                                     <div key={el} className="flex-1 text-center bg-secondary/50 rounded py-1">
                                       <div className="text-[9px]">{el}</div>
-                                      <div className="text-[10px] font-bold">{count as number}</div>
+                                      <div className="text-[10px] font-bold">{Math.round(count as number)}</div>
                                     </div>
                                   ))}
                                 </div>
@@ -1748,7 +1764,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                                 .slice(0, 5)
                                 .map(([p, v]) => (
                                   <div key={p} className="text-[9px] bg-secondary px-1.5 py-0.5 rounded border border-border/50">
-                                    {p} ({(v as number).toFixed(2)})
+                                    {p} ({Math.round((v as number) * 100)}%)
                                   </div>
                                 ))}
                             </div>
@@ -1770,8 +1786,8 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                     <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Validation Layer : {reading.engine.validation.message}</span>
                   </div>
                   <div className="flex gap-4">
-                    <div className="text-[9px]"><span className="text-muted-foreground">Pattern Consistency:</span> <span className="text-foreground font-mono">{(reading.engine.validation.pattern_consistency || 0.75).toFixed(2)}</span></div>
-                    <div className="text-[9px]"><span className="text-muted-foreground">Cross-System Alignment:</span> <span className="text-foreground font-mono">{(reading.engine.consensus?.consensus_score || 0).toFixed(2)}</span></div>
+                    <div className="text-[9px]"><span className="text-muted-foreground">Pattern Consistency:</span> <span className="text-foreground font-mono">{Math.round((reading.engine.validation.pattern_consistency || 0.75) * 100)}%</span></div>
+                    <div className="text-[9px]"><span className="text-muted-foreground">Cross-System Alignment:</span> <span className="text-foreground font-mono">{Math.round((reading.engine.consensus?.consensus_score || 0) * 100)}%</span></div>
                   </div>
                 </div>
               )}
