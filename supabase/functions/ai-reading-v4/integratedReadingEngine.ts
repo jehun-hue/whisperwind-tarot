@@ -1273,7 +1273,8 @@ ${finalTopic === "life_change" ? "   → 변화 질문: 사주 운로·점성술
     timeline: temporalResult,
     validation: validationResult,
     vectors: patternVectors,
-    system_weights: { tarot: 0.40, saju: 0.25, ziwei: 0.20, astrology: 0.10, numerology: 0.05 },
+    system_weights: (consensusResult as any).topic_weights_used || { tarot: 0.40, saju: 0.25, ziwei: 0.20, astrology: 0.10, numerology: 0.05 },
+    topic_weights_used: (consensusResult as any).topic_weights_used || {},
   };
 
   // Professional V4 Detail Mapping (Required by ReaderPage.tsx)
@@ -1569,8 +1570,8 @@ ${parsed.action_guide?.do_list?.map((item: string) => `- ${item}`).join('\n') ||
     validationWarnings.push("birth_place_missing");
     dataCompleteness -= 0.10;
   }
-  // 타로 카드 미노출 (5장 미만)
-  if (!input?.cards || input.cards.length < 5) {
+  // 타로 카드 미노출 (5장 미만) — data-only 모드는 카드 없음이 정상이므로 제외 (B-157)
+  if (input.mode !== "data-only" && (!input?.cards || input.cards.length < 5)) {
     validationWarnings.push("tarot_cards_insufficient");
     dataCompleteness -= 0.10;
   }

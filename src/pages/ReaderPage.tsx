@@ -1578,7 +1578,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                     <div>
                       <div className="mb-2 text-[10px] font-semibold text-muted-foreground">System Weights</div>
                       <div className="flex flex-wrap gap-2">
-                        {Object.entries(reading.engine.system_weights || {}).map(([sys, weight]) => (
+                        {Object.entries((reading.engine.topic_weights_used || reading.engine.system_weights) || {}).map(([sys, weight]) => (
                           <div key={sys} className="flex items-center gap-1.5 rounded-full border border-border/50 bg-background px-2 py-0.5">
                             <span className="text-[9px] font-medium text-muted-foreground uppercase">{sys}</span>
                             <span className="text-[10px] font-bold text-foreground">{Math.round((weight as number) * 100)}%</span>
