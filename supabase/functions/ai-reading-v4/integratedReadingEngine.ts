@@ -1160,6 +1160,13 @@ ${finalTopic === "life_change" ? "   → 변화 질문: 사주 운로·점성술
     responseType = "skipped";
     parseSuccess = true;
     parsed = buildFallbackReading("데이터 분석 전용 모드입니다. AI 내러티브가 생성되지 않았습니다.", grade, scores, tarotCards, input.question, requestedStyle);
+    // B-152/153 fix: data-only 모드에서 tarot narrative 필드 제거
+    if (parsed?.tarot_reading) {
+      parsed.tarot_reading = { cards: parsed.tarot_reading.cards || [] };
+    }
+    if (parsed?.merged_reading) {
+      parsed.merged_reading = {};
+    }
   } else {
     console.log("GPT 호출 시작:", JSON.stringify({model: "gemini-2.5-pro", promptLength: modelInput.length}));
     try {

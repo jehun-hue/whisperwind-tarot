@@ -158,8 +158,8 @@ export function getFullSaju(
   });
 
   // 4. Day Pillar (JD cycle)
-  // B-116 fix: JD 기준 일주 오프셋 수정 (42 → 46, 1984-02-02 甲子일 기준 정렬)
-  const dIdx = Math.floor(jd + 0.5 + 46) % 60;
+  // B-116 fix v2: JD 기준 일주 오프셋 수정 (46 → 50, 壬申일 기준 재검증)
+  const dIdx = Math.floor(jd + 0.5 + 50) % 60;
   const dayPillar = { stem: STEMS[dIdx % 10], branch: BRANCHES[dIdx % 12] };
   const dayMaster = dayPillar.stem;
 
