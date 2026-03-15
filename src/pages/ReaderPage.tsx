@@ -68,8 +68,6 @@ export default function ReaderPage() {
   const [sessions, setSessions] = useState<ReadingSession[]>([]);
   const [selectedSession, setSelectedSession] = useState<ReadingSession | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [streamingText, setStreamingText] = useState<string>("");
-  const [isStreaming, setIsStreaming] = useState(false);
 
   const loadSessions = useCallback(async () => {
     const { data, error } = await supabase
@@ -265,6 +263,8 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
   const qType = session.question_type;
   const reading = session.ai_reading;
   const saju = session.saju_data;
+  const [streamingText, setStreamingText] = useState<string>("");
+  const [isStreaming, setIsStreaming] = useState(false);
 
   const renderSafe = (val: any): string => {
     if (val === null || val === undefined) return "";
