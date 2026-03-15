@@ -10,7 +10,7 @@
 export interface TimelineEvent {
   age: number;
   phase: string;
-  event_type: "relationship" | "career" | "finance" | "health" | "spirituality" | "transition";
+  event_type: "relationship" | "career" | "finance" | "health" | "spirituality" | "transition" | "migration" | "life_change";
   contributing_engines: string[];
   probability: number;         // 0~1
   window_start: string;        // "YYYY.MM" 형식

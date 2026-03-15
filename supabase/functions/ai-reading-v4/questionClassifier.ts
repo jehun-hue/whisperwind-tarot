@@ -5,10 +5,13 @@ export interface ClassificationResult {
   primary_topic: string;
   secondary_topic: string | null;
   subtopic: string | null;
+  sub_topics: string[];          // B-141: 멀티토픽 배열
   confidence: number;
   all_scores: Record<string, number>;
   language: string;
   question_length: number;
+  is_multi_topic: boolean;       // B-141: 복합 질문 여부
+  primary_category: string;      // B-141: 상위 카테고리
 }
 
 // ── 주제별 키워드 ─────────────────────────────────────────────────
@@ -46,6 +49,13 @@ const TOPIC_KEYWORDS: Record<string, string[]> = {
     "이주", "정착", "비자", "영주권", "이민가", "떠나", "귀향",
     "고향", "타지", "타향", "해외생활", "외국생활", "귀환",
     "독립", "자취", "분가", "집을 나가", "새 집", "새집", "인생"
+  ],
+  migration: [
+    "이민", "해외이주", "이주", "영주권", "비자", "해외정착", "외국이민",
+    "미국이민", "캐나다이민", "호주이민", "유럽이민", "이민가", "이민갈까",
+    "해외에서 살", "외국에서 살", "이민생활", "타국", "이민준비",
+    "해외취업", "워킹홀리데이", "워홀", "주재원", "해외발령",
+    "국적", "시민권", "귀화", "이중국적", "해외 생활", "해외 이사"
   ],
   health: [
     "건강", "병", "질병", "치료", "수술", "몸", "컨디션", "피로",
@@ -125,10 +135,13 @@ export function classifyQuestion(question: string): ClassificationResult {
       primary_topic: "general_future",
       secondary_topic: null,
       subtopic: null,
+      sub_topics: [],
       confidence: 0,
       all_scores: {},
       language: "ko",
-      question_length: 0
+      question_length: 0,
+      is_multi_topic: false,
+      primary_category: "general"
     };
   }
 
@@ -169,14 +182,29 @@ export function classifyQuestion(question: string): ClassificationResult {
     }
   }
 
+  // B-141: 멀티토픽 배열 및 카테고리 구성
+  const subTopics: string[] = [];
+  if (finalSecondary) subTopics.push(finalSecondary);
+  if (subtopic) subTopics.push(subtopic);
+
+  // 상위 카테고리 매핑
+  const CATEGORY_MAP: Record<string, string> = {
+    career: "life_work", relationship: "life_love", money: "life_wealth",
+    life_change: "life_transition", migration: "life_transition",
+    health: "life_wellbeing", family: "life_family", general_future: "general"
+  };
+
   return {
     primary_topic: finalPrimary,
     secondary_topic: finalSecondary,
     subtopic,
+    sub_topics: subTopics,
     confidence,
     all_scores: scores,
     language: "ko",
-    question_length: question.length
+    question_length: question.length,
+    is_multi_topic: subTopics.length > 0,
+    primary_category: CATEGORY_MAP[finalPrimary] ?? "general",
   };
 }
 
@@ -228,11 +256,23 @@ export async function classifyWithFallback(
     if (match) {
       const parsed = JSON.parse(match[0]);
       if (parsed.primary_topic) {
+        const CATEGORY_MAP: Record<string, string> = {
+          career: "life_work", relationship: "life_love", money: "life_wealth",
+          life_change: "life_transition", migration: "life_transition",
+          health: "life_wellbeing", family: "life_family", general_future: "general"
+        };
+        const updatedSubTopics = [...ruleResult.sub_topics];
+        if (parsed.secondary_topic && !updatedSubTopics.includes(parsed.secondary_topic)) {
+          updatedSubTopics.push(parsed.secondary_topic);
+        }
         return {
           ...ruleResult,
           primary_topic: parsed.primary_topic,
           secondary_topic: parsed.secondary_topic || ruleResult.secondary_topic,
-          confidence: 0.75
+          sub_topics: updatedSubTopics,
+          confidence: 0.75,
+          is_multi_topic: updatedSubTopics.length > 0,
+          primary_category: CATEGORY_MAP[parsed.primary_topic] ?? "general",
         };
       }
     }

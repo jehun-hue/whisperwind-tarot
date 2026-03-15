@@ -126,7 +126,6 @@ export function calculateConsensusV8(
   vectors.forEach(v => {
     const sys = v.system.toLowerCase();
     if (!systemGroups[sys]) systemGroups[sys] = {};
-    // Aggregate multiple vectors within same system
     Object.entries(v.vector).forEach(([dim, val]) => {
       systemGroups[sys][dim] = (systemGroups[sys][dim] || 0) + val;
     });
@@ -138,7 +137,6 @@ export function calculateConsensusV8(
   const alignmentMatrix: any[] = [];
   const systems = Object.keys(systemGroups);
 
-  // 출생시 미입력인 경우 가중치 조정 및 기준 시스템 수 결정
   // B-131 fix: customWeights(토픽 가중치) 우선 적용, 없으면 SYSTEM_WEIGHTS 사용
   const currentWeights = customWeights ? { ...customWeights } : { ...SYSTEM_WEIGHTS };
   let systemCriteria = 5;
@@ -148,15 +146,13 @@ export function calculateConsensusV8(
     systemCriteria = 3;
   }
 
-  // 출생지 없을 때 점성술 가중치 자동 하향 (#86)
   if (!birthPlaceProvided) {
     currentWeights["astrology"] = Math.min(
       currentWeights["astrology"] ?? 0.15,
-      0.08  // 출생지 없으면 점성술 가중치 최대 8%로 제한
+      0.08
     );
   }
 
-  // 벡터 크기 계산
   const getMagnitude = (vec: Record<string, number>) =>
     Math.sqrt(Object.values(vec).reduce((sum, v) => sum + v * v, 0));
 
@@ -182,7 +178,6 @@ export function calculateConsensusV8(
         totalWeight += pairWeight;
       }
 
-      // B-58: 충돌 감지 및 분류
       let conflict_level: ConflictLog["conflict_level"] = "none";
       let resolution = "일치 — 두 시스템 신호 강화";
       if (similarity < 0.0) {
@@ -196,7 +191,6 @@ export function calculateConsensusV8(
         resolution = "경미 충돌 — 두 관점 병기 후 내담자 판단 유도";
       }
 
-      // B-59: 자미두수·수비학 중재 가중치 적용
       let mediator: string | undefined;
       if (conflict_level === "moderate" || conflict_level === "severe") {
         const ziweiVec = systemGroups["ziwei"];
@@ -223,7 +217,6 @@ export function calculateConsensusV8(
 
   const consensus_score = Math.max(0, totalWeight > 0 ? totalConsensus / totalWeight : 0);
 
-  // B-60: confidence_score — 합의도 높을수록 강화, 충돌 많을수록 감소
   const reportingSystemsCount = systems.filter(sys => (currentWeights[sys] || 0) > 0).length;
   const severeConflicts = conflictLog.filter(c => c.conflict_level === "severe").length;
   const moderateConflicts = conflictLog.filter(c => c.conflict_level === "moderate").length;
@@ -233,10 +226,8 @@ export function calculateConsensusV8(
     + consensusBonus - conflictPenalty;
   const confidence_score = Math.max(0, Math.min(1.0, rawConfidence));
 
-  // 4. Final Prediction Strength
   const prediction_strength = Math.max(0, consensus_score * confidence_score);
 
-  // 5. Aggregate Dominant Vector
   const dominantVector: Record<string, number> = {};
   Object.entries(systemGroups).forEach(([sys, vec]) => {
     const mag = getMagnitude(vec);
@@ -248,7 +239,6 @@ export function calculateConsensusV8(
     }
   });
 
-  // 충돌 요약 생성
   const severeCount = conflictLog.filter(c => c.conflict_level === "severe").length;
   const moderateCount = conflictLog.filter(c => c.conflict_level === "moderate").length;
   const conflict_summary = severeCount > 0
@@ -274,7 +264,8 @@ export function calculateConsensusV8(
 
 export type QuestionTopic =
   | "relationship" | "career" | "finance" | "health"
-  | "spirituality" | "family" | "decision" | "general";
+  | "spirituality" | "family" | "decision" | "general"
+  | "migration" | "life_change" | "money";
 
 const TOPIC_WEIGHTS: Record<QuestionTopic, Record<string, number>> = {
   relationship: { tarot: 0.45, astrology: 0.25, saju: 0.15, ziwei: 0.10, numerology: 0.05 },
@@ -284,6 +275,9 @@ const TOPIC_WEIGHTS: Record<QuestionTopic, Record<string, number>> = {
   spirituality: { tarot: 0.40, numerology: 0.25, ziwei: 0.20, astrology: 0.10, saju: 0.05 },
   family:       { tarot: 0.35, saju: 0.30, ziwei: 0.20, astrology: 0.10, numerology: 0.05 },
   decision:     { tarot: 0.45, saju: 0.20, astrology: 0.20, ziwei: 0.10, numerology: 0.05 },
+  migration:    { tarot: 0.35, ziwei: 0.30, astrology: 0.20, saju: 0.10, numerology: 0.05 },
+  life_change:  { tarot: 0.35, saju: 0.25, ziwei: 0.20, astrology: 0.15, numerology: 0.05 },
+  money:        { tarot: 0.20, saju: 0.40, ziwei: 0.25, astrology: 0.10, numerology: 0.05 },
   general:      { tarot: 0.40, saju: 0.25, ziwei: 0.20, astrology: 0.10, numerology: 0.05 },
 };
 
@@ -302,7 +296,7 @@ export function getTopicWeights(topic: QuestionTopic | string): Record<string, n
  * - birthTimeProvided=false 시 is_time_unknown 플래그 포함
  */
 export function calculateConsensusWithTopic(
-  vectors: import("./symbolicPatternEngine.ts").SymbolicVector[],
+  vectors: SymbolicVector[],
   topic: QuestionTopic | string = "general",
   birthTimeProvided: boolean = true,
   birthPlaceProvided: boolean = true
@@ -314,15 +308,12 @@ export function calculateConsensusWithTopic(
   if (!birthTimeProvided) {
     topicWeights["ziwei"] = 0;
     topicWeights["astrology"] = Math.min(topicWeights["astrology"] ?? 0.1, 0.05);
-    // 나머지 가중치 재정규화
     const total = Object.values(topicWeights).reduce((s, v) => s + v, 0);
     for (const k of Object.keys(topicWeights)) {
-      topicWeights[k] = topicWeights[k] / total;
+      topicWeights[k] = (total > 0) ? topicWeights[k] / total : topicWeights[k];
     }
   }
 
-  // 기존 calculateConsensusV8 결과에 topic 가중치 메타 추가
-  // B-131 fix: 토픽 가중치를 실제 계산에 전달
   const base = calculateConsensusV8(vectors, birthTimeProvided, birthPlaceProvided, topicWeights);
 
   return {
