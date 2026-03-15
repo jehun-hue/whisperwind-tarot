@@ -15,10 +15,12 @@ export interface SajuAnalysisResult {
   tenGods: Record<string, number>;
   yongShin: string;
   daewoon: any | null; 
+  interactions: Interaction[];
 }
 
 import { getDaewoonInfo, calculateFullDaewoon, type DaewoonResult } from "./lib/daewoon.ts";
 import { STEMS, BRANCHES, FIVE_ELEMENTS_MAP } from "./lib/fiveElements.ts";
+import { calculateInteractions, type Interaction } from "./lib/interactions.ts";
 
 // ═══════════════════════════════════════
 // 천간(天干) 오행 매핑
@@ -164,17 +166,17 @@ function detectBanghap(branches: string[]): string[] {
 // ═══════════════════════════════════════
 // 형살(刑殺) 감지 (삼형살)
 // ═══════════════════════════════════════
-const HYUNG_GROUPS: [string, string, string][] = [
-  ["寅", "巳", "申"],  // 무은지형(無恩之刑)
-  ["丑", "戌", "未"],  // 무례지형(無禮之刑)
+const HYUNG_GROUPS: [string, string, string, string][] = [
+  ["寅", "巳", "申", "寅巳申 삼형살(무은지형)"],
+  ["丑", "戌", "未", "丑戌未 삼형살(무례지형)"],
 ];
 
 function detectHyung(branches: string[]): string[] {
   const result: string[] = [];
   const branchSet = new Set(branches);
-  for (const [a, b, c] of HYUNG_GROUPS) {
+  for (const [a, b, c, label] of HYUNG_GROUPS) {
     if (branchSet.has(a) && branchSet.has(b) && branchSet.has(c)) {
-      result.push(`형살 존재`);
+      result.push(`${label} 존재`);
       break;
     }
   }
@@ -205,7 +207,8 @@ export async function analyzeSajuStructure(
       narrative: "사주 데이터가 부족합니다.",
       tenGods: {},
       yongShin: "Unknown",
-      daewoon: null
+      daewoon: null,
+      interactions: []
     };
   }
 
@@ -231,15 +234,17 @@ export async function analyzeSajuStructure(
     }
   });
 
-  // 지지 장간 분석 (모든 지지의 장간 포함)
-  branches.forEach(b => {
+  // 지지 장간 분석 (월령 가중치 적용)
+  branches.forEach((b, branchIdx) => {
     const hiddenStems = HIDDEN_STEMS[b] || [];
+    // 월지(index 1)는 월령으로 가중치 2.5배 적용
+    const monthBonus = branchIdx === 1 ? 2.5 : 1.0;
     hiddenStems.forEach((hs, idx) => {
       const el = STEM_ELEMENT[hs];
       if (el) {
         const rel = getRelation(myElement, el);
         // 본기(idx=0)는 1.0, 중기(idx=1)는 0.5, 여기(idx=2)는 0.3 가중
-        const weight = idx === 0 ? 1.0 : idx === 1 ? 0.5 : 0.3;
+        const weight = (idx === 0 ? 1.0 : idx === 1 ? 0.5 : 0.3) * monthBonus;
         if (tenGodCount[rel] !== undefined) tenGodCount[rel] += weight;
       }
     });
@@ -254,29 +259,66 @@ export async function analyzeSajuStructure(
   const supportRatio = totalPower > 0 ? supportPower / totalPower : 0.5;
 
   let strength: string;
-  if (supportRatio >= 0.7) strength = "극신강";
-  else if (supportRatio >= 0.55) strength = "중신강";
-  else if (supportRatio >= 0.4) strength = "중신약";
+  if (supportRatio >= 0.65) strength = "극신강";
+  else if (supportRatio >= 0.52) strength = "신강";
+  else if (supportRatio >= 0.45) strength = "중화";
+  else if (supportRatio >= 0.38) strength = "중신약";
+  else if (supportRatio >= 0.28) strength = "신약";
   else strength = "극신약";
 
   // ── 3. 용신(用神) 추론 ──
-  // 신강 → 식상(설)/재성(극)/관성(극)이 용신
-  // 신약 → 비겁(부)/인성(생)이 용신
-  let yongsin: string;
-  if (strength === "극신강" || strength === "중신강") {
-    const drainElements = [getProducedElement(myElement), getConqueredElement(myElement), getConqueringElement(myElement)];
-    // 조후(Temperature) 고려: 화(火)가 강하면 수(水)를 우선 탐색
-    if (myElement === "화" || elements["화"] >= 3) {
-      yongsin = elements["수"] <= 1 ? "수" : drainElements[1]; 
-    } else {
-      // 일반적인 경우 가장 약한 극설 오행
-      const candidates = drainElements.sort((a, b) => (elements[a] || 0) - (elements[b] || 0));
-      yongsin = candidates[0];
-    }
+  // 월지 기준 계절 파악
+  const monthBranch = branches[1]; // 월지
+  const SEASON_MAP: Record<string, string> = {
+    "寅": "봄", "卯": "봄", "辰": "봄",
+    "巳": "여름", "午": "여름", "未": "여름",
+    "申": "가을", "酉": "가을", "戌": "가을",
+    "亥": "겨울", "子": "겨울", "丑": "겨울"
+  };
+  const season = SEASON_MAP[monthBranch] || "봄";
+
+  // 조후용신 결정
+  let johuYong: string | null = null;
+  if (season === "여름" && (elements["수"] || 0) <= 1) johuYong = "수";
+  else if (season === "겨울" && (elements["화"] || 0) <= 1) johuYong = "화";
+
+  // 억부용신 결정
+  let eokbuYong: string;
+  if (strength === "극신강" || strength === "신강") {
+    // 신강 → 설기/재성/관성 중 가장 부족한 오행
+    const drainElements = [
+      getProducedElement(myElement),   // 식상
+      getConqueredElement(myElement),  // 재성
+      getConqueringElement(myElement)  // 관성
+    ];
+    eokbuYong = drainElements.sort((a, b) => (elements[a] || 0) - (elements[b] || 0))[0];
+  } else if (strength === "중화") {
+    // 중화 → 전체 오행 중 가장 부족한 오행
+    const allElements = ["목", "화", "토", "금", "수"];
+    eokbuYong = allElements.sort((a, b) => (elements[a] || 0) - (elements[b] || 0))[0];
   } else {
-    // 신약: 나를 돕는 비겁(myElement)과 나를 생하는 인성(getProducingElement) 중 선택
-    const supportElements = [myElement, getProducingElement(myElement)];
-    yongsin = (elements[myElement] || 0) <= (elements[getProducingElement(myElement)] || 0) ? myElement : getProducingElement(myElement);
+    // 신약/중신약/극신약 → 일간 오행 자체가 부족하면 비겁, 생조 오행이 부족하면 인성
+    const supElement = getProducingElement(myElement); // 인성 오행
+    const myElemCount = elements[myElement] || 0;
+    const supElemCount = elements[supElement] || 0;
+    // 일간 오행이 이미 충분하면(3개 이상) 인성보다 비겁 우선
+    if (myElemCount >= 3) {
+      eokbuYong = myElement; // 비겁 용신
+    } else if (supElemCount <= 1) {
+      eokbuYong = supElement; // 인성 용신
+    } else {
+      eokbuYong = (supElemCount < myElemCount) ? supElement : myElement;
+    }
+  }
+
+  // 최종 용신: 조후 + 억부 모두 반환 (조후 우선, 억부 병행)
+  let yongsin: string;
+  if (johuYong && johuYong !== eokbuYong) {
+    yongsin = `${johuYong}/${eokbuYong}`; // 예: "화/토"
+  } else if (johuYong) {
+    yongsin = johuYong; // 조후=억부 일치
+  } else {
+    yongsin = eokbuYong; // 조후 없음 → 억부만
   }
 
   // ── 4. Characteristics 생성 ──
@@ -400,15 +442,38 @@ export async function analyzeSajuStructure(
       `이 시기의 주요 에너지는 ${cd.tenGodStem}(천간)과 ${cd.tenGodBranch}(지지)입니다.`;
   }
 
-  return { 
-    dayMaster: dm, 
-    strength, 
-    elements, 
-    characteristics, 
-    narrative, 
-    tenGods: tenGodCount, 
-    yongShin: yongsin, 
-    daewoon 
+  // B-70new: 천간합·지지충·삼합·육합·삼형살 사전 연산
+  const interactionStems = [
+    pillars.year?.stem,
+    pillars.month?.stem,
+    pillars.day?.stem,
+    pillars.hour?.stem,
+  ].filter((s): s is string => !!s);
+  const interactionBranches = [
+    pillars.year?.branch,
+    pillars.month?.branch,
+    pillars.day?.branch,
+    pillars.hour?.branch,
+  ].filter((b): b is string => !!b);
+  const interactions = calculateInteractions(interactionStems, interactionBranches);
+
+  // 충·형살이 있으면 characteristics에 추가
+  interactions.forEach(inter => {
+    if (inter.severity === "흉") {
+      characteristics.push(`${inter.type}(${inter.elements.join("·")}): ${inter.meaning_keyword}`);
+    }
+  });
+
+  return {
+    dayMaster: dm,
+    strength,
+    elements,
+    characteristics,
+    narrative,
+    tenGods: tenGodCount,
+    yongShin: yongsin,
+    daewoon,
+    interactions,
   };
 }
 

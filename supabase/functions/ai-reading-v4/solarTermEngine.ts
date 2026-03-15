@@ -47,27 +47,40 @@ export function getSunLongitude(jd: number): number {
 }
 
 export function findSolarTermJD(year: number, targetLong: number): number {
-  // Chun-bun (0 degrees) is roughly March 21st (day 80)
+  // 춘분(0°) 기준 Jan 1에서 약 80일
   const jan1JD = new Date(Date.UTC(year, 0, 1)).getTime() / 86400000 + 2440587.5;
-  
-  // Calculate approximate days from Jan 1st based on target longitude
-  // Longitude 0 is ~day 80.
+
+  // 초기 추정값: 목표 황경 기준 대략적 날짜
   let daysFromChunbun = (targetLong - 0 + 360) % 360 * (365.2422 / 360);
   let jd = jan1JD + 79 + daysFromChunbun;
-  
-  // Ensure we stay within the target year's neighborhood
+
+  // 연도 범위 보정
   if (jd > jan1JD + 366) jd -= 365.2422;
   if (jd < jan1JD) jd += 365.2422;
 
-  // Iterative refinement
-  for (let i = 0; i < 8; i++) {
+  // 정밀 반복 수렴 (허용 오차: 0.00001° ≈ 1초 미만)
+  for (let i = 0; i < 50; i++) {
     const currentLong = getSunLongitude(jd);
     let diff = (currentLong - targetLong + 180) % 360 - 180;
-    jd -= diff / 0.9856;
+
+    // 태양 실제 속도 보정 (근일점 부근 빠름, 원일점 부근 느림)
+    // 평균 0.9856°/day, 실제 범위: 0.9533(7월)~1.0194(1월)
+    const T = (jd - 2451545.0) / 36525.0;
+    const M = ((357.52911 + 35999.05029 * T) % 360 + 360) % 360;
+    const e = 0.016708634 - 0.000042037 * T;
+    const sunSpeed = 0.9856 * (1 - e * Math.cos(M * Math.PI / 180)) /
+                     Math.pow(1 - e * Math.cos(M * Math.PI / 180), 2);
+
+    jd -= diff / sunSpeed;
+
+    // 수렴 판정: 오차 0.00001° 이하 (시간 기준 약 1초)
+    if (Math.abs(diff) < 0.00001) break;
   }
-  
+
   return jd;
 }
 
+// 절기 황경 목록 (12절기 기준, 입춘부터)
+// 입춘315° 경칩345° 청명15° 입하45° 망종75° 소서105°
+// 입추135° 백로165° 한로195° 입동225° 대설255° 소한285°
 export const MONTH_JEOL_LONGS = [315, 345, 15, 45, 75, 105, 135, 165, 195, 225, 255, 285];
-// Ip-chun(315), Gyeong-chip(345), Cheong-myeong(15), ...

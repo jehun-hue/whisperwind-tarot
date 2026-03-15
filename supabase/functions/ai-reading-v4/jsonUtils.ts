@@ -6,6 +6,12 @@
 export function safeParseGeminiJSON(rawText: string, fallback: any = {}): any {
   if (!rawText || typeof rawText !== 'string') return fallback;
 
+  // Step 0: If response is already clean JSON (from responseMimeType: application/json)
+  try {
+    const direct = JSON.parse(rawText.trim());
+    if (direct && typeof direct === 'object') return direct;
+  } catch {}
+
   // Step 1: Extract JSON candidate
   let jsonString = '';
   const codeBlockMatch = rawText.match(/```(?:json)?\s*([\s\S]*?)```/);

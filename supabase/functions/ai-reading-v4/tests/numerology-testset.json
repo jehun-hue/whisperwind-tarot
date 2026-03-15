@@ -1,0 +1,18 @@
+{
+  "version": "1.0",
+  "engine": "numerology",
+  "total_cases": 10,
+  "description": "B-83: 수비학 엔진 정확도 검증 테스트셋",
+  "cases": [
+    { "id": "N-001", "description": "생명수 7 일반", "input": { "birthDate": "1990-06-15", "name": "김민지", "currentYear": 2026 }, "expected": { "life_path_number": 7 }, "tags": ["life_path"] },
+    { "id": "N-002", "description": "마스터 넘버 11 유지", "input": { "birthDate": "1984-11-29", "name": "이나현", "currentYear": 2026 }, "expected": { "life_path_number": 11, "is_master_number": true }, "tags": ["master_number"] },
+    { "id": "N-003", "description": "마스터 넘버 22 유지", "input": { "birthDate": "1975-04-22", "name": "박지성", "currentYear": 2026 }, "expected": { "is_master_number": true }, "tags": ["master_number"] },
+    { "id": "N-004", "description": "마스터 넘버 33 유지", "input": { "birthDate": "1969-12-06", "name": "홍길동", "currentYear": 2026 }, "expected": { "is_master_number": true }, "tags": ["master_number"] },
+    { "id": "N-005", "description": "개인년 계산 2026", "input": { "birthDate": "1989-01-04", "name": "이나현", "currentYear": 2026 }, "expected": { "personal_year": 9 }, "tags": ["personal_year"] },
+    { "id": "N-006", "description": "운명수 계산 (한글 이름)", "input": { "birthDate": "1990-03-20", "name": "김철수", "currentYear": 2026 }, "expected": {}, "tags": ["destiny_number"] },
+    { "id": "N-007", "description": "이름 없을 때 운명수 null", "input": { "birthDate": "1990-03-20", "name": "", "currentYear": 2026 }, "expected": { "destiny_number": null }, "tags": ["no_name"] },
+    { "id": "N-008", "description": "compound_number 원본 합계 확인", "input": { "birthDate": "1984-11-29", "name": "이나현", "currentYear": 2026 }, "expected": {}, "tags": ["compound_number"] },
+    { "id": "N-009", "description": "생명수 1 (독립·개척)", "input": { "birthDate": "1991-01-01", "name": "최민", "currentYear": 2026 }, "expected": { "life_path_number": 1 }, "tags": ["life_path"] },
+    { "id": "N-010", "description": "생명수 9 (완성·봉사)", "input": { "birthDate": "1980-09-27", "name": "정수빈", "currentYear": 2026 }, "expected": { "life_path_number": 9 }, "tags": ["life_path"] }
+  ]
+}

@@ -6,7 +6,7 @@
  * - v9: 17장 → 78장 전체 벡터 완성
  */
 
-export type TarotCategory = "relationship" | "reconciliation" | "dating" | "marriage" | "career" | "business" | "finance" | "life_direction" | "self_growth" | "general_future";
+export type TarotCategory = "relationship" | "reconciliation" | "dating" | "marriage" | "career" | "business" | "finance" | "life_direction" | "self_growth" | "general_future" | "health";
 
 export interface TarotCardPattern {
   name: string;
@@ -18,14 +18,34 @@ export interface TarotCardPattern {
 // ══════════════════════════════════════
 export function classifyTarotQuestion(question: string): TarotCategory {
   const q = question.toLowerCase();
-  if (/(헤어짐|재회|다시\s*만남|전남친|전여친|전애인|이별|끝난|돌아올|미련|차단)/.test(q)) return "reconciliation";
-  if (/(결혼|상견례|식장|배우자|프로포즈)/.test(q)) return "marriage";
-  if (/(연애|사랑|썸|남자친구|여자친구|짝사랑|연락|마음|호감|설레|고백|인연|솔로|좋아하는|사귈)/.test(q)) return "relationship";
-  if (/(직장|이직|회사|취업|승진|퇴사|면접|연봉|자격증|공무원|커리어|프리랜서)/.test(q)) return "career";
-  if (/(사업|창업|매출|동업|가게|프랜차이즈|비즈니스|투자유치|거래처)/.test(q)) return "business";
-  if (/(돈|재물|금전|재정|투자|주식|부동산|로또|빚|저축|보너스|상속)/.test(q)) return "finance";
-  if (/(나아갈\s*길|방향|목표|인생|앞으로|진로)/.test(q)) return "life_direction";
-  if (/(성장|공부|자아|자기계발|시험|학업)/.test(q)) return "self_growth";
+
+  if (/(헤어짐|재회|다시\s*만남|전남친|전여친|전애인|이별|끝난|돌아올|미련|차단)/.test(q))
+    return "reconciliation";
+
+  if (/(결혼|상견례|식장|배우자|프로포즈)/.test(q))
+    return "marriage";
+
+  if (/(연애|사랑|썸|남자친구|여자친구|짝사랑|연락|마음|호감|설레|고백|인연|솔로|좋아하는|사귈)/.test(q))
+    return "relationship";
+
+  if (/(직장|이직|회사|취업|승진|퇴사|면접|연봉|자격증|공무원|커리어|프리랜서)/.test(q))
+    return "career";
+
+  if (/(사업|창업|매출|동업|가게|프랜차이즈|비즈니스|투자유치|거래처)/.test(q))
+    return "business";
+
+  if (/(돈|재물|금전|재정|투자|주식|부동산|로또|빚|저축|보너스|상속)/.test(q))
+    return "finance";
+
+  if (/(건강|병|치료|수술|피로|스트레스|우울|불안|다이어트|운동|임신|출산|체력|통증|아프|질병|회복|몸|심리|정신건강|면역)/.test(q))
+    return "health";
+
+  if (/(나아갈\s*길|방향|목표|인생|앞으로|진로|귀국|이민|해외|유학|이사|변화|전환|새출발|선택|갈림길|운명)/.test(q))
+    return "life_direction";
+
+  if (/(성장|공부|자아|자기계발|시험|학업)/.test(q))
+    return "self_growth";
+
   return "general_future";
 }
 
@@ -181,15 +201,26 @@ export function runTarotSymbolicEngine(cards: any[], question: string) {
     Object.entries(baseVector).forEach(([key, val]) => {
       let adjustedVal = val * weight * orientationModifier;
       
-      // 역방향일 때 특정 긍정 차원 감소
+      // 역방향일 때 긍정 차원 감소 / 부정 차원 증폭 (실제 벡터 키 기준)
       if (isReversed) {
-        const positiveKeys = ["fulfillment", "victory", "abundance", "hope", "stability", "growth", "healing"];
-        const negativeKeys = ["fear", "insecurity", "trapped", "illusion", "confusion", "stagnation", "burden", "conflict"];
-        
+        const positiveKeys = [
+          "fulfillment", "victory", "abundance", "hope", "stability", "growth", "healing",
+          "new_beginning", "opportunity", "manifestation", "leadership", "authority",
+          "inner_strength", "recovery", "wisdom", "luck_shift", "cycle_change",
+          "relationship_union", "emotional_connection", "nurturing", "comfort",
+          "determination", "initiative", "skill_use", "movement"
+        ];
+        const negativeKeys = [
+          "fear", "insecurity", "trapped", "illusion", "confusion", "stagnation",
+          "burden", "conflict", "uncertainty", "risk_taking", "endings",
+          "life_reset", "transformation", "hidden_information", "passive_waiting",
+          "solitude", "introspection", "responsibility"
+        ];
+
         if (positiveKeys.includes(key)) {
-          adjustedVal *= 0.5; // 긍정 에너지 절반
+          adjustedVal *= 0.4; // 긍정 에너지 60% 감소
         } else if (negativeKeys.includes(key)) {
-          adjustedVal *= 1.4; // 부정 에너지 증폭
+          adjustedVal *= 1.5; // 부정 에너지 50% 증폭
         }
       }
 
@@ -200,7 +231,9 @@ export function runTarotSymbolicEngine(cards: any[], question: string) {
   // 신뢰도: 매칭된 카드 비율 반영
   const totalCards = cards.length || 1;
   const matchRatio = matchedCards / totalCards;
-  const confidence = Math.min(0.99, 0.5 + (matchRatio * 0.4) + (totalCards >= 3 ? 0.1 : 0));
+  const reversedCount = cards.filter(c => c.isReversed === true).length;
+  const reversedPenalty = reversedCount / totalCards * 0.1; // 역방향 비율만큼 최대 10% 신뢰도 감소
+  const confidence = Math.min(0.99, 0.5 + (matchRatio * 0.4) + (totalCards >= 3 ? 0.1 : 0) - reversedPenalty);
 
   return {
     category,

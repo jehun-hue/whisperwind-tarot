@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Sparkles, Shield, Heart, Calendar, Lightbulb, AlertTriangle, Clover, Share2, Bookmark, ArrowRight, CheckCircle2, XCircle } from "lucide-react";
 import cardBackImg from "@/assets/card-back.png";
 import { TarotCard } from "./TarotCard";
+import { tarotCards } from "@/data/tarotCards";
 
 // ─── Types ───
 export interface V3ReadingData {
@@ -33,10 +34,17 @@ export interface V3ReadingData {
     lucky?: { color?: string; number?: string; direction?: string; day?: string; item?: string };
   };
   final_message?: { title?: string; summary?: string };
+  validation?: {
+    is_valid?: boolean;
+    warnings?: string[];
+    data_completeness?: number;
+    active_systems?: string[];
+    degraded_systems?: Record<string, string>;
+  };
 }
 
 interface TarotSection {
-  cards?: { name?: string; position?: string; reversed?: boolean }[];
+  cards?: { name?: string; korean?: string; position?: string; reversed?: boolean }[];
   story?: string;
   key_message?: string;
 }
@@ -132,16 +140,18 @@ function LoadingScreen({ grade }: { grade?: string }) {
 }
 
 // ─── Tarot Card Visual ───
-function TarotCardVisual({ card, isWaite }: { card: { name?: string; position?: string; reversed?: boolean }; isWaite: boolean }) {
+function TarotCardVisual({ card, isWaite }: { card: { name?: string; korean?: string; position?: string; reversed?: boolean }; isWaite: boolean }) {
   return (
-    <div className="flex flex-col items-center gap-1 min-w-[70px]">
+    <div className="flex flex-col items-center gap-1 min-w-[70px] md:min-w-[90px] lg:min-w-[140px] lg:transition-transform lg:duration-300 lg:hover:-translate-y-1">
       <TarotCard 
         name={card.name || ""} 
+        koreanName={card.korean || card.name || ""}
         isReversed={card.reversed} 
         size="sm"
+        className="md:w-20 md:min-h-[8rem] md:text-[10px] lg:w-32 lg:min-h-[12rem] lg:text-xs"
         showName={true}
       />
-      <span className="text-[9px] text-muted-foreground text-center max-w-[70px] truncate whitespace-nowrap break-keep">{card.position}</span>
+      <span className="text-[9px] md:text-[11px] lg:text-xs text-muted-foreground text-center max-w-[70px] md:max-w-[90px] lg:max-w-[130px] truncate whitespace-nowrap break-keep">{card.position}</span>
     </div>
   );
 }
@@ -156,8 +166,14 @@ function TarotTabContent({ section, tarotKey, maxStoryLength }: { section: Tarot
   return (
     <div className="space-y-4">
       {section.cards && section.cards.length > 0 && (
-        <div className="flex justify-center gap-3 overflow-x-auto pb-2">
-          {section.cards.map((c, i) => <TarotCardVisual key={i} card={c} isWaite={isWaite} />)}
+        <div className="flex flex-wrap md:flex-nowrap justify-center gap-3 md:gap-4 lg:gap-6 pb-2">
+          {section.cards.map((c, i) => {
+            const enrichedCard = {
+              ...c,
+              korean: c.korean || tarotCards.find(t => t.name === c.name)?.korean || c.name || ""
+            };
+            return <TarotCardVisual key={i} card={enrichedCard} isWaite={isWaite} />;
+          })}
         </div>
       )}
       <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-line">{story}</p>
@@ -454,6 +470,35 @@ export default function ReadingResultV3({
               </motion.h2>
             )}
             <GradeBadge grade={conv?.grade || grade} />
+
+            {/* 출생 정보 경고 배너 */}
+            {reading?.validation?.warnings && reading.validation.warnings.length > 0 && (
+              <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-left space-y-1">
+                {reading.validation.warnings.includes("birth_time_missing") && (
+                  <p className="text-[11px] text-amber-400 flex items-center gap-1.5">
+                    <span>⚠️</span>
+                    <span>출생 시간이 확인되지 않아 자미두수·점성술 분석이 제한되었습니다.</span>
+                  </p>
+                )}
+                {reading.validation.warnings.includes("birth_place_missing") && (
+                  <p className="text-[11px] text-amber-400 flex items-center gap-1.5">
+                    <span>⚠️</span>
+                    <span>출생지 정보가 없어 점성술 정밀도가 낮을 수 있습니다.</span>
+                  </p>
+                )}
+                {reading.validation.warnings.includes("low_consensus_score") && (
+                  <p className="text-[11px] text-amber-400 flex items-center gap-1.5">
+                    <span>⚠️</span>
+                    <span>점술 시스템 간 일치도가 낮습니다. 결과 해석 시 참고하세요.</span>
+                  </p>
+                )}
+                {reading.validation.data_completeness !== undefined && (
+                  <p className="text-[10px] text-muted-foreground/60 mt-1">
+                    데이터 완전성: {Math.round((reading.validation.data_completeness) * 100)}%
+                  </p>
+                )}
+              </div>
+            )}
             {grade === "S" && (
               <p className="text-[10px] text-muted-foreground/60">6체계 교차검증 완료</p>
             )}

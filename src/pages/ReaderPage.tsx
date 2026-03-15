@@ -68,6 +68,8 @@ export default function ReaderPage() {
   const [sessions, setSessions] = useState<ReadingSession[]>([]);
   const [selectedSession, setSelectedSession] = useState<ReadingSession | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [streamingText, setStreamingText] = useState<string>("");
+  const [isStreaming, setIsStreaming] = useState(false);
 
   const loadSessions = useCallback(async () => {
     const { data, error } = await supabase
@@ -410,11 +412,11 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       await supabase.from("reading_sessions").update({
         ai_reading: result as any,
         saju_data: sajuDataForAI as any,
-        tarot_score: result.scores?.tarot || null,
-        saju_score: result.scores?.saju || null,
-        astrology_score: result.scores?.astrology || null,
-        ziwei_score: result.scores?.ziwei || null,
-        final_confidence: result.scores?.overall || null,
+        tarot_score: result.scores?.tarot?.total ?? result.scores?.tarot ?? null,
+        saju_score: result.scores?.saju?.total ?? result.scores?.saju ?? null,
+        astrology_score: result.scores?.astrology?.total ?? result.scores?.astrology ?? null,
+        ziwei_score: result.scores?.ziwei?.total ?? result.scores?.ziwei ?? null,
+        final_confidence: result.scores?.overall ?? null,
         status: "completed",
       }).eq("id", session.id);
 
@@ -422,11 +424,12 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
         ...session,
         ai_reading: result,
         saju_data: sajuDataForAI,
-        tarot_score: result.scores?.tarot,
-        saju_score: result.scores?.saju,
-        astrology_score: result.scores?.astrology,
-        ziwei_score: result.scores?.ziwei,
-        final_confidence: result.scores?.overall,
+        tarot_score: result.scores?.tarot?.total ?? result.scores?.tarot ?? null,
+        saju_score: result.scores?.saju?.total ?? result.scores?.saju ?? null,
+        astrology_score: result.scores?.astrology?.total ?? result.scores?.astrology ?? null,
+        ziwei_score: result.scores?.ziwei?.total ?? result.scores?.ziwei ?? null,
+        final_confidence: result.scores?.overall ?? null,
+        confidence: result.scores?.overall ?? null,
         status: "completed",
       });
     } catch (err) {
@@ -525,9 +528,45 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
         userName: currentSession.user_name,
       };
 
-      const { data: aiData, error: fnError } = await supabase.functions.invoke("ai-reading-v4", {
-        body: fnBody,
-      });
+      // 스트리밍: UI 체감 속도 향상용 (병렬 실행)
+      setStreamingText("");
+      setIsStreaming(true);
+
+      const supabaseUrl = (supabase as any).supabaseUrl || import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = (supabase as any).supabaseKey || import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+      // 스트리밍(UI용)과 full 분석(DB 저장용)을 병렬 실행
+      const [{ data: aiData, error: fnError }] = await Promise.all([
+        // full 모드: 실제 AI 내러티브 생성 및 DB 저장용
+        supabase.functions.invoke("ai-reading-v4", {
+          body: fnBody,
+        }),
+        // 스트리밍: UI에 실시간 텍스트 표시용
+        fetch(
+          `${supabaseUrl}/functions/v1/ai-reading-v4`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${supabaseKey}`,
+              "apikey": supabaseKey,
+            },
+            body: JSON.stringify({ ...fnBody, mode: "stream", modelInput: fnBody.question }),
+          }
+        ).then(async (streamRes) => {
+          if (streamRes.ok && streamRes.body) {
+            const reader = streamRes.body.getReader();
+            const decoder = new TextDecoder();
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              const chunk = decoder.decode(value, { stream: true });
+              setStreamingText(prev => prev + chunk);
+            }
+          }
+          setIsStreaming(false);
+        }).catch(() => { setIsStreaming(false); }),
+      ]);
 
       console.log(`[runAIAnalysisV2] Edge function response received for ${style}`);
 
@@ -607,8 +646,13 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
   };
 
   const applyPersonaMerge = async (style: 'e7l3' | 'e5l5' | 'l7e3') => {
+    if (!session.ai_reading?.tarot_reading?.choihanna && !session.ai_reading?.tarot_reading?.monad) {
+      alert("최한나 또는 모나드 분석을 먼저 실행해 주세요.");
+      return;
+    }
     if (!session.ai_reading?.tarot_reading?.choihanna || !session.ai_reading?.tarot_reading?.monad) {
-      alert("최한나와 모나드 분석이 모두 완료되어야 병합이 가능합니다.");
+      const missing = !session.ai_reading?.tarot_reading?.choihanna ? "최한나" : "모나드";
+      alert(`${missing} 분석이 아직 완료되지 않았습니다. ${missing} 분석을 먼저 실행해 주세요.`);
       return;
     }
 
@@ -733,8 +777,13 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
         ...result,
         // 데이터 분석 실행 시 기존 내러티브 데이터 보호 (이미 있으면 유지)
         tarot_reading: {
-          ...(existingReading.tarot_reading || {}),
           ...(result.tarot_reading || {}),
+          // B-115 fix: data-only 모드에서 기존 내러티브(hanna/monad/persona) 보호
+          ...(existingReading.tarot_reading?.choihanna ? { choihanna: existingReading.tarot_reading.choihanna } : {}),
+          ...(existingReading.tarot_reading?.monad ? { monad: existingReading.tarot_reading.monad } : {}),
+          ...(existingReading.tarot_reading?.e7l3 ? { e7l3: existingReading.tarot_reading.e7l3 } : {}),
+          ...(existingReading.tarot_reading?.e5l5 ? { e5l5: existingReading.tarot_reading.e5l5 } : {}),
+          ...(existingReading.tarot_reading?.l7e3 ? { l7e3: existingReading.tarot_reading.l7e3 } : {}),
         },
         merged_reading: (existingReading.merged_reading && Object.keys(existingReading.merged_reading).length > 0)
           ? existingReading.merged_reading
@@ -810,19 +859,14 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       const s3 = await runDataOnlyAnalysis(true, s2 || s1 || undefined);
       
       console.log("[runSequentialAnalysis] All steps finished");
-      // 최신 데이터를 반영하기 위해 applyPersonaMerge 내의 session 참조가 최신이어야 함
-      // 또는 applyPersonaMerge를 호출하기 전에 상태 업데이트가 반영되도록 함
-      // 여기서는 버튼이 눌린 후 개별적으로 눌러도 되지만, 
-      // 편의를 위해 약간의 지연 후 실행하거나 직접 로직을 수행할 수 있음
       toast.info("통합 스타일 병합을 시작합니다...");
-      setTimeout(() => {
-        const btnE7 = document.getElementById('btn-merge-e7l3');
-        const btnE5 = document.getElementById('btn-merge-e5l5');
-        const btnL7 = document.getElementById('btn-merge-l7e3');
-        btnE7?.click();
-        btnE5?.click();
-        btnL7?.click();
-      }, 1000);
+
+      // 순차 병합: 동시 클릭 방지, 각 스타일을 순서대로 직접 실행
+      await applyPersonaMerge('e7l3');
+      await applyPersonaMerge('e5l5');
+      await applyPersonaMerge('l7e3');
+
+      toast.success("통합 분석 완료!");
 
     } catch (err) {
       console.error("Sequential analysis error:", err);
@@ -1148,6 +1192,11 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
               <span>{session.birth_date} ({new Date().getFullYear() - new Date(session.birth_date).getFullYear() + 1}세, 한국나이)</span>
               {session.birth_time && <><span>•</span><span>{session.birth_time}</span></>}
               {session.birth_place && <><span>•</span><span>{session.birth_place}</span></>}
+              {!session.birth_place && (
+                <span className="inline-flex items-center gap-1 rounded-sm bg-yellow-500/10 px-1.5 py-0.5 text-xs text-yellow-400 border border-yellow-500/20">
+                  ⚠️ 출생지 미입력 — ASC·하우스 신뢰도 낮음
+                </span>
+              )}
               <span>•</span>
               <span>{session.is_lunar ? "음력" : "양력"}</span>
             </div>
@@ -1912,6 +1961,19 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                         <p className="mt-3 text-xs text-gold font-medium italic">💎 {renderSafe(reading.tarot_reading.choihanna.key_message)}</p>
                       )}
                     </>
+                  ) : isStreaming ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-xs text-purple-400">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        <span>AI 내러티브 생성 중...</span>
+                      </div>
+                      {streamingText && (
+                        <p className="text-sm leading-relaxed whitespace-pre-wrap text-foreground/80">
+                          {streamingText}
+                          <span className="inline-block w-1 h-4 bg-purple-400 animate-pulse ml-0.5 align-middle" />
+                        </p>
+                      )}
+                    </div>
                   ) : (
                     <p className="text-xs text-muted-foreground italic">분석 데이터가 없습니다.</p>
                   )}

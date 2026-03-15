@@ -30,11 +30,11 @@ export const TarotCard: React.FC<TarotCardProps> = ({
 }) => {
   const displayImage = image || cardImage;
   const sizeClasses = {
-    xs: "h-20 w-12 text-[7px]",
-    sm: "h-24 w-16 text-[8px]",
-    md: "h-32 w-20 text-[10px]",
-    lg: "h-48 w-32 text-xs",
-    xl: "h-64 w-40 text-sm",
+    xs: "min-h-[5rem] w-12 text-[7px]",
+    sm: "min-h-[6rem] w-16 text-[8px]",
+    md: "min-h-[8rem] w-20 text-[10px]",
+    lg: "min-h-[12rem] w-32 text-xs",
+    xl: "min-h-[16rem] w-40 text-sm",
   };
 
   return (
@@ -67,7 +67,7 @@ export const TarotCard: React.FC<TarotCardProps> = ({
         </div>
       ) : (
         <div className={cn(
-          "relative z-10 h-full w-full flex flex-col items-center justify-center p-1.5",
+          "relative z-10 h-full w-full flex flex-col items-center justify-center p-1.5 pb-8", // added padding-bottom to avoid overlap
           isReversed && "rotate-180"
         )}>
           {displayImage && !isReversed ? (
@@ -88,17 +88,16 @@ export const TarotCard: React.FC<TarotCardProps> = ({
               <span className="text-[8px] text-muted-foreground/40 italic uppercase tracking-tighter">mystic arcana</span>
             </div>
           )}
+        </div>
+      )}
 
-          {showName && (
-            <div className={cn(
-              "absolute bottom-1 left-1 right-1 rounded-lg bg-black/60 backdrop-blur-md py-1 border border-white/5 z-10",
-              isReversed && "rotate-180"
-            )}>
-              <span className="font-display font-medium text-white block truncate px-1 text-center animate-shimmer bg-clip-text text-transparent bg-gradient-to-r from-gold-light via-white to-gold-light whitespace-nowrap break-keep">
-                {koreanName || name}
-              </span>
-            </div>
-          )}
+      {isFlipped && showName && (
+        <div className={cn(
+          "absolute bottom-0 left-0 right-0 rounded-b-xl bg-black/70 backdrop-blur-md py-1.5 px-1 border-t border-white/10 z-20 min-h-[2.5rem] flex items-center justify-center"
+        )}>
+          <span className="font-display font-semibold text-white block px-1 text-center animate-shimmer bg-clip-text text-transparent bg-gradient-to-r from-gold-light via-white to-gold-light break-keep text-[9px] leading-tight">
+            {koreanName || name}
+          </span>
         </div>
       )}
 

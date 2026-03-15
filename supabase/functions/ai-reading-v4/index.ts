@@ -4,7 +4,7 @@
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { runFullProductionEngineV8 } from "./integratedReadingEngine.ts";
+import { runFullProductionEngineV8, fetchGeminiStream } from "./integratedReadingEngine.ts";
 import { processChat } from "./interactivityLayer.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -33,6 +33,52 @@ serve(async (req: Request) => {
 
     const { sessionId, question, mode = "full", locale = "kr" } = payload;
     payload.locale = locale;
+
+    // 스트리밍 모드
+    if (payload.mode === "stream") {
+      const { modelInput } = payload;
+      if (!modelInput) throw new Error("modelInput required for stream mode");
+
+      const stream = await fetchGeminiStream(API_KEY, "gemini-1.5-pro", modelInput);
+
+      const encoder = new TextEncoder();
+      const readable = new ReadableStream({
+        async start(controller) {
+          const reader = stream.getReader();
+          const decoder = new TextDecoder();
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              const chunk = decoder.decode(value, { stream: true });
+              // SSE 파싱: "data: {...}" 형태에서 텍스트 추출
+              const lines = chunk.split("\n");
+              for (const line of lines) {
+                if (line.startsWith("data: ")) {
+                  try {
+                    const json = JSON.parse(line.slice(6));
+                    const text = json?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+                    if (text) controller.enqueue(encoder.encode(text));
+                  } catch {}
+                }
+              }
+            }
+          } finally {
+            reader.releaseLock();
+            controller.close();
+          }
+        }
+      });
+
+      return new Response(readable, {
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "text/plain; charset=utf-8",
+          "X-Content-Type-Options": "nosniff",
+          "Transfer-Encoding": "chunked",
+        },
+      });
+    }
 
     if (mode === "chat") {
       const chatResponse = await processChat(API_KEY, question, payload.context);

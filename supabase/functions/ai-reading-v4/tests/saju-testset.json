@@ -1,0 +1,115 @@
+{
+  "version": "1.0",
+  "engine": "saju",
+  "total_cases": 20,
+  "description": "B-80: 사주 엔진 정확도 검증 테스트셋 (경계 케이스 포함)",
+  "cases": [
+    {
+      "id": "S-001",
+      "description": "일반 케이스",
+      "input": { "year": 1990, "month": 6, "day": 15, "hour": 10, "minute": 30, "gender": "F", "longitude": 127.0 },
+      "expected": { "year": "庚午", "month": "壬午", "day": "甲戌", "hour": "己巳" },
+      "tags": ["normal"]
+    },
+    {
+      "id": "S-002",
+      "description": "야자시 경계 (23:30) — 다음날 子時로 산입",
+      "input": { "year": 1985, "month": 3, "day": 20, "hour": 23, "minute": 30, "gender": "M", "longitude": 127.0 },
+      "expected": { "day_offset": 1, "hour_branch": "子" },
+      "tags": ["borderline", "yajasi"],
+      "flags": { "is_borderline_time": true }
+    },
+    {
+      "id": "S-003",
+      "description": "조자시 (00:30) — 당일 子時 유지",
+      "input": { "year": 1985, "month": 3, "day": 21, "hour": 0, "minute": 30, "gender": "M", "longitude": 127.0 },
+      "expected": { "hour_branch": "子" },
+      "tags": ["borderline", "jojasi"],
+      "flags": { "is_borderline_time": false }
+    },
+    {
+      "id": "S-004",
+      "description": "절기 경계 1시간 이내 (입춘 근처)",
+      "input": { "year": 1988, "month": 2, "day": 4, "hour": 12, "minute": 0, "gender": "F", "longitude": 127.0 },
+      "expected": {},
+      "tags": ["solar_term_boundary"],
+      "flags": { "is_near_solar_term_boundary": true }
+    },
+    {
+      "id": "S-005",
+      "description": "DST 적용 연도 (1987 서머타임)",
+      "input": { "year": 1987, "month": 6, "day": 1, "hour": 14, "minute": 0, "gender": "M", "longitude": 127.0 },
+      "expected": {},
+      "tags": ["dst"],
+      "flags": { "dst_applied": true, "time_corrected": true }
+    },
+    {
+      "id": "S-006",
+      "description": "UTC+8:30 구간 (1958년)",
+      "input": { "year": 1958, "month": 3, "day": 10, "hour": 9, "minute": 0, "gender": "F", "longitude": 127.0 },
+      "expected": {},
+      "tags": ["utc830", "historical_timezone"],
+      "flags": { "time_corrected": true }
+    },
+    {
+      "id": "S-007",
+      "description": "경도 보정 (서울 126.9778도)",
+      "input": { "year": 1995, "month": 8, "day": 20, "hour": 8, "minute": 0, "gender": "F", "longitude": 126.9778 },
+      "expected": {},
+      "tags": ["longitude_correction"],
+      "flags": { "longitude_corrected": true }
+    },
+    {
+      "id": "S-008",
+      "description": "대운 교체기 확인 (현재 나이가 대운 시작/종료 1년 이내)",
+      "input": { "year": 1989, "month": 1, "day": 4, "hour": 14, "minute": 0, "gender": "F", "longitude": 127.0 },
+      "expected": {},
+      "tags": ["daeun_transition"],
+      "flags": { "is_daeun_changing_year": true }
+    },
+    {
+      "id": "S-009",
+      "description": "천간합 감지 — 甲己합 (연간 甲 + 일간 己)",
+      "input": { "year": 1984, "month": 5, "day": 10, "hour": 10, "minute": 0, "gender": "M", "longitude": 127.0 },
+      "expected": { "interaction_type": "천간합" },
+      "tags": ["interaction", "stem_combination"]
+    },
+    {
+      "id": "S-010",
+      "description": "지지충 감지 — 子午충",
+      "input": { "year": 1972, "month": 7, "day": 15, "hour": 23, "minute": 30, "gender": "F", "longitude": 127.0 },
+      "expected": { "interaction_type": "지지충" },
+      "tags": ["interaction", "branch_conflict", "yajasi"]
+    },
+    {
+      "id": "S-011", "description": "마스터 넘버 생명수 11", "input": { "year": 1984, "month": 11, "day": 29, "hour": 12, "minute": 0, "gender": "M", "longitude": 127.0 }, "expected": { "life_path_number": 11 }, "tags": ["numerology", "master_number"]
+    },
+    {
+      "id": "S-012", "description": "입춘 이전 출생 — 전년도 년주", "input": { "year": 2000, "month": 2, "day": 3, "hour": 12, "minute": 0, "gender": "F", "longitude": 127.0 }, "expected": { "year_pillar": "己卯" }, "tags": ["ipchun_boundary"]
+    },
+    {
+      "id": "S-013", "description": "입춘 이후 출생 — 당년 년주", "input": { "year": 2000, "month": 2, "day": 5, "hour": 12, "minute": 0, "gender": "F", "longitude": 127.0 }, "expected": { "year_pillar": "庚辰" }, "tags": ["ipchun_boundary"]
+    },
+    {
+      "id": "S-014", "description": "이나현 기준 데이터", "input": { "year": 1989, "month": 1, "day": 4, "hour": 14, "minute": 0, "gender": "F", "longitude": 127.0 }, "expected": { "year": "戊辰", "month": "壬子", "day": "壬戌", "hour": "癸未" }, "tags": ["real_data", "ina_hyun"]
+    },
+    {
+      "id": "S-015", "description": "자시 정중앙 (00:00)", "input": { "year": 2001, "month": 9, "day": 9, "hour": 0, "minute": 0, "gender": "M", "longitude": 127.0 }, "expected": { "hour_branch": "子" }, "tags": ["midnight"]
+    },
+    {
+      "id": "S-016", "description": "해시 마지막 (21:30)", "input": { "year": 2001, "month": 9, "day": 9, "hour": 21, "minute": 30, "gender": "M", "longitude": 127.0 }, "expected": { "hour_branch": "亥" }, "tags": ["hour_boundary"]
+    },
+    {
+      "id": "S-017", "description": "윤년 2월 29일", "input": { "year": 2000, "month": 2, "day": 29, "hour": 12, "minute": 0, "gender": "F", "longitude": 127.0 }, "expected": {}, "tags": ["leap_year"]
+    },
+    {
+      "id": "S-018", "description": "삼형살 감지 — 寅巳申", "input": { "year": 1986, "month": 4, "day": 17, "hour": 15, "minute": 0, "gender": "M", "longitude": 127.0 }, "expected": { "interaction_type": "삼형살" }, "tags": ["interaction", "three_penalty"]
+    },
+    {
+      "id": "S-019", "description": "지지삼합 — 申子辰 수국", "input": { "year": 1980, "month": 11, "day": 20, "hour": 15, "minute": 0, "gender": "F", "longitude": 127.0 }, "expected": { "interaction_type": "지지삼합" }, "tags": ["interaction", "three_combination"]
+    },
+    {
+      "id": "S-020", "description": "해외 출생 경도 보정 (뉴욕 -74.006도)", "input": { "year": 1990, "month": 5, "day": 10, "hour": 15, "minute": 0, "gender": "M", "longitude": -74.006 }, "expected": {}, "tags": ["overseas", "longitude_correction"], "flags": { "longitude_corrected": true }
+    }
+  ]
+}

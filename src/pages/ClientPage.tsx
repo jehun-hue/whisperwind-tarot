@@ -277,7 +277,8 @@ export default function ClientPage() {
       korean: c.korean, 
       suit: c.suit, 
       isReversed: c.isReversed,
-      position: spread[idx] || "추가 분석"
+      position: spread[idx] || "추가 분석",
+      cardCombination: c.cardCombination
     }));
 
     const birthInfo = hasBirthDate ? {

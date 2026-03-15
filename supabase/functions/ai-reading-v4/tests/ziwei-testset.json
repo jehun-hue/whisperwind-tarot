@@ -1,0 +1,23 @@
+{
+  "version": "1.0",
+  "engine": "ziwei",
+  "total_cases": 15,
+  "description": "B-82: 자미두수 엔진 정확도 검증 테스트셋",
+  "cases": [
+    { "id": "Z-001", "description": "이나현 기준 — 명궁 확인", "input": { "year": 1989, "month": 1, "day": 4, "hour": 14, "minute": 0, "gender": "female", "isLunar": false }, "expected": { "mingGong": "亥" }, "tags": ["real_data", "ina_hyun"] },
+    { "id": "Z-002", "description": "윤달 출생 — is_leap_month_adjusted 플래그", "input": { "year": 2001, "month": 4, "day": 15, "hour": 10, "minute": 0, "gender": "female", "isLunar": true, "isLeapMonth": true }, "expected": {}, "flags": { "is_leap_month_adjusted": true }, "tags": ["leap_month"] },
+    { "id": "Z-003", "description": "공궁 처리 — is_borrowed_stars=true", "input": { "year": 1975, "month": 8, "day": 10, "hour": 8, "minute": 0, "gender": "male", "isLunar": false }, "expected": {}, "flags": { "is_borrowed_stars": true }, "tags": ["empty_palace"] },
+    { "id": "Z-004", "description": "명궁 紫微星 확인", "input": { "year": 1985, "month": 3, "day": 15, "hour": 12, "minute": 0, "gender": "female", "isLunar": false }, "expected": { "life_palace_major_star": "紫微" }, "tags": ["major_star"] },
+    { "id": "Z-005", "description": "신궁 天府星 확인", "input": { "year": 1980, "month": 6, "day": 20, "hour": 10, "minute": 0, "gender": "male", "isLunar": false }, "expected": {}, "tags": ["body_palace"] },
+    { "id": "Z-006", "description": "대운 현재 구간 확인", "input": { "year": 1989, "month": 1, "day": 4, "hour": 14, "minute": 0, "gender": "female", "isLunar": false }, "expected": {}, "tags": ["major_period", "real_data"] },
+    { "id": "Z-007", "description": "소운 현재 구간 확인", "input": { "year": 1989, "month": 1, "day": 4, "hour": 14, "minute": 0, "gender": "female", "isLunar": false }, "expected": {}, "tags": ["minor_period"] },
+    { "id": "Z-008", "description": "양력→음력 변환 정확도 (설날 근처)", "input": { "year": 1990, "month": 1, "day": 27, "hour": 12, "minute": 0, "gender": "female", "isLunar": false }, "expected": { "lunarMonth": 1, "lunarDay": 1 }, "tags": ["lunar_conversion", "new_year"] },
+    { "id": "Z-009", "description": "양력→음력 변환 (설날 이전)", "input": { "year": 1990, "month": 1, "day": 25, "hour": 12, "minute": 0, "gender": "male", "isLunar": false }, "expected": { "lunarMonth": 12 }, "tags": ["lunar_conversion", "before_new_year"] },
+    { "id": "Z-010", "description": "길성(天魁) 명궁 배치", "input": { "year": 1992, "month": 5, "day": 10, "hour": 8, "minute": 0, "gender": "female", "isLunar": false }, "expected": {}, "tags": ["lucky_star"] },
+    { "id": "Z-011", "description": "흉성(地劫) 명궁 배치", "input": { "year": 1978, "month": 9, "day": 15, "hour": 22, "minute": 0, "gender": "male", "isLunar": false }, "expected": {}, "tags": ["unlucky_star"] },
+    { "id": "Z-012", "description": "음력 직접 입력 처리", "input": { "year": 1985, "month": 7, "day": 15, "hour": 14, "minute": 0, "gender": "female", "isLunar": true }, "expected": {}, "tags": ["lunar_direct"] },
+    { "id": "Z-013", "description": "사화(祿) 변환 확인", "input": { "year": 1970, "month": 3, "day": 10, "hour": 10, "minute": 0, "gender": "male", "isLunar": false }, "expected": {}, "tags": ["transformation"] },
+    { "id": "Z-014", "description": "명궁 天相星 + 길성 중첩", "input": { "year": 1993, "month": 2, "day": 20, "hour": 6, "minute": 0, "gender": "female", "isLunar": false }, "expected": {}, "tags": ["star_combination"] },
+    { "id": "Z-015", "description": "연간 사화 적용 확인 (2026년 기준)", "input": { "year": 1989, "month": 1, "day": 4, "hour": 14, "minute": 0, "gender": "female", "isLunar": false }, "expected": { "annualYear": 2026 }, "tags": ["annual_transformation", "real_data"] }
+  ]
+}

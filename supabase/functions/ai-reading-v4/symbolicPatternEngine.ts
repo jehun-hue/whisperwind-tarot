@@ -146,6 +146,55 @@ export function generatePatternVectors(systemResults: any[]): SymbolicVector[] {
       }
     }
 
+    // ── 2-B. 점성술 전용: 행성·어스펙트·원소 벡터화 ──
+    if (system === "astrology") {
+      // dominantElement → 원소 기반 매핑
+      const domEl = res.dominantElement as string | undefined;
+      if (domEl) {
+        const elTagMap: Record<string, string> = {
+          "불": "화 일간의 열정", "흙": "토 일간의 안정",
+          "공기": "목 일간의 생명력", "물": "수 일간의 유연"
+        };
+        const elTag = elTagMap[domEl.split("/")[0].trim()];
+        if (elTag) {
+          const mapping = findMapping(elTag);
+          if (mapping) vectors.push({ system: "astrology", symbol: domEl, vector: mapping.semantic_values, patterns: mapping.linked_patterns });
+        }
+      }
+
+      // keyAspects → 어스펙트 문자열 매핑
+      const keyAspects: string[] = res.keyAspects || res.major_aspects || [];
+      keyAspects.slice(0, 5).forEach((asp: string) => {
+        // 행성 이름 추출 후 패턴 딕셔너리 매칭
+        const aspLower = asp.toLowerCase();
+        let tag = "";
+        if (aspLower.includes("목성") || aspLower.includes("jupiter")) tag = "Jupiter Transit";
+        else if (aspLower.includes("토성") || aspLower.includes("saturn")) tag = "Saturn Aspect";
+        else if (aspLower.includes("명왕성") || aspLower.includes("pluto")) tag = "Pluto Transit";
+        else if (aspLower.includes("화성") || aspLower.includes("mars")) tag = "Mars Square";
+        if (tag) {
+          const mapping = findMapping(tag);
+          if (mapping) vectors.push({ system: "astrology", symbol: tag, vector: mapping.semantic_values, patterns: mapping.linked_patterns });
+        }
+      });
+
+      // Sun sign → 기본 패턴 매핑
+      const sunSign = res.sunSign || res.sun_sign || "";
+      if (sunSign) {
+        const sunTagMap: Record<string, string> = {
+          "염소자리": "토 일간의 안정", "황소자리": "토 일간의 안정", "처녀자리": "토 일간의 안정",
+          "양자리": "화 일간의 열정", "사자자리": "화 일간의 열정", "사수자리": "화 일간의 열정",
+          "쌍둥이자리": "목 일간의 생명력", "천칭자리": "목 일간의 생명력", "물병자리": "목 일간의 생명력",
+          "게자리": "수 일간의 유연", "전갈자리": "수 일간의 유연", "물고기자리": "수 일간의 유연"
+        };
+        const sunTag = sunTagMap[sunSign];
+        if (sunTag) {
+          const mapping = findMapping(sunTag);
+          if (mapping) vectors.push({ system: "astrology", symbol: sunSign, vector: mapping.semantic_values, patterns: mapping.linked_patterns });
+        }
+      }
+    }
+
     // ── 3. 수비학 전용: vibrations 매칭 ──
     if (system === "numerology") {
       const numChars = extractNumerologyCharacteristics(res);

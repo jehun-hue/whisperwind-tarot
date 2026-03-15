@@ -120,6 +120,35 @@ export const SYMBOL_MAPPINGS: SymbolMapping[] = [
   { symbol_id: "Z001", system: "Ziwei", symbol_name: "토오국", linked_patterns: ["P024"], semantic_values: { stability: 0.8 } },
   { symbol_id: "Z002", system: "Ziwei", symbol_name: "자 명궁", linked_patterns: ["P018"], semantic_values: { life_transition: 0.6, emotion: 0.7 } },
 
+  // 14주성 벡터 추가
+  { symbol_id: "Z003", system: "Ziwei", symbol_name: "자미", linked_patterns: [], semantic_values: { career: 0.8, stability: 0.7, authority: 0.6 } },
+  { symbol_id: "Z004", system: "Ziwei", symbol_name: "천기", linked_patterns: [], semantic_values: { growth: 0.7, intelligence: 0.6, change: 0.5 } },
+  { symbol_id: "Z005", system: "Ziwei", symbol_name: "태양", linked_patterns: [], semantic_values: { career: 0.9, growth: 0.7, relationship: 0.5 } },
+  { symbol_id: "Z006", system: "Ziwei", symbol_name: "무곡", linked_patterns: [], semantic_values: { finance: 0.9, career: 0.7, stability: 0.6 } },
+  { symbol_id: "Z007", system: "Ziwei", symbol_name: "천동", linked_patterns: [], semantic_values: { emotion: 0.7, stability: 0.6, relationship: 0.5 } },
+  { symbol_id: "Z008", system: "Ziwei", symbol_name: "염정", linked_patterns: [], semantic_values: { career: 0.7, risk: 0.5, change: 0.6 } },
+  { symbol_id: "Z009", system: "Ziwei", symbol_name: "천부", linked_patterns: [], semantic_values: { stability: 0.8, finance: 0.7, growth: 0.4 } },
+  { symbol_id: "Z010", system: "Ziwei", symbol_name: "태음", linked_patterns: [], semantic_values: { emotion: 0.8, finance: 0.6, relationship: 0.7 } },
+  { symbol_id: "Z011", system: "Ziwei", symbol_name: "탐랑", linked_patterns: [], semantic_values: { growth: 0.7, relationship: 0.6, risk: 0.4 } },
+  { symbol_id: "Z012", system: "Ziwei", symbol_name: "거문", linked_patterns: [], semantic_values: { career: 0.6, risk: 0.5, change: 0.4 } },
+  { symbol_id: "Z013", system: "Ziwei", symbol_name: "천상", linked_patterns: [], semantic_values: { stability: 0.7, career: 0.6, relationship: 0.5 } },
+  { symbol_id: "Z014", system: "Ziwei", symbol_name: "천량", linked_patterns: [], semantic_values: { stability: 0.8, growth: 0.5, emotion: 0.4 } },
+  { symbol_id: "Z015", system: "Ziwei", symbol_name: "칠살", linked_patterns: [], semantic_values: { risk: 0.8, career: 0.7, change: 0.7 } },
+  { symbol_id: "Z016", system: "Ziwei", symbol_name: "파군", linked_patterns: [], semantic_values: { change: 0.9, risk: 0.7, transition: 0.8 } },
+
+  // 사화(四化) 벡터 추가
+  { symbol_id: "Z017", system: "Ziwei", symbol_name: "화록", linked_patterns: [], semantic_values: { finance: 0.9, growth: 0.8, opportunity: 0.7 } },
+  { symbol_id: "Z018", system: "Ziwei", symbol_name: "화권", linked_patterns: [], semantic_values: { career: 0.9, authority: 0.8, stability: 0.6 } },
+  { symbol_id: "Z019", system: "Ziwei", symbol_name: "화과", linked_patterns: [], semantic_values: { growth: 0.8, intelligence: 0.7, career: 0.5 } },
+  { symbol_id: "Z020", system: "Ziwei", symbol_name: "화기", linked_patterns: [], semantic_values: { risk: 0.9, change: 0.7, instability: 0.8 } },
+
+  // 궁(宮) 벡터 추가
+  { symbol_id: "Z021", system: "Ziwei", symbol_name: "관록궁", linked_patterns: [], semantic_values: { career: 1.0, authority: 0.7, stability: 0.6 } },
+  { symbol_id: "Z022", system: "Ziwei", symbol_name: "재백궁", linked_patterns: [], semantic_values: { finance: 1.0, money: 0.9, stability: 0.5 } },
+  { symbol_id: "Z023", system: "Ziwei", symbol_name: "부처궁", linked_patterns: [], semantic_values: { relationship: 1.0, emotion: 0.8, stability: 0.6 } },
+  { symbol_id: "Z024", system: "Ziwei", symbol_name: "천이궁", linked_patterns: [], semantic_values: { change: 0.9, transition: 0.8, growth: 0.5 } },
+  { symbol_id: "Z025", system: "Ziwei", symbol_name: "명궁", linked_patterns: [], semantic_values: { career: 0.7, growth: 0.7, stability: 0.6 } },
+
   // Numerology
   { symbol_id: "N001", system: "Numerology", symbol_name: "Life Path 1", linked_patterns: ["P009", "P006"], semantic_values: { career: 0.8, growth: 0.7 } },
   { symbol_id: "N005", system: "Numerology", symbol_name: "Personal Year 5", linked_patterns: ["P017", "P022"], semantic_values: { life_transition: 0.8, opportunity: 0.7 } },

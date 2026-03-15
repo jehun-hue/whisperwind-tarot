@@ -31,8 +31,8 @@ export function cosineSimilarity(vecA: Record<string, number>, vecB: Record<stri
   const raw = dotProduct / (magA * magB);
   const clamped = Math.max(0, raw);
   
-  // 공유 차원이 20% 미만이면 0 반환 (신뢰할 수 없는 유사도)
-  if (overlapRatio < 0.2) return 0;
+  // 공유 차원이 5% 미만일 때만 0 반환 — 시스템 간 비교 허용
+  if (overlapRatio < 0.05) return 0;
   
   return clamped;
 }

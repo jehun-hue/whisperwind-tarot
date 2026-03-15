@@ -17,6 +17,8 @@ interface MonitoringEvent {
   promptTokensEstimate: number;
   questionType: string;
   consensusScore: number;
+  confidenceScore: number;
+  conflictSummary?: string;
   grade: string;
   cardCount: number;
   hasBirthInfo: boolean;
@@ -172,6 +174,8 @@ export async function logMonitoringEvent(supabaseClient: any, event: MonitoringE
       prompt_tokens_estimate: event.promptTokensEstimate,
       question_type: event.questionType,
       consensus_score: event.consensusScore,
+      confidence_score: event.confidenceScore,
+      conflict_summary: event.conflictSummary || null,
       grade: event.grade,
       card_count: event.cardCount,
       has_birth_info: event.hasBirthInfo,

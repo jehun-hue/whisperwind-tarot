@@ -1,0 +1,23 @@
+{
+  "version": "1.0",
+  "engine": "astrology",
+  "total_cases": 15,
+  "description": "B-81: 점성술 엔진 정확도 검증 테스트셋",
+  "cases": [
+    { "id": "A-001", "description": "태양 양자리 확인", "input": { "year": 1990, "month": 4, "day": 5, "hour": 12, "minute": 0, "lat": 37.5665, "lon": 126.978 }, "expected": { "sun_sign": "양자리" }, "tags": ["sun_sign"] },
+    { "id": "A-002", "description": "태양 물고기자리 경계", "input": { "year": 1990, "month": 3, "day": 19, "hour": 12, "minute": 0, "lat": 37.5665, "lon": 126.978 }, "expected": { "sun_sign": "물고기자리" }, "tags": ["sun_sign", "boundary"] },
+    { "id": "A-003", "description": "출생시간 미제공 시 is_time_exact=false", "input": { "year": 1985, "month": 6, "day": 15, "hour": 12, "minute": 0, "lat": 37.5665, "lon": 126.978, "timeUnknown": true }, "expected": {}, "flags": { "is_time_exact": false }, "tags": ["time_unknown"] },
+    { "id": "A-004", "description": "수성 역행 감지", "input": { "year": 1990, "month": 11, "day": 12, "hour": 12, "minute": 0, "lat": 37.5665, "lon": 126.978 }, "expected": {}, "flags": { "mercury_retrograde": true }, "tags": ["retrograde"] },
+    { "id": "A-005", "description": "Big 3 확인 (태양/달/ASC)", "input": { "year": 1989, "month": 1, "day": 4, "hour": 14, "minute": 0, "lat": 37.5665, "lon": 126.978 }, "expected": { "sun_sign": "염소자리" }, "tags": ["big3", "real_data"] },
+    { "id": "A-006", "description": "본좌 dignity 확인 (태양-사자자리)", "input": { "year": 1995, "month": 8, "day": 10, "hour": 12, "minute": 0, "lat": 37.5665, "lon": 126.978 }, "expected": { "sun_dignity": "본좌" }, "tags": ["dignity"] },
+    { "id": "A-007", "description": "고양 dignity 확인 (태양-양자리)", "input": { "year": 1992, "month": 4, "day": 5, "hour": 12, "minute": 0, "lat": 37.5665, "lon": 126.978 }, "expected": { "sun_dignity": "고양" }, "tags": ["dignity"] },
+    { "id": "A-008", "description": "합(Conjunction) 어스펙트 감지", "input": { "year": 1990, "month": 1, "day": 15, "hour": 8, "minute": 0, "lat": 37.5665, "lon": 126.978 }, "expected": { "aspect_type": "합" }, "tags": ["aspect"] },
+    { "id": "A-009", "description": "MC 경력 궁 확인", "input": { "year": 1988, "month": 9, "day": 20, "hour": 10, "minute": 0, "lat": 37.5665, "lon": 126.978 }, "expected": {}, "tags": ["angles", "mc"] },
+    { "id": "A-010", "description": "출생지 미제공 시 location_confidence 낮음", "input": { "year": 1985, "month": 3, "day": 10, "hour": 9, "minute": 0, "lat": null, "lon": null }, "expected": {}, "flags": { "location_confidence": "low" }, "tags": ["no_birthplace"] },
+    { "id": "A-011", "description": "달 황소자리 확인", "input": { "year": 1990, "month": 6, "day": 20, "hour": 18, "minute": 0, "lat": 37.5665, "lon": 126.978 }, "expected": { "moon_sign": "황소자리" }, "tags": ["moon_sign"] },
+    { "id": "A-012", "description": "화성 역행 감지", "input": { "year": 1990, "month": 10, "day": 5, "hour": 12, "minute": 0, "lat": 37.5665, "lon": 126.978 }, "expected": {}, "tags": ["retrograde", "mars"] },
+    { "id": "A-013", "description": "ai_synthesis_tags 자동 생성 확인", "input": { "year": 1982, "month": 7, "day": 25, "hour": 10, "minute": 0, "lat": 37.5665, "lon": 126.978 }, "expected": {}, "tags": ["synthesis_tags"] },
+    { "id": "A-014", "description": "해외 출생지 (뉴욕) 점성술", "input": { "year": 1990, "month": 5, "day": 10, "hour": 15, "minute": 0, "lat": 40.7128, "lon": -74.006 }, "expected": {}, "tags": ["overseas"] },
+    { "id": "A-015", "description": "사분(Square) 어스펙트 tension=high", "input": { "year": 1975, "month": 4, "day": 20, "hour": 12, "minute": 0, "lat": 37.5665, "lon": 126.978 }, "expected": { "aspect_tension": "high" }, "tags": ["aspect", "tension"] }
+  ]
+}

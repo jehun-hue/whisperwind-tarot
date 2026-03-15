@@ -1,0 +1,82 @@
+{
+  "version": "1.0",
+  "engine": "integrated",
+  "total_cases": 10,
+  "description": "B-84: 통합 엔진 충돌·합의 시나리오 검증 테스트셋",
+  "cases": [
+    {
+      "id": "I-001",
+      "description": "이나현 전체 엔진 통합 검증",
+      "input": { "year": 1989, "month": 1, "day": 4, "hour": 14, "minute": 0, "gender": "F", "longitude": 127.0, "lat": 37.5665, "topic": "relationship" },
+      "expected": { "status": "success" },
+      "tags": ["real_data", "ina_hyun", "full_integration"]
+    },
+    {
+      "id": "I-002",
+      "description": "출생시간 미제공 — is_time_unknown=true, 타로·수비학 가중치 상향",
+      "input": { "year": 1990, "month": 6, "day": 15, "hour": null, "minute": null, "gender": "F", "longitude": 127.0, "topic": "career" },
+      "expected": {},
+      "flags": { "is_time_unknown": true },
+      "tags": ["time_unknown"]
+    },
+    {
+      "id": "I-003",
+      "description": "재물 토픽 — 사주 가중치 0.40 확인",
+      "input": { "year": 1985, "month": 5, "day": 10, "hour": 10, "minute": 0, "gender": "M", "longitude": 127.0, "topic": "finance" },
+      "expected": { "topic_weight_saju": 0.40 },
+      "tags": ["topic_weight", "finance"]
+    },
+    {
+      "id": "I-004",
+      "description": "연애 토픽 — 타로 가중치 0.45 확인",
+      "input": { "year": 1992, "month": 3, "day": 20, "hour": 8, "minute": 0, "gender": "F", "longitude": 127.0, "topic": "relationship" },
+      "expected": { "topic_weight_tarot": 0.45 },
+      "tags": ["topic_weight", "relationship"]
+    },
+    {
+      "id": "I-005",
+      "description": "엔진 충돌 시 conflict_log 생성",
+      "input": { "year": 1975, "month": 11, "day": 20, "hour": 22, "minute": 0, "gender": "M", "longitude": 127.0, "topic": "career" },
+      "expected": {},
+      "flags": { "conflict_log_generated": true },
+      "tags": ["conflict_detection"]
+    },
+    {
+      "id": "I-006",
+      "description": "합의도 높을 때 ai_narrative_directive.tone=confident",
+      "input": { "year": 1988, "month": 8, "day": 8, "hour": 8, "minute": 8, "gender": "M", "longitude": 127.0, "topic": "general" },
+      "expected": {},
+      "flags": { "narrative_tone": "confident" },
+      "tags": ["narrative_directive"]
+    },
+    {
+      "id": "I-007",
+      "description": "reasoning_trace 5단계 생성 확인",
+      "input": { "year": 1990, "month": 9, "day": 15, "hour": 14, "minute": 0, "gender": "F", "longitude": 127.0, "topic": "health" },
+      "expected": { "reasoning_steps_count": 5 },
+      "tags": ["reasoning_trace"]
+    },
+    {
+      "id": "I-008",
+      "description": "edge_case_tags — 야자시+절기경계 복합",
+      "input": { "year": 1988, "month": 2, "day": 4, "hour": 23, "minute": 30, "gender": "F", "longitude": 127.0, "topic": "decision" },
+      "expected": {},
+      "flags": { "edge_case_tags_count_min": 2 },
+      "tags": ["edge_case", "yajasi", "solar_term"]
+    },
+    {
+      "id": "I-009",
+      "description": "김지향 데이터 통합 테스트",
+      "input": { "year": 1985, "month": 7, "day": 22, "hour": 6, "minute": 0, "gender": "F", "longitude": 127.0, "topic": "relationship" },
+      "expected": { "status": "success" },
+      "tags": ["real_data", "kim_jihyang", "full_integration"]
+    },
+    {
+      "id": "I-010",
+      "description": "마스터 넘버 + 야자시 복합 엣지케이스",
+      "input": { "year": 1984, "month": 11, "day": 29, "hour": 23, "minute": 45, "gender": "M", "longitude": 127.0, "topic": "spirituality" },
+      "expected": { "is_master_number": true, "is_borderline_time": true },
+      "tags": ["master_number", "yajasi", "edge_case"]
+    }
+  ]
+}

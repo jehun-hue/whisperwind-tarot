@@ -223,7 +223,7 @@ export default function TarotReading() {
         </div>
 
         {/* Main content */}
-        <div className="grid gap-6 lg:grid-cols-[1fr_1.5fr]">
+        <div className="grid gap-6 lg:grid-cols-[1fr_2.5fr] xl:grid-cols-[1fr_3fr]">
           {/* Step 1 */}
           <Card className="border-border bg-card">
             <CardHeader>
@@ -269,11 +269,11 @@ export default function TarotReading() {
           </Card>
 
           {/* Step 2 */}
-          <Card className="border-border bg-card">
+          <Card className="border-border bg-card flex flex-col">
             <CardHeader>
               <CardTitle className="text-xl text-foreground">2. 카드 선택</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex flex-col gap-3 overflow-hidden p-4">
               <div className="mb-4 flex flex-col gap-3">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-sm text-muted-foreground">
@@ -306,7 +306,7 @@ export default function TarotReading() {
                   ))}
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 2xl:grid-cols-12 max-h-[70vh] overflow-y-auto pr-1 pb-2">
                 {filteredDeck.map((card) => {
                   const isSelected = picked.some((p) => p.id === card.id);
                   return (
@@ -316,7 +316,7 @@ export default function TarotReading() {
                         koreanName={card.revealed ? card.korean : "unknown"}
                         isReversed={card.revealed ? card.isReversed : false}
                         image={card.revealed ? card.image : undefined}
-                        size="sm"
+                        size="xs"
                         showName={card.revealed}
                         onClick={() => selectCard(card)}
                         className={cn(
@@ -368,9 +368,19 @@ export default function TarotReading() {
                               <span className="font-display text-muted-foreground">{card.name}</span>
                             </div>
                           </div>
-                          <Badge variant="outline" className="rounded-full border-gold/30 text-gold">
-                            {card.isReversed ? "역방향" : "정방향"}
-                          </Badge>
+                          {/* 역방향 포함 카드 이미지 미리보기 추가 */}
+                          <TarotCard
+                            name={card.name}
+                            koreanName={card.korean}
+                            isReversed={card.isReversed}
+                            image={card.image}
+                            size="sm"
+                            showName={false}
+                            className={cn(
+                              "flex-shrink-0",
+                              card.isReversed ? "border-amber-500/50" : "border-border"
+                            )}
+                          />
                         </div>
                         <div className="mb-3 flex flex-wrap gap-1.5">
                           {card.keywords.map((k) => (

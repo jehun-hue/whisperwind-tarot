@@ -22,6 +22,8 @@ export interface DaewoonResult {
   pillars: DaewoonPillar[];   // 10개 대운 기둥
   currentDaewoon: DaewoonPillar | null;
   currentAge: number;
+  is_daeun_changing_year: boolean;
+  current_seun: any;
 }
 
 export function getDaewoonInfo(
@@ -102,11 +104,34 @@ export function calculateFullDaewoon(
 
   const currentDaewoon = pillars.find(p => p.isCurrent) || null;
 
+  // B-69new: 대운 교체기 감지 — 현재 나이가 대운 시작 후 1년 이내 또는 종료 전 1년 이내
+  const isDaewoonChangingYear = currentDaewoon
+    ? (currentAge - currentDaewoon.startAge <= 1) || (currentDaewoon.endAge - currentAge <= 1)
+    : false;
+
+  // B-69new: 세운(올해 운) 계산 — 현재 연도 천간·지지
+  const CURRENT_YEAR = new Date().getFullYear();
+  const seunYearIdx = (CURRENT_YEAR - 4) % 60;
+  const seunStemIdx = ((seunYearIdx % 10) + 10) % 10;
+  const seunBranchIdx = ((seunYearIdx % 12) + 12) % 12;
+  const currentSeun = {
+    year: CURRENT_YEAR,
+    stem: STEMS[seunStemIdx],
+    branch: BRANCHES[seunBranchIdx],
+    full: `${STEMS[seunStemIdx]}${BRANCHES[seunBranchIdx]}`,
+    stemElement: FIVE_ELEMENTS_MAP[STEMS[seunStemIdx]] || "unknown",
+    branchElement: FIVE_ELEMENTS_MAP[BRANCHES[seunBranchIdx]] || "unknown",
+    tenGodStem: calculateTenGod(dayMaster, STEMS[seunStemIdx]),
+    tenGodBranch: calculateTenGod(dayMaster, BRANCHES[seunBranchIdx]),
+  };
+
   return {
     startAge,
     isForward,
     pillars,
     currentDaewoon,
     currentAge,
+    is_daeun_changing_year: isDaewoonChangingYear,
+    current_seun: currentSeun,
   };
 }
