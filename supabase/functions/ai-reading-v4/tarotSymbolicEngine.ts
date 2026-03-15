@@ -194,7 +194,7 @@ export function runTarotSymbolicEngine(cards: any[], question: string) {
     
     // 역방향: 부정 차원 강화(0.7배), 양방향 차원 반전(-0.3) 선택적 적용
     const isReversed = card.isReversed === true;
-    const orientationModifier = isReversed ? 0.7 : 1.0;
+    const orientationModifier = isReversed ? 0.75 : 1.0; // B-140 fix: 0.7 → 0.75
 
     if (Object.keys(baseVector).length > 0) matchedCards++;
 
@@ -220,11 +220,11 @@ export function runTarotSymbolicEngine(cards: any[], question: string) {
         if (positiveKeys.includes(key)) {
           adjustedVal *= 0.4; // 긍정 에너지 60% 감소
         } else if (negativeKeys.includes(key)) {
-          adjustedVal *= 1.5; // 부정 에너지 50% 증폭
+          adjustedVal *= 1.2; // B-140 fix: 부정 에너지 증폭 완화 (1.5 → 1.2)
         }
       }
 
-      aggregatedVector[key] = (aggregatedVector[key] || 0) + adjustedVal;
+      aggregatedVector[key] = Math.min(0.8, (aggregatedVector[key] || 0) + adjustedVal); // B-140 fix: 상한선 0.8 적용
     });
   });
 
