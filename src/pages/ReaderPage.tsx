@@ -645,22 +645,25 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
     }
   };
 
-  const applyPersonaMerge = async (style: 'e7l3' | 'e5l5' | 'l7e3') => {
-    if (!session.ai_reading?.tarot_reading?.choihanna && !session.ai_reading?.tarot_reading?.monad) {
+  const applyPersonaMerge = async (style: 'e7l3' | 'e5l5' | 'l7e3', latestSession?: any) => {
+    // B-159 fix: 자동 실행 시 latestSession 우선 사용 (React 상태 업데이트 타이밍 이슈 방지)
+    const src = latestSession ?? session;
+
+    if (!src.ai_reading?.tarot_reading?.choihanna && !src.ai_reading?.tarot_reading?.monad) {
       alert("최한나 또는 모나드 분석을 먼저 실행해 주세요.");
       return;
     }
-    if (!session.ai_reading?.tarot_reading?.choihanna || !session.ai_reading?.tarot_reading?.monad) {
-      const missing = !session.ai_reading?.tarot_reading?.choihanna ? "최한나" : "모나드";
+    if (!src.ai_reading?.tarot_reading?.choihanna || !src.ai_reading?.tarot_reading?.monad) {
+      const missing = !src.ai_reading?.tarot_reading?.choihanna ? "최한나" : "모나드";
       alert(`${missing} 분석이 아직 완료되지 않았습니다. ${missing} 분석을 먼저 실행해 주세요.`);
       return;
     }
 
-    const hanna = session.ai_reading.tarot_reading.choihanna;
-    const monad = session.ai_reading.tarot_reading.monad;
+    const hanna = src.ai_reading.tarot_reading.choihanna;
+    const monad = src.ai_reading.tarot_reading.monad;
     
-    const linesH = hanna.story.split('\n').filter(l => l.trim());
-    const linesM = monad.story.split('\n').filter(l => l.trim());
+    const linesH = hanna.story.split('\n').filter((l: string) => l.trim());
+    const linesM = monad.story.split('\n').filter((l: string) => l.trim());
     
     let ratioH = 0.5;
     if (style === 'e7l3') ratioH = 0.7;
@@ -677,9 +680,9 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
     const mergedKeyMessage = ratioH >= 0.5 ? hanna.key_message : monad.key_message;
 
     const updatedReading = {
-      ...session.ai_reading,
+      ...src.ai_reading,
       tarot_reading: {
-        ...session.ai_reading.tarot_reading,
+        ...src.ai_reading.tarot_reading,
         [style]: {
           cards: hanna.cards,
           story: mergedStory,
@@ -690,9 +693,9 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
 
     await supabase.from("reading_sessions").update({
       ai_reading: updatedReading as any
-    }).eq("id", session.id);
+    }).eq("id", src.id);
 
-    onUpdate({ ...session, ai_reading: updatedReading });
+    onUpdate({ ...src, ai_reading: updatedReading });
     toast.success(`${style.toUpperCase()} 스타일 병합 완료`);
   };
 
@@ -861,10 +864,11 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       console.log("[runSequentialAnalysis] All steps finished");
       toast.info("통합 스타일 병합을 시작합니다...");
 
-      // 순차 병합: 동시 클릭 방지, 각 스타일을 순서대로 직접 실행
-      await applyPersonaMerge('e7l3');
-      await applyPersonaMerge('e5l5');
-      await applyPersonaMerge('l7e3');
+      // B-159 fix: s3 최신 세션 직접 전달 (React 상태 업데이트 타이밍 이슈 방지)
+      const latestSession = s3 || s2 || s1 || undefined;
+      await applyPersonaMerge('e7l3', latestSession);
+      await applyPersonaMerge('e5l5', latestSession);
+      await applyPersonaMerge('l7e3', latestSession);
 
       toast.success("통합 분석 완료!");
 
@@ -1501,10 +1505,16 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                 <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap font-medium">{renderSafe(reading.merged_reading.coreReading)}</p>
               </div>
 
-              {/* 6. Practical Advice - Moved up to be below Summary */}
+              {/* 6. Practical Advice */}
               <div className="p-6 bg-accent/5 border-b border-border/10">
                 <div className="mb-3 text-sm font-bold text-accent">💡 종합 관점 제언</div>
-                <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap italic">"{renderSafe(reading.merged_reading.finalAdvice)}"</p>
+                {reading.merged_reading?.finalAdvice ? (
+                  <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap italic">"{renderSafe(reading.merged_reading.finalAdvice)}"</p>
+                ) : reading.final_message?.summary ? (
+                  <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap italic">"{renderSafe(reading.final_message.summary)}"</p>
+                ) : (
+                  <p className="text-xs text-muted-foreground italic">분석 완료 후 표시됩니다.</p>
+                )}
               </div>
 
               {/* 1-1. Choi Hanna Tarot (v4 Detail) */}
@@ -1518,7 +1528,11 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                     )}
                   </>
                 ) : (
-                  <p className="text-xs text-muted-foreground italic">분석 데이터가 없습니다.</p>
+                  <p className="text-xs text-muted-foreground italic">
+                    {session.status === 'completed' || session.status === 'analyzing'
+                      ? '최한나 스타일 분석을 실행해 주세요.'
+                      : '분석 대기 중입니다.'}
+                  </p>
                 )}
               </div>
 
@@ -1532,7 +1546,11 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                     )}
                   </>
                 ) : (
-                  <p className="text-xs text-muted-foreground italic">분석 데이터가 없습니다.</p>
+                  <p className="text-xs text-muted-foreground italic">
+                    {session.status === 'completed' || session.status === 'analyzing'
+                      ? '모나드 스타일 분석을 실행해 주세요.'
+                      : '분석 대기 중입니다.'}
+                  </p>
                 )}
               </div>
 
@@ -2122,6 +2140,15 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                 </Button>
                 <Button variant="outline" size="sm" className="rounded-full border-gold/30 text-gold text-xs" onClick={downloadPDF}>
                   <Download className="mr-1.5 h-3 w-3" />리포트 저장 (PDF)
+                </Button>
+                {/* B-162 fix: JSON 다운로드 버튼 추가 */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full border-blue-500/30 text-blue-400 text-xs bg-blue-500/5 hover:bg-blue-500/10"
+                  onClick={downloadJSON}
+                >
+                  <FileJson className="mr-1.5 h-3 w-3" />JSON 저장
                 </Button>
 
               </div>

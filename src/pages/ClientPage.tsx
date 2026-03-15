@@ -146,6 +146,7 @@ function StepIndicator({ currentStep, isLoveQuestion }: { currentStep: Step; isL
 export default function ClientPage() {
   const navigate = useNavigate();
   const [step, setStep] = useState<Step>("question");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [question, setQuestion] = useState("");
   const [memo, setMemo] = useState("");
 
@@ -268,6 +269,9 @@ export default function ClientPage() {
   // ─── Submit: DB 저장 후 즉시 접수완료, AI는 백그라운드 ───
   const handleSubmit = async () => {
     if (!hasEnoughCards) return;
+    // B-158 fix: 중복 제출 방지
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     setError(null);
 
     const spread = ["현재 상황", "핵심 문제", "숨겨진 원인", "조언", "가까운 결과"];
@@ -306,7 +310,6 @@ export default function ClientPage() {
     const combinationSummary = getCombinationSummary(picked.map((c) => c.id), questionType);
 
     try {
-      // 1) DB에 세션 저장
       const { data: session, error: dbError } = await supabase
         .from("reading_sessions")
         .insert({
@@ -327,13 +330,14 @@ export default function ClientPage() {
 
       if (dbError) throw dbError;
 
-      // 2) 즉시 접수완료 화면으로 전환
       setStep("submitted");
 
     } catch (err: any) {
       console.error("Session save error:", err);
       setError(err.message || "접수 중 오류가 발생했습니다.");
       setStep("submitted");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 

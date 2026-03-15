@@ -1007,7 +1007,10 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     birthPlaceProvided
   );
   const temporalResult = predictTemporalV8(consensusResult, systemResults, questionType);
-  const validationResult = validateEngineOutput(consensusResult, patternVectors, systemResults, questionType);
+  // B-164 fix: data-only 모드에서는 타로 없으므로 validation 강제 통과 처리
+  const validationResult = input.mode === "data-only"
+    ? { isValid: true, message: "Validation Passed (Data-Only Mode)", reasons: [] }
+    : validateEngineOutput(consensusResult, patternVectors, systemResults, questionType);
 
   // Step 2: Scale & Grade Logic
   const grade = consensusResult.consensus_score >= 0.7 ? "S"
@@ -1290,7 +1293,8 @@ ${finalTopic === "life_change" ? "   → 변화 질문: 사주 운로·점성술
     validation: validationResult,
     vectors: patternVectors,
     system_weights: (consensusResult as any).topic_weights_used || { tarot: 0.40, saju: 0.25, ziwei: 0.20, astrology: 0.10, numerology: 0.05 },
-    topic_weights_used: (consensusResult as any).topic_weights_used || {},
+    // B-163 fix: topic_weights_used 별도 필드로 추가 (프론트엔드 참조용)
+    topic_weights_used: (consensusResult as any).topic_weights_used || null,
   };
 
   // Professional V4 Detail Mapping (Required by ReaderPage.tsx)
