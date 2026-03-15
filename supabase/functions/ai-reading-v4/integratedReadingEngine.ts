@@ -743,10 +743,19 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     let ccmResult: ReturnType<typeof analyzeSpreadCCM> | null = null;
     try {
       const cardNames: string[] = (input.cards || []).map((c: any) => c.name).filter(Boolean);
+      // B-142 fix: 카드 원본 position 필드 우선 사용, 없으면 인덱스 기반 폴백
+      const positionFallback = ["past","present","future","advice","obstacle","outcome"];
       const cardPositions: Array<"past"|"present"|"future"|"advice"|"obstacle"|"outcome"> =
-        (input.cards || []).map((_: any, i: number) => {
-          const pos = ["past","present","future","advice","obstacle","outcome"];
-          return (pos[i] ?? "present") as "past"|"present"|"future"|"advice"|"obstacle"|"outcome";
+        (input.cards || []).map((c: any, i: number) => {
+          const rawPos = (c.position || "").toLowerCase().trim();
+          const posMap: Record<string, "past"|"present"|"future"|"advice"|"obstacle"|"outcome"> = {
+            "past": "past", "과거": "past", "현재 상황": "present", "present": "present",
+            "future": "future", "미래": "future", "가까운 결과": "future",
+            "advice": "advice", "조언": "advice", "숨겨진 원인": "advice",
+            "obstacle": "obstacle", "핵심 문제": "obstacle",
+            "outcome": "outcome", "최종 결과": "outcome"
+          };
+          return posMap[rawPos] ?? (positionFallback[i] ?? "present") as "past"|"present"|"future"|"advice"|"obstacle"|"outcome";
         });
       if (cardNames.length > 0) {
         ccmResult = analyzeSpreadCCM(cardNames, cardPositions, (input.questionType || "general"));
