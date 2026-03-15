@@ -191,6 +191,28 @@ export function calculateConsensusV8(
         resolution = "경미 충돌 — 두 관점 병기 후 내담자 판단 유도";
       }
 
+      // B-138 fix: 타로-점성술 충돌 시 점성술 가중치 자동 완화
+      if (
+        (sysI === "tarot" && sysJ === "astrology") ||
+        (sysI === "astrology" && sysJ === "tarot")
+      ) {
+        if (conflict_level === "severe") {
+          // 심각 충돌: 점성술 가중치 50% 감소
+          currentWeights["astrology"] = Math.min(
+            currentWeights["astrology"] || 0.10,
+            (currentWeights["astrology"] || 0.10) * 0.5
+          );
+          resolution += " (점성술 가중치 50% 감소 적용)";
+        } else if (conflict_level === "moderate") {
+          // 중간 충돌: 점성술 가중치 30% 감소
+          currentWeights["astrology"] = Math.min(
+            currentWeights["astrology"] || 0.10,
+            (currentWeights["astrology"] || 0.10) * 0.7
+          );
+          resolution += " (점성술 가중치 30% 감소 적용)";
+        }
+      }
+
       let mediator: string | undefined;
       if (conflict_level === "moderate" || conflict_level === "severe") {
         const ziweiVec = systemGroups["ziwei"];

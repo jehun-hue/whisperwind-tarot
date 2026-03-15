@@ -557,6 +557,13 @@ ${ziweiSymbolic}
 - 현재 대한: ${ziweiAnalysis?.currentMajorPeriod?.interpretation || "데이터 부족"}
 - 소한: ${ziweiAnalysis?.currentMinorPeriod?.interpretation || "데이터 부족"}
 - 사화: ${Array.isArray(ziweiAnalysis?.four_transformations) ? ziweiAnalysis.four_transformations.map((t: any) => t.description).join(", ") : "데이터 부족"}
+- 주요 궁위 상태 (B-155):
+${(ziweiAnalysis?.palaces || []).slice(0, 12).map((p: any) => {
+  const starInfo = p.main_stars?.length > 0 ? p.main_stars.join(", ") : "공궁(空宮)";
+  const borrowedNote = p.is_borrowed_stars ? ` ※차성안궁(${p.borrowed_from || "대궁"}에서 차용)` : "";
+  const emptyNote = p.is_empty ? " [공궁]" : "";
+  return `  * ${p.name}(${p.location}): ${starInfo}${emptyNote}${borrowedNote}`;
+}).join("\n")}
 `;
 
   const astrologyPrompt = `
@@ -817,11 +824,20 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     // 자미두수 정규화 (Snake Case + Backward Compatibility)
     const ziweiAnalysis = serverZiwei ? {
       life_structure: serverZiwei.lifeStructure || "",
-      palaces: serverZiwei.palaces.map(p => ({
-        name: p.name,
-        main_stars: p.stars.map(s => s.star),
-        location: p.branch,
-      })),
+      palaces: serverZiwei.palaces.map(p => {
+        const majorStars = p.stars.filter((s: any) =>
+          ["자미","천기","태양","무곡","천동","염정","천부","태음","탐랑","거문","천상","천량","칠살","파군"].includes(s.star)
+        ).map((s: any) => s.star);
+        return {
+          name: p.name,
+          main_stars: majorStars,
+          location: p.branch,
+          // B-155 fix: 공궁 정보 포함
+          is_empty: majorStars.length === 0,
+          is_borrowed_stars: !!(p as any).is_borrowed_stars,
+          borrowed_from: (p as any).borrowed_from || null,
+        };
+      }),
       key_insights: serverZiwei.keyInsights || [],
       major_period: serverZiwei.currentMajorPeriod || {},
       characteristics: [
