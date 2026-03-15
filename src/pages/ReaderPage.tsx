@@ -613,8 +613,11 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
         }
       };
  
+      // B-174 fix: data-only 모드이거나 narrative가 있으면 completed 처리
       const hasNarrative = !!(mergedReading.tarot_reading?.choihanna || mergedReading.tarot_reading?.monad);
-      const finalStatus = hasNarrative ? "completed" : currentSession.status;
+      const isDataOnly = !!(result?.reading_info?.mode === "data-only" || 
+        mergedReading.engine?.validation?.message?.includes("Data-Only"));
+      const finalStatus = (hasNarrative || isDataOnly) ? "completed" : currentSession.status;
  
       await supabase.from("reading_sessions").update({
         ai_reading: mergedReading as any,
@@ -806,8 +809,11 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
           : result.integrated_summary,
       };
  
+      // B-174 fix: data-only 모드이거나 narrative가 있으면 completed 처리
       const hasNarrative = !!(mergedReading.tarot_reading?.choihanna || mergedReading.tarot_reading?.monad);
-      const finalStatus = hasNarrative ? "completed" : currentSession.status;
+      const isDataOnly = !!(result?.reading_info?.mode === "data-only" || 
+        mergedReading.engine?.validation?.message?.includes("Data-Only"));
+      const finalStatus = (hasNarrative || isDataOnly) ? "completed" : currentSession.status;
  
       await supabase.from("reading_sessions").update({
         ai_reading: mergedReading as any,
@@ -1508,13 +1514,20 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
               {/* 6. Practical Advice */}
               <div className="p-6 bg-accent/5 border-b border-border/10">
                 <div className="mb-3 text-sm font-bold text-accent">💡 종합 관점 제언</div>
-                {reading.merged_reading?.finalAdvice ? (
-                  <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap italic">"{renderSafe(reading.merged_reading.finalAdvice)}"</p>
-                ) : reading.final_message?.summary ? (
-                  <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap italic">"{renderSafe(reading.final_message.summary)}"</p>
-                ) : (
-                  <p className="text-xs text-muted-foreground italic">분석 완료 후 표시됩니다.</p>
-                )}
+                {(() => {
+                  const dataOnlyPlaceholder = "데이터 분석 전용 모드입니다. AI 내러티브가 생성되지 않았습니다.";
+                  const advice = reading.merged_reading?.finalAdvice;
+                  const summary = reading.final_message?.summary;
+                  const displayText =
+                    (advice && advice !== dataOnlyPlaceholder) ? advice :
+                    (summary && summary !== dataOnlyPlaceholder) ? summary :
+                    null;
+                  return displayText ? (
+                    <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap italic">"{renderSafe(displayText)}"</p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground italic">분석 완료 후 표시됩니다.</p>
+                  );
+                })()}
               </div>
 
               {/* 1-1. Choi Hanna Tarot (v4 Detail) */}
@@ -2153,7 +2166,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       }
 
       {/* Global Reading Actions - (FORCED ADMIN TOOLS) */}
-      {session.status === "completed" && (
+      {(session.status === "completed" || session.status === "analyzing" || !!reading) && (
         <Card className="border-border bg-card glow-gold">
           <CardContent className="p-5">
             <div className="flex flex-wrap items-center gap-3">

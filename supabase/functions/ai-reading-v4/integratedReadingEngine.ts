@@ -1195,6 +1195,13 @@ ${finalTopic === "life_change" ? "   → 변화 질문: 사주 운로·점성술
     if (parsed?.merged_reading) {
       parsed.merged_reading = {};
     }
+    // B-167/168 fix: data-only 모드에서 final_message 텍스트 초기화
+    if (parsed?.final_message) {
+      parsed.final_message = { title: "데이터 분석", summary: "" };
+    }
+    if (parsed?.convergence) {
+      parsed.convergence.common_message = "";
+    }
   } else {
     console.log("GPT 호출 시작:", JSON.stringify({model: "gemini-2.5-pro", promptLength: modelInput.length}));
     try {
