@@ -148,3 +148,139 @@ export function calculateInteractions(
 
   return interactions;
 }
+
+// ══════════════════════════════════════════════════════
+// B-144: 신살(神殺) 계산 - 역마·도화·화개·공망 등
+// ══════════════════════════════════════════════════════
+
+export interface Shinsal {
+  name: string;
+  type: "역마" | "도화" | "화개" | "공망" | "양인" | "문창" | "천을귀인";
+  description: string;
+  health_implication: string | null;  // 건강 관련 의미
+  topic_relevance: string[];          // 관련 토픽
+  severity: "길" | "흉" | "중립";
+}
+
+// 도화살 테이블 (일지 기준 → 사주 내 해당 지지 존재 시 성립)
+const DOHWA_MAP: Record<string, string> = {
+  "寅": "卯", "午": "卯", "戌": "卯",
+  "巳": "午", "酉": "午", "丑": "午",
+  "申": "酉", "子": "酉", "辰": "酉",
+  "亥": "子", "卯": "子", "未": "子",
+};
+
+// 역마살 테이블 (일지 기준)
+const YEOKMA_MAP: Record<string, string> = {
+  "寅": "申", "午": "申", "戌": "申",
+  "巳": "亥", "酉": "亥", "丑": "亥",
+  "申": "寅", "子": "寅", "辰": "寅",
+  "亥": "巳", "卯": "巳", "未": "巳",
+};
+
+// 화개살 테이블 (일지 기준)
+const HWAGAE_MAP: Record<string, string> = {
+  "寅": "戌", "午": "戌", "戌": "戌",
+  "巳": "丑", "酉": "丑", "丑": "丑",
+  "申": "辰", "子": "辰", "辰": "辰",
+  "亥": "未", "卯": "未", "未": "미",
+};
+
+// 양인살 테이블 (일간 기준)
+const YANGIN_MAP: Record<string, string> = {
+  "甲": "卯", "丙": "午", "戊": "午",
+  "庚": "酉", "壬": "子",
+  "乙": "辰", "丁": "未", "己": "未",
+  "辛": "戌", "癸": "丑",
+};
+
+// 천을귀인 테이블 (일간 기준 → 2개 지지)
+const CHEONIL_MAP: Record<string, string[]> = {
+  "甲": ["丑", "未"], "戊": ["丑", "未"], "庚": ["丑", "未"],
+  "乙": ["子", "申"], "己": ["子", "申"],
+  "丙": ["亥", "酉"], "丁": ["亥", "酉"],
+  "壬": ["卯", "巳"], "癸": ["卯", "巳"],
+  "辛": ["寅", "午"],
+};
+
+/**
+ * B-144: 사주 8글자에서 신살 계산
+ * @param dayMaster 일간 (예: "壬")
+ * @param dayBranch 일지 (예: "申")
+ * @param allBranches 연·월·일·시 지지 4글자 배열
+ */
+export function calculateShinsal(
+  dayMaster: string,
+  dayBranch: string,
+  allBranches: string[]
+): Shinsal[] {
+  const results: Shinsal[] = [];
+
+  // 1. 도화살
+  const dohwaTarget = DOHWA_MAP[dayBranch];
+  if (dohwaTarget && allBranches.includes(dohwaTarget)) {
+    results.push({
+      name: "도화살",
+      type: "도화",
+      description: "매력·인기·이성운 강함. 감정적 갈등 가능성",
+      health_implication: "피부·생식기 계통 주의",
+      topic_relevance: ["relationship", "family"],
+      severity: "중립",
+    });
+  }
+
+  // 2. 역마살
+  const yeokmaTarget = YEOKMA_MAP[dayBranch];
+  if (yeokmaTarget && allBranches.includes(yeokmaTarget)) {
+    results.push({
+      name: "역마살",
+      type: "역마",
+      description: "이동·변화·해외운 강함. 바쁜 삶, 이주 가능성",
+      health_implication: "사고·골절·신경계 주의",
+      topic_relevance: ["migration", "life_change", "career"],
+      severity: "중립",
+    });
+  }
+
+  // 3. 화개살
+  const hwagaeTarget = HWAGAE_MAP[dayBranch];
+  if (hwagaeTarget && allBranches.includes(hwagaeTarget)) {
+    results.push({
+      name: "화개살",
+      type: "화개",
+      description: "학문·예술·종교적 감수성 뛰어남. 고독한 면",
+      health_implication: "정신건강·우울·고립감 주의",
+      topic_relevance: ["spirituality", "health"],
+      severity: "중립",
+    });
+  }
+
+  // 4. 양인살
+  const yanginTarget = YANGIN_MAP[dayMaster];
+  if (yanginTarget && allBranches.includes(yanginTarget)) {
+    results.push({
+      name: "양인살",
+      type: "양인",
+      description: "강한 의지력·추진력. 충돌·사고 위험",
+      health_implication: "수술·외상·혈액 관련 주의",
+      topic_relevance: ["health", "career"],
+      severity: "흉",
+    });
+  }
+
+  // 5. 천을귀인
+  const cheonilTargets = CHEONIL_MAP[dayMaster] || [];
+  const hasCheonil = cheonilTargets.some(t => allBranches.includes(t));
+  if (hasCheonil) {
+    results.push({
+      name: "천을귀인",
+      type: "천을귀인",
+      description: "귀인의 도움·행운·위기 탈출 능력",
+      health_implication: null,
+      topic_relevance: ["career", "relationship", "general"],
+      severity: "길",
+    });
+  }
+
+  return results;
+}

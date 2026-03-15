@@ -16,11 +16,14 @@ export interface SajuAnalysisResult {
   yongShin: string;
   daewoon: any | null; 
   interactions: Interaction[];
+  shinsal: Shinsal[];                                   // B-144: 신살
+  health_risk_tags: string[];                           // B-144: 건강 위험 태그
+  topic_shinsal_map: Record<string, string[]>;          // B-145: 토픽별 신살 매핑
 }
 
 import { getDaewoonInfo, calculateFullDaewoon, type DaewoonResult } from "./lib/daewoon.ts";
 import { STEMS, BRANCHES, FIVE_ELEMENTS_MAP } from "./lib/fiveElements.ts";
-import { calculateInteractions, type Interaction } from "./lib/interactions.ts";
+import { calculateInteractions, calculateShinsal, type Interaction, type Shinsal } from "./lib/interactions.ts";
 
 // ═══════════════════════════════════════
 // 천간(天干) 오행 매핑
@@ -208,7 +211,10 @@ export async function analyzeSajuStructure(
       tenGods: {},
       yongShin: "Unknown",
       daewoon: null,
-      interactions: []
+      interactions: [],
+      shinsal: [],
+      health_risk_tags: [],
+      topic_shinsal_map: {},
     };
   }
 
@@ -457,6 +463,30 @@ export async function analyzeSajuStructure(
   ].filter((b): b is string => !!b);
   const interactions = calculateInteractions(interactionStems, interactionBranches);
 
+  // B-144: 신살 계산
+  const shinsal = calculateShinsal(dm, pillars.day?.branch || "", interactionBranches);
+
+  // B-144: 건강 위험 태그 추출
+  const health_risk_tags: string[] = shinsal
+    .filter(s => s.health_implication)
+    .map(s => `${s.name}: ${s.health_implication}`);
+
+  // B-145: 토픽별 신살 매핑
+  const topic_shinsal_map: Record<string, string[]> = {};
+  shinsal.forEach(s => {
+    s.topic_relevance.forEach(topic => {
+      if (!topic_shinsal_map[topic]) topic_shinsal_map[topic] = [];
+      topic_shinsal_map[topic].push(s.name);
+    });
+  });
+
+  // 신살 중 역마살 있으면 characteristics에 추가
+  shinsal.forEach(s => {
+    if (s.type === "역마" || s.type === "양인") {
+      characteristics.push(`${s.name}: ${s.description}`);
+    }
+  });
+
   // 충·형살이 있으면 characteristics에 추가
   interactions.forEach(inter => {
     if (inter.severity === "흉") {
@@ -474,6 +504,9 @@ export async function analyzeSajuStructure(
     yongShin: yongsin,
     daewoon,
     interactions,
+    shinsal,
+    health_risk_tags,
+    topic_shinsal_map,
   };
 }
 
