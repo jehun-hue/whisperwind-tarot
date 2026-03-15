@@ -876,6 +876,7 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     ]);
 
     const finalTopic = topicResult?.primary_topic || input.questionType || "general_future";
+    console.log("[B-163 Debug] finalTopic:", finalTopic, "| topicResult?.primary_topic:", topicResult?.primary_topic, "| input.questionType:", input.questionType);
     const secondaryTopic = topicResult?.secondary_topic || null;
     const detectedSubtopic = topicResult?.subtopic || null;
     const isDualTopic = secondaryTopic !== null && secondaryTopic !== finalTopic;
