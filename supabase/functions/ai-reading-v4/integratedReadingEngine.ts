@@ -1260,7 +1260,7 @@ ${finalTopic === "life_change" ? "   → 변화 질문: 사주 운로·점성술
       console.log("[Parse Stage] safeParseGeminiJSON 시작 (Fallback 수립됨)");
       parsed = safeParseGeminiJSON(rawNarrative, initialFallback);
       
-      if (!parsed || Object.keys(parsed).length === 0 || !parsed.reading_info) {
+      if (!parsed || Object.keys(parsed).length === 0) {
         parseSuccess = false;
         responseType = "parse_error";
         parsed = initialFallback;
@@ -1282,7 +1282,7 @@ ${finalTopic === "life_change" ? "   → 변화 질문: 사주 운로·점성술
   logMonitoringEvent(supabaseClient, {
     sessionId,
     engineVersion: READING_VERSION,
-    geminiModel: input.mode === "data-only" ? "none" : "gemini-1.5-pro",
+    geminiModel: input.mode === "data-only" ? "none" : "gemini-2.5-flash-preview-04-17",
     responseType,
     parseSuccess,
     schemaValidationPassed: schemaResult.passed,
