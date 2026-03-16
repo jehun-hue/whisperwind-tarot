@@ -150,6 +150,17 @@ const STAR_MEANINGS: Record<MajorStar, { positive: string; negative: string; dom
   문곡: { positive: "예술, 학능, 재능", negative: "변덕, 구설, 시비", domain: "재능과 학문" },
 };
 
+// B-189/190/191: 보조성 의미 추가 (STAR_MEANINGS에 없으면 undefined 에러 발생)
+const AUX_STAR_MEANINGS: Record<string, { positive: string; negative: string; domain: string }> = {
+  문창: { positive: "문서, 학문, 시험운", negative: "과도한 완벽주의", domain: "학문과 문서" },
+  좌보: { positive: "귀인, 보좌, 협력", negative: "의존성", domain: "귀인 조력" },
+  우필: { positive: "귀인, 조화, 지원", negative: "우유부단", domain: "귀인 조력" },
+  천괴: { positive: "귀인, 명예, 관운", negative: "교만", domain: "귀인과 명예" },
+  천월: { positive: "귀인, 도움, 치유", negative: "의존", domain: "귀인과 치유" },
+  록존: { positive: "재물 보존, 안정", negative: "고독, 인색", domain: "재물 안정" },
+  천마: { positive: "이동, 변화, 활동성", negative: "불안정, 분주", domain: "이동과 변화" },
+};
+
 // ─── 계산 함수 ───
 
 // 명궁 계산: 인궁(인덱스 2)에서 시작, 월만큼 순행, 시지만큼 역행
@@ -325,7 +336,7 @@ function calculateMajorPeriods(
     const branch = BRANCHES[palaceIdx];
     const starsInPalace = starMap.get(palaceIdx) || [];
     const starPlacements: StarPlacement[] = starsInPalace.map(star => ({
-      star, palace, brightness: getStarBrightness(star, palaceIdx), description: STAR_MEANINGS[star].positive,
+      star, palace, brightness: getStarBrightness(star as any, palaceIdx), description: (STAR_MEANINGS[star as any] || AUX_STAR_MEANINGS[star])?.positive || star,
     }));
     const periodStemIdx = (yearGanIdx + palaceIdx) % 10;
     const periodTable = TRANSFORMATION_TABLE[STEMS[periodStemIdx]];
@@ -485,7 +496,7 @@ export function calculateServerZiWei(
     const palaceIdx = (mingGongIdx + idx) % 12;
     const starsInPalace = starMap.get(palaceIdx) || [];
     const starPlacements: StarPlacement[] = starsInPalace.map(star => ({
-      star, palace: name, brightness: getStarBrightness(star, palaceIdx), description: STAR_MEANINGS[star].positive,
+      star, palace: name, brightness: getStarBrightness(star as any, palaceIdx), description: (STAR_MEANINGS[star as any] || AUX_STAR_MEANINGS[star])?.positive || star,
     }));
     const trans = palaceTransMap.get(name) || [];
     return { name, branch: BRANCHES[palaceIdx], stars: starPlacements, transformations: trans, interpretation: interpretPalace(name, starPlacements, trans) };
