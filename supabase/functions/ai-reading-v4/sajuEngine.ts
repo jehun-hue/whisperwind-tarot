@@ -197,6 +197,11 @@ export function getFullSaju(
   // B-68new: is_borderline_time 플래그 — 야자시 경계(23:00~23:59) 출생 표시
   // AI가 "경계 시간 출생으로 두 일주의 기운이 혼재할 수 있음"을 안내할 수 있도록 함
   const isBorderlineTime = isYaJaTime;
+  // B-184 fix: 오행 소수점 1자리 반올림 (예: 2.8999 → 2.9)
+  const roundedElements: Record<string, number> = {};
+  for (const key of Object.keys(elements)) {
+    roundedElements[key] = Math.round(elements[key] * 10) / 10;
+  }
 
   return {
     pillars: {
@@ -206,14 +211,12 @@ export function getFullSaju(
       hour: hourPillar
     },
     dayMaster,
-    elements,
+    elements: roundedElements,
     jd,
     sunLong,
     termIdx,
     is_near_solar_term_boundary: isNearSolarTermBoundary,
     time_corrected: timeCorrected,
     is_borderline_time: isBorderlineTime,
-    dst_applied: dstOffset !== 0,
-    longitude_corrected: longitude !== 135,
   };
 }

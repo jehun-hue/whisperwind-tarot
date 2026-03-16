@@ -195,6 +195,55 @@ export function generatePatternVectors(systemResults: any[]): SymbolicVector[] {
       }
     }
 
+    // ── 2-C. 자미두수 전용: 명궁 주성·생명구조·대운 벡터화 (B-185 fix) ──
+    if (system === "ziwei") {
+      // life_structure → 패턴 딕셔너리 매칭
+      const lifeStructure = res.life_structure as string | undefined;
+      if (lifeStructure) {
+        const mapping = findMapping(lifeStructure);
+        if (mapping) {
+          vectors.push({ system: "ziwei", symbol: lifeStructure, vector: mapping.semantic_values, patterns: mapping.linked_patterns });
+        } else {
+          // 부분 매핑 시도: "자미천부격" → "자미" 추출
+          const starMatch = lifeStructure.match(/^(자미|천기|태양|무곡|천동|염정|천부|태음|탐랑|거문|천상|천량|칠살|파군)/);
+          if (starMatch) {
+            const starMapping = findMapping(starMatch[1]);
+            if (starMapping) vectors.push({ system: "ziwei", symbol: starMatch[1], vector: starMapping.semantic_values, patterns: starMapping.linked_patterns });
+          }
+        }
+      }
+
+      // 명궁 주성 → 사주 일간과 동일한 시맨틱 차원으로 매핑
+      const ziweiStarToElement: Record<string, string> = {
+        "자미": "토 일간의 안정", "천부": "토 일간의 안정",
+        "태양": "화 일간의 열정", "염정": "화 일간의 열정",
+        "천기": "목 일간의 생명력", "탐랑": "목 일간의 생명력",
+        "무곡": "금 일간의 결단", "칠살": "금 일간의 결단", "파군": "금 일간의 결단",
+        "천동": "수 일간의 유연", "태음": "수 일간의 유연", "거문": "수 일간의 유연",
+        "천상": "토 일간의 안정", "천량": "목 일간의 생명력"
+      };
+
+      // core_palaces.life_palace.major_stars에서 주성 추출
+      const lifePalaceMajorStars: string[] = res.core_palaces?.life_palace?.major_stars || [];
+      lifePalaceMajorStars.forEach((star: string) => {
+        const tag = ziweiStarToElement[star];
+        if (tag) {
+          const mapping = findMapping(tag);
+          if (mapping) vectors.push({ system: "ziwei", symbol: star, vector: mapping.semantic_values, patterns: mapping.linked_patterns });
+        }
+      });
+
+      // 현재 대한(major_period) → 주성 기반 매핑
+      const majorPeriodStars: string[] = res.major_period?.stars || [];
+      majorPeriodStars.slice(0, 2).forEach((star: string) => {
+        const tag = ziweiStarToElement[star];
+        if (tag) {
+          const mapping = findMapping(tag);
+          if (mapping) vectors.push({ system: "ziwei", symbol: `대한_${star}`, vector: mapping.semantic_values, patterns: mapping.linked_patterns });
+        }
+      });
+    }
+
     // ── 3. 수비학 전용: vibrations 매칭 ──
     if (system === "numerology") {
       const numChars = extractNumerologyCharacteristics(res);
