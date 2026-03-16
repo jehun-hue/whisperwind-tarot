@@ -445,14 +445,14 @@ function interpretPalace(palace: PalaceName, stars: StarPlacement[], transformat
     result = `${palace}(${ctx[palace]})에 주성 없음. 타궁 영향.`;
   } else {
     const s = stars[0];
-    const m = STAR_MEANINGS[s.star];
+    const m = (STAR_MEANINGS as any)[s.star] || (AUX_STAR_MEANINGS as any)[s.star];
     const isBright = s.brightness === "묘" || s.brightness === "왕";
     const isDark = s.brightness === "함지" || s.brightness === "낙함";
     result = isBright
-      ? `${palace}(${ctx[palace]})에 ${s.star}(${s.brightness}) → ${m.positive}. 강한 에너지.`
+      ? `${palace}(${ctx[palace]})에 ${s.star}(${s.brightness}) → ${m?.positive || s.star}. 강한 에너지.`
       : isDark
-        ? `${palace}(${ctx[palace]})에 ${s.star}(${s.brightness}) → ${m.negative} 경향. 주의.`
-        : `${palace}(${ctx[palace]})에 ${s.star}(${s.brightness}) → ${m.positive}과 ${m.negative} 혼재.`;
+        ? `${palace}(${ctx[palace]})에 ${s.star}(${s.brightness}) → ${m?.negative || s.star} 경향. 주의.`
+        : `${palace}(${ctx[palace]})에 ${s.star}(${s.brightness}) → ${m?.positive || s.star}과 ${m?.negative || s.star} 혼재.`;
   }
   if (transformations.length > 0) {
     result += ` [사화: ${transformations.map(t => `${t.type}: ${t.star}`).join("; ")}]`;
