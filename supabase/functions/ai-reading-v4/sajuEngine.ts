@@ -164,9 +164,15 @@ export function getFullSaju(
   const dayMaster = dayPillar.stem;
 
   // 5. Hour Pillar
-  // Use solar time (local hour adjusted for longitude/DST)
-  const solarHourValue = effectiveHour + (((effectiveMinute + totalOffsetMinutes) % 60 + 60) % 60 / 60);
-  const hBranchIdx = Math.floor(((solarHourValue + 1) % 24) / 2);
+  // B-194 fix: 로컬 진태양시 기준 시주 계산 + 정확한 시지 경계표 적용
+  // 시지 경계: 子(23:30~01:30), 丑(01:30~03:30), 寅(03:30~05:30),
+  //            卯(05:30~07:30), 辰(07:30~09:30), 巳(09:30~11:30),
+  //            午(11:30~13:30), 未(13:30~15:30), 申(15:30~17:30),
+  //            酉(17:30~19:30), 戌(19:30~21:30), 亥(21:30~23:30)
+  const localSolarMinutes = totalInputMinutes + totalOffsetMinutes;
+  const normalizedMinutes = ((localSolarMinutes % 1440) + 1440) % 1440;
+  // 子시 시작을 23:30(=1410분)으로 정렬: +30분 후 2시간(120분) 단위로 나눔
+  const hBranchIdx = Math.floor(((normalizedMinutes + 30) % 1440) / 120);
   const hStemBase = (dIdx % 10 * 2) % 10;
   const hStemIdx = (hStemBase + hBranchIdx) % 10;
   const hourPillar = { stem: STEMS[hStemIdx], branch: BRANCHES[hBranchIdx] };
