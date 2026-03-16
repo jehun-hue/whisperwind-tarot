@@ -1982,40 +1982,63 @@ function buildFallbackReading(text: string, grade: string, scores: any, cards: a
 
 async function fetchGemini(apiKey: string, model: string, system: string, _user: string): Promise<string> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: system }] }],
-      generationConfig: {
-        maxOutputTokens: 16384,
-        temperature: 0.7,
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: "OBJECT",
-          properties: {
-            reading_info: { type: "OBJECT" },
-            tarot_reading: { type: "OBJECT" },
-            convergence: { type: "OBJECT" },
-            love_analysis: { type: "OBJECT", nullable: true },
-            action_guide: { type: "OBJECT" },
-            final_message: { type: "OBJECT" },
-            merged_reading: { type: "OBJECT" },
-            scores: { type: "OBJECT" }
-          },
-          required: ["reading_info", "tarot_reading", "convergence", "action_guide", "final_message", "merged_reading", "scores"]
-        }
+
+  const requestBody = JSON.stringify({
+    contents: [{ parts: [{ text: system }] }],
+    generationConfig: {
+      maxOutputTokens: 16384,
+      temperature: 0.2,
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: "OBJECT",
+        properties: {
+          reading_info:    { type: "OBJECT" },
+          tarot_reading:   { type: "OBJECT" },
+          convergence:     { type: "OBJECT" },
+          love_analysis:   { type: "OBJECT", nullable: true },
+          action_guide:    { type: "OBJECT" },
+          final_message:   { type: "OBJECT" },
+          merged_reading:  { type: "OBJECT" },
+          scores:          { type: "OBJECT" }
+        },
+        required: ["reading_info","tarot_reading","convergence","action_guide","final_message","merged_reading","scores"]
       }
-    })
+    }
   });
 
-  if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(`Gemini API error: ${response.status} - ${errText}`);
+  // B-204: 빈 응답 시 1회 재시도
+  const doFetch = async (): Promise<string> => {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: requestBody
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`Gemini API error: ${response.status} - ${errText}`);
+    }
+
+    const data = await response.json();
+    return data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+  };
+
+  // 1차 시도
+  let result = await doFetch();
+
+  // B-204: 빈 응답이면 1초 대기 후 1회 재시도
+  if (!result || result === "{}") {
+    console.warn("[B-204] Gemini 빈 응답 감지 → 1초 후 재시도");
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    result = await doFetch();
+    if (!result || result === "{}") {
+      console.error("[B-204] 재시도 후에도 빈 응답 → fallback 진행");
+    } else {
+      console.log("[B-204] 재시도 성공");
+    }
   }
 
-  const data = await response.json();
-  return data?.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+  return result || "{}";
 }
 
 export async function fetchGeminiStream(apiKey: string, model: string, system: string): Promise<ReadableStream<Uint8Array>> {
