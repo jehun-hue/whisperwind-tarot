@@ -1241,7 +1241,7 @@ ${finalTopic === "life_change" ? "   → 변화 질문: 사주 운로·점성술
     }
   } else {
     try {
-      rawNarrative = await fetchGemini(apiKey, "gemini-1.5-flash", modelInput, "");
+      rawNarrative = await fetchGemini(apiKey, "gemini-2.5-flash", modelInput, "");
       geminiLatency = Date.now() - geminiStart;
       console.log("[PlatformV9] Gemini Latency:", geminiLatency, "ms");
     } catch (e: any) {
@@ -1282,7 +1282,7 @@ ${finalTopic === "life_change" ? "   → 변화 질문: 사주 운로·점성술
   logMonitoringEvent(supabaseClient, {
     sessionId,
     engineVersion: READING_VERSION,
-    geminiModel: input.mode === "data-only" ? "none" : "gemini-2.5-flash-preview-04-17",
+    geminiModel: input.mode === "data-only" ? "none" : "gemini-2.5-flash",
     responseType,
     parseSuccess,
     schemaValidationPassed: schemaResult.passed,
@@ -1981,7 +1981,7 @@ function buildFallbackReading(text: string, grade: string, scores: any, cards: a
 }
 
 async function fetchGemini(apiKey: string, model: string, system: string, _user: string): Promise<string> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`;
 
   const requestBody = JSON.stringify({
     contents: [{ parts: [{ text: system }] }],
@@ -2042,7 +2042,7 @@ async function fetchGemini(apiKey: string, model: string, system: string, _user:
 }
 
 export async function fetchGeminiStream(apiKey: string, model: string, system: string): Promise<ReadableStream<Uint8Array>> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?key=${apiKey}&alt=sse`;
+  const url = `https://generativelanguage.googleapis.com/v1/models/${model}:streamGenerateContent?key=${apiKey}&alt=sse`;
   const response = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

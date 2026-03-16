@@ -39,7 +39,7 @@ serve(async (req: Request) => {
       const { modelInput } = payload;
       if (!modelInput) throw new Error("modelInput required for stream mode");
 
-      const stream = await fetchGeminiStream(API_KEY, "gemini-1.5-flash", modelInput);
+      const stream = await fetchGeminiStream(API_KEY, "gemini-2.5-flash", modelInput);
 
       const encoder = new TextEncoder();
       const readable = new ReadableStream({
