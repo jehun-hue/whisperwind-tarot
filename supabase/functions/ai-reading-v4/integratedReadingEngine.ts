@@ -1987,8 +1987,7 @@ async function fetchGemini(apiKey: string, model: string, system: string, _user:
     contents: [{ parts: [{ text: system }] }],
     generationConfig: {
       maxOutputTokens: 16384,
-      temperature: 0.2,
-      responseMimeType: "application/json"
+      temperature: 0.2
     }
   });
 
