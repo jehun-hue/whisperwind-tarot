@@ -560,15 +560,16 @@ export function buildEnginePrompts(input: any, sajuRaw: any, sajuAnalysis: any, 
 
 
   const ziweiPrompt = `
-
 [자미두수 엔진 호출 결과 - 상징화 완료]
 ${ziweiSymbolic}
 - 기본정보: ${birthInfo.year}년 ${birthInfo.month}월 ${birthInfo.day}일 ${birthInfo.hour}시 ${birthInfo.minute}분 (${birthInfo.gender === 'M' ? '음남 陰男' : '양녀 陽女'})
 - 현재 대한: ${ziweiAnalysis?.currentMajorPeriod?.interpretation || "데이터 부족"}
 - 소한: ${ziweiAnalysis?.currentMinorPeriod?.interpretation || "데이터 부족"}
-- 사화: ${Array.isArray(ziweiAnalysis?.four_transformations) ? ziweiAnalysis.four_transformations.map((t: any) => t.description).join(", ") : "데이터 부족"}
-- 주요 궁위 상태 (B-155):
-${(ziweiAnalysis?.palaces || []).slice(0, 12).map((p: any) => {
+- 선천사화: ${Array.isArray(ziweiAnalysis?.natal_transformations) ? ziweiAnalysis.natal_transformations.slice(0,4).map((t: any) => `${t.type}(${t.star}→${t.palace})`).join(", ") : "데이터 부족"}
+- B-175 압축: 주요궁(명/관록/부처/질액/천이) + 공궁만 표시
+${(ziweiAnalysis?.palaces || []).filter((p: any) => 
+  ["명궁","관록궁","부처궁","질액궁","천이궁"].includes(p.name) || p.is_empty
+).map((p: any) => {
   const starInfo = p.main_stars?.length > 0 ? p.main_stars.join(", ") : "공궁(空宮)";
   const borrowedNote = p.is_borrowed_stars ? ` ※차성안궁(${p.borrowed_from || "대궁"}에서 차용)` : "";
   const emptyNote = p.is_empty ? " [공궁]" : "";
@@ -587,14 +588,7 @@ ${(astrologyAnalysis?.keyAspects || []).slice(0, 5).map((a: string) => `  • ${
 - 현재 트랜짓(외행성 → 네이탈 어스펙트):
 ${(astrologyAnalysis?.transits || []).slice(0, 8).map((t: string) => `  • ${t}`).join("\n") || "  • 데이터 없음"}
 
-[트랜짓 해석 지침]
-- ⚡합(Conjunction): 해당 행성 에너지 집중 활성화 — 새로운 시작·강화
-- ⚠️사각(Square): 긴장·도전·성장 압력 — 극복 시 도약
-- 💎삼합(Trine): 자연스러운 흐름·기회·조화
-- ⚖️충(Opposition): 외부와의 충돌·균형 과제·파트너십 이슈
-- ✨육분(Sextile): 작은 기회·협력·소통 활성화
-- 정점(Exact) 날짜가 가까울수록 영향력이 강함 — 날짜 기반 타이밍 조언을 제공하세요.
-- 외행성(목성·토성·천왕성·해왕성·명왕성) 트랜짓은 장기적 삶의 변화 테마를 나타냅니다.
+[트랜짓 해석 지침] 합=활성화, 사각=긴장/성장, 삼합=흐름/기회, 충=충돌/균형, 육분=소기회. 정점일 가까울수록 강함.
 `;
 
   const tenGodsData = sajuAnalysis?.tenGods || {};
@@ -1120,11 +1114,12 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
   
   const daewoonPromptSection = sajuAnalysis.daewoon?.currentDaewoon
     ? `
-  - 현재 대운: ${sajuAnalysis.daewoon.currentDaewoon.full} (${sajuAnalysis.daewoon.currentDaewoon.startAge}~${sajuAnalysis.daewoon.currentDaewoon.endAge}세)
-  - 대운 천간 십성: ${sajuAnalysis.daewoon.currentDaewoon.tenGodStem}
-  - 대운 지지 십성: ${sajuAnalysis.daewoon.currentDaewoon.tenGodBranch}
-  - 대운 진행방향: ${sajuAnalysis.daewoon.isForward ? "순행" : "역행"}
-  - 전체 대운 흐름: ${sajuAnalysis.daewoon.pillars.map((p: any) => `${p.full}(${p.startAge}세)`).join(" → ")}
+- 현재 대운: ${sajuAnalysis.daewoon.currentDaewoon.full} (${sajuAnalysis.daewoon.currentDaewoon.startAge}~${sajuAnalysis.daewoon.currentDaewoon.endAge}세)
+- 대운 천간 십성: ${sajuAnalysis.daewoon.currentDaewoon.tenGodStem}
+- 대운 지지 십성: ${sajuAnalysis.daewoon.currentDaewoon.tenGodBranch}
+- 대운 진행방향: ${sajuAnalysis.daewoon.isForward ? "순행" : "역행"}
+- B-175 압축: 전체 대운 중 현재+다음 2개만 포함
+- 다음 대운: ${sajuAnalysis.daewoon.pillars?.find((p: any) => p.index === (sajuAnalysis.daewoon.currentDaewoon.index || 0) + 1)?.full || "없음"}
     `
     : "- 대운 정보: 데이터 부족으로 생략";
 
@@ -1165,7 +1160,7 @@ ${ziweiPrompt}
 - 합의도: consensus_score=${consensusResult.consensus_score.toFixed(3)}
 - 합의 신뢰도: confidence_score=${consensusResult.confidence_score.toFixed(3)}
 - 충돌 요약: ${consensusResult.conflict_summary}
-- 시간축 예측: ${JSON.stringify(temporalResult)}
+- 시간축 예측: ${JSON.stringify(temporalResult)?.slice(0, 200)}
 - 질문 유형: ${finalTopic}${isDualTopic ? ` + ${secondaryTopic} (복합 질문)` : ""}
 - 서브토픽: ${detectedSubtopic || "없음"}
 - 유효 분석 시스템: ${activeEngines.length}개
@@ -1195,10 +1190,24 @@ ${finalTopic === "life_change" ? "   → 변화 질문: 사주 운로·점성술
 출력 JSON의 "total_systems"는 위 유효 엔진 수를, "converged_count"는 그중 일치도가 높은 엔진 수를 기입하세요.
 `;
 
-  const totalSystems = activeEngines.length; // Tarot counts as 1 now
+  const totalSystems = activeEngines.length;
   const validStyles = ['hanna', 'monad', 'e7l3', 'e5l5', 'l7e3'];
   const requestedStyle = validStyles.includes(input.style) ? input.style : 'hanna';
-  const modelInput = buildLocalizedNarrativePrompt(input.locale || 'kr', dataBlock, totalSystems, requestedStyle);
+  let modelInput = buildLocalizedNarrativePrompt(input.locale || 'kr', dataBlock, totalSystems, requestedStyle);
+  
+  // B-175 fix: 프롬프트 길이 체크 — 32000자 초과 시 dataBlock 압축
+  const MAX_PROMPT_LENGTH = 32000;
+  if (modelInput.length > MAX_PROMPT_LENGTH) {
+    console.warn(`[B-175] Prompt too long (${modelInput.length} chars), compressing dataBlock...`);
+    // 점성술 트랜짓 8개 → 4개로 축소, 자미두수 궁위 → 핵심 3개로 축소
+    const compressedDataBlock = dataBlock
+      .replace(/\[점성술 분석\]([\s\S]*?)(?=\[자미두수|$)/m, (match: string) => match.slice(0, 800))
+      .replace(/\[자미두수 분석\]([\s\S]*?)(?=\[수비학|$)/m, (match: string) => match.slice(0, 600))
+      .replace(/\[추가 분석 지침\]([\s\S]*?)(?=\[질문|$)/m, (match: string) => match.slice(0, 400));
+    modelInput = buildLocalizedNarrativePrompt(input.locale || 'kr', compressedDataBlock, totalSystems, requestedStyle);
+    console.log(`[B-175] Compressed prompt length: ${modelInput.length} chars`);
+  }
+  console.log("[B-175] Final prompt length:", modelInput.length, "chars (~", Math.round(modelInput.length/4), "tokens)");
 
   // Gemini 호출 전 타이밍 시작
   const geminiStart = Date.now();
