@@ -1253,6 +1253,10 @@ ${finalTopic === "life_change" ? "   → 변화 질문: 사주 운로·점성술
 
     const initialFallback = buildFallbackReading("", grade, scores, tarotCards, input.question, requestedStyle);
     try {
+      // B-175 debug v2: rawNarrative 실제 내용 확인
+      console.log("[B-175] rawNarrative length:", rawNarrative?.length ?? 0);
+      console.log("[B-175] rawNarrative first 300chars:", rawNarrative?.slice(0, 300));
+      console.log("[B-175] rawNarrative last 200chars:", rawNarrative?.slice(-200));
       console.log("[Parse Stage] safeParseGeminiJSON 시작 (Fallback 수립됨)");
       parsed = safeParseGeminiJSON(rawNarrative, initialFallback);
       
