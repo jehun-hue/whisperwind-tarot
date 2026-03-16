@@ -127,7 +127,7 @@ export function calculateConsensusV8(
     const sys = v.system.toLowerCase();
     if (!systemGroups[sys]) systemGroups[sys] = {};
     Object.entries(v.vector).forEach(([dim, val]) => {
-      systemGroups[sys][dim] = (systemGroups[sys][dim] || 0) + val;
+      systemGroups[sys][dim] = (systemGroups[sys][dim] || 0) + Number(val);
     });
   });
 
@@ -256,7 +256,7 @@ export function calculateConsensusV8(
     const weight = (currentWeights[sys] || 0.1) * (mag < 0.1 ? 0.5 : 1.0);
     if (weight > 0) {
       Object.entries(vec).forEach(([dim, val]) => {
-        dominantVector[dim] = (dominantVector[dim] || 0) + (val * weight);
+        dominantVector[dim] = (dominantVector[dim] || 0) + (Number(val) * weight);
       });
     }
   });
