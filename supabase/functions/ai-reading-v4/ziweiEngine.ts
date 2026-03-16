@@ -217,6 +217,54 @@ function placeMajorStars(ziWeiPos: number): Map<number, MajorStar[]> {
   return placements;
 }
 
+function placeAuxiliaryStars(
+  birthHourBranch: number,
+  lunarMonth: number,
+  yearGanIdx: number
+): Map<number, string[]> {
+  const aux = new Map<number, string[]>();
+  const addStar = (pos: number, star: string) => {
+    const p = ((pos % 12) + 12) % 12;
+    if (!aux.has(p)) aux.set(p, []);
+    aux.get(p)!.push(star);
+  };
+
+  // B-189: 문창(文昌) — 시지 기준 역행
+  // 戌(10)부터 시작, 시지만큼 역행
+  addStar((10 - birthHourBranch + 12) % 12, "문창");
+
+  // B-189: 문곡(文曲) — 시지 기준 순행
+  // 辰(4)부터 시작, 시지만큼 순행
+  addStar((4 + birthHourBranch) % 12, "문곡");
+
+  // B-190: 좌보(左輔) — 월 기준
+  // 辰(4)부터 시작, 월만큼 순행
+  addStar((3 + lunarMonth) % 12, "좌보");
+
+  // B-190: 우필(右弼) — 월 기준 역행
+  // 戌(10)부터 시작, 월만큼 역행
+  addStar((11 - lunarMonth + 12) % 12, "우필");
+
+  // B-191: 천괴(天魁) / 천월(天鉞) — 년간 기준
+  const kuiYueMap: Record<number, [number, number]> = {
+    0: [1, 7],   // 甲: 丑(1), 未(7)
+    1: [0, 8],   // 乙: 子(0), 申(8)
+    2: [11, 9],  // 丙: 亥(11), 酉(9)
+    3: [11, 9],  // 丁: 亥(11), 酉(9)
+    4: [1, 7],   // 戊: 丑(1), 未(7)
+    5: [0, 8],   // 己: 子(0), 申(8)
+    6: [1, 7],   // 庚: 丑(1), 未(7)
+    7: [6, 2],   // 辛: 午(6), 寅(2)
+    8: [3, 5],   // 壬: 卯(3), 巳(5)
+    9: [3, 5],   // 癸: 卯(3), 巳(5)
+  };
+  const [kuiPos, yuePos] = kuiYueMap[yearGanIdx % 10] ?? [1, 7];
+  addStar(kuiPos, "천괴");
+  addStar(yuePos, "천월");
+
+  return aux;
+}
+
 function getStarBrightness(star: MajorStar, palaceIdx: number): StarBrightness {
   const optimalPositions: Partial<Record<MajorStar, number[]>> = {
     자미: [1, 4, 6, 7], 천기: [2, 5, 8], 태양: [2, 3, 4, 5],
@@ -416,6 +464,15 @@ export function calculateServerZiWei(
   const bureau = determineBureau(mingGongIdx, yearGanIdx);
   const ziWeiPos = calculateZiWeiPosition(lunarDay, bureau);
   const starMap = placeMajorStars(ziWeiPos);
+
+  // B-189/190/191: 보조성 배치 및 starMap에 병합
+  const auxMap = placeAuxiliaryStars(birthHourBranch, lunarMonth, yearGanIdx);
+  for (const [pos, stars] of auxMap.entries()) {
+    if (!starMap.has(pos)) starMap.set(pos, [] as any);
+    for (const s of stars) {
+      (starMap.get(pos) as any[]).push(s);
+    }
+  }
 
   const natalTransformations = calculateNatalTransformations(yearGanIdx, starMap, mingGongIdx);
   const palaceTransMap = new Map<string, Transformation[]>();
