@@ -868,10 +868,6 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       const s3 = await runDataOnlyAnalysis(true, s2 || s1 || undefined);
       
       console.log("[runSequentialAnalysis] All steps finished");
-      // B-169 debug: s1/s2/s3 tarot_reading 구조 확인
-      console.log("[B-169 Debug] s1 choihanna:", !!s1?.ai_reading?.tarot_reading?.choihanna);
-      console.log("[B-169 Debug] s2 monad:", !!s2?.ai_reading?.tarot_reading?.monad);
-      console.log("[B-169 Debug] s3 mode:", s3?.ai_reading?.reading_info?.mode);
       toast.info("통합 스타일 병합을 시작합니다...");
 
       // B-159 fix: s3 최신 세션 직접 전달 (React 상태 업데이트 타이밍 이슈 방지)

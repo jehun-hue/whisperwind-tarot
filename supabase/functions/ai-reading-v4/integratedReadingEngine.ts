@@ -526,7 +526,17 @@ export function buildEnginePrompts(input: any, sajuRaw: any, sajuAnalysis: any, 
     heeShin: (sajuAnalysis?.heeShin && sajuAnalysis.heeShin !== "Unknown") ? sajuAnalysis.heeShin :
       (dbSaju?.yongsin?.data ? getYongShinFromData(dbSaju.yongsin.data, 'hee') : "데이터 부족"),
     strength: (sajuAnalysis?.strength && sajuAnalysis.strength !== "Unknown") ? sajuAnalysis.strength : "분석 불가",
-    termName: (sajuRaw?.termIdx !== undefined) ? KOREAN_SOLAR_TERMS[sajuRaw.termIdx] : "알 수 없음"
+    termName: (sajuRaw?.termIdx !== undefined) ? KOREAN_SOLAR_TERMS[sajuRaw.termIdx] : "알 수 없음",
+    // B-181 fix: 대운 교체 임박 정보 추가
+    isDaewoonChanging: !!(sajuRaw as any)?.daewoon?.is_daeun_changing_year || false,
+    currentDaewoon: (sajuRaw as any)?.daewoon?.currentDaewoon?.full || null,
+    nextDaewoon: (() => {
+      const dw = (sajuRaw as any)?.daewoon;
+      if (!dw?.is_daeun_changing_year || !dw?.pillars) return null;
+      const cur = dw.currentDaewoon;
+      const next = dw.pillars.find((p: any) => p.index === (cur?.index || 0) + 1);
+      return next?.full || null;
+    })(),
   };
 
   const luckyFactors = LUCKY_MAP[sajuDisplay.yongShin] || { color: "다양함", number: "전체", direction: "중앙" };
@@ -842,9 +852,10 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
           main_stars: majorStars,
           location: p.branch,
           // B-155 fix: 공궁 정보 포함
-          is_empty: majorStars.length === 0,
-          is_borrowed_stars: !!(p as any).is_borrowed_stars,
-          borrowed_from: (p as any).borrowed_from || null,
+          // B-180 fix: ziweiEngine의 is_empty/is_borrowed_stars 원본 값 사용 (자체 판단 제거)
+          is_empty: (p as any).is_empty ?? (majorStars.length === 0),
+          is_borrowed_stars: (p as any).is_borrowed_stars ?? false,
+          borrowed_from: (p as any).borrowed_from ?? null,
         };
       }),
       key_insights: serverZiwei.keyInsights || [],
@@ -876,7 +887,6 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     ]);
 
     const finalTopic = topicResult?.primary_topic || input.questionType || "general_future";
-    console.log("[B-163 Debug] finalTopic:", finalTopic, "| topicResult?.primary_topic:", topicResult?.primary_topic, "| input.questionType:", input.questionType);
     const secondaryTopic = topicResult?.secondary_topic || null;
     const detectedSubtopic = topicResult?.subtopic || null;
     const isDualTopic = secondaryTopic !== null && secondaryTopic !== finalTopic;
@@ -1010,11 +1020,27 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
   const birthTimeProvided = !!birthInfo && !!((birthInfo.birthTime && birthInfo.birthTime !== "") || (birthInfo.hour !== undefined && birthInfo.hour !== 12 && birthInfo.minute !== undefined));
   const birthPlaceProvided = !!birthInfo && (!!(birthInfo as any).birthPlace || !!(birthInfo as any).place);
   const questionType = finalTopic;
+
+  // B-179 fix: 복합 토픽일 때 두 토픽 가중치 평균 블렌딩
+  let blendedWeights: Record<string, number> | undefined;
+  if (isDualTopic && secondaryTopic) {
+    const w1 = getTopicWeights(finalTopic as QuestionTopic);
+    const w2 = getTopicWeights(secondaryTopic as QuestionTopic);
+    const allKeys = new Set([...Object.keys(w1), ...Object.keys(w2)]);
+    blendedWeights = {};
+    allKeys.forEach(k => {
+      blendedWeights![k] = ((w1[k] || 0) * 0.6 + (w2[k] || 0) * 0.4);
+    });
+    const total = Object.values(blendedWeights).reduce((s, v) => s + v, 0);
+    if (total > 0) Object.keys(blendedWeights).forEach(k => blendedWeights![k] /= total);
+  }
+
   const consensusResult = calculateConsensusWithTopic(
     patternVectors,
     finalTopic as QuestionTopic,
     birthTimeProvided,
-    birthPlaceProvided
+    birthPlaceProvided,
+    blendedWeights
   );
   const temporalResult = predictTemporalV8(consensusResult, systemResults, questionType);
   // B-164 fix: data-only 모드에서는 타로 없으므로 validation 강제 통과 처리
@@ -1112,6 +1138,7 @@ ${sajuSymbolic}
 - 희신: ${sajuDisplay.heeShin}
 - 신강/신약: ${sajuDisplay.strength}
 - 태어난 절기: ${sajuDisplay.termName}
+${sajuDisplay.isDaewoonChanging ? `- ⚠️ 대운 교체 임박: 현재 ${sajuDisplay.currentDaewoon} 대운이 곧 종료되고 ${sajuDisplay.nextDaewoon || "다음"} 대운으로 전환됩니다. 이 전환기의 심리적·운세적 변화를 반드시 분석에 반영하세요.` : `- 현재 대운: ${sajuDisplay.currentDaewoon || "데이터 없음"}`}
 - 행운 요소: 색상(${luckyFactors.color}), 숫자(${luckyFactors.number}), 방향(${luckyFactors.direction})
 - 대운 분석: ${daewoonPromptSection}
 - 타로 카드: ${tarotCards.map((c: any) => `${c.name}${c.isReversed ? "(역)" : ""}`).join(", ")}
@@ -1208,9 +1235,6 @@ ${finalTopic === "life_change" ? "   → 변화 질문: 사주 운로·점성술
       rawNarrative = await fetchGemini(apiKey, "gemini-2.0-flash", modelInput, "");
       geminiLatency = Date.now() - geminiStart;
       console.log("[PlatformV9] Gemini Latency:", geminiLatency, "ms");
-      // B-175 debug: 파싱 전 rawNarrative 앞부분 확인
-      console.log("[B-175 Debug] rawNarrative preview:", rawNarrative?.slice(0, 500));
-      console.log("[B-175 Debug] rawNarrative length:", rawNarrative?.length);
     } catch (e: any) {
       console.error("Gemini call failed:", e);
       responseType = "timeout";
@@ -1222,9 +1246,6 @@ ${finalTopic === "life_change" ? "   → 변화 질문: 사주 운로·점성술
     try {
       console.log("[Parse Stage] safeParseGeminiJSON 시작 (Fallback 수립됨)");
       parsed = safeParseGeminiJSON(rawNarrative, initialFallback);
-      // B-175 debug: 파싱 결과 확인
-      console.log("[B-175 Debug] parsed keys:", parsed ? Object.keys(parsed) : "null");
-      console.log("[B-175 Debug] has choihanna:", !!parsed?.tarot_reading?.choihanna?.story);
       
       if (!parsed || Object.keys(parsed).length === 0 || !parsed.reading_info) {
         parseSuccess = false;

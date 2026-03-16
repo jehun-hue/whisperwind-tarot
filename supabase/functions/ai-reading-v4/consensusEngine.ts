@@ -321,10 +321,11 @@ export function calculateConsensusWithTopic(
   vectors: SymbolicVector[],
   topic: QuestionTopic | string = "general",
   birthTimeProvided: boolean = true,
-  birthPlaceProvided: boolean = true
+  birthPlaceProvided: boolean = true,
+  customBlendedWeights?: Record<string, number>
 ): ConsensusOutput & { is_time_unknown: boolean; topic_weights_used: Record<string, number> } {
 
-  const topicWeights = getTopicWeights(topic);
+  const topicWeights = customBlendedWeights || getTopicWeights(topic);
 
   // 출생시간 미제공 시 ziwei·astrology 비중 0으로
   if (!birthTimeProvided) {

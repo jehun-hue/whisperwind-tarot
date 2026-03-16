@@ -182,12 +182,12 @@ export function getFullSaju(
     if (el) elements[TR_ELEMENTS[el]]++;
   });
 
-  // 지장간 오행 집계 (각 0.5점 — 잠재 에너지 반영)
+  // 지장간 오행 집계 (각 0.3점 — B-176 fix: 만세력 기준에 맞게 가중치 하향)
   pillars.forEach(p => {
     const hidden = HIDDEN_STEMS[p.branch] || [];
     hidden.forEach(hs => {
       const el = FIVE_ELEMENTS[hs];
-      if (el) elements[TR_ELEMENTS[el]] += 0.5;
+      if (el) elements[TR_ELEMENTS[el]] += 0.3;
     });
   });
 

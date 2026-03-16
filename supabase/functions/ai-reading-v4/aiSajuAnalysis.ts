@@ -244,7 +244,8 @@ export async function analyzeSajuStructure(
   branches.forEach((b, branchIdx) => {
     const hiddenStems = HIDDEN_STEMS[b] || [];
     // 월지(index 1)는 월령으로 가중치 2.5배 적용
-    const monthBonus = branchIdx === 1 ? 2.5 : 1.0;
+    // B-178 fix: 월지(index 1)는 월령으로 가중치 1.5배 적용 (기존 2.5배 → 과다 계산 방지)
+    const monthBonus = branchIdx === 1 ? 1.5 : 1.0;
     hiddenStems.forEach((hs, idx) => {
       const el = STEM_ELEMENT[hs];
       if (el) {
@@ -283,10 +284,15 @@ export async function analyzeSajuStructure(
   };
   const season = SEASON_MAP[monthBranch] || "봄";
 
-  // 조후용신 결정
+  // 조후용신 결정 (B-177 fix: 수 과다 일간은 조후 제한)
   let johuYong: string | null = null;
+  const waterCount = elements["수"] || 0;
+  const fireCount = elements["화"] || 0;
+  const woodCount = elements["목"] || 0;
+  // 수(水) 일간이면서 수가 이미 3개 이상이면 조후용신으로 화를 쓰지 않음 (수 과다 상태)
+  const isWaterOverflow = myElement === "수" && waterCount >= 3;
   if (season === "여름" && (elements["수"] || 0) <= 1) johuYong = "수";
-  else if (season === "겨울" && (elements["화"] || 0) <= 1) johuYong = "화";
+  else if (season === "겨울" && fireCount <= 1 && !isWaterOverflow) johuYong = "화";
 
   // 억부용신 결정
   let eokbuYong: string;
@@ -299,9 +305,13 @@ export async function analyzeSajuStructure(
     ];
     eokbuYong = drainElements.sort((a, b) => (elements[a] || 0) - (elements[b] || 0))[0];
   } else if (strength === "중화") {
-    // 중화 → 전체 오행 중 가장 부족한 오행
-    const allElements = ["목", "화", "토", "금", "수"];
-    eokbuYong = allElements.sort((a, b) => (elements[a] || 0) - (elements[b] || 0))[0];
+    // B-177 fix: 중화 → 수 과다 일간이면 토(관성)를 우선 용신으로
+    if (isWaterOverflow) {
+      eokbuYong = getConqueringElement(myElement); // 관성(토) 우선
+    } else {
+      const allElements = ["목", "화", "토", "금", "수"];
+      eokbuYong = allElements.sort((a, b) => (elements[a] || 0) - (elements[b] || 0))[0];
+    }
   } else {
     // 신약/중신약/극신약 → 일간 오행 자체가 부족하면 비겁, 생조 오행이 부족하면 인성
     const supElement = getProducingElement(myElement); // 인성 오행
