@@ -1204,11 +1204,13 @@ ${finalTopic === "life_change" ? "   → 변화 질문: 사주 운로·점성술
       parsed.convergence.common_message = "";
     }
   } else {
-    console.log("GPT 호출 시작:", JSON.stringify({model: "gemini-2.5-pro", promptLength: modelInput.length}));
     try {
-      rawNarrative = await fetchGemini(apiKey, "gemini-1.5-pro", modelInput, "");
+      rawNarrative = await fetchGemini(apiKey, "gemini-2.0-flash", modelInput, "");
       geminiLatency = Date.now() - geminiStart;
       console.log("[PlatformV9] Gemini Latency:", geminiLatency, "ms");
+      // B-175 debug: 파싱 전 rawNarrative 앞부분 확인
+      console.log("[B-175 Debug] rawNarrative preview:", rawNarrative?.slice(0, 500));
+      console.log("[B-175 Debug] rawNarrative length:", rawNarrative?.length);
     } catch (e: any) {
       console.error("Gemini call failed:", e);
       responseType = "timeout";
@@ -1220,6 +1222,9 @@ ${finalTopic === "life_change" ? "   → 변화 질문: 사주 운로·점성술
     try {
       console.log("[Parse Stage] safeParseGeminiJSON 시작 (Fallback 수립됨)");
       parsed = safeParseGeminiJSON(rawNarrative, initialFallback);
+      // B-175 debug: 파싱 결과 확인
+      console.log("[B-175 Debug] parsed keys:", parsed ? Object.keys(parsed) : "null");
+      console.log("[B-175 Debug] has choihanna:", !!parsed?.tarot_reading?.choihanna?.story);
       
       if (!parsed || Object.keys(parsed).length === 0 || !parsed.reading_info) {
         parseSuccess = false;
@@ -1949,7 +1954,7 @@ async function fetchGemini(apiKey: string, model: string, system: string, _user:
     body: JSON.stringify({
       contents: [{ parts: [{ text: system }] }],
       generationConfig: {
-        maxOutputTokens: 8192,
+        maxOutputTokens: 16384,
         temperature: 0.7,
         responseMimeType: "application/json"
       }
