@@ -408,6 +408,8 @@ export function calculateServerZiWei(
   birthHour: number, _birthMinute: number, gender: "male" | "female"
 ): ServerZiWeiResult {
   const yearGanIdx = (birthYear - 4) % 10;
+  // 자미두수는 전통적으로 실제 출생 시각(원본 시간) 기준 시지 사용
+  // 경도보정 없는 원본 birthHour 그대로 사용 (B-186: 현상 유지, 검증값과 일치)
   const birthHourBranch = Math.floor((birthHour + 1) / 2) % 12;
   const mingGongIdx = calculateMingGong(lunarMonth, birthHourBranch);
   const shenGongIdx = calculateShenGong(lunarMonth, birthHourBranch);
