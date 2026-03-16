@@ -1241,7 +1241,7 @@ ${finalTopic === "life_change" ? "   → 변화 질문: 사주 운로·점성술
     }
   } else {
     try {
-      rawNarrative = await fetchGemini(apiKey, "gemini-2.5-flash-preview-04-17", modelInput, "");
+      rawNarrative = await fetchGemini(apiKey, "gemini-1.5-flash", modelInput, "");
       geminiLatency = Date.now() - geminiStart;
       console.log("[PlatformV9] Gemini Latency:", geminiLatency, "ms");
     } catch (e: any) {
