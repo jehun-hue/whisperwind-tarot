@@ -1988,21 +1988,7 @@ async function fetchGemini(apiKey: string, model: string, system: string, _user:
     generationConfig: {
       maxOutputTokens: 16384,
       temperature: 0.2,
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: "OBJECT",
-        properties: {
-          reading_info:    { type: "OBJECT" },
-          tarot_reading:   { type: "OBJECT" },
-          convergence:     { type: "OBJECT" },
-          love_analysis:   { type: "OBJECT", nullable: true },
-          action_guide:    { type: "OBJECT" },
-          final_message:   { type: "OBJECT" },
-          merged_reading:  { type: "OBJECT" },
-          scores:          { type: "OBJECT" }
-        },
-        required: ["reading_info","tarot_reading","convergence","action_guide","final_message","merged_reading","scores"]
-      }
+      responseMimeType: "application/json"
     }
   });
 
