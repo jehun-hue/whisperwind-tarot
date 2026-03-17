@@ -1768,9 +1768,9 @@ ${finalTopic === "life_change" ? "   → 변화 질문: 사주 운로·점성술
     rawNarrative = "{}";
   } else {
     try {
-      // styleApply: 2.5-flash-lite (비용 절감, 단순 스타일 적용)
-      console.log("[MODEL]", { task: "스타일적용", model: "gemini-2.5-flash-lite" });
-      rawNarrative = await fetchGemini(apiKey, "gemini-2.5-flash-lite", stylePrompt, "", requestedTemp);
+      // styleApply: 2.5-flash (원복 - lite 파싱 에러)
+      console.log("[MODEL]", { task: "스타일적용", model: "gemini-2.5-flash" });
+      rawNarrative = await fetchGemini(apiKey, "gemini-2.5-flash", stylePrompt, "", requestedTemp);
       geminiLatency = Date.now() - styleStart;
       console.log("[PlatformV9] Style Application Latency:", geminiLatency, "ms");
     } catch (e: any) {
@@ -1820,7 +1820,7 @@ ${finalTopic === "life_change" ? "   → 변화 질문: 사주 운로·점성술
   logMonitoringEvent(supabaseClient, {
     sessionId,
     engineVersion: READING_VERSION,
-    geminiModel: input.mode === "data-only" ? "none" : "gemini-2.5-flash-lite",
+    geminiModel: input.mode === "data-only" ? "none" : "gemini-2.5-flash",
     responseType,
     parseSuccess,
     schemaValidationPassed: schemaResult.passed,

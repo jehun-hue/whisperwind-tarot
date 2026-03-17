@@ -43,8 +43,8 @@ serve(async (req: Request) => {
       const { modelInput } = payload;
       if (!modelInput) throw new Error("modelInput required for stream mode");
 
-      console.log("[MODEL]", { task: "스트리밍", model: "gemini-2.5-flash-lite" });
-      const stream = await fetchGeminiStream(API_KEY, "gemini-2.5-flash-lite", modelInput);
+      console.log("[MODEL]", { task: "스트리밍", model: "gemini-2.5-flash" });
+      const stream = await fetchGeminiStream(API_KEY, "gemini-2.5-flash", modelInput);
 
       const encoder = new TextEncoder();
       const readable = new ReadableStream({

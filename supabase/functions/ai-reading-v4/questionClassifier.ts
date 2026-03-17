@@ -240,9 +240,9 @@ export async function classifyWithFallback(
 질문: "${question}"
 응답 형식: {"primary_topic": "career", "secondary_topic": "relationship"}`;
 
-    console.log("[MODEL]", { task: "분류기", model: "gemini-2.5-flash-lite" });
+    console.log("[MODEL]", { task: "분류기", model: "gemini-2.5-flash" });
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
