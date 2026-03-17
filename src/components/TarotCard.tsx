@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import cardBackImg from "@/assets/card-back.png";
@@ -31,7 +31,7 @@ export const TarotCard: React.FC<TarotCardProps> = ({
   const displayImage = image || cardImage;
   const sizeClasses = {
     xs: "min-h-[5rem] w-12 text-[8px]",
-    sm: "min-h-[6rem] w-16 text-[10px]",
+    sm: "min-h-[6rem] w-16 text-xs",
     md: "min-h-[8rem] w-20 text-xs",
     lg: "min-h-[12rem] w-32 text-sm",
     xl: "min-h-[16rem] w-40 text-base",
@@ -120,3 +120,4 @@ export const TarotCard: React.FC<TarotCardProps> = ({
     </motion.div>
   );
 };
+
