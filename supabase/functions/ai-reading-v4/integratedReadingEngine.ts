@@ -1527,6 +1527,7 @@ ${finalTopic === "life_change" ? "   → 변화 질문: 사주 운로·점성술
     console.log(`[PlatformV9] Generating New Core Reading...`);
     const corePrompt = buildCoreReadingPrompt(locale, dataBlock, totalSystems);
     const coreStart = Date.now();
+    // coreReading: 2.5-flash (고품질 분석)
     const rawCore = await fetchGemini(apiKey, "gemini-2.5-flash", corePrompt, "", 0.15);
     coreGeminiLatency = Date.now() - coreStart;
     
@@ -1564,7 +1565,8 @@ ${finalTopic === "life_change" ? "   → 변화 질문: 사주 운로·점성술
     rawNarrative = "{}";
   } else {
     try {
-      rawNarrative = await fetchGemini(apiKey, "gemini-2.5-flash", stylePrompt, "", requestedTemp);
+      // styleApply: 2.0-flash (비용 절감)
+      rawNarrative = await fetchGemini(apiKey, "gemini-2.0-flash", stylePrompt, "", requestedTemp);
       geminiLatency = Date.now() - styleStart;
       console.log("[PlatformV9] Style Application Latency:", geminiLatency, "ms");
     } catch (e: any) {
@@ -1615,7 +1617,7 @@ ${finalTopic === "life_change" ? "   → 변화 질문: 사주 운로·점성술
   logMonitoringEvent(supabaseClient, {
     sessionId,
     engineVersion: READING_VERSION,
-    geminiModel: input.mode === "data-only" ? "none" : "gemini-2.5-flash",
+    geminiModel: input.mode === "data-only" ? "none" : "gemini-2.0-flash",
     responseType,
     parseSuccess,
     schemaValidationPassed: schemaResult.passed,
@@ -2299,8 +2301,8 @@ async function fetchGemini(apiKey: string, model: string, system: string, _user:
     }
   });
 
-  // B-204: 빈 응답 시 1회 재시도
-  const doFetch = async (): Promise<string> => {
+  // B-204 + 503 Retry logic
+  const doFetch = async (attempt: number = 0): Promise<string> => {
     const response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -2309,6 +2311,13 @@ async function fetchGemini(apiKey: string, model: string, system: string, _user:
 
     if (!response.ok) {
       const errText = await response.text();
+      // 503 Retry logic (Max 3 retries)
+      if (response.status === 503 && attempt < 3) {
+        const waitMs = Math.pow(2, attempt + 1) * 1000; // 2s, 4s, 8s
+        console.log("[GEMINI RETRY]", { attempt: attempt + 1, statusCode: 503, waitMs });
+        await new Promise(resolve => setTimeout(resolve, waitMs));
+        return doFetch(attempt + 1);
+      }
       throw new Error(`Gemini API error: ${response.status} - ${errText}`);
     }
 
@@ -2319,11 +2328,11 @@ async function fetchGemini(apiKey: string, model: string, system: string, _user:
   // 1차 시도
   let result = await doFetch();
 
-  // B-204: 빈 응답이면 1초 대기 후 1회 재시도
+  // B-204: 빈 응답이면 1초 대기 후 1회 추가 재시도 (팩트체크용)
   if (!result || result === "{}") {
     console.warn("[B-204] Gemini 빈 응답 감지 → 1초 후 재시도");
     await new Promise(resolve => setTimeout(resolve, 1000));
-    result = await doFetch();
+    result = await doFetch(); // 여기서도 doFetch 내부의 503 로직은 작동함
     if (!result || result === "{}") {
       console.error("[B-204] 재시도 후에도 빈 응답 → fallback 진행");
     } else {
@@ -2336,19 +2345,32 @@ async function fetchGemini(apiKey: string, model: string, system: string, _user:
 
 export async function fetchGeminiStream(apiKey: string, model: string, system: string): Promise<ReadableStream<Uint8Array>> {
   const url = `https://generativelanguage.googleapis.com/v1/models/${model}:streamGenerateContent?key=${apiKey}&alt=sse`;
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: system }] }],
-      generationConfig: { maxOutputTokens: 8192 }
-    })
-  });
+  
+  const doFetch = async (attempt: number = 0): Promise<Response> => {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: system }] }],
+        generationConfig: { maxOutputTokens: 8192 }
+      })
+    });
 
-  if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(`Gemini Stream API error: ${response.status} - ${errText}`);
-  }
+    if (!response.ok) {
+      const errText = await response.text();
+      // 503 Retry logic (Max 3 retries)
+      if (response.status === 503 && attempt < 3) {
+        const waitMs = Math.pow(2, attempt + 1) * 1000;
+        console.log("[GEMINI RETRY]", { attempt: attempt + 1, statusCode: 503, waitMs });
+        await new Promise(resolve => setTimeout(resolve, waitMs));
+        return doFetch(attempt + 1);
+      }
+      throw new Error(`Gemini Stream API error: ${response.status} - ${errText}`);
+    }
+    return response;
+  };
+
+  const response = await doFetch();
 
   if (!response.body) throw new Error("No response body for streaming");
   return response.body;

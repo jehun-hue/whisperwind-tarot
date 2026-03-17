@@ -11,6 +11,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
 const READING_VERSION = "v9_symbolic_prediction_engine";
@@ -18,7 +19,9 @@ const READING_VERSION = "v9_symbolic_prediction_engine";
 import { safeParseGeminiJSON } from "./jsonUtils.ts";
 
 serve(async (req: Request) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
 
   try {
     const API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
@@ -39,7 +42,7 @@ serve(async (req: Request) => {
       const { modelInput } = payload;
       if (!modelInput) throw new Error("modelInput required for stream mode");
 
-      const stream = await fetchGeminiStream(API_KEY, "gemini-2.5-flash", modelInput);
+      const stream = await fetchGeminiStream(API_KEY, "gemini-2.0-flash", modelInput);
 
       const encoder = new TextEncoder();
       const readable = new ReadableStream({
