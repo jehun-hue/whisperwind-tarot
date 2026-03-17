@@ -295,7 +295,11 @@ const TOPIC_PATTERNS: Record<string, Record<string, string[]>> = {
 };
 
 // 음력→양력 변환 함수
-function lunarToSolar(year: number, month: number, day: number, isLeapMonth: boolean = false): { year: number; month: number; day: number } {
+/**
+ * @deprecated Use lunarToSolarAccurate from lunarData.ts instead.
+ * This internal version is kept for reference but not used in the main pipeline.
+ */
+function _deprecated_lunarToSolar(year: number, month: number, day: number, isLeapMonth: boolean = false): { year: number; month: number; day: number } {
   // 1900~2100년 음력→양력 변환 테이블 (주요 절입일 기준)
   const lunarNewYearSolar: Record<number, [number, number, number]> = {
     1970: [1970, 1, 27], 1971: [1971, 1, 15], 1972: [1972, 2, 3],
@@ -320,7 +324,7 @@ function lunarToSolar(year: number, month: number, day: number, isLeapMonth: boo
   };
 
   const newYear = lunarNewYearSolar[year];
-  if (!newYear) return { year, month, day }; // 범위 밖이면 그대로 반환
+  if (!newYear) return { year, month, day };
 
   const baseDate = new Date(Date.UTC(newYear[0], newYear[1] - 1, newYear[2]));
   const lunarMonthDays = [29, 30, 29, 30, 29, 30, 29, 30, 29, 30, 29, 30];
@@ -330,9 +334,8 @@ function lunarToSolar(year: number, month: number, day: number, isLeapMonth: boo
     totalDays += lunarMonthDays[m - 1];
   }
 
-  // 윤달 처리: 윤달이면 해당 월 일수 전체를 더한 후 day 추가
   if (isLeapMonth) {
-    totalDays += lunarMonthDays[month - 1]; // 해당 월(평달) 전체 건너뜀
+    totalDays += lunarMonthDays[month - 1]; 
   }
 
   totalDays += day - 1;
@@ -825,13 +828,16 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
   const birthDate = new Date(Date.UTC(birthInfo.year, birthInfo.month - 1, birthInfo.day, birthInfo.hour, birthInfo.minute, 0));
 
   // 음력→양력 변환 적용
-  const solarBirthInfo = (rawBirth.isLunar || rawBirth.isLunarDate)
+  const isLunar = !!(rawBirth.isLunar || rawBirth.isLunarDate);
+  const isLeapMonthInput = !!rawBirth.isLeapMonth;
+  
+  const solarBirthInfo = isLunar
     ? (() => {
         const converted = lunarToSolarAccurate(
           birthInfo.year,
           birthInfo.month,
           birthInfo.day,
-          rawBirth.isLeapMonth ?? false
+          isLeapMonthInput
         );
         // 변환 결과 유효성 검증
         const isValidConversion =
@@ -843,14 +849,25 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
           converted.day <= 31;
 
         if (!isValidConversion) {
-          console.warn('⚠️ [음력변환 실패] 원본 날짜로 폴백:', birthInfo);
-          return birthInfo;
+          console.error('❌ [음력변환 실패] 유효하지 않은 변환 결과:', { birthInfo, converted });
+          throw new Error("음력에서 양력으로 변환하는 데 실패했습니다. 날짜를 확인해 주세요.");
         }
 
-        console.log(`📊 [음력변환 성공] ${birthInfo.year}.${birthInfo.month}.${birthInfo.day}(음) → ${converted.year}.${converted.month}.${converted.day}(양)`);
-        return { ...birthInfo, year: converted.year, month: converted.month, day: converted.day };
+        const result = { ...birthInfo, year: converted.year, month: converted.month, day: converted.day };
+        console.log("[LUNAR→SOLAR]", { 
+          input: { year: birthInfo.year, month: birthInfo.month, day: birthInfo.day }, 
+          isLunar, 
+          isLeapMonth: isLeapMonthInput,
+          converted: { year: result.year, month: result.month, day: result.day },
+          success: true 
+        });
+        return result;
       })()
-    : birthInfo;
+    : { ...birthInfo };
+
+  if (!isLunar) {
+    console.log("[LUNAR→SOLAR] 양력 입력 유지:", { year: solarBirthInfo.year, month: solarBirthInfo.month, day: solarBirthInfo.day });
+  }
 
   // Step 1: Physical Calculation Pipeline
     // 사주 계산 (동기)
@@ -943,18 +960,34 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     const ziweiCorrectedMinute = ((ziweiTotalMinutes % 60) + 60) % 60;
 
     // B-57: 정밀 양력→음력 변환 (윤달 플래그 포함)
-    let ziweiLunarMonth = solarBirthInfo.month;
-    let ziweiLunarDay = solarBirthInfo.day;
+    let ziweiLunarMonth = 1;
+    let ziweiLunarDay = 1;
     let ziweiIsLeapMonth = false;
+    let ziweiSource = "unknown";
 
-    if (!birthInfo.isLunar) {
+    if (isLunar) {
+      // 음력 입력이면 원본 데이터를 그대로 사용 (매우 중요)
+      ziweiLunarMonth = birthInfo.month;
+      ziweiLunarDay = birthInfo.day;
+      ziweiIsLeapMonth = isLeapMonthInput;
+      ziweiSource = "원본음력";
+    } else {
+      // 양력 입력이면 양력->음력 역변환
       const lunarResult = solarToLunar(solarBirthInfo.year, solarBirthInfo.month, solarBirthInfo.day);
       ziweiLunarMonth = lunarResult.lunarMonth;
       ziweiLunarDay = lunarResult.lunarDay;
       ziweiIsLeapMonth = lunarResult.is_leap_month;
-    } else {
-      ziweiIsLeapMonth = birthInfo.isLeapMonth ?? false;
+      ziweiSource = "양력→음력변환";
     }
+
+    console.log("[ZIWEI INPUT]", { 
+      year: birthInfo.year,
+      ziweiLunarMonth, 
+      ziweiLunarDay, 
+      isLeap: ziweiIsLeapMonth,
+      isLunar, 
+      source: ziweiSource 
+    });
 
     // 수비학 (동기)
     let numerologyResult: any = null;
@@ -1566,7 +1599,7 @@ ${finalTopic === "life_change" ? "   → 변화 질문: 사주 운로·점성술
   } else {
     try {
       // styleApply: 2.0-flash (비용 절감)
-      rawNarrative = await fetchGemini(apiKey, "gemini-2.5-flash-lite", stylePrompt, "", requestedTemp);
+      rawNarrative = await fetchGemini(apiKey, "gemini-2.5-flash", stylePrompt, "", requestedTemp);
       geminiLatency = Date.now() - styleStart;
       console.log("[PlatformV9] Style Application Latency:", geminiLatency, "ms");
     } catch (e: any) {
@@ -1617,7 +1650,7 @@ ${finalTopic === "life_change" ? "   → 변화 질문: 사주 운로·점성술
   logMonitoringEvent(supabaseClient, {
     sessionId,
     engineVersion: READING_VERSION,
-    geminiModel: input.mode === "data-only" ? "none" : "gemini-2.5-flash-lite",
+    geminiModel: input.mode === "data-only" ? "none" : "gemini-2.5-flash",
     responseType,
     parseSuccess,
     schemaValidationPassed: schemaResult.passed,

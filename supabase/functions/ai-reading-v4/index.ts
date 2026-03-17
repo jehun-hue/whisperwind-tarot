@@ -1,3 +1,4 @@
+console.log("[BOOT] Edge function starting...");
 /**
  * index.ts
  * - Production AI Symbolic Prediction Engine Platform (v8).
@@ -42,7 +43,7 @@ serve(async (req: Request) => {
       const { modelInput } = payload;
       if (!modelInput) throw new Error("modelInput required for stream mode");
 
-      const stream = await fetchGeminiStream(API_KEY, "gemini-2.5-flash-lite", modelInput);
+      const stream = await fetchGeminiStream(API_KEY, "gemini-2.5-flash", modelInput);
 
       const encoder = new TextEncoder();
       const readable = new ReadableStream({
