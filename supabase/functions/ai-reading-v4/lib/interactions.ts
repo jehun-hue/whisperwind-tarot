@@ -273,7 +273,7 @@ export function calculateShinsal(
   if ((dohwaTargetY && bSet.has(dohwaTargetY)) || (dohwaTargetD && bSet.has(dohwaTargetD))) {
     results.push({
       name: "도화살", type: "도화",
-      description: "매력·인기·이성운 강함. 감정적 갈등 가능성",
+      description: "매력과 인연이 강한 살",
       health_implication: "피부·생식기 계통 주의",
       topic_relevance: ["relationship", "family"],
       severity: "중립",

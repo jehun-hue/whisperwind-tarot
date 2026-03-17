@@ -73,7 +73,7 @@ export function getFullSaju(
   hour: number,
   minute: number,
   gender: 'M' | 'F' = 'M',
-  longitude: number = 127.5,
+  longitude: number = 126.978,
   hasTime: boolean = true
 ) {
   // 1. Longitude & DST Correction

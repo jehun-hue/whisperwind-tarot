@@ -780,13 +780,22 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
       gender: rawBirth.gender === "male" || rawBirth.gender === "M" ? "M" : "F",
       birthDate: rawDate,
       birthTime: rawTime,
-      birthPlace: rawBirth.birthPlace,
-      latitude: rawBirth.latitude,
-      longitude: rawBirth.longitude,
       isLunar: rawBirth.isLunar,
       isLeapMonth: rawBirth.isLeapMonth,
       // B-123 fix: birthPlace 텍스트 → 위도/경도 자동 변환 (주요 도시 테이블)
-      ...((!rawBirth.latitude || !rawBirth.longitude) && rawBirth.birthPlace ? (() => {
+      ...(() => {
+        let bPlace = rawBirth.birthPlace || "";
+        let lat = rawBirth.latitude;
+        let lng = rawBirth.longitude;
+        
+        // 출생지 기본값 처리 (서울)
+        if (!bPlace || bPlace.trim() === "") {
+          bPlace = "서울";
+          if (!lat) lat = 37.5665;
+          if (!lng) lng = 126.9780;
+          console.log("[BIRTHPLACE DEFAULT]", { birthPlace: bPlace, latitude: lat, longitude: lng });
+        }
+
         const CITY_COORDS: Record<string, [number, number]> = {
           "서울": [37.5665, 126.9780], "Seoul": [37.5665, 126.9780],
           "부산": [35.1796, 129.0756], "Busan": [35.1796, 129.0756],
@@ -802,14 +811,13 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
           "런던": [51.5074, -0.1278], "London": [51.5074, -0.1278],
           "파리": [48.8566, 2.3522], "Paris": [48.8566, 2.3522],
         };
-        const place = (rawBirth.birthPlace || "").trim();
-        if (!place) return {};
+        const place = bPlace.trim();
         const exactMatch = CITY_COORDS[place];
-        if (exactMatch) return { latitude: exactMatch[0], longitude: exactMatch[1] };
+        if (exactMatch) return { birthPlace: bPlace, latitude: exactMatch[0], longitude: exactMatch[1] };
         const partialKey = Object.keys(CITY_COORDS).find(k => place.includes(k) || k.includes(place));
-        if (partialKey) return { latitude: CITY_COORDS[partialKey][0], longitude: CITY_COORDS[partialKey][1] };
-        return { latitude: 37.5665, longitude: 126.9780 };
-      })() : {}),
+        if (partialKey) return { birthPlace: bPlace, latitude: CITY_COORDS[partialKey][0], longitude: CITY_COORDS[partialKey][1] };
+        return { birthPlace: bPlace, latitude: lat || 37.5665, longitude: lng || 126.9780 };
+      })(),
     };
   }
 
