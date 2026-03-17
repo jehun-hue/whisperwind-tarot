@@ -83,27 +83,36 @@ export function getFullSaju(
   // DST 서머타임: 특정 연도 하절기 +60분 추가
   let dstOffset = 0;
 
-  // UTC+8:30 구간 보정 (-30분)
+  // UTC+8:30 구간 보정 (30분 추가)
   const isUTC830Period =
     (year >= 1954 && year <= 1960) ||
     (year === 1961 && (month < 8 || (month === 8 && day < 10)));
-  if (isUTC830Period) dstOffset = -30;
-
+  const utc830Correction = isUTC830Period ? 30 : 0;
+ 
   const mmdd = month * 100 + day;
-
-  // DST 서머타임 적용 구간 (+60분)
+ 
+  // DST 서머타임 적용 구간 (60분 차감)
   const dstPeriods: [number, number, number][] = [
     [1948, 601, 913], [1949, 403, 911], [1950, 401, 910],
     [1951, 506, 909], [1955, 505, 918], [1956, 520, 930],
     [1957, 414, 922], [1958, 504, 921], [1959, 415, 920],
     [1960, 501, 918], [1987, 510, 1011], [1988, 508, 1011],
   ];
+  let dstCorrection = 0;
   for (const [dstYear, startMmdd, endMmdd] of dstPeriods) {
     if (year === dstYear && mmdd >= startMmdd && mmdd <= endMmdd) {
-      dstOffset += 60;
+      dstCorrection = -60;
       break;
     }
   }
+  
+  dstOffset = utc830Correction + dstCorrection;
+  console.log("[DST DEBUG]", { 
+    year, month, day, mmdd, 
+    isUTC830Period, utc830Correction, 
+    isDST: dstCorrection !== 0, dstCorrection, 
+    finalDstOffset: dstOffset 
+  });
   // 진태양시 보정 (분 단위)
   // KST = UTC+9 = 135도 기준, 경도 1도당 4분
   const longitudeCorrectionMinutes = (longitude - 135) * 4;
@@ -186,25 +195,51 @@ export function getFullSaju(
   const hourPillar = hasTime 
     ? { stem: STEMS[hStemIdx], branch: BRANCHES[hBranchIdx] }
     : { stem: "미상", branch: "미상" };
+  
+  console.log("[HOUR PILLAR DEBUG]", { 
+    correctedHour, 
+    effectiveHour,
+    correctedMinute,
+    normalizedMinutes,
+    dayGan: dayMaster, 
+    hourBranch: hourPillar.branch, 
+    hourGan: hourPillar.stem, 
+    hourPillar 
+  });
 
-  // 6. Elements Distribution (천간 + 지지 + 지장간 포함)
+  // 6. Elements Distribution (천간 1.0 + 지장간 가중치)
+  console.log("[HIDDEN_STEMS DEBUG]", JSON.stringify(HIDDEN_STEMS));
   const pillars = [yearPillar, monthPillar, dayPillar, hourPillar];
-  const stemBranchArray = pillars.flatMap(p => [p.stem, p.branch]);
   const elements: Record<string, number> = { "목": 0, "화": 0, "토": 0, "금": 0, "수": 0 };
 
-  // 천간·지지 오행 집계 (각 1점)
-  stemBranchArray.forEach(c => {
-    const el = FIVE_ELEMENTS[c];
-    if (el) elements[TR_ELEMENTS[el]]++;
+  const pillarLabels = ["년간", "년지", "월간", "월지", "일간", "일지", "시간", "시지"];
+  
+  // 천간 오행 집계 (각 1점) — 지지는 지장간으로만 계산하므로 여기서는 제외
+  pillars.forEach((p, idx) => {
+    const sEl = FIVE_ELEMENTS[p.stem];
+    const sName = TR_ELEMENTS[sEl];
+    
+    if (sName) {
+      elements[sName]++;
+      console.log("[ELEMENT DETAIL]", `${pillarLabels[idx * 2]}`, p.stem, "→", sName, 1.0);
+    }
   });
 
   // 지장간 오행 집계 (본기 0.5, 중기 0.2, 초기 0.1 — 보정됨)
   const HIDDEN_WEIGHTS_EL = [0.5, 0.2, 0.1]; // 본기, 중기, 초기
-  pillars.forEach(p => {
+  const branchLabels = ["년지", "월지", "일지", "시지"];
+  const hiddenLabels = ["본기", "중기", "초기"];
+
+  pillars.forEach((p, bIdx) => {
     const hidden = HIDDEN_STEMS[p.branch] || [];
     hidden.forEach((hs, idx) => {
       const el = FIVE_ELEMENTS[hs];
-      if (el) elements[TR_ELEMENTS[el]] += HIDDEN_WEIGHTS_EL[idx] ?? 0.1;
+      const name = TR_ELEMENTS[el];
+      const weight = HIDDEN_WEIGHTS_EL[idx] ?? 0.1;
+      if (name) {
+        elements[name] += weight;
+        console.log("[ELEMENT DETAIL]", `${branchLabels[bIdx]} 지장간 ${hiddenLabels[idx]}`, hs, "→", name, weight);
+      }
     });
   });
 
@@ -219,6 +254,7 @@ export function getFullSaju(
   for (const key of Object.keys(elements)) {
     roundedElements[key] = Math.round(elements[key] * 10) / 10;
   }
+  console.log("[ELEMENTS DEBUG]", JSON.stringify(roundedElements));
 
   const result = {
     pillars: {

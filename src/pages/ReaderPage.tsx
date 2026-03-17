@@ -119,9 +119,10 @@ export default function ReaderPage() {
   };
 
   const updateSession = (updated: ReadingSession) => {
+    // 1. 전체 목록 업데이트 (함수형 업데이트로 리스트 일관성 유지)
     setSessions((prev) => prev.map((s) => {
       if (s.id === updated.id) {
-        // 병목 해결: 기존의 ai_reading을 최대한 보존하면서 업데이트된 내용만 머지
+        // 기존의 ai_reading을 최대한 보존하면서 업데이트된 내용만 머지
         const existingReading = (s.ai_reading as any) || {};
         const newReading = (updated.ai_reading as any) || {};
         
@@ -150,19 +151,53 @@ export default function ReaderPage() {
           }
         };
 
-        const result = {
+        return {
           ...s,
           ...updated,
           ai_reading: mergedReading,
         };
-        // selectedSession도 최신으로 유지
-        if (selectedSession?.id === updated.id) {
-            setSelectedSession(result);
-        }
-        return result;
       }
       return s;
     }));
+
+    // 2. 선택된 세션 업데이트 (함수형 업데이트로 클로저 캡처 문제 해결)
+    setSelectedSession((prev) => {
+      if (!prev || prev.id !== updated.id) return prev;
+
+      const existingReading = (prev.ai_reading as any) || {};
+      const newReading = (updated.ai_reading as any) || {};
+      
+      const mergedReading = {
+        ...existingReading,
+        ...newReading,
+        tarot_reading: {
+          ...(existingReading.tarot_reading || {}),
+          ...(newReading.tarot_reading || {}),
+        },
+        merged_reading: {
+          ...(existingReading.merged_reading || {}),
+          ...(newReading.merged_reading || {}),
+        },
+        convergence: {
+          ...(existingReading.convergence || {}),
+          ...(newReading.convergence || {}),
+        },
+        action_guide: {
+          ...(existingReading.action_guide || {}),
+          ...(newReading.action_guide || {}),
+        },
+        final_message: {
+          ...(existingReading.final_message || {}),
+          ...(newReading.final_message || {}),
+        }
+      };
+
+      return {
+        ...prev,
+        ...updated,
+        ai_reading: mergedReading,
+      };
+    });
   };
 
   const filteredSessions = useMemo(() => {
@@ -664,6 +699,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       if (!result) {
         throw new Error("AI 응답이 비어 있습니다. 잠시 후 다시 시도해주세요.");
       }
+      console.log("[STATE UPDATE]", style, "result length:", JSON.stringify(result)?.length);
 
       // management_tracks 누락 방지: reading 객체 내에 병합 후 저장
       if (aiData.management_tracks) {

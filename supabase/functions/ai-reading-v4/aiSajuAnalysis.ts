@@ -283,7 +283,8 @@ export async function analyzeSajuStructure(
 
   // B-222: 강약 판정 (월령 득령 보정 적용)
   const strengthMonthBranch = pillars.month?.branch;
-  const monthElement = STEM_ELEMENT[strengthMonthBranch] || "";
+  const monthElement = BRANCH_ELEMENT[strengthMonthBranch] || "";
+  console.log("[MONTH BRANCH DEBUG]", strengthMonthBranch, "→", monthElement);
   const isDeukyeong = (monthElement === myElement) || 
     (myElement === "목" && monthElement === "수") ||
     (myElement === "화" && monthElement === "목") ||
@@ -305,6 +306,17 @@ export async function analyzeSajuStructure(
   else if (supportRatio >= 0.42) strengthLevel = "중화";
   else if (supportRatio >= 0.30) strengthLevel = "신약";
   else strengthLevel = "극신약";
+
+  console.log("[STRENGTH DEBUG]", JSON.stringify({ 
+    dmEl: myElement, 
+    monthBranchEl: monthElement, 
+    isDeukyeong, 
+    supportForce, 
+    resistForce, 
+    adjustedSupportForce, 
+    supportRatio, 
+    strengthLevel 
+  }));
 
   // 종격 판정
   let specialPattern = "";
