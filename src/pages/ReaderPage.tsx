@@ -119,8 +119,50 @@ export default function ReaderPage() {
   };
 
   const updateSession = (updated: ReadingSession) => {
-    setSessions((prev) => prev.map((s) => s.id === updated.id ? updated : s));
-    setSelectedSession(updated);
+    setSessions((prev) => prev.map((s) => {
+      if (s.id === updated.id) {
+        // 병목 해결: 기존의 ai_reading을 최대한 보존하면서 업데이트된 내용만 머지
+        const existingReading = (s.ai_reading as any) || {};
+        const newReading = (updated.ai_reading as any) || {};
+        
+        const mergedReading = {
+          ...existingReading,
+          ...newReading,
+          tarot_reading: {
+            ...(existingReading.tarot_reading || {}),
+            ...(newReading.tarot_reading || {}),
+          },
+          merged_reading: {
+            ...(existingReading.merged_reading || {}),
+            ...(newReading.merged_reading || {}),
+          },
+          convergence: {
+            ...(existingReading.convergence || {}),
+            ...(newReading.convergence || {}),
+          },
+          action_guide: {
+            ...(existingReading.action_guide || {}),
+            ...(newReading.action_guide || {}),
+          },
+          final_message: {
+            ...(existingReading.final_message || {}),
+            ...(newReading.final_message || {}),
+          }
+        };
+
+        const result = {
+          ...s,
+          ...updated,
+          ai_reading: mergedReading,
+        };
+        // selectedSession도 최신으로 유지
+        if (selectedSession?.id === updated.id) {
+            setSelectedSession(result);
+        }
+        return result;
+      }
+      return s;
+    }));
   };
 
   const filteredSessions = useMemo(() => {
@@ -469,7 +511,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
     }
   };
 
-  const runAIAnalysisV2 = async (style: 'hanna' | 'monad' | 'e7l3' | 'e5l5' | 'l7e3' = 'hanna', isAutoRun = false, overrideSession?: ReadingSession, coreReading?: any) => {
+  const runAIAnalysisV2 = async (style: 'hanna' | 'monad' | 'e7l3' | 'e5l5' | 'l7e3' = 'hanna', isAutoRun = false, overrideSession?: ReadingSession, coreReading?: any, skipDbSave?: boolean) => {
     const currentSession = overrideSession || session;
     console.log(`[runAIAnalysisV2] Start style=${style}, isAutoRun=${isAutoRun}`);
     // 가드 로직: 해당 해석이 이미 존재하면 재생성 방지 (수동 실행 시에만 가드 작동)
@@ -680,11 +722,13 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
               mergedReading.engine?.validation?.message?.includes("Data-Only"));
             const finalStatus = (hasNarrative || isDataOnly) ? "completed" : (latestDbSession?.status || currentSession.status);
        
-            await supabase.from("reading_sessions").update({
-              ai_reading: mergedReading as any,
-              saju_data: sajuDataForAI as any,
-              status: finalStatus,
-            }).eq("id", currentSession.id);
+            if (!skipDbSave) {
+              await supabase.from("reading_sessions").update({
+                ai_reading: mergedReading as any,
+                saju_data: sajuDataForAI as any,
+                status: finalStatus,
+              }).eq("id", currentSession.id);
+            }
        
             const updatedSessionData = {
               ...currentSession,
@@ -697,7 +741,8 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
 
             resolve({
               ...updatedSessionData,
-              coreReading: aiData?.coreReading, // B-300: coreReading 반환해서 외부에서 재사용 가능하게 함
+              aiResult: result,
+              coreReading: aiData?.coreReading, 
             });
           } catch (e) {
             reject(e);
@@ -770,7 +815,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
     toast.success(`${style.toUpperCase()} 스타일 병합 완료`);
   };
 
-  const runDataOnlyAnalysis = async (isAutoRun = false, overrideSession?: ReadingSession) => {
+  const runDataOnlyAnalysis = async (isAutoRun = false, overrideSession?: ReadingSession, skipDbSave?: boolean) => {
     const currentSession = overrideSession || session;
     if (!isAutoRun) {
       const ok = window.confirm(
@@ -896,10 +941,12 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
         mergedReading.engine?.validation?.message?.includes("Data-Only"));
       const finalStatus = (hasNarrative || isDataOnly) ? "completed" : currentSession.status;
  
-      await supabase.from("reading_sessions").update({
-        ai_reading: mergedReading as any,
-        status: finalStatus,
-      }).eq("id", currentSession.id);
+      if (!skipDbSave) {
+        await supabase.from("reading_sessions").update({
+          ai_reading: mergedReading as any,
+          status: finalStatus,
+        }).eq("id", currentSession.id);
+      }
  
       onUpdate({
         ...currentSession,
@@ -910,6 +957,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
         ...currentSession,
         ai_reading: mergedReading,
         status: finalStatus,
+        aiResult: result, // 리턴 추가
       };
     } catch (err) {
       console.error("Data-only analysis error:", err);
@@ -939,17 +987,21 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       const styles: Array<'hanna' | 'monad' | 'e7l3' | 'e5l5' | 'l7e3'> = 
         ['hanna', 'monad', 'e7l3', 'e5l5', 'l7e3'];
       
-      let latestSession: any = undefined;
+      let latestSession: any = session;
+      const aiResults: any[] = [];
       
       // 1. coreReading 생성을 위해 첫 번째 스타일(hanna) 우선 실행
       const firstStyle = styles[0];
       let coreReadingCache: any = null;
       try {
         console.log(`[runParallelAnalysis] FIRST: ${firstStyle} start`);
-        const firstSessionResult = await runAIAnalysisV2(firstStyle, true, latestSession);
-        latestSession = firstSessionResult || latestSession;
-        if (firstSessionResult && (firstSessionResult as any).coreReading) {
-            coreReadingCache = (firstSessionResult as any).coreReading;
+        const firstSessionResult = await runAIAnalysisV2(firstStyle, true, latestSession, null, true) as any; // skipDbSave: true 추가
+        if (firstSessionResult) {
+          latestSession = firstSessionResult;
+          if (firstSessionResult.aiResult) aiResults.push(firstSessionResult.aiResult);
+          if (firstSessionResult.coreReading) {
+            coreReadingCache = firstSessionResult.coreReading;
+          }
         }
       } catch (err) {
         console.error(`[runParallelAnalysis] ${firstStyle} failed:`, err);
@@ -962,8 +1014,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       
       const results = await Promise.allSettled(
         restStyles.map(async (style) => {
-          // Promise가 resolve될 때 상태가 업데이트 되도록 runAIAnalysisV2 내부에서 처리됨 (onUpdate 등)
-          return await runAIAnalysisV2(style, true, latestSession, coreReadingCache);
+          return await runAIAnalysisV2(style, true, latestSession, coreReadingCache, true); // skipDbSave: true
         })
       );
       
@@ -972,13 +1023,74 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
           console.error(`[runParallelAnalysis] ${restStyles[idx]} failed:`, res.reason);
           toast.error(`${restStyles[idx]} 분석 실패`);
         } else if (res.status === "fulfilled" && res.value) {
-          // 가장 마지막으로 성공한 세션을 latestSession으로 유지 (순서는 보장 불가하나, data-only를 위해 필요)
-          latestSession = res.value;
+          const val = res.value as any;
+          if (val.aiResult) aiResults.push(val.aiResult);
+          // 병합은 마지막에 한번에 수행하므로 여기서 latestSession을 매번 덮어쓸 필요 없음
         }
       });
 
       console.log("[runParallelAnalysis] data-only start");
-      await runDataOnlyAnalysis(true, latestSession);
+      const dataOnlyResult: any = await runDataOnlyAnalysis(true, latestSession, true); // skipDbSave: true
+      if (dataOnlyResult && dataOnlyResult.aiResult) {
+        aiResults.push(dataOnlyResult.aiResult);
+      }
+
+      // 3. 모든 분석 완료 후 최종 DB 1회 업데이트 (통합 저장)
+      // sessionWriteQueue를 통해 진행 중인 모든 업데이트가 완료된 후 실행 유도
+      console.log("[runParallelAnalysis] Performing final unified DB update...");
+      await new Promise((resolve) => {
+        sessionWriteQueue = sessionWriteQueue.then(async () => {
+          try {
+            const { data: finalLatest } = await supabase
+              .from("reading_sessions")
+              .select("ai_reading")
+              .eq("id", session.id)
+              .single();
+              
+            let finalCombinedReading = (finalLatest?.ai_reading as any) || latestSession.ai_reading;
+
+            // 모아온 aiResults들을 전부 머지
+            aiResults.forEach(piece => {
+              finalCombinedReading = {
+                ...finalCombinedReading,
+                ...piece,
+                tarot_reading: {
+                  ...(finalCombinedReading.tarot_reading || {}),
+                  ...(piece.tarot_reading || {}),
+                },
+                merged_reading: {
+                  ...(finalCombinedReading.merged_reading || {}),
+                  ...(piece.merged_reading || {}),
+                },
+                convergence: {
+                  ...(finalCombinedReading.convergence || {}),
+                  ...(piece.convergence || {}),
+                },
+                action_guide: {
+                  ...(finalCombinedReading.action_guide || {}),
+                  ...(piece.action_guide || {}),
+                },
+                final_message: {
+                  ...(finalCombinedReading.final_message || {}),
+                  ...(piece.final_message || {}),
+                }
+              };
+            });
+
+            await supabase.from("reading_sessions").update({
+              ai_reading: finalCombinedReading,
+              status: "completed"
+            }).eq("id", session.id);
+
+            const finalUpdate = { ...latestSession, ai_reading: finalCombinedReading, status: "completed" };
+            onUpdate(finalUpdate);
+            resolve(finalUpdate);
+          } catch (e) {
+            console.error("Final unified save failed", e);
+            resolve(null);
+          }
+        });
+      });
 
       toast.success("통합 병렬 분석 완료!");
     } catch (err) {
