@@ -389,7 +389,7 @@ export default function ClientPage() {
         <div className="absolute bottom-1/4 right-1/4 h-80 w-80 rounded-full bg-gold/5 blur-[100px]" />
       </div>
 
-      <div className="relative z-10 mx-auto max-w-lg px-4 py-8 sm:px-6">
+      <div className={`relative z-10 mx-auto px-4 py-8 sm:px-6 transition-all duration-500 ${step === "cardSelect" ? "max-w-6xl" : "max-w-lg"}`}>
         {/* Admin button */}
         <button
           onClick={() => navigate("/reader")}

@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -302,7 +302,7 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
 
       <div className="relative z-10">
         <UserHeader locale={config.locale} />
-        <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
+        <div className={`mx-auto px-4 py-6 sm:px-6 transition-all duration-500 ${step === "select" ? "max-w-6xl" : "max-w-4xl"}`}>
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
