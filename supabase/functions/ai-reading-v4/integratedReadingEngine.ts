@@ -719,22 +719,67 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     .join('\n');
 
   // Normalize birthInfo: client sends {birthDate:"1987-07-17", birthTime:"15:30", gender:"male"}
-  // Engine expects {year, month, day, hour, minute, gender}
   const rawBirth = input.birthInfo || {};
   // B-228 + B-225: 출생시간 "모름" 처리 표준화
   const hasTime = rawBirth.birthTime !== "" && rawBirth.birthTime !== null && rawBirth.birthTime !== undefined && rawBirth.birthTime !== "모름";
-  
+
   let birthInfo: any;
+
   if (rawBirth.year !== undefined) {
     birthInfo = rawBirth;
-  } else if (rawBirth.birthDate) {
-    const [y, m, d] = rawBirth.birthDate.split("-").map(Number);
-    const [hr, mn] = rawBirth.birthTime ? rawBirth.birthTime.split(":").map(Number) : [12, 0];
+  } else {
+    // 1) birthDate 정규화 — 다양한 소스 대응
+    let rawDate: string = rawBirth.birthDate ?? rawBirth.birth_date ?? rawBirth.date ?? "";
+    rawDate = rawDate.toString().trim();
+    let y: number, m: number, d: number;
+
+    if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(rawDate)) {
+      [y, m, d] = rawDate.split("-").map(Number);
+    } else if (/^\d{4}\/\d{1,2}\/\d{1,2}$/.test(rawDate)) {
+      [y, m, d] = rawDate.split("/").map(Number);
+    } else if (/^\d{8}$/.test(rawDate)) {
+      y = +rawDate.slice(0, 4);
+      m = +rawDate.slice(4, 6);
+      d = +rawDate.slice(6, 8);
+    } else if (rawDate) {
+      const fallback = new Date(rawDate);
+      if (!isNaN(fallback.getTime())) {
+        y = fallback.getFullYear();
+        m = fallback.getMonth() + 1;
+        d = fallback.getDate();
+      } else {
+        console.error("[birthInfo] 파싱 실패 — rawDate:", JSON.stringify(rawDate), "rawBirth:", JSON.stringify(rawBirth));
+        throw new Error(`생년월일 파싱 실패: "${rawDate}". YYYY-MM-DD 형식이 필요합니다.`);
+      }
+    } else {
+      // 날짜 정보 없음 -> 기본값
+      y = 2000; m = 1; d = 1;
+      rawDate = "2000-01-01";
+    }
+
+    // 2) birthTime 정규화
+    let rawTime: string = rawBirth.birthTime ?? rawBirth.birth_time ?? rawBirth.time ?? "";
+    rawTime = rawTime.toString().trim();
+    let hr: number, mn: number;
+    if (/^\d{1,2}:\d{2}$/.test(rawTime)) {
+      [hr, mn] = rawTime.split(":").map(Number);
+    } else if (/^\d{1,2}$/.test(rawTime)) {
+      hr = +rawTime; mn = 0;
+    } else {
+      hr = 12; mn = 0;
+    }
+
+    // 3) 유효성 검증
+    if (y < 1900 || y > 2100 || m < 1 || m > 12 || d < 1 || d > 31) {
+      throw new Error(`생년월일 범위 오류: ${y}-${m}-${d}`);
+    }
+    if (hr < 0 || hr > 23 || mn < 0 || mn > 59) { hr = 12; mn = 0; }
+
     birthInfo = {
       year: y, month: m, day: d, hour: hr, minute: mn,
       gender: rawBirth.gender === "male" || rawBirth.gender === "M" ? "M" : "F",
-      birthDate: rawBirth.birthDate,
-      birthTime: rawBirth.birthTime,
+      birthDate: rawDate,
+      birthTime: rawTime,
       birthPlace: rawBirth.birthPlace,
       latitude: rawBirth.latitude,
       longitude: rawBirth.longitude,
@@ -743,7 +788,6 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
       // B-123 fix: birthPlace 텍스트 → 위도/경도 자동 변환 (주요 도시 테이블)
       ...((!rawBirth.latitude || !rawBirth.longitude) && rawBirth.birthPlace ? (() => {
         const CITY_COORDS: Record<string, [number, number]> = {
-          // 한국
           "서울": [37.5665, 126.9780], "Seoul": [37.5665, 126.9780],
           "부산": [35.1796, 129.0756], "Busan": [35.1796, 129.0756],
           "대구": [35.8714, 128.6014], "Daegu": [35.8714, 128.6014],
@@ -753,45 +797,24 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
           "울산": [35.5384, 129.3114], "Ulsan": [35.5384, 129.3114],
           "수원": [37.2636, 127.0286], "Suwon": [37.2636, 127.0286],
           "성남": [37.4449, 127.1388], "Seongnam": [37.4449, 127.1388],
-          "고양": [37.6584, 126.8320], "Goyang": [37.6584, 126.8320],
-          "용인": [37.2411, 127.1775], "Yongin": [37.2411, 127.1775],
-          "창원": [35.2279, 128.6811], "Changwon": [35.2279, 128.6811],
-          "청주": [36.6424, 127.4890], "Cheongju": [36.6424, 127.4890],
-          "전주": [35.8242, 127.1480], "Jeonju": [35.8242, 127.1480],
-          "제주": [33.4996, 126.5312], "Jeju": [33.4996, 126.5312],
-          // 해외 주요 도시
+          "도쿄": [35.6762, 139.6503], "Tokyo": [35.6762, 139.6503],
           "뉴욕": [40.7128, -74.0060], "New York": [40.7128, -74.0060],
-          "로스앤젤레스": [34.0522, -118.2437], "Los Angeles": [34.0522, -118.2437], "LA": [34.0522, -118.2437],
           "런던": [51.5074, -0.1278], "London": [51.5074, -0.1278],
           "파리": [48.8566, 2.3522], "Paris": [48.8566, 2.3522],
-          "도쿄": [35.6762, 139.6503], "Tokyo": [35.6762, 139.6503],
-          "베이징": [39.9042, 116.4074], "Beijing": [39.9042, 116.4074],
-          "상하이": [31.2304, 121.4737], "Shanghai": [31.2304, 121.4737],
-          "홍콩": [22.3193, 114.1694], "Hong Kong": [22.3193, 114.1694],
-          "싱가포르": [1.3521, 103.8198], "Singapore": [1.3521, 103.8198],
-          "시드니": [-33.8688, 151.2093], "Sydney": [-33.8688, 151.2093],
-          "토론토": [43.6532, -79.3832], "Toronto": [43.6532, -79.3832],
-          "밴쿠버": [49.2827, -123.1207], "Vancouver": [49.2827, -123.1207],
-          "베를린": [52.5200, 13.4050], "Berlin": [52.5200, 13.4050],
-          "모스크바": [55.7558, 37.6173], "Moscow": [55.7558, 37.6173],
-          "두바이": [25.2048, 55.2708], "Dubai": [25.2048, 55.2708],
-          "방콕": [13.7563, 100.5018], "Bangkok": [13.7563, 100.5018],
         };
-        const place = rawBirth.birthPlace.trim();
-        // 정확히 일치하는 도시명 먼저 검색, 없으면 부분 문자열 검색
+        const place = (rawBirth.birthPlace || "").trim();
+        if (!place) return {};
         const exactMatch = CITY_COORDS[place];
         if (exactMatch) return { latitude: exactMatch[0], longitude: exactMatch[1] };
         const partialKey = Object.keys(CITY_COORDS).find(k => place.includes(k) || k.includes(place));
         if (partialKey) return { latitude: CITY_COORDS[partialKey][0], longitude: CITY_COORDS[partialKey][1] };
-        // 매칭 실패 시 서울 기본값
-        console.warn(`[B-123] birthPlace 좌표 미매칭: "${place}" → 서울 기본값 사용`);
         return { latitude: 37.5665, longitude: 126.9780 };
       })() : {}),
     };
-  } else {
-    birthInfo = { year: 2000, month: 1, day: 1, hour: 12, minute: 0, gender: "M" };
-    console.warn("[Engine] No birthInfo provided, using defaults");
   }
+
+  // Debug/Monitoring용 Date 객체
+  const birthDate = new Date(Date.UTC(birthInfo.year, birthInfo.month - 1, birthInfo.day, birthInfo.hour, birthInfo.minute, 0));
 
   // 음력→양력 변환 적용
   const solarBirthInfo = (rawBirth.isLunar || rawBirth.isLunarDate)
@@ -831,8 +854,10 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
         solarBirthInfo.longitude,
         hasTime
       );
-    } catch (e) {
+      if (!sajuRaw) throw new Error("사주 계산 결과가 유효하지 않습니다.");
+    } catch (e: any) {
       console.error("[ENGINE-SAFE] 사주 계산 실패:", e);
+      throw new Error(`사주 분석 엔진 오류: ${e.message}`);
     }
 
     // 타로 심볼릭 (동기)
@@ -1482,10 +1507,12 @@ ${finalTopic === "life_change" ? "   → 변화 질문: 사주 운로·점성술
     .eq("reading_version", READING_VERSION)
     .maybeSingle();
 
-  let coreReading: any;
+  let coreReading: any = input.coreReading;
   let coreGeminiLatency = 0;
 
-  if (cachedCore?.reading_json) {
+  if (coreReading) {
+    console.log(`[PlatformV9] Reusing provided Core Reading from payload.`);
+  } else if (cachedCore?.reading_json) {
     console.log(`[PlatformV9] Core Reading Cache Hit: ${coreHash}`);
     coreReading = cachedCore.reading_json;
   } else {
@@ -2052,6 +2079,7 @@ ${parsed.action_guide?.do_list?.map((item: string) => `- ${item}`).join('\n') ||
       consultation_copy: consultationCopy,
       llm_origin_json: llmOriginJson
     },
+    coreReading: coreReading,
     integrated_summary: parsed.final_message?.summary || parsed.merged_reading?.coreReading || "",
     practical_advice: parsed.action_guide?.do_list?.join(", ") || "",
     // B-61: 스키마 개선

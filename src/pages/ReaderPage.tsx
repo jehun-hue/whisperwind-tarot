@@ -467,7 +467,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
     }
   };
 
-  const runAIAnalysisV2 = async (style: 'hanna' | 'monad' | 'e7l3' | 'e5l5' | 'l7e3' = 'hanna', isAutoRun = false, overrideSession?: ReadingSession) => {
+  const runAIAnalysisV2 = async (style: 'hanna' | 'monad' | 'e7l3' | 'e5l5' | 'l7e3' = 'hanna', isAutoRun = false, overrideSession?: ReadingSession, coreReading?: any) => {
     const currentSession = overrideSession || session;
     console.log(`[runAIAnalysisV2] Start style=${style}, isAutoRun=${isAutoRun}`);
     // 가드 로직: 해당 해석이 이미 존재하면 재생성 방지 (수동 실행 시에만 가드 작동)
@@ -565,9 +565,10 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
         locale: currentSession.locale || "kr",
         style,
         userName: currentSession.user_name,
+        coreReading,
       };
 
-      console.log("[DEBUG] birthInfo payload:", JSON.stringify(birthInfo));
+      console.log(`[DEBUG] birthInfo payload for ${style}:`, JSON.stringify(birthInfo));
 
       // 스트리밍: UI 체감 속도 향상용 (병렬 실행)
       setStreamingText("");
@@ -683,6 +684,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
         ai_reading: mergedReading,
         saju_data: sajuDataForAI,
         status: finalStatus,
+        coreReading: aiData?.coreReading, // B-300: coreReading 반환해서 외부에서 재사용 가능하게 함
       };
     } catch (err) {
       console.error("AI V4 analysis error:", err);
@@ -922,9 +924,14 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       
       // 1. coreReading 생성을 위해 첫 번째 스타일(hanna) 우선 실행
       const firstStyle = styles[0];
+      let coreReadingCache: any = null;
       try {
         console.log(`[runParallelAnalysis] FIRST: ${firstStyle} start`);
-        latestSession = await runAIAnalysisV2(firstStyle, true, latestSession) || latestSession;
+        const firstSessionResult = await runAIAnalysisV2(firstStyle, true, latestSession);
+        latestSession = firstSessionResult || latestSession;
+        if (firstSessionResult && (firstSessionResult as any).coreReading) {
+            coreReadingCache = (firstSessionResult as any).coreReading;
+        }
       } catch (err) {
         console.error(`[runParallelAnalysis] ${firstStyle} failed:`, err);
         toast.error(`${firstStyle} 분석 실패, 다음 스타일로 진행합니다`);
@@ -932,12 +939,12 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
 
       // 2. 나머지 4개 스타일 병렬 실행 (Promise.allSettled)
       const restStyles = styles.slice(1);
-      console.log(`[runParallelAnalysis] PARALLEL: rest styles start`, restStyles);
+      console.log(`[runParallelAnalysis] PARALLEL: rest styles start`, restStyles, `using coreReadingCache:`, !!coreReadingCache);
       
       const results = await Promise.allSettled(
         restStyles.map(async (style) => {
           // Promise가 resolve될 때 상태가 업데이트 되도록 runAIAnalysisV2 내부에서 처리됨 (onUpdate 등)
-          return await runAIAnalysisV2(style, true, latestSession);
+          return await runAIAnalysisV2(style, true, latestSession, coreReadingCache);
         })
       );
       
