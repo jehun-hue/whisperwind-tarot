@@ -70,7 +70,7 @@ export const TarotCard: React.FC<TarotCardProps> = ({
           "relative z-10 h-full w-full flex flex-col items-center justify-center p-1.5 pb-8", // added padding-bottom to avoid overlap
           isReversed && "rotate-180"
         )}>
-          {displayImage && !isReversed ? (
+          {displayImage ? (
             <div className="absolute inset-0 z-0 overflow-hidden rounded-lg">
               <img 
                 src={displayImage} 

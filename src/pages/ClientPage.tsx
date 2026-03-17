@@ -156,9 +156,8 @@ export default function ClientPage() {
   const [birthMonth, setBirthMonth] = useState("");
   const [birthDay, setBirthDay] = useState("");
   const [birthTime, setBirthTime] = useState("unknown");
-  const [birthHourInput, setBirthHourInput] = useState("");
-  const [birthMinInput, setBirthMinInput] = useState("");
-  const [birthAmPm, setBirthAmPm] = useState<"am" | "pm">("am");
+  const [birthHour24, setBirthHour24] = useState<number>(12);
+  const [birthMinute, setBirthMinute] = useState<number>(0);
   const [gender, setGender] = useState<"male" | "female" | "">("");
   const [isLunar, setIsLunar] = useState(false);
   const [isLeapMonth, setIsLeapMonth] = useState(false);
@@ -345,7 +344,7 @@ export default function ClientPage() {
     setStep("question");
     setQuestion(""); setMemo(""); setUserName("");
     setBirthYear(""); setBirthMonth(""); setBirthDay("");
-    setBirthTime("unknown"); setBirthHourInput(""); setBirthMinInput(""); setBirthAmPm("am"); setGender("");
+    setBirthTime("unknown"); setBirthHour24(12); setBirthMinute(0); setGender("");
     setIsLunar(false); setIsLeapMonth(false);
     setRomanceStatus(null);
     setPicked([]); setSelectedGrade("S");
@@ -574,95 +573,62 @@ export default function ClientPage() {
                   <div className="space-y-3">
                     <div className="flex items-center gap-3">
                       <label className="text-sm text-muted-foreground">출생 시간</label>
-                      <div className="inline-flex items-center rounded-full border border-border/50 bg-background/30 p-0.5">
-                        <button
-                          onClick={() => {
-                            setBirthAmPm("am");
-                            if (birthTime === "unknown") { setBirthTime(""); }
-                            else if (birthHourInput) {
-                              const h = parseInt(birthHourInput, 10);
-                              const h24 = h === 12 ? 0 : h;
-                              setBirthTime(`${String(h24).padStart(2, "0")}:${birthMinInput || "00"}`);
-                            }
-                          }}
-                          className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${birthAmPm === "am" && birthTime !== "unknown" ? "bg-accent/20 text-accent shadow-sm" : "text-muted-foreground hover:text-foreground"
-                            }`}
-                        >
-                          오전
-                        </button>
-                        <button
-                          onClick={() => {
-                            setBirthAmPm("pm");
-                            if (birthTime === "unknown") { setBirthTime(""); }
-                            else if (birthHourInput) {
-                              const h = parseInt(birthHourInput, 10);
-                              const h24 = h === 12 ? 12 : h + 12;
-                              setBirthTime(`${String(h24).padStart(2, "0")}:${birthMinInput || "00"}`);
-                            }
-                          }}
-                          className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${birthAmPm === "pm" && birthTime !== "unknown" ? "bg-accent/20 text-accent shadow-sm" : "text-muted-foreground hover:text-foreground"
-                            }`}
-                        >
-                          오후
-                        </button>
-                      </div>
                       <button
                         onClick={() => {
                           setBirthTime("unknown");
-                          setBirthHourInput("");
-                          setBirthMinInput("");
+                          setBirthHour24(12);
+                          setBirthMinute(0);
                         }}
-                        className={`rounded-full border px-3 py-1 text-xs font-medium transition-all ${birthTime === "unknown"
-                          ? "border-gold/50 bg-gold/10 text-gold"
-                          : "border-border/50 text-muted-foreground hover:text-foreground"
-                          }`}
+                        className={`rounded-full border px-3 py-1 text-xs font-medium transition-all ${
+                          birthTime === "unknown"
+                            ? "border-gold/50 bg-gold/10 text-gold"
+                            : "border-border/50 text-muted-foreground hover:text-foreground"
+                        }`}
                       >
                         모름
                       </button>
+                      {birthTime === "unknown" && (
+                        <button
+                          onClick={() => {
+                            setBirthTime(`${String(birthHour24).padStart(2, "0")}:${String(birthMinute).padStart(2, "0")}`);
+                          }}
+                          className="rounded-full border border-accent/50 px-3 py-1 text-xs font-medium text-accent hover:bg-accent/10 transition-all"
+                        >
+                          시간 입력
+                        </button>
+                      )}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Select
-                        value={birthHourInput}
-                        onValueChange={(v) => {
-                          setBirthHourInput(v);
-                          const h = parseInt(v, 10);
-                          const h24 = birthAmPm === "pm" ? (h === 12 ? 12 : h + 12) : (h === 12 ? 0 : h);
-                          setBirthTime(`${String(h24).padStart(2, "0")}:${birthMinInput || "00"}`);
-                        }}
-                        disabled={birthTime === "unknown"}
-                      >
-                        <SelectTrigger className={`w-24 rounded-xl border-border/50 bg-background/50 text-foreground ${birthTime === "unknown" ? "opacity-40" : ""}`}>
-                          <SelectValue placeholder="시" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {[12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((h) => (
-                            <SelectItem key={h} value={String(h)}>{h}시</SelectItem>
+                    {birthTime !== "unknown" && (
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={birthHour24}
+                          onChange={(e) => {
+                            const h = parseInt(e.target.value);
+                            setBirthHour24(h);
+                            setBirthTime(`${String(h).padStart(2, "0")}:${String(birthMinute).padStart(2, "0")}`);
+                          }}
+                          className="flex-1 h-10 rounded-xl bg-background/50 border border-border/50 text-foreground text-center"
+                        >
+                          {Array.from({ length: 24 }, (_, i) => (
+                            <option key={i} value={i}>{String(i).padStart(2, "0")}시</option>
                           ))}
-                        </SelectContent>
-                      </Select>
-                      <span className="text-sm text-muted-foreground">:</span>
-                      <Select
-                        value={birthMinInput}
-                        onValueChange={(v) => {
-                          setBirthMinInput(v);
-                          if (birthHourInput) {
-                            const h = parseInt(birthHourInput, 10);
-                            const h24 = birthAmPm === "pm" ? (h === 12 ? 12 : h + 12) : (h === 12 ? 0 : h);
-                            setBirthTime(`${String(h24).padStart(2, "0")}:${v}`);
-                          }
-                        }}
-                        disabled={birthTime === "unknown"}
-                      >
-                        <SelectTrigger className={`w-24 rounded-xl border-border/50 bg-background/50 text-foreground ${birthTime === "unknown" ? "opacity-40" : ""}`}>
-                          <SelectValue placeholder="분" />
-                        </SelectTrigger>
-                        <SelectContent className="max-h-80 overflow-y-auto">
-                          {Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0")).map((m) => (
-                            <SelectItem key={m} value={m}>{m}분</SelectItem>
+                        </select>
+                        <span className="text-sm text-muted-foreground">:</span>
+                        <select
+                          value={birthMinute}
+                          onChange={(e) => {
+                            const m = parseInt(e.target.value);
+                            setBirthMinute(m);
+                            setBirthTime(`${String(birthHour24).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
+                          }}
+                          className="flex-1 h-10 rounded-xl bg-background/50 border border-border/50 text-foreground text-center"
+                        >
+                          {Array.from({ length: 60 }, (_, i) => (
+                            <option key={i} value={i}>{String(i).padStart(2, "0")}분</option>
                           ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                        </select>
+                      </div>
+                    )}
                     {birthTime === "unknown" && (
                       <p className="text-[10px] text-muted-foreground/70">
                         ⓘ 시간을 모르면 시주 분석을 제외하고 년·월·일주만 사용합니다.
@@ -818,7 +784,7 @@ export default function ClientPage() {
                   </Button>
                 </div>
 
-                <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-6 md:grid-cols-8">
+                <div className="grid grid-cols-6 gap-1 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-13">
                   {deck.map((card) => {
                     const isSelected = picked.some((p) => p.id === card.id);
                     const isDisabled = card.isPicked || picked.length >= requiredCards;
@@ -833,7 +799,7 @@ export default function ClientPage() {
                         className={`group relative aspect-[0.65] w-full transition-all duration-500 ${isDisabled && !isSelected ? "cursor-not-allowed opacity-40" : "cursor-pointer"} ${isSelected ? "opacity-0 scale-90 pointer-events-none" : "opacity-100 scale-100"}`}
                       >
                         <div className={`absolute inset-0 w-full h-full rounded-lg border flex flex-col items-center justify-center overflow-hidden transition-all duration-300 ${!isSelected && !isDisabled ? "border-border/30 hover:border-gold/30" : "border-border/20"}`}>
-                          <img src={cardBackImg} alt="" className="absolute inset-0 h-full w-full object-cover opacity-60 transition-opacity group-hover:opacity-90" />
+                          <img src={cardBackImg} alt="" className="w-full h-auto max-h-[80px] sm:max-h-[100px] md:max-h-[90px] lg:max-h-[75px] object-contain opacity-60 transition-opacity group-hover:opacity-90" />
                         </div>
                       </motion.button>
                     );
