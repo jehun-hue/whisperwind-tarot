@@ -276,6 +276,8 @@ export default function ReaderPage() {
   );
 }
 
+let sessionWriteQueue = Promise.resolve();
+
 function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdate: (s: ReadingSession) => void }) {
   const [analyzingStyle, setAnalyzingStyle] = useState<'hanna' | 'monad' | 'v1' | 'data-only' | 'seq_hanna' | 'seq_monad' | 'seq_data' | 'seq_e7l3' | 'seq_e5l5' | 'seq_l7e3' | 'e7l3' | 'e5l5' | 'l7e3' | 'seq_all' | null>(null);
   const analyzing = !!analyzingStyle;
@@ -626,66 +628,83 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
         result.management_tracks = aiData.management_tracks;
       }
 
-      // 기존 데이터와 병합 (필드별 통합 로직 적용)
-      const existingReading = currentSession.ai_reading || {};
-      const mergedReading = {
-        ...existingReading,
-        ...result,
-        // 타로 리딩 통합 (한나/모나드 공존)
-        tarot_reading: {
-          ...(existingReading.tarot_reading || {}),
-          ...(result.tarot_reading || {}),
-        },
-        // 통합 리딩 필드 병합 (덮어쓰기 방지)
-        merged_reading: {
-          ...(existingReading.merged_reading || {}),
-          ...(result.merged_reading || {}),
-        },
-        convergence: {
-          ...(existingReading.convergence || {}),
-          ...(result.convergence || {}),
-        },
-        action_guide: {
-          ...(existingReading.action_guide || {}),
-          ...(result.action_guide || {}),
-        },
-        final_message: {
-          ...(existingReading.final_message || {}),
-          ...(result.final_message || {}),
-        }
-      };
- 
-      // B-174 fix: data-only 모드이거나 narrative가 있으면 completed 처리
-      const hasNarrative = !!(
-        mergedReading.tarot_reading?.choihanna || 
-        mergedReading.tarot_reading?.monad ||
-        mergedReading.tarot_reading?.e7l3 ||
-        mergedReading.tarot_reading?.e5l5 ||
-        mergedReading.tarot_reading?.l7e3
-      );
-      const isDataOnly = !!(result?.reading_info?.mode === "data-only" || 
-        mergedReading.engine?.validation?.message?.includes("Data-Only"));
-      const finalStatus = (hasNarrative || isDataOnly) ? "completed" : currentSession.status;
- 
-      await supabase.from("reading_sessions").update({
-        ai_reading: mergedReading as any,
-        saju_data: sajuDataForAI as any,
-        status: finalStatus,
-      }).eq("id", currentSession.id);
- 
-      onUpdate({
-        ...currentSession,
-        ai_reading: mergedReading,
-        saju_data: sajuDataForAI,
-        status: finalStatus,
+      // 큐를 사용하여 순차적 DB 갱신 (Race Condition 방지)
+      const finalResult = await new Promise((resolve, reject) => {
+        sessionWriteQueue = sessionWriteQueue.then(async () => {
+          try {
+            // DB에서 최신 상태 다시 불러오기
+            const { data: latestDbSession } = await supabase
+              .from("reading_sessions")
+              .select("ai_reading, status, saju_data")
+              .eq("id", currentSession.id)
+              .single();
+
+            // 기존 데이터와 병합 (필드별 통합 로직 적용)
+            const existingReading = (latestDbSession?.ai_reading as any) || currentSession.ai_reading || {};
+            const mergedReading = {
+              ...existingReading,
+              ...result,
+              // 타로 리딩 통합 (한나/모나드 등 다수 존재 처리)
+              tarot_reading: {
+                ...(existingReading.tarot_reading || {}),
+                ...(result.tarot_reading || {}),
+              },
+              // 통합 리딩 필드 병합 (덮어쓰기 방지)
+              merged_reading: {
+                ...(existingReading.merged_reading || {}),
+                ...(result.merged_reading || {}),
+              },
+              convergence: {
+                ...(existingReading.convergence || {}),
+                ...(result.convergence || {}),
+              },
+              action_guide: {
+                ...(existingReading.action_guide || {}),
+                ...(result.action_guide || {}),
+              },
+              final_message: {
+                ...(existingReading.final_message || {}),
+                ...(result.final_message || {}),
+              }
+            };
+       
+            // B-174 fix: data-only 모드이거나 narrative가 있으면 completed 처리
+            const hasNarrative = !!(
+              mergedReading.tarot_reading?.choihanna || 
+              mergedReading.tarot_reading?.monad ||
+              mergedReading.tarot_reading?.e7l3 ||
+              mergedReading.tarot_reading?.e5l5 ||
+              mergedReading.tarot_reading?.l7e3
+            );
+            const isDataOnly = !!(result?.reading_info?.mode === "data-only" || 
+              mergedReading.engine?.validation?.message?.includes("Data-Only"));
+            const finalStatus = (hasNarrative || isDataOnly) ? "completed" : (latestDbSession?.status || currentSession.status);
+       
+            await supabase.from("reading_sessions").update({
+              ai_reading: mergedReading as any,
+              saju_data: sajuDataForAI as any,
+              status: finalStatus,
+            }).eq("id", currentSession.id);
+       
+            const updatedSessionData = {
+              ...currentSession,
+              ai_reading: mergedReading,
+              saju_data: sajuDataForAI,
+              status: finalStatus,
+            };
+
+            onUpdate(updatedSessionData);
+
+            resolve({
+              ...updatedSessionData,
+              coreReading: aiData?.coreReading, // B-300: coreReading 반환해서 외부에서 재사용 가능하게 함
+            });
+          } catch (e) {
+            reject(e);
+          }
+        });
       });
-      return {
-        ...currentSession,
-        ai_reading: mergedReading,
-        saju_data: sajuDataForAI,
-        status: finalStatus,
-        coreReading: aiData?.coreReading, // B-300: coreReading 반환해서 외부에서 재사용 가능하게 함
-      };
+      return finalResult;
     } catch (err) {
       console.error("AI V4 analysis error:", err);
       setAnalysisError(err instanceof Error ? err.message : "V4 분석 중 오류가 발생했습니다.");
