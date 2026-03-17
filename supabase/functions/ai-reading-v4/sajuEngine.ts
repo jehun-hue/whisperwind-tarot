@@ -198,12 +198,13 @@ export function getFullSaju(
     if (el) elements[TR_ELEMENTS[el]]++;
   });
 
-  // 지장간 오행 집계 (각 0.3점 — B-176 fix: 만세력 기준에 맞게 가중치 하향)
+  // 지장간 오행 집계 (본기 0.6, 중기 0.3, 초기 0.1 — aiSajuAnalysis.ts와 가중치 통일)
+  const HIDDEN_WEIGHTS_EL = [0.6, 0.3, 0.1]; // 본기, 중기, 초기
   pillars.forEach(p => {
     const hidden = HIDDEN_STEMS[p.branch] || [];
-    hidden.forEach(hs => {
+    hidden.forEach((hs, idx) => {
       const el = FIVE_ELEMENTS[hs];
-      if (el) elements[TR_ELEMENTS[el]] += 0.3;
+      if (el) elements[TR_ELEMENTS[el]] += HIDDEN_WEIGHTS_EL[idx] ?? 0.1;
     });
   });
 
