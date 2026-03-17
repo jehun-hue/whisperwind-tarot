@@ -139,7 +139,23 @@ serve(async (req: Request) => {
   } catch (err: any) {
     console.error(`[PlatformV9] Resilient Handler Caught: ${err.message}`);
     
-    // Final defensive return: ALWAYS HTTP 200 with degraded status
+    // B-258: 입력 값 오류 vs 엔진 오류 구분
+    const isInputError = err.message?.includes("파싱 실패") || 
+                         err.message?.includes("범위 오류") || 
+                         err.message?.includes("출생 시간");
+
+    if (isInputError) {
+      return new Response(JSON.stringify({
+        status: "error",
+        error_type: "invalid_input",
+        error_message: err.message
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Final defensive return: ALWAYS HTTP 200 with degraded status for engine exceptions
     const recoveryPayload = {
       status: "success",
       result_status: "degraded",

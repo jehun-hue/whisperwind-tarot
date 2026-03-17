@@ -281,18 +281,29 @@ export async function analyzeSajuStructure(
     }
   }
 
-  // B-222: 강약 판정
+  // B-222: 강약 판정 (월령 득령 보정 적용)
+  const strengthMonthBranch = pillars.month?.branch;
+  const monthElement = STEM_ELEMENT[strengthMonthBranch] || "";
+  const isDeukyeong = (monthElement === myElement) || 
+    (myElement === "목" && monthElement === "수") ||
+    (myElement === "화" && monthElement === "목") ||
+    (myElement === "토" && monthElement === "화") ||
+    (myElement === "금" && monthElement === "토") ||
+    (myElement === "수" && monthElement === "금");
+
   const supportForce = tenGodCount["비겁"] + tenGodCount["인성"];
   const resistForce = tenGodCount["식상"] + tenGodCount["재성"] + tenGodCount["관성"];
-  const totalForce = supportForce + resistForce;
-  const supportRatio = totalForce > 0 ? supportForce / totalForce : 0.5;
+  
+  // 보정된 supportForce (월령 득령 시 +1.5 보너스)
+  const adjustedSupportForce = supportForce + (isDeukyeong ? 1.5 : 0);
+  const adjustedTotal = adjustedSupportForce + resistForce;
+  const supportRatio = adjustedTotal > 0 ? adjustedSupportForce / adjustedTotal : 0.5;
 
   let strengthLevel = "중화";
-  if (supportRatio >= 0.65) strengthLevel = "극신강";
-  else if (supportRatio >= 0.52) strengthLevel = "신강";
-  else if (supportRatio >= 0.45) strengthLevel = "중화";
-  else if (supportRatio >= 0.38) strengthLevel = "중신약";
-  else if (supportRatio >= 0.28) strengthLevel = "신약";
+  if (supportRatio >= 0.60) strengthLevel = "극신강";
+  else if (supportRatio >= 0.50) strengthLevel = "신강";
+  else if (supportRatio >= 0.42) strengthLevel = "중화";
+  else if (supportRatio >= 0.30) strengthLevel = "신약";
   else strengthLevel = "극신약";
 
   // 종격 판정
@@ -495,7 +506,7 @@ export async function analyzeSajuStructure(
     const monthBranchIdx = BRANCHES.indexOf(sajuRaw.month?.branch);
     const gender = (sajuRaw.gender === 'F' || sajuRaw.gender === 'female') ? 'F' : 'M';
     const birthYear = Number(sajuRaw.year?.year || sajuRaw.year);
-    const currentAge = new Date().getFullYear() - (Number.isFinite(birthYear) ? birthYear : 1990);
+    const currentAge = new Date().getFullYear() - (Number.isFinite(birthYear) ? birthYear : 1990) + 1;
     const sLong = sajuRaw.sunLong ?? sajuRaw.sun_long ?? 0;
     const jdVal = sajuRaw.jd ?? sajuRaw.julian_day ?? 0;
 

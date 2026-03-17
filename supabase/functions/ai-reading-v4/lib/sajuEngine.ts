@@ -118,6 +118,6 @@ export function calculateSaju(
     daewoon: dw,
     hiddenStems,
     originalInput: { year, month, day, hour, minute, gender },
-    correctedDate: correctedDate.toISOString()
+    correctedDate: !isNaN(correctedDate.getTime()) ? correctedDate.toISOString() : "Invalid Date"
   };
 }

@@ -175,7 +175,7 @@ export function calculateInteractions(
 
 export interface Shinsal {
   name: string;
-  type: "역마" | "도화" | "화개" | "공망" | "양인" | "문창" | "천을귀인";
+  type: "역마" | "도화" | "화개" | "공망" | "양인" | "문창" | "천을귀인" | "홍염" | "태극" | "금여";
   description: string;
   health_implication: string | null;  // 건강 관련 의미
   topic_relevance: string[];          // 관련 토픽
@@ -214,6 +214,33 @@ const YANGIN_MAP: Record<string, string> = {
   "辛": "戌", "癸": "丑",
 };
 
+// 홍염살 테이블 (일간 기준)
+const HONGYEOM_MAP: Record<string, string> = {
+  "甲": "午", "乙": "午", "丙": "寅", "丁": "未", "戊": "辰",
+  "己": "辰", "庚": "戌", "辛": "酉", "壬": "申", "癸": "申",
+};
+
+// 태극귀인 테이블 (일간 기준)
+const TAEGEUK_MAP: Record<string, string[]> = {
+  "甲": ["子", "午"], "乙": ["子", "午"],
+  "丙": ["酉", "卯"], "丁": ["酉", "卯"],
+  "戊": ["辰", "戌", "丑", "未"], "己": ["辰", "戌", "丑", "未"],
+  "庚": ["寅", "亥"], "辛": ["寅", "亥"],
+  "壬": ["巳", "申"], "癸": ["巳", "申"],
+};
+
+// 문창귀인 테이블 (일간 기준)
+const MUNCHANG_MAP: Record<string, string> = {
+  "甲": "巳", "乙": "午", "丙": "申", "丁": "酉", "戊": "申",
+  "己": "酉", "庚": "亥", "辛": "子", "壬": "寅", "癸": "卯",
+};
+
+// 금여록 테이블 (일간 기준)
+const GEUMYEO_MAP: Record<string, string> = {
+  "甲": "辰", "乙": "巳", "丙": "未", "丁": "申", "戊": "未",
+  "己": "申", "庚": "戌", "辛": "亥", "壬": "丑", "癸": "寅",
+};
+
 // 천을귀인 테이블 (일간 기준 → 2개 지지)
 const CHEONIL_MAP: Record<string, string[]> = {
   "甲": ["丑", "未"], "戊": ["丑", "未"], "庚": ["丑", "未"],
@@ -239,12 +266,13 @@ export function calculateShinsal(
   // bSet은 일지/시지/월지/년지 모두 포함
   const bSet = new Set(allBranches);
 
-  // 1. 도화살 (일지 기준)
-  const dohwaTarget = DOHWA_MAP[dayBranch];
-  if (dohwaTarget && bSet.has(dohwaTarget)) {
+  // 1. 도화살 (년지 또는 일지 기준)
+  const yBranch = yearBranch || allBranches[0];
+  const dohwaTargetY = DOHWA_MAP[yBranch];
+  const dohwaTargetD = DOHWA_MAP[dayBranch];
+  if ((dohwaTargetY && bSet.has(dohwaTargetY)) || (dohwaTargetD && bSet.has(dohwaTargetD))) {
     results.push({
-      name: "도화살",
-      type: "도화",
+      name: "도화살", type: "도화",
       description: "매력·인기·이성운 강함. 감정적 갈등 가능성",
       health_implication: "피부·생식기 계통 주의",
       topic_relevance: ["relationship", "family"],
@@ -252,12 +280,12 @@ export function calculateShinsal(
     });
   }
 
-  // 2. 역마살 (일지 기준)
-  const yeokmaTarget = YEOKMA_MAP[dayBranch];
-  if (yeokmaTarget && bSet.has(yeokmaTarget)) {
+  // 2. 역마살 (년지 또는 일지 기준)
+  const yeokmaTargetY = YEOKMA_MAP[yBranch];
+  const yeokmaTargetD = YEOKMA_MAP[dayBranch];
+  if ((yeokmaTargetY && bSet.has(yeokmaTargetY)) || (yeokmaTargetD && bSet.has(yeokmaTargetD))) {
     results.push({
-      name: "역마살",
-      type: "역마",
+      name: "역마살", type: "역마",
       description: "이동·변화·해외운 강함. 바쁜 삶, 이주 가능성",
       health_implication: "사고·골절·신경계 주의",
       topic_relevance: ["migration", "life_change", "career"],
@@ -265,14 +293,13 @@ export function calculateShinsal(
     });
   }
 
-  // 3. 화개살 (연지 기준 - B-223)
-  const yBranch = yearBranch || allBranches[0];
+  // 3. 화개살 (년지 기준 - B-223)
   const hwagaeTarget = HWAGAE_MAP[yBranch];
-  // 연지 기준이므로 월/일/시 지지에 있는지 확인
-  if (hwagaeTarget && allBranches.slice(1).includes(hwagaeTarget)) {
+  // 연지 기준이므로 월/일/시 지지에 있는지 확인 (자기 자신 제외하기 위해 slice(1) 또는 인덱스 체크)
+  const otherBranches = allBranches.slice(1);
+  if (hwagaeTarget && otherBranches.includes(hwagaeTarget)) {
     results.push({
-      name: "화개살",
-      type: "화개",
+      name: "화개살", type: "화개",
       description: "학문·예술·종교적 감수성 뛰어남. 고독한 면",
       health_implication: "정신건강·우울·고립감 주의",
       topic_relevance: ["spirituality", "health"],
@@ -280,12 +307,47 @@ export function calculateShinsal(
     });
   }
 
-  // 4. 양인살 (일간 기준)
+  // 4. 홍염살 (일간 기준)
+  const hongyeomTarget = HONGYEOM_MAP[dayMaster];
+  if (hongyeomTarget && bSet.has(hongyeomTarget)) {
+    results.push({
+      name: "홍염살", type: "홍염",
+      description: "고유의 매력과 다재다능함, 연인 간의 깊은 친밀감",
+      health_implication: null,
+      topic_relevance: ["relationship"],
+      severity: "길",
+    });
+  }
+
+  // 5. Taegeuk귀인 (일간 기준)
+  const taegeukTargets = TAEGEUK_MAP[dayMaster] || [];
+  if (taegeukTargets.some(t => bSet.has(t))) {
+    results.push({
+      name: "태극귀인", type: "태극",
+      description: "조상의 덕, 입신양명, 초중반 인생의 안정과 발전",
+      health_implication: null,
+      topic_relevance: ["general", "career"],
+      severity: "길",
+    });
+  }
+
+  // 6. 문창귀인 (일간 기준)
+  const munchangTarget = MUNCHANG_MAP[dayMaster];
+  if (munchangTarget && bSet.has(munchangTarget)) {
+    results.push({
+      name: "문창귀인", type: "문창",
+      description: "학문·글쓰기·예술적 천재성, 지혜로움",
+      health_implication: null,
+      topic_relevance: ["career", "general"],
+      severity: "길",
+    });
+  }
+
+  // 7. 양인살 (일간 기준)
   const yanginTarget = YANGIN_MAP[dayMaster];
   if (yanginTarget && bSet.has(yanginTarget)) {
     results.push({
-      name: "양인살",
-      type: "양인",
+      name: "양인살", type: "양인",
       description: "강한 의지력·추진력. 충돌·사고 위험",
       health_implication: "수술·외상·혈액 관련 주의",
       topic_relevance: ["health", "career"],
@@ -293,12 +355,23 @@ export function calculateShinsal(
     });
   }
 
-  // 5. 천을귀인 (일간 기준)
+  // 8. 금여록 (일간 기준)
+  const geumyeoTarget = GEUMYEO_MAP[dayMaster];
+  if (geumyeoTarget && bSet.has(geumyeoTarget)) {
+    results.push({
+      name: "금여록", type: "금여",
+      description: "부귀공명, 평화로운 노년, 좋은 배우자 인연",
+      health_implication: null,
+      topic_relevance: ["family", "finance"],
+      severity: "길",
+    });
+  }
+
+  // 9. 천을귀인 (일간 기준)
   const cheonilTargets = CHEONIL_MAP[dayMaster] || [];
   if (cheonilTargets.some(t => bSet.has(t))) {
     results.push({
-      name: "천을귀인",
-      type: "천을귀인",
+      name: "천을귀인", type: "천을귀인",
       description: "귀인의 도움·행운·위기 탈출 능력",
       health_implication: null,
       topic_relevance: ["career", "relationship", "general"],
@@ -306,7 +379,7 @@ export function calculateShinsal(
     });
   }
 
-  // 6. 겁살 (연지 기준 - B-223)
+  // 10. 겁살 (연지 기준 - B-223)
   const GEOBSAL_MAP: Record<string, string> = {
     "寅": "亥", "午": "亥", "戌": "亥",
     "巳": "寅", "酉": "寅", "丑": "寅",
@@ -314,10 +387,9 @@ export function calculateShinsal(
     "亥": "申", "卯": "申", "未": "申",
   };
   const geobsalTarget = GEOBSAL_MAP[yBranch];
-  if (geobsalTarget && allBranches.slice(1).includes(geobsalTarget)) {
+  if (geobsalTarget && otherBranches.includes(geobsalTarget)) {
     results.push({
-      name: "겁살",
-      type: "역마", // 분류상 역마 계열에 포함
+      name: "겁살", type: "역마", // 분류상 역마 계열에 포함
       description: "경쟁에서의 탈환, 갑작스러운 손실 또는 획득",
       health_implication: "외상 주의",
       topic_relevance: ["finance", "career"],
