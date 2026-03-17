@@ -759,7 +759,7 @@ export default function ClientPage() {
                         return (
                           <div key={idx} className="flex flex-col items-center gap-2">
                             <span className="text-xs font-medium tracking-widest text-muted-foreground/50 whitespace-nowrap break-keep">{positionLabel}</span>
-                            <div className="w-[17vw] sm:w-24 md:w-28 lg:w-32 aspect-[0.65] rounded-xl border-2 border-dashed border-border/40 flex flex-col items-center justify-center text-muted-foreground/30 bg-background/20 relative shadow-inner">
+                            <div className="w-[18vw] sm:w-28 md:w-32 lg:w-36 aspect-[0.65] rounded-xl border-2 border-dashed border-border/40 flex flex-col items-center justify-center text-muted-foreground/30 bg-background/20 relative shadow-inner">
                               <span className="text-3xl font-light opacity-40">?</span>
                             </div>
                           </div>
@@ -780,7 +780,7 @@ export default function ClientPage() {
                             koreanName={card.korean} 
                             isReversed={card.isReversed} 
                             image={card.image}
-                            className="w-[17vw] sm:w-24 md:w-28 lg:w-32 aspect-[0.65]"
+                            className="w-[18vw] sm:w-28 md:w-32 lg:w-36 aspect-[0.65]"
                             size="md"
                           />
                         </div>
@@ -801,7 +801,7 @@ export default function ClientPage() {
                   </Button>
                 </div>
 
-                <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-7 md:grid-cols-9 lg:grid-cols-13">
+                <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-11">
                   {deck.map((card) => {
                     const isSelected = picked.some((p) => p.id === card.id);
                     const isDisabled = card.isPicked || picked.length >= requiredCards;

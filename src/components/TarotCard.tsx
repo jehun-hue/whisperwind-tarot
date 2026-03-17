@@ -31,7 +31,7 @@ export const TarotCard: React.FC<TarotCardProps> = ({
   const displayImage = image || cardImage;
   const sizeClasses = {
     xs: "min-h-[5rem] w-12 text-[8px]",
-    sm: "min-h-[6rem] w-16 text-sm",
+    sm: "min-h-[6rem] w-full text-sm",
     md: "min-h-[8rem] w-20 text-xs",
     lg: "min-h-[12rem] w-32 text-sm",
     xl: "min-h-[16rem] w-40 text-base",
@@ -93,9 +93,9 @@ export const TarotCard: React.FC<TarotCardProps> = ({
 
       {isFlipped && showName && (
         <div className={cn(
-          "absolute bottom-0 left-0 right-0 rounded-b-xl bg-black/70 backdrop-blur-md py-1.5 px-1 border-t border-white/10 z-20 min-h-[2.5rem] flex items-center justify-center"
+          "absolute bottom-0 left-0 right-0 rounded-b-xl bg-black/90 backdrop-blur-md py-1.5 px-1 border-t border-white/10 z-20 min-h-[2.5rem] flex items-center justify-center"
         )}>
-          <span className="font-display font-semibold text-white block px-1 text-center animate-shimmer bg-clip-text text-transparent bg-gradient-to-r from-gold-light via-white to-gold-light break-keep text-xs sm:text-sm leading-tight line-clamp-2">
+          <span className="font-display font-bold text-white block px-1 text-center animate-shimmer bg-clip-text text-transparent bg-gradient-to-r from-gold-light via-white to-gold-light break-keep text-sm leading-tight line-clamp-2">
             {koreanName || name}
           </span>
         </div>
