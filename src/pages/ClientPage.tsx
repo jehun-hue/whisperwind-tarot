@@ -749,7 +749,7 @@ export default function ClientPage() {
                 </div>
 
                 <div className="mt-6 mb-8 flex flex-col items-center space-y-6">
-                  <div className="flex items-center justify-center gap-1.5 sm:gap-3 w-full max-w-4xl">
+                  <div className="flex items-center justify-center gap-1.5 sm:gap-3 w-full max-w-6xl">
                     {Array.from({ length: requiredCards }).map((_, idx) => {
                       const card = picked[idx];
                       const spread = ["현재 상황", "핵심 문제", "숨겨진 원인", "조언", "가까운 결과"];
@@ -801,7 +801,7 @@ export default function ClientPage() {
                   </Button>
                 </div>
 
-                <div className="grid grid-cols-4 gap-2 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8">
+                <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10">
                   {deck.map((card) => {
                     const isSelected = picked.some((p) => p.id === card.id);
                     const isDisabled = card.isPicked || picked.length >= requiredCards;
