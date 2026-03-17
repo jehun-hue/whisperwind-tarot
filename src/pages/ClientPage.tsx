@@ -816,7 +816,7 @@ export default function ClientPage() {
                         className={`group relative aspect-[0.65] w-full transition-all duration-500 ${isDisabled && !isSelected ? "cursor-not-allowed opacity-40" : "cursor-pointer"} ${isSelected ? "opacity-0 scale-90 pointer-events-none" : "opacity-100 scale-100"}`}
                       >
                         <div className={`absolute inset-0 w-full h-full rounded-lg border flex flex-col items-center justify-center overflow-hidden transition-all duration-300 ${!isSelected && !isDisabled ? "border-border/30 hover:border-gold/30" : "border-border/20"}`}>
-                          <img src={cardBackImg} alt="" className="w-full h-auto object-contain opacity-80 transition-opacity group-hover:opacity-90" />
+                          <img src={cardBackImg} alt="" className="w-full h-full object-cover opacity-90 rounded-lg transition-opacity group-hover:opacity-100" />
                         </div>
                       </motion.button>
                     );
