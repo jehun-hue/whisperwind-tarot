@@ -288,9 +288,9 @@ export function buildCoreReadingPrompt(locale: string, dataBlock: string, totalS
 ${cfg.systemRole}
 
 [역할 제한 / Role Restriction]
-당신은 데이터 해석자입니다. 어떤 스타일이나 어조도 적용하지 마세요.
-오직 객관적이고 중립적인 분석 결과만 JSON으로 출력하세요.
-Do not apply any specific style or tone. Output only objective and neutral analysis results in JSON.
+당신은 인과 구조 분석 전문가입니다. 어떤 스타일이나 어조도 적용하지 마세요.
+카드 나열이나 단순 요약이 아니라, "왜 이런 상황인지 → 무엇이 충돌하는지 → 어떻게 바뀌는지"의 인과 흐름을 분석하세요.
+Do not apply any style or tone. Analyze the causal structure: why → what conflicts → how it changes.
 
 ${cfg.culturalContext}
 
@@ -299,22 +299,62 @@ ${dataBlock}
 
 [출력 형식 - coreReading JSON / Output Format]
 반드시 다음 구조의 JSON으로만 응답하세요. 마크다운 코드 펜스 없이 순수 JSON만 출력하세요.
+
 {
-  "card_meanings": [
-    { "position": 1, "card": "카드명", "core_meaning": "핵심 의미 1-2문장", "shadow_aspect": "역방향일 경우 그림자 측면" }
-  ],
-  "card_flow_narrative": "5장의 카드가 순서대로 보여주는 흐름 요약 (3-4문장)",
-  "cross_analysis": "사주/타로 교차 분석 결론 (2-3문장)",
-  "risk_points": ["리스크 1", "리스크 2"],
-  "core_advice": ["구체적 조언 1", "구체적 조언 2", "구체적 조언 3"],
-  "overall_conclusion": "종합 결론 2-3문장",
-  "scores": { "tarot": 0~100, "saju": 0~100, "astrology": 0~100, "ziwei": 0~100, "overall": 0~100 }
+  "current_state": {
+    "summary": "카드 조합이 말하는 현재 상태 핵심 1문장",
+    "card_evidence": ["근거가 되는 카드명과 해당 카드가 가리키는 의미 (각 1문장)"]
+  },
+
+  "cause_structure": {
+    "narrative": "왜 지금 이 상황이 만들어졌는지 카드 조합 기반 원인 분석 (3-4문장)",
+    "card_relationships": [
+      {
+        "cards": ["카드A", "카드B"],
+        "relation_type": "충돌 또는 강화",
+        "meaning": "이 조합이 만들어내는 구조적 의미 (1문장)"
+      }
+    ]
+  },
+
+  "conflict_structure": {
+    "narrative": "내담자 안에서 지금 충돌하고 있는 것 (2-3문장)",
+    "core_tension": "한 문장으로 압축한 핵심 갈등"
+  },
+
+  "turning_point": {
+    "condition": "흐름을 바꾸기 위한 구체적 행동 딱 1개 (모호한 표현 금지, 실행 가능해야 함)",
+    "why_this_works": "왜 이 행동이 전환점이 되는지 카드 근거 (1-2문장)"
+  },
+
+  "outcome_scenarios": {
+    "if_act": {
+      "short_term": "행동했을 때 1차 변화 (1-2문장)",
+      "final_flow": "최종 흐름 (1-2문장)"
+    },
+    "if_not_act": {
+      "short_term": "행동하지 않았을 때 1차 변화 (1-2문장)",
+      "final_flow": "최종 흐름 (1-2문장)"
+    }
+  },
+
+  "cross_validation": {
+    "saju_support": "사주에서 이 해석을 뒷받침하는 근거 1개 (1문장)",
+    "ziwei_or_astro_support": "자미두수 또는 점성술에서 뒷받침하는 근거 1개 (1문장)",
+    "conclusion": "교차 검증으로 강화된 최종 결론 (2문장)"
+  },
+
+  "risk_points": ["구체적 시나리오 형태의 리스크 1", "구체적 시나리오 형태의 리스크 2"],
+
+  "scores": { "tarot": 0, "saju": 0, "astrology": 0, "ziwei": 0, "overall": 0 }
 }
 
 [절대 규칙 / Absolute Rules]
-- 감정적 표현, 비유, 문학적 수사 금지 (No emotional expressions or literature metaphors)
+- 감정적 표현, 비유, 문학적 수사 금지 (No emotional expressions or literary metaphors)
 - 엔진 데이터 수치 변경 금지 (Do not change engine data values)
 - 전문 용어는 일상어로 풀어서 설명 (Explain technical terms in plain language)
+- 추상적 조언 금지: "자기개발을 하세요" 같은 표현 대신 구체적 행동을 제시 (No abstract advice)
+- 카드 단순 나열 금지: 반드시 카드 간 충돌/강화 관계로 설명 (Explain via card conflict/reinforcement relationships)
 - ${cfg.outputLanguage}
 `;
 }
@@ -343,6 +383,34 @@ export function buildStyleApplyPrompt(
   else if (isE5L5) tarotKey = "e5l5";
   else if (isL7E3) tarotKey = "l7e3";
 
+  const STYLE_ROLE: Record<string, string> = {
+    hanna: `[스타일 역할: 감정 번역]
+coreReading의 인과 구조를 유지하되, 내담자가 감정적으로 공감할 수 있는 언어로 번역하세요.
+비유와 일상 예시를 활용하되, 해석의 결론을 바꾸지 마세요.
+"왜 이런 상황인지"를 내담자의 감정 경험과 연결해서 설명하세요.`,
+
+    monad: `[스타일 역할: 구조 설명 강화]
+coreReading의 인과 구조를 더 명확하고 체계적으로 설명하세요.
+원인→갈등→전환→결과의 논리적 연결을 강조하세요.
+감정 표현을 최소화하고, 구조과 패턴 중심으로 서술하세요.`,
+
+    e7l3: `[스타일 역할: 감정 중심 요약]
+coreReading의 핵심을 감정적 공감 70%, 논리적 설명 30% 비율로 전달하세요.
+갈등 구조를 내담자의 감정 경험으로 풀어쓰되, 전환 조건은 명확히 유지하세요.`,
+
+    e5l5: `[스타일 역할: 균형 정리]
+coreReading의 감정적 측면과 논리적 측면을 균등하게 정리하세요.
+원인 분석은 객관적으로, 행동 지침은 공감적으로 전달하세요.
+양면을 모두 제시하는 균형 잡힌 서술을 유지하세요.`,
+
+    l7e3: `[스타일 역할: 결론 압축]
+coreReading의 핵심을 논리적 분석 70%, 감정 배려 30% 비율로 압축하세요.
+불필요한 수식을 제거하고, 인과 구조와 결과 시나리오를 중심으로 전달하세요.
+행동 지침은 가장 실용적인 형태로 제시하세요.`
+  };
+
+  const styleRole = STYLE_ROLE[style] || STYLE_ROLE['hanna'];
+
   return `
 ${cfg.systemRole}
 ${identity}
@@ -350,46 +418,56 @@ ${identity}
 [어조 지시 / Tone Directive]
 ${toneOverride}
 
+${styleRole}
+
 [절대 규칙 - 해석 보호 / Absolute Rule - Protect Interpretation]
 아래 coreReading의 해석, 결론, 조언의 내용(팩트)을 절대 변경하지 마세요.
-카드 의미를 재해석하거나 결론을 뒤집지 마세요.
-오직 "표현 방식, 어조, 문장 구조"만 변경하여 내러티브를 완성하세요.
-Do not change the factual content of the coreReading. Only change the expression, tone, and sentence structure.
+- 현재 상태 정의 → 바꾸지 마세요
+- 원인 구조 → 바꾸지 마세요
+- 갈등/압력 구조 → 바꾸지 마세요
+- 전환 조건 (행동 1개) → 바꾸지 마세요
+- 결과 시나리오 (2갈래) → 바꾸지 마세요
+- 교차 검증 결론 → 바꾸지 마세요
+오직 "표현 방식, 어조, 문장 구조, 비유"만 변경하여 내러티브를 완성하세요.
+Do not change any factual content. Only change expression, tone, sentence structure, and metaphors.
 
 [coreReading 데이터 / Core Reading Data]
 ${coreReadingJSON}
 
 [출력 형식 / Output Format]
-기존 integrated_reading 스키마와 동일한 JSON으로 출력하세요. 
+기존 integrated_reading 스키마와 동일한 JSON으로 출력하세요.
 마크다운 코드 펜스나 설명 없이 순수 JSON만 출력하세요.
 
 {
   "reading_info": { "grade": "S|A|B|C" },
   "tarot_reading": {
     "${tarotKey}": {
-      "story": "coreReading의 내용을 바탕으로 위 어조로 풍성하게 다시 쓴 리딩 (400자 이상)",
-      "key_message": "이 스타일의 어조가 반영된 핵심 한 줄"
+      "story": "coreReading의 인과 구조(현재상태→원인→갈등→전환→결과)를 위 어조로 풍성하게 서술한 리딩 (500자 이상). 반드시 '왜 이런 상황인지 → 무엇이 충돌하는지 → 무엇을 하면 바뀌는지 → 했을 때/안 했을 때' 흐름을 포함할 것",
+      "key_message": "전환 조건을 반영한 핵심 한 줄"
     }
   },
   "convergence": {
     "total_systems": ${totalSystems},
-    "common_message": "coreReading의 교차분석 내용을 바탕으로 재구성"
+    "common_message": "coreReading의 교차검증 결론을 바탕으로 이 스타일 어조로 재구성"
   },
   "action_guide": {
-    "do_list": ["coreReading 조언을 바탕으로 스타일 어조 적용"],
-    "dont_list": ["coreReading 리스크를 바탕으로 스타일 어조 적용"],
+    "do_list": ["coreReading의 전환 조건을 바탕으로 스타일 어조 적용한 구체적 행동"],
+    "dont_list": ["coreReading 리스크를 구체적 시나리오 형태로 스타일 어조 적용"],
     "lucky": { "color": "...", "number": "...", "direction": "...", "day": "...", "item": "..." }
   },
-  "final_message": { "title": "스타일에 어울리는 제목", "summary": "coreReading 결론을 바탕으로 스타일 어조 적용 (300자 이상)" },
-  "merged_reading": {
-    "coreReading": "coreReading의 overall_conclusion을 바탕으로 답변",
-    "structureInsight": "coreReading의 사주/점성술 통찰 기반",
-    "currentSituation": "coreReading의 카드 흐름 기반",
-    "timingInsight": "시기 관련 분석 내용",
-    "longTermFlow": "장시적 흐름 분석",
-    "finalAdvice": "coreReading의 최종 조언들을 통합하여 이 스타일의 어조로 재작성"
+  "final_message": { 
+    "title": "스타일에 어울리는 제목", 
+    "summary": "coreReading의 결과 시나리오(행동 시/미행동 시)를 중심으로 스타일 어조 적용 (400자 이상)" 
   },
-  "scores": { "overall": 0~100 }
+  "merged_reading": {
+    "coreReading": "coreReading의 현재 상태 + 교차검증 결론 기반",
+    "structureInsight": "coreReading의 원인 구조 기반",
+    "currentSituation": "coreReading의 갈등/압력 구조 기반",
+    "timingInsight": "coreReading의 결과 시나리오 중 시기 관련 내용",
+    "longTermFlow": "coreReading의 최종 흐름(if_act.final_flow) 기반",
+    "finalAdvice": "coreReading의 전환 조건을 이 스타일 어조로 최종 정리"
+  },
+  "scores": { "overall": 0 }
 }
 
 ${cfg.outputLanguage}
