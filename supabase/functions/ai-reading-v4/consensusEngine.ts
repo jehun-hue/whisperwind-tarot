@@ -336,20 +336,13 @@ export function calculateConsensusV8(
 
       let mediator: string | undefined;
       if (conflict_level === "moderate" || conflict_level === "severe") {
-        const ziweiVec = systemGroups["ziwei"];
-        const numVec = systemGroups["numerology"];
-        if (ziweiVec && getMagnitude(ziweiVec) > 0.1) {
-          const simZiweiI = cosineSimilarity(normalizeVector(ziweiVec), normalizeVector(systemGroups[sysI]));
-          const simZiweiJ = cosineSimilarity(normalizeVector(ziweiVec), normalizeVector(systemGroups[sysJ]));
-          mediator = simZiweiI > simZiweiJ
-            ? `자미두수 → ${sysI} 지지 (유사도 ${simZiweiI.toFixed(2)})`
-            : `자미두수 → ${sysJ} 지지 (유사도 ${simZiweiJ.toFixed(2)})`;
-        } else if (numVec && getMagnitude(numVec) > 0.1) {
-          const simNumI = cosineSimilarity(normalizeVector(numVec), normalizeVector(systemGroups[sysI]));
-          const simNumJ = cosineSimilarity(normalizeVector(numVec), normalizeVector(systemGroups[sysJ]));
-          mediator = simNumI > simNumJ
-            ? `수비학 → ${sysI} 지지 (유사도 ${simNumI.toFixed(2)})`
-            : `수비학 → ${sysJ} 지지 (유사도 ${simNumJ.toFixed(2)})`;
+        // B-256: 신뢰도(reliability)가 높은 엔진을 중재자(우선 순위)로 선택
+        mediator = relI >= relJ ? sysI : sysJ;
+        resolution = `${conflict_level === "severe" ? "심각" : "중간"} 충돌 — 신뢰도 높은 ${mediator} 판단 우선 적용`;
+        
+        // 0.9 미만 엔진 간 충돌 시 경고 추가
+        if (relI < 0.9 && relJ < 0.9) {
+          resolution += " (두 엔진 모두 신뢰도 낮음, 주의 요망)";
         }
       }
 
@@ -410,8 +403,21 @@ export function calculateConsensusV8(
 
   const severeCount = conflictLog.filter(c => c.conflict_level === "severe").length;
   const moderateCount = conflictLog.filter(c => c.conflict_level === "moderate").length;
+  
+  // 전체에서 가장 신뢰도 높은 엔진 추출 (중재 기준 엔진 명시)
+  const bestEngine = Object.entries(reliabilityMap)
+    .sort((a, b) => b[1] - a[1])[0]?.[0] || "상위 엔진";
+  const bestEngineName = {
+    saju: "사주", tarot: "타로", astrology: "점성술", ziwei: "자미두수", numerology: "수비학"
+  }[bestEngine] || bestEngine;
+
+  const lowReliabilityConflicts = conflictLog.some(c => {
+    const [i, j] = c.pair.split("-");
+    return (reliabilityMap[i] || 0) < 0.9 && (reliabilityMap[j] || 0) < 0.9 && (c.conflict_level === "severe");
+  });
+
   const conflict_summary = severeCount > 0
-    ? `⚠️ 심각 충돌 ${severeCount}건 — 타로 판단 우선 적용`
+    ? `⚠️ 심각 충돌 ${severeCount}건 — ${bestEngineName} 기준으로 조율${lowReliabilityConflicts ? " (신뢰성 저하 주의)" : ""}`
     : moderateCount > 0
     ? `⚡ 중간 충돌 ${moderateCount}건 — 조건부 경고 포함`
     : `✅ 충돌 없음 — 전체 엔진 합의`;

@@ -2395,13 +2395,17 @@ function calculateSystemScore(
   const dataPoints = patternVectors.filter(v => v.system.toLowerCase() === systemName.toLowerCase());
   const penalties: string[] = [];
 
-  // ── data_quality_score (0~0.4) ─────────────────────────────
+  // ── data_quality_score (0~0.85) ─────────────────────────────
   let dq = 0;
-  if (sysData && sysData.characteristics?.length > 0) dq += 0.2;
-  if (dataPoints.length > 0) dq += 0.15;
-  if (dataPoints.length >= 3) dq += 0.05;
+  if (sysData && sysData.data_quality_score) {
+    dq = sysData.data_quality_score;
+  }
+  if (sysData && sysData.characteristics?.length > 0) dq = Math.max(dq, 0.2);
+  if (dataPoints.length > 0) dq = Math.max(dq, 0.15 + (dq > 0 ? 0 : 0)); // 가산 방식 조정
+  if (dataPoints.length >= 3) dq = Math.min(0.85, dq + 0.05);
+
   if (systemName === "numerology" && sysData?.life_path_number) {
-    dq = Math.max(dq, 0.4);
+    dq = Math.max(dq, sysData?.data_quality_score || 0.4);
   }
 
   // 출생 정보 패널티
