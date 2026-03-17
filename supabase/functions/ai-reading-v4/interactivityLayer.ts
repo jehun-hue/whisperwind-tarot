@@ -232,25 +232,25 @@ ${dataBlock}
 // --- New Constants for Two-Step Architecture ---
 const STYLE_TONE_OVERRIDES: Record<string, Record<string, string>> = {
   kr: {
-    hanna: "친근하고 다정한 언니/누나 같은 말투를 사용하세요. 공감과 위로를 담아 따뜻하게 이야기하듯 서술하세요.",
-    monad: "지적이고 철학적인 사유가 담긴 어조를 사용하세요. 차분하고 깊이 있는 성찰의 언어로 서술하세요.",
-    e7l3: "매우 부드럽고 따뜻한 공감 위주의 어조를 사용하세요. 감성적인 터치를 강화하세요.",
-    e5l5: "따뜻한 공감과 객관적 논리가 조화를 이룬 균형 잡힌 어조를 사용하세요.",
-    l7e3: "전문적이고 구조적이며 명확한 논리 위주의 어조를 사용하세요. 담백하고 지적인 톤을 유지하세요."
+    hanna: "친근하고 다정한 언니/누나 같은 말투를 사용하세요. 공감과 위로를 담아 따뜻하게 이야기하듯 서술하세요. [호칭 규칙] 반드시 '{이름}님' 형식으로 호칭하고, 이름이 없으면 '님'만 사용하세요.",
+    monad: "지적이고 철학적인 사유가 담긴 어조를 사용하세요. 차분하고 깊이 있는 성찰의 언어로 서술하세요. [호칭 규칙] 반드시 '{이름}님' 형식으로 호칭하고, 이름이 없으면 '님'만 사용하세요.",
+    e7l3: "매우 부드럽고 따뜻한 공감 위주의 어조를 사용하세요. 감성적인 터치를 강화하세요. [호칭 규칙] 반드시 '{이름}님' 형식으로 호칭하고, 이름이 없으면 '님'만 사용하세요.",
+    e5l5: "따뜻한 공감과 객관적 논리가 조화를 이룬 균형 잡힌 어조를 사용하세요. [호칭 규칙] 반드시 '{이름}님' 형식으로 호칭하고, 이름이 없으면 '님'만 사용하세요.",
+    l7e3: "전문적이고 구조적이며 명확한 논리 위주의 어조를 사용하세요. 담백하고 지적인 톤을 유지하세요. [호칭 규칙] 반드시 '{이름}님' 형식으로 호칭하고, 이름이 없으면 '님'만 사용하세요."
   },
   jp: {
-    hanna: "親しみやすく温かい、隣のお姉さんのような丁寧な言葉遣いを使用してください。",
-    monad: "知的で哲学的な深い洞察を感じさせる落ち着いたトーンを使用してください。",
-    e7l3: "非常に柔らかく、共感を重視した温かいトーンを使用してください。",
-    e5l5: "共感と論理が絶妙に調和した、バランスの取린トーンを使用してください。",
-    l7e3: "専門的で構造的な、論理を重視した明快なトーンを使用してください。"
+    hanna: "親しみやすく温かい、隣のお姉さんのような丁寧な言葉遣いを使用してください。 [呼称規則] 常に '{名前}님' 형식을 사용해 주세요.",
+    monad: "知的で哲学的な深い洞察を感じさせる落ち着いたトーンを使用してください。 [호칭 규칙] 항상 '{이름}님' 형식을 사용해 주세요.",
+    e7l3: "非常に柔らかく、共感を重視した温かいトーンを使用してください。 [호칭 규칙] 항상 '{이름}님' 형식을 사용해 주세요.",
+    e5l5: "共感と論理が絶妙に調和した、バランスの取린トーンを使用してください。 [호칭 규칙] 항상 '{이름}님' 형식을 사용해 주세요.",
+    l7e3: "専門적이고 구조적인, 논리를 중시한 명쾌한 톤을 사용해 주세요. [호칭 규칙] 항상 '{이름}님' 형식을 사용해 주세요."
   },
   us: {
-    hanna: "Use a friendly, warm, elder-sisterly tone. Focus on empathy and encouragement.",
-    monad: "Use an intellectual, philosophical, and reflective tone. Focus on deep insights.",
-    e7l3: "Use a very soft and highly empathetic tone. Focus on emotional support.",
-    e5l5: "Use a balanced tone that harmonizes empathy with logical clarity.",
-    l7e3: "Use a professional, structured, and logic-driven tone. Keep it concise and insightful."
+    hanna: "Use a friendly, warm, elder-sisterly tone. Focus on empathy and encouragement. [Addressing] Always address the user as '{Name}' or 'you'.",
+    monad: "Use an intellectual, philosophical, and reflective tone. Focus on deep insights. [Addressing] Always address the user as '{Name}' or 'you'.",
+    e7l3: "Use a very soft and highly empathetic tone. Focus on emotional support. [Addressing] Always address the user as '{Name}' or 'you'.",
+    e5l5: "Use a balanced tone that harmonizes empathy with logical clarity. [Addressing] Always address the user as '{Name}' or 'you'.",
+    l7e3: "Use a professional, structured, and logic-driven tone. Keep it concise and insightful. [Addressing] Always address the user as '{Name}' or 'you'."
   }
 };
 

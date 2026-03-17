@@ -1372,7 +1372,9 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     sajuPromptNote = "\n⚠️ 사주: 시주(시간 기둥) 미입력. 년월일 3주만으로 분석합니다. 시주 관련 십성/신살은 언급하지 마세요.";
   }
 
+  console.log(`[DEBUG-userName] input.userName = "${input.userName}", type = ${typeof input.userName}`);
   const dataBlock = `
+- [질문자 성함] ${input.userName || "님"}
 [사주 엔진 호출 결과 - 상징화 완료]
 ${sajuSymbolic}${sajuPromptNote}
 - 사주 4주: ${sajuDisplay.fourPillars}

@@ -60,16 +60,16 @@ const BRANCH_ELEMENT: Record<string, string> = {
 
 // 지지 장간(藏干) — 각 지지에 숨어있는 천간들 (본기/중기/여기)
 const HIDDEN_STEMS: Record<string, string[]> = {
-  "子": ["癸"],
+  "子": ["壬", "癸"],
   "丑": ["己", "癸", "辛"],
   "寅": ["甲", "丙", "戊"],
-  "卯": ["乙"],
+  "卯": ["甲", "乙"],
   "辰": ["戊", "乙", "癸"],
-  "巳": ["丙", "庚", "戊"],
-  "午": ["丁", "己"],
+  "巳": ["丙", "戊", "庚"],
+  "午": ["丙", "己", "丁"],
   "未": ["己", "丁", "乙"],
   "申": ["庚", "壬", "戊"],
-  "酉": ["辛"],
+  "酉": ["庚", "辛"],
   "戌": ["戊", "辛", "丁"],
   "亥": ["壬", "甲"]
 };
@@ -229,75 +229,92 @@ export async function analyzeSajuStructure(
   const stems: string[] = [pillars.year?.stem, pillars.month?.stem, pillars.day?.stem, pillars.hour?.stem].filter(Boolean);
   const branches: string[] = [pillars.year?.branch, pillars.month?.branch, pillars.day?.branch, pillars.hour?.branch].filter(Boolean);
 
-  // ── 1. 십성(十星) 분포 계산 ──
-  const tenGodCount: Record<string, number> = { "비겁": 0, "식상": 0, "재성": 0, "관성": 0, "인성": 0 };
+  // B-222: 십성 세력 계산 (천간 + 지장간)
+  const tenGodCount: Record<string, number> = {
+    "비겁": 0, "식상": 0, "재성": 0, "관성": 0, "인성": 0
+  };
 
-  // 천간 분석 (일간 자신 제외)
-  stems.forEach((s, i) => {
-    if (i === 2) return; // 일간(day stem) 자체는 제외
-    const el = STEM_ELEMENT[s];
-    if (el) {
-      const rel = getRelation(myElement, el);
-      if (tenGodCount[rel] !== undefined) tenGodCount[rel]++;
+  const dayMaster = pillars.day?.stem;
+  if (!dayMaster) {
+    console.warn("[aiSajuAnalysis] dayMaster is missing, skipping tenGod calculation");
+  } else {
+    const dayElement = STEM_ELEMENT[dayMaster];
+
+    // 천간 처리 (일간 제외, 각 1.0점)
+    const allStems = [
+      { stem: pillars.year?.stem, label: "year" },
+      { stem: pillars.month?.stem, label: "month" },
+      { stem: pillars.day?.stem, label: "day" },
+      { stem: pillars.hour?.stem, label: "hour" }
+    ];
+
+    for (const { stem, label } of allStems) {
+      if (!stem || label === "day") continue; // 일간은 건너뜀
+      const rel = getRelation(dayElement, STEM_ELEMENT[stem]);
+      if (rel) tenGodCount[rel] += 1.0;
     }
-  });
 
-  // 지지 장간 분석 (월령 가중치 적용)
-  branches.forEach((b, branchIdx) => {
-    const hiddenStems = HIDDEN_STEMS[b] || [];
-    // 월지(index 1)는 월령으로 가중치 2.0배 적용 (B-222: 월령 영향력 강화)
-    const monthBonus = branchIdx === 1 ? 2.0 : 1.0;
-    hiddenStems.forEach((hs, idx) => {
-      const el = STEM_ELEMENT[hs];
-      if (el) {
-        const rel = getRelation(myElement, el);
-        // 본기(idx=0)는 1.0, 중기(idx=1)는 0.5, 여기(idx=2)는 0.3 가중
-        const weight = (idx === 0 ? 1.0 : idx === 1 ? 0.5 : 0.3) * monthBonus;
-        if (tenGodCount[rel] !== undefined) tenGodCount[rel] += weight;
+    // 지지의 지장간 처리 (가중치: 본기 0.6, 중기 0.3, 초기 0.1)
+    const HIDDEN_WEIGHTS = [0.6, 0.3, 0.1]; // 첫 번째=본기, 두 번째=중기, 세 번째=초기
+    const allBranches = [
+      pillars.year?.branch,
+      pillars.month?.branch,
+      pillars.day?.branch,
+      pillars.hour?.branch
+    ];
+
+    // 월지(index 1)에 월령 가중치 1.5배 적용
+    const BRANCH_MULTIPLIER = [1.0, 1.5, 1.0, 1.0];
+
+    for (let bi = 0; bi < allBranches.length; bi++) {
+      const branch = allBranches[bi];
+      if (!branch) continue;
+      const hiddens = HIDDEN_STEMS[branch] || [];
+      const multiplier = BRANCH_MULTIPLIER[bi];
+
+      for (let hi = 0; hi < hiddens.length; hi++) {
+        const hStem = hiddens[hi];
+        const baseWeight = HIDDEN_WEIGHTS[hi] ?? 0.1;
+        const rel = getRelation(dayElement, STEM_ELEMENT[hStem]);
+        if (rel) tenGodCount[rel] += baseWeight * multiplier;
       }
-    });
-  });
-
-  // ── 2. 신강/신약 판정 ──
-  // 나를 돕는 힘: 비겁 + 인성
-  const supportPower = tenGodCount["비겁"] + tenGodCount["인성"];
-  // 나를 약하게 하는 힘: 식상 + 재성 + 관성
-  const drainPower = tenGodCount["식상"] + tenGodCount["재성"] + tenGodCount["관성"];
-  const totalPower = supportPower + drainPower;
-  const supportRatio = totalPower > 0 ? supportPower / totalPower : 0.5;
-
-  let strength: string;
-  if (supportRatio >= 0.65) strength = "극신강";
-  else if (supportRatio >= 0.52) strength = "신강";
-  else if (supportRatio >= 0.45) strength = "중화";
-  else if (supportRatio >= 0.38) strength = "중신약";
-  else if (supportRatio >= 0.28) strength = "신약";
-  else strength = "극신약";
-
-  // ── 2-1. 종격(從格) 판단 (B-222) ──
-  let isSpecialFormat = false;
-  let specialFormatType = "";
-
-  // 종강격(從强格): 비겁+인성이 전체의 75% 이상이고, 관성+재성이 거의 없을 때(1.0 이하)
-  if (supportRatio >= 0.75 && (tenGodCount["관성"] + tenGodCount["재성"]) <= 1.0) {
-    isSpecialFormat = true;
-    specialFormatType = "종강격";
-    strength = "종강";
-  }
-  // 종약격(從弱格/종재격/종관격/종아격): 비겁+인성이 전체의 20% 이하이고, 일간 오행이 0.5 이하
-  else if (supportRatio <= 0.20 && (elements[myElement] || 0) <= 0.5) {
-    isSpecialFormat = true;
-    if (tenGodCount["재성"] >= tenGodCount["관성"] && tenGodCount["재성"] >= tenGodCount["식상"]) {
-      specialFormatType = "종재격";
-      strength = "종재";
-    } else if (tenGodCount["관성"] >= tenGodCount["식상"]) {
-      specialFormatType = "종관격";
-      strength = "종관";
-    } else {
-      specialFormatType = "종아격";
-      strength = "종아";
     }
   }
+
+  // B-222: 강약 판정
+  const supportForce = tenGodCount["비겁"] + tenGodCount["인성"];
+  const resistForce = tenGodCount["식상"] + tenGodCount["재성"] + tenGodCount["관성"];
+  const totalForce = supportForce + resistForce;
+  const supportRatio = totalForce > 0 ? supportForce / totalForce : 0.5;
+
+  let strengthLevel = "중화";
+  if (supportRatio >= 0.65) strengthLevel = "극신강";
+  else if (supportRatio >= 0.52) strengthLevel = "신강";
+  else if (supportRatio >= 0.45) strengthLevel = "중화";
+  else if (supportRatio >= 0.38) strengthLevel = "중신약";
+  else if (supportRatio >= 0.28) strengthLevel = "신약";
+  else strengthLevel = "극신약";
+
+  // 종격 판정
+  let specialPattern = "";
+  if (supportRatio >= 0.75) {
+    specialPattern = "종강격";
+    strengthLevel = "종강";
+  } else if (supportRatio <= 0.20) {
+    if (tenGodCount["재성"] >= tenGodCount["관성"] && tenGodCount["재성"] >= tenGodCount["식상"]) {
+      specialPattern = "종재격";
+    } else if (tenGodCount["관성"] >= tenGodCount["재성"] && tenGodCount["관성"] >= tenGodCount["식상"]) {
+      specialPattern = "종관격";
+    } else {
+      specialPattern = "종아격";
+    }
+    strengthLevel = specialPattern;
+  }
+  
+  // Back-compatibility for other logic using 'strength' variable
+  const strength = strengthLevel;
+  const isSpecialFormat = specialPattern !== "";
+  const specialFormatType = specialPattern;
 
   // ── 3. 용신(用神) 추론 ──
   // 월지 기준 계절 파악

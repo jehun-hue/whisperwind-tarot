@@ -106,7 +106,10 @@ export function calculateFullDaewoon(
     const branch = BRANCHES[branchIdx];
     const pillarStartAge = startAge + i * 10;
     const pillarEndAge = pillarStartAge + 9;
-    const isCurrent = currentAge >= pillarStartAge && currentAge <= pillarEndAge;
+    // 한국 사주 전통: 세는 나이(한국 나이) 기준으로 대운 판정
+    // currentAge가 만 나이로 전달되므로 +1 하여 한국 나이로 변환
+    const koreanAge = currentAge + 1;
+    const isCurrent = koreanAge >= pillarStartAge && koreanAge <= pillarEndAge;
 
     pillars.push({
       index: i,
@@ -126,8 +129,9 @@ export function calculateFullDaewoon(
   const currentDaewoon = pillars.find(p => p.isCurrent) || null;
 
   // B-69new: 대운 교체기 감지 — 현재 나이가 대운 시작 후 1년 이내 또는 종료 전 1년 이내
+  const koreanAgeForChanging = currentAge + 1;
   const isDaewoonChangingYear = currentDaewoon
-    ? (currentAge - currentDaewoon.startAge <= 1) || (currentDaewoon.endAge - currentAge <= 1)
+    ? (koreanAgeForChanging - currentDaewoon.startAge <= 1) || (currentDaewoon.endAge - koreanAgeForChanging <= 1)
     : false;
 
   // B-69new: 세운(올해 운) 계산 — 현재 연도 천간·지지
