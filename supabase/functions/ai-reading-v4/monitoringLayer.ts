@@ -28,7 +28,7 @@ interface MonitoringEvent {
 
 // V3ReadingData 필수 필드 목록
 const REQUIRED_TOP_FIELDS = ["reading_info", "tarot_reading", "convergence", "action_guide", "final_message", "scores"];
-const REQUIRED_TAROT_FIELDS = ["choihanna", "monad"]; // At least one should be present
+const REQUIRED_TAROT_FIELDS = ["choihanna", "monad", "e7l3", "e5l5", "l7e3"]; // At least one should be present
 const REQUIRED_SCORE_FIELDS = ["tarot", "saju", "astrology", "ziwei", "overall"];
 const REQUIRED_CONVERGENCE_FIELDS = ["grade", "converged_count", "common_message"];
 const REQUIRED_ACTION_FIELDS = ["do_list", "dont_list", "lucky"];
@@ -55,7 +55,7 @@ export function validateV3Schema(parsed: any): { passed: boolean; missing: strin
   if (parsed.tarot_reading) {
     const hasStyle = REQUIRED_TAROT_FIELDS.some(f => !!parsed.tarot_reading[f]);
     if (!hasStyle) {
-      missing.push("tarot_reading.style_missing (choihanna or monad)");
+      missing.push("tarot_reading.style_missing (one of: choihanna, monad, e7l3, e5l5, l7e3)");
     }
   }
 
@@ -141,7 +141,11 @@ export function patchMissingFields(parsed: any, scores: any, grade: string, card
   if (!parsed.merged_reading) {
     parsed.merged_reading = {
       coreReading: parsed.final_message?.summary || "",
-      structureInsight: parsed.tarot_reading?.choihanna?.story || parsed.tarot_reading?.monad?.story || "",
+      structureInsight: parsed.tarot_reading?.choihanna?.story || 
+                        parsed.tarot_reading?.monad?.story || 
+                        parsed.tarot_reading?.e7l3?.story || 
+                        parsed.tarot_reading?.e5l5?.story || 
+                        parsed.tarot_reading?.l7e3?.story || "",
       currentSituation: "",
       timingInsight: "",
       longTermFlow: "",

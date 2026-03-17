@@ -614,7 +614,13 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       };
  
       // B-174 fix: data-only 모드이거나 narrative가 있으면 completed 처리
-      const hasNarrative = !!(mergedReading.tarot_reading?.choihanna || mergedReading.tarot_reading?.monad);
+      const hasNarrative = !!(
+        mergedReading.tarot_reading?.choihanna || 
+        mergedReading.tarot_reading?.monad ||
+        mergedReading.tarot_reading?.e7l3 ||
+        mergedReading.tarot_reading?.e5l5 ||
+        mergedReading.tarot_reading?.l7e3
+      );
       const isDataOnly = !!(result?.reading_info?.mode === "data-only" || 
         mergedReading.engine?.validation?.message?.includes("Data-Only"));
       const finalStatus = (hasNarrative || isDataOnly) ? "completed" : currentSession.status;
