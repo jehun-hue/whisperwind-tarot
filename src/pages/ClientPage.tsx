@@ -801,7 +801,7 @@ export default function ClientPage() {
                   </Button>
                 </div>
 
-                <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-11">
+                <div className="grid grid-cols-4 gap-2 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8">
                   {deck.map((card) => {
                     const isSelected = picked.some((p) => p.id === card.id);
                     const isDisabled = card.isPicked || picked.length >= requiredCards;
