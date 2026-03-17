@@ -155,7 +155,7 @@ export default function ClientPage() {
   const [birthYear, setBirthYear] = useState("");
   const [birthMonth, setBirthMonth] = useState("");
   const [birthDay, setBirthDay] = useState("");
-  const [birthTime, setBirthTime] = useState("unknown");
+  const [birthTime, setBirthTime] = useState("known");
   const [birthHour24, setBirthHour24] = useState<number>(12);
   const [birthMinute, setBirthMinute] = useState<number>(0);
   const [gender, setGender] = useState<"male" | "female" | "">("");
@@ -579,52 +579,68 @@ export default function ClientPage() {
                           setBirthHour24(12);
                           setBirthMinute(0);
                         }}
-                        className={`rounded-full border px-3 py-1 text-xs font-medium transition-all ${
+                        className={`flex-1 h-12 rounded-xl font-medium text-sm transition-all shadow-lg ${
                           birthTime === "unknown"
-                            ? "border-gold/50 bg-gold/10 text-gold"
-                            : "border-border/50 text-muted-foreground hover:text-foreground"
+                            ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-purple-500/20"
+                            : "bg-black/30 text-purple-300 border border-purple-500/30 hover:border-purple-400/50"
                         }`}
                       >
                         모름
                       </button>
-                      {birthTime === "unknown" && (
-                        <button
-                          onClick={() => {
-                            setBirthTime(`${String(birthHour24).padStart(2, "0")}:${String(birthMinute).padStart(2, "0")}`);
-                          }}
-                          className="rounded-full border border-accent/50 px-3 py-1 text-xs font-medium text-accent hover:bg-accent/10 transition-all"
-                        >
-                          시간 입력
-                        </button>
-                      )}
+                      <button
+                        onClick={() => {
+                          setBirthTime("known");
+                        }}
+                        className={`flex-1 h-12 rounded-xl font-medium text-sm transition-all shadow-lg ${
+                          birthTime !== "unknown"
+                            ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-purple-500/20"
+                            : "bg-black/30 text-purple-300 border border-purple-500/30 hover:border-purple-400/50"
+                        }`}
+                      >
+                        시간 입력
+                      </button>
                     </div>
                     {birthTime !== "unknown" && (
                       <div className="flex items-center gap-2">
                         <select
                           value={birthHour24}
-                          onChange={(e) => {
-                            const h = parseInt(e.target.value);
-                            setBirthHour24(h);
-                            setBirthTime(`${String(h).padStart(2, "0")}:${String(birthMinute).padStart(2, "0")}`);
-                          }}
-                          className="flex-1 h-10 rounded-xl bg-background/50 border border-border/50 text-foreground text-center"
+                          onChange={(e) => setBirthHour24(parseInt(e.target.value))}
+                          className="flex-1 h-14 rounded-xl bg-gradient-to-b from-purple-900/40 to-black/60 border border-purple-400/40 text-white text-center text-lg font-medium shadow-lg shadow-purple-500/10 appearance-none cursor-pointer hover:border-purple-400/70 transition-all"
                         >
-                          {Array.from({ length: 24 }, (_, i) => (
-                            <option key={i} value={i}>{String(i).padStart(2, "0")}시</option>
-                          ))}
+                          <option value={0}>00시 (자정)</option>
+                          <option value={1}>01시 (새벽)</option>
+                          <option value={2}>02시 (새벽)</option>
+                          <option value={3}>03시 (새벽)</option>
+                          <option value={4}>04시 (새벽)</option>
+                          <option value={5}>05시 (새벽)</option>
+                          <option value={6}>06시 (아침)</option>
+                          <option value={7}>07시 (아침)</option>
+                          <option value={8}>08시 (아침)</option>
+                          <option value={9}>09시 (아침)</option>
+                          <option value={10}>10시 (오전)</option>
+                          <option value={11}>11시 (오전)</option>
+                          <option value={12}>12시 (정오)</option>
+                          <option value={13}>13시 (오후1시)</option>
+                          <option value={14}>14시 (오후2시)</option>
+                          <option value={15}>15시 (오후3시)</option>
+                          <option value={16}>16시 (오후4시)</option>
+                          <option value={17}>17시 (오후5시)</option>
+                          <option value={18}>18시 (저녁6시)</option>
+                          <option value={19}>19시 (저녁7시)</option>
+                          <option value={20}>20시 (밤8시)</option>
+                          <option value={21}>21시 (밤9시)</option>
+                          <option value={22}>22시 (밤10시)</option>
+                          <option value={23}>23시 (밤11시)</option>
                         </select>
-                        <span className="text-sm text-muted-foreground">:</span>
                         <select
                           value={birthMinute}
-                          onChange={(e) => {
-                            const m = parseInt(e.target.value);
-                            setBirthMinute(m);
-                            setBirthTime(`${String(birthHour24).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
-                          }}
-                          className="flex-1 h-10 rounded-xl bg-background/50 border border-border/50 text-foreground text-center"
+                          onChange={(e) => setBirthMinute(parseInt(e.target.value))}
+                          className="flex-1 h-14 rounded-xl bg-gradient-to-b from-purple-900/40 to-black/60 border border-purple-400/40 text-white text-center text-lg font-medium shadow-lg shadow-purple-500/10 appearance-none cursor-pointer hover:border-purple-400/70 transition-all"
                         >
                           {Array.from({ length: 60 }, (_, i) => (
-                            <option key={i} value={i}>{String(i).padStart(2, "0")}분</option>
+                            <option key={i} value={i}>
+                              {String(i).padStart(2, "0")}분
+                            </option>
                           ))}
                         </select>
                       </div>
@@ -732,7 +748,7 @@ export default function ClientPage() {
                 </div>
 
                 <div className="mt-6 mb-8 flex flex-col items-center space-y-6">
-                  <div className="flex items-center justify-center gap-4 w-full max-w-sm">
+                  <div className="flex items-center justify-center gap-3 w-full max-w-2xl justify-center">
                     {Array.from({ length: requiredCards }).map((_, idx) => {
                       const card = picked[idx];
                       const spread = ["현재 상황", "핵심 문제", "숨겨진 원인", "조언", "가까운 결과"];
@@ -740,9 +756,9 @@ export default function ClientPage() {
 
                       if (!card) {
                         return (
-                          <div key={idx} className="flex-1 flex flex-col items-center gap-2">
+                          <div key={idx} className="flex flex-col items-center gap-2">
                             <span className="text-xs font-medium tracking-widest text-muted-foreground/50 whitespace-nowrap break-keep">{positionLabel}</span>
-                            <div className="w-full aspect-[0.65] rounded-xl border-2 border-dashed border-border/40 flex flex-col items-center justify-center text-muted-foreground/30 bg-background/20 relative shadow-inner">
+                            <div className="w-20 sm:w-24 aspect-[0.65] rounded-xl border-2 border-dashed border-border/40 flex flex-col items-center justify-center text-muted-foreground/30 bg-background/20 relative shadow-inner">
                               <span className="text-3xl font-light opacity-40">?</span>
                             </div>
                           </div>
@@ -756,14 +772,14 @@ export default function ClientPage() {
                       else if (card.suit === 'Swords') suitBg = 'from-slate-500 to-gray-800';
 
                       return (
-                        <div key={card.id} className="flex-1 flex flex-col items-center gap-2">
+                        <div key={card.id} className="flex flex-col items-center gap-2">
                           <span className={`text-xs font-medium tracking-widest ${card.isReversed ? "text-purple-300/80" : "text-gold-light/80"} whitespace-nowrap break-keep`}>{positionLabel}</span>
                           <TarotCard 
                             name={card.name} 
                             koreanName={card.korean} 
                             isReversed={card.isReversed} 
                             image={card.image}
-                            className="w-full aspect-[0.65]"
+                            className="w-20 sm:w-24 aspect-[0.65]"
                             size="md"
                           />
                         </div>
@@ -784,7 +800,7 @@ export default function ClientPage() {
                   </Button>
                 </div>
 
-                <div className="grid grid-cols-6 gap-1 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-13">
+                <div className="grid grid-cols-5 gap-2 sm:grid-cols-7 md:grid-cols-9 lg:grid-cols-11">
                   {deck.map((card) => {
                     const isSelected = picked.some((p) => p.id === card.id);
                     const isDisabled = card.isPicked || picked.length >= requiredCards;
@@ -799,7 +815,7 @@ export default function ClientPage() {
                         className={`group relative aspect-[0.65] w-full transition-all duration-500 ${isDisabled && !isSelected ? "cursor-not-allowed opacity-40" : "cursor-pointer"} ${isSelected ? "opacity-0 scale-90 pointer-events-none" : "opacity-100 scale-100"}`}
                       >
                         <div className={`absolute inset-0 w-full h-full rounded-lg border flex flex-col items-center justify-center overflow-hidden transition-all duration-300 ${!isSelected && !isDisabled ? "border-border/30 hover:border-gold/30" : "border-border/20"}`}>
-                          <img src={cardBackImg} alt="" className="w-full h-auto max-h-[80px] sm:max-h-[100px] md:max-h-[90px] lg:max-h-[75px] object-contain opacity-60 transition-opacity group-hover:opacity-90" />
+                          <img src={cardBackImg} alt="" className="w-full h-auto object-contain opacity-60 transition-opacity group-hover:opacity-90" />
                         </div>
                       </motion.button>
                     );
