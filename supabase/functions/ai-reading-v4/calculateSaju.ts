@@ -12,9 +12,10 @@ export function calculateSaju(
   hour: number,
   minute: number,
   gender: 'M' | 'F' = 'M',
-  longitude: number = 127.5
+  longitude: number = 127.5,
+  hasTime: boolean = true
 ) {
-  const result = getFullSaju(year, month, day, hour, minute, gender, longitude);
+  const result = getFullSaju(year, month, day, hour, minute, gender, longitude, hasTime);
   
   // Return in required structure
   return {

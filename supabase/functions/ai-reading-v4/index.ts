@@ -92,7 +92,8 @@ serve(async (req: Request) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    const spreadHash = (payload.cards || []).map((c: any) => c.name || "card").join("-");
+    const style = payload.style || "hanna";
+    const spreadHash = (payload.cards || []).map((c: any) => c.name || "card").join("-") + `_${style}_${locale}`;
     const { data: cached } = await supabase
       .from("reading_results")
       .select("reading_json")

@@ -73,7 +73,8 @@ export function getFullSaju(
   hour: number,
   minute: number,
   gender: 'M' | 'F' = 'M',
-  longitude: number = 127.5
+  longitude: number = 127.5,
+  hasTime: boolean = true
 ) {
   // 1. Longitude & DST Correction
   // B-66new: 한국 시간대 히스토리 완전 반영
@@ -107,33 +108,40 @@ export function getFullSaju(
   // KST = UTC+9 = 135도 기준, 경도 1도당 4분
   const longitudeCorrectionMinutes = (longitude - 135) * 4;
   const totalOffsetMinutes = longitudeCorrectionMinutes + dstOffset;
-  // 야자시(夜子時) 처리: 23:00~23:59는 다음날 子時(00:00)로 계산
-  // 전통 사주 기준: 밤 11시 이후는 다음날로 산입
-  // 조자시(早子時, 00:00~00:59)는 당일 그대로 유지
-  const isYaJaTime = hour === 23;
-  const effectiveHour = isYaJaTime ? 0 : hour;
-  const effectiveMinute = isYaJaTime ? 0 : minute;
-  const effectiveDayOffset = isYaJaTime ? 1 : 0; // 야자시면 날짜 +1
-
-  const totalInputMinutes = effectiveHour * 60 + effectiveMinute;
+  // ── 경도보정 후 실제 시간(Solar Time) 계산 ──
   const kstToUtcMinutes = -9 * 60;
+  // B-116 fix: 진태양시 정밀 계산을 위해 베이스 시간을 UTC로 변환 후 오프셋 적용
+  const solarUtcMinutes = (hour * 60 + minute + totalOffsetMinutes) + kstToUtcMinutes;
+  const correctedDate = new Date(Date.UTC(year, month - 1, day, 0, solarUtcMinutes));
 
-  // B-116 fix: JD용 날짜는 UTC 변환만 적용 (경도보정 제외, 일주 오류 방지)
-  const utcOnlyMinutes = totalInputMinutes + kstToUtcMinutes;
-  const utcOnlyHour = Math.floor(((utcOnlyMinutes % 1440) + 1440) % 1440 / 60);
-  const utcOnlyMinute = ((utcOnlyMinutes % 60) + 60) % 60;
-  const utcOnlyDayOffset = Math.floor(utcOnlyMinutes / 1440) + effectiveDayOffset;
-  const correctedDate = new Date(Date.UTC(year, month - 1, day + utcOnlyDayOffset, utcOnlyHour, utcOnlyMinute));
+  // ── 경도보정 후 시간으로 야자시 판단 ──
+  // KST(UTC+9) 기준으로 보정된 시간 추출
+  const kstSolarDate = new Date(correctedDate.getTime() + 9 * 60 * 60000);
+  const correctedHour = kstSolarDate.getUTCHours();
+  const correctedMinute = kstSolarDate.getUTCMinutes();
 
-  // 시주/월주 계산용 진태양시 보정값 (경도보정 포함, 별도 유지)
-  const solarTotalMinutes = totalInputMinutes + kstToUtcMinutes + totalOffsetMinutes;
-  const jd = calculateJD(correctedDate);
-  const sunLong = getSunLongitude(jd);
+  // 야자시(夜子時) 처리: 23:00~23:59는 자시(子時)에 해당
+  // 일주(日柱) 계산 시: 야자시는 "다음날"의 자시이므로 날짜를 +1
+  // 시주(時柱) 계산 시: 자시(子時, branchIdx=0)로 처리
+  const isYaJaTime = correctedHour === 23;
+
+  // 일주 계산용 날짜: 야자시면 +1일 (23시는 다음날의 자시)
+  const dayPillarDate = new Date(correctedDate);
+  if (isYaJaTime) {
+    dayPillarDate.setUTCDate(dayPillarDate.getUTCDate() + 1);
+  }
+
+  // 시주 계산용 시간 (야자시면 0시로 처리)
+  const effectiveHour = isYaJaTime ? 0 : correctedHour;
+
+  const jd = calculateJD(dayPillarDate); // 일주 계산용 JD (야자시 보정됨)
+  const jdForSun = calculateJD(correctedDate); // 월주(절기) 및 년주(입춘) 계산용 JD (원래 시간 유지)
+  const sunLong = getSunLongitude(jdForSun);
 
   // 2. Year Pillar (Ip-chun)
   const ipChunJD = findSolarTermJD(correctedDate.getUTCFullYear(), 315);
   let pYear = correctedDate.getUTCFullYear();
-  if (jd < ipChunJD) pYear -= 1;
+  if (jdForSun < ipChunJD) pYear -= 1;
   const yIdx = (pYear - 4) % 60;
   const yearPillar = {
     stem: STEMS[(yIdx % 10 + 10) % 10],
@@ -158,8 +166,8 @@ export function getFullSaju(
   });
 
   // 4. Day Pillar (JD cycle)
-  // B-116 fix v2: JD 기준 일주 오프셋 수정 (46 → 50, 壬申일 기준 재검증)
-  const dIdx = Math.floor(jd + 0.5 + 50) % 60;
+  // B-213 fix: JD 기준 일주 오프셋 수정 (50 → 49, 癸亥일/丙申일 기준 재검증)
+  const dIdx = Math.floor(jd + 0.5 + 49) % 60;
   const dayPillar = { stem: STEMS[dIdx % 10], branch: BRANCHES[dIdx % 12] };
   const dayMaster = dayPillar.stem;
 
@@ -169,13 +177,15 @@ export function getFullSaju(
   //            卯(05:30~07:30), 辰(07:30~09:30), 巳(09:30~11:30),
   //            午(11:30~13:30), 未(13:30~15:30), 申(15:30~17:30),
   //            酉(17:30~19:30), 戌(19:30~21:30), 亥(21:30~23:30)
-  const localSolarMinutes = totalInputMinutes + totalOffsetMinutes;
-  const normalizedMinutes = ((localSolarMinutes % 1440) + 1440) % 1440;
+  const normalizedMinutes = (effectiveHour * 60 + correctedMinute);
   // 子시 시작을 23:30(=1410분)으로 정렬: +30분 후 2시간(120분) 단위로 나눔
   const hBranchIdx = Math.floor(((normalizedMinutes + 30) % 1440) / 120);
   const hStemBase = (dIdx % 10 * 2) % 10;
   const hStemIdx = (hStemBase + hBranchIdx) % 10;
-  const hourPillar = { stem: STEMS[hStemIdx], branch: BRANCHES[hBranchIdx] };
+  // B-228: 출생시간 "모름"일 때 시주 제외
+  const hourPillar = hasTime 
+    ? { stem: STEMS[hStemIdx], branch: BRANCHES[hBranchIdx] }
+    : { stem: "미상", branch: "미상" };
 
   // 6. Elements Distribution (천간 + 지지 + 지장간 포함)
   const pillars = [yearPillar, monthPillar, dayPillar, hourPillar];
@@ -209,7 +219,7 @@ export function getFullSaju(
     roundedElements[key] = Math.round(elements[key] * 10) / 10;
   }
 
-  return {
+  const result = {
     pillars: {
       year: yearPillar,
       month: monthPillar,
@@ -224,5 +234,25 @@ export function getFullSaju(
     is_near_solar_term_boundary: isNearSolarTermBoundary,
     time_corrected: timeCorrected,
     is_borderline_time: isBorderlineTime,
+    has_time: hasTime,
+    narrative: hasTime ? "" : "출생 시간 미입력으로 시주는 제외하고 3주(년월일)만 분석합니다."
   };
+
+  console.log('[SAJU DEBUG]', {
+    input: { year, month, day, hour, minute },
+    corrected: { 
+      date: correctedDate.toISOString(), 
+      hour: correctedHour,
+      minute: correctedMinute 
+    },
+    isYaJaTime,
+    dayPillarDate: dayPillarDate.toISOString(),
+    effectiveHour,
+    result: {
+      dayMaster: result.dayMaster,
+      pillars: result.pillars
+    }
+  });
+
+  return result;
 }

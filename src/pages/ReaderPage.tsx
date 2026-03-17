@@ -251,7 +251,7 @@ export default function ReaderPage() {
 }
 
 function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdate: (s: ReadingSession) => void }) {
-  const [analyzingStyle, setAnalyzingStyle] = useState<'hanna' | 'monad' | 'v1' | 'data-only' | 'seq_hanna' | 'seq_monad' | 'seq_data' | 'e7l3' | 'e5l5' | 'l7e3' | null>(null);
+  const [analyzingStyle, setAnalyzingStyle] = useState<'hanna' | 'monad' | 'v1' | 'data-only' | 'seq_hanna' | 'seq_monad' | 'seq_data' | 'seq_e7l3' | 'seq_e5l5' | 'seq_l7e3' | 'e7l3' | 'e5l5' | 'l7e3' | null>(null);
   const analyzing = !!analyzingStyle;
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [counselorComment, setCounselorComment] = useState(session.counselor_comment || "");
@@ -846,38 +846,29 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       "⚠️ API 비용이 발생합니다!\n\n" +
       "고객: " + (session.user_name || "이름없음") + "\n" +
       "질문: " + session.question + "\n\n" +
-      "최한나 → 모나드 → 데이터분석 순서로 통합 분석을 자동 실행하시겠습니까?"
+      "5개 스타일 + 데이터분석을 자동 실행하시겠습니까?"
     );
     if (!ok) return;
 
     try {
       setAnalysisError(null);
       
-      console.log("[runSequentialAnalysis] Step 1: hanna start");
-      setAnalyzingStyle('seq_hanna');
-      const s1 = await runAIAnalysisV2('hanna', true);
- 
-      console.log("[runSequentialAnalysis] Step 2: monad start");
-      setAnalyzingStyle('seq_monad');
-      // Use latest session data from Step 1
-      const s2 = await runAIAnalysisV2('monad', true, s1 || undefined);
- 
-      console.log("[runSequentialAnalysis] Step 3: data-only start");
-      setAnalyzingStyle('seq_data');
-      // Use latest session data from Step 2
-      const s3 = await runDataOnlyAnalysis(true, s2 || s1 || undefined);
+      const styles: Array<'hanna' | 'monad' | 'e7l3' | 'e5l5' | 'l7e3'> = 
+        ['hanna', 'monad', 'e7l3', 'e5l5', 'l7e3'];
       
-      console.log("[runSequentialAnalysis] All steps finished");
-      toast.info("통합 스타일 병합을 시작합니다...");
+      let latestSession: any = undefined;
+      
+      for (const style of styles) {
+        console.log(`[runSequentialAnalysis] ${style} start`);
+        setAnalyzingStyle(`seq_${style}`);
+        latestSession = await runAIAnalysisV2(style, true, latestSession) || latestSession;
+      }
 
-      // B-159 fix: s3 최신 세션 직접 전달 (React 상태 업데이트 타이밍 이슈 방지)
-      const latestSession = s3 || s2 || s1 || undefined;
-      await applyPersonaMerge('e7l3', latestSession);
-      await applyPersonaMerge('e5l5', latestSession);
-      await applyPersonaMerge('l7e3', latestSession);
+      console.log("[runSequentialAnalysis] data-only start");
+      setAnalyzingStyle('seq_data');
+      await runDataOnlyAnalysis(true, latestSession);
 
       toast.success("통합 분석 완료!");
-
     } catch (err) {
       console.error("Sequential analysis error:", err);
     } finally {
@@ -1359,98 +1350,25 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
             </p>
           )}
 
-          {/* 메인 버튼: 순차 AI 분석 실행 */}
-          <Button
-            className="w-full rounded-xl bg-gradient-to-r from-purple-600 to-blue-500 text-white font-medium shadow-lg"
-            onClick={runSequentialAnalysis}
-            disabled={analyzing}
-          >
-            {analyzing ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {analyzingStyle === 'seq_hanna' ? "1/3 최한나 분석 중..." :
-                 analyzingStyle === 'seq_monad' ? "2/3 모나드 분석 중..." :
-                 analyzingStyle === 'seq_data' ? "3/3 데이터 분석 중..." :
-                 "분석 진행 중..."}
-              </>
-            ) : (
-              <>
-                <Sparkles className="mr-2 h-4 w-4" />
-                🔮 AI 분석 실행 (최한나 → 모나드 → 데이터)
-              </>
-            )}
-          </Button>
-
-          <div className="grid grid-cols-2 gap-2">
+          {/* 메인 버튼 2개만 */}
+          <div className="flex flex-col gap-2">
             <Button
-              variant="outline"
-              size="sm"
-              className="rounded-xl border-purple-500/20 bg-purple-500/5 text-purple-400 hover:bg-purple-500/10 text-[10px]"
-              onClick={() => runAIAnalysisV2('hanna')}
+              className="w-full rounded-xl bg-gradient-to-r from-purple-600 to-blue-500 text-white font-medium shadow-lg"
+              onClick={runSequentialAnalysis}
               disabled={analyzing}
             >
-              💫 최한나 개별 분석
+              {analyzing ? "분석 중... (" + analyzingStyle + ")" : "🔮 AI 분석 실행 (최한나 → 모나드 → 감성 → 균형 → 이성 → 데이터)"}
             </Button>
+            
             <Button
               variant="outline"
-              size="sm"
-              className="rounded-xl border-blue-500/20 bg-blue-500/5 text-blue-400 hover:bg-blue-500/10 text-[10px]"
-              onClick={() => runAIAnalysisV2('monad')}
+              className="w-full rounded-xl border-gray-500/20 text-gray-400 hover:bg-gray-500/10"
+              onClick={() => runDataOnlyAnalysis()}
               disabled={analyzing}
             >
-              🔷 모나드 개별 분석
+              📊 데이터 분석 단독 실행
             </Button>
           </div>
-
-          <div className="grid grid-cols-3 gap-2">
-            <Button
-              id="btn-merge-e7l3"
-              variant="outline"
-              size="sm"
-              className="rounded-xl border-pink-500/20 bg-pink-500/5 text-pink-400 hover:bg-pink-500/10 text-[10px] h-9"
-              onClick={() => applyPersonaMerge('e7l3')}
-              disabled={analyzing}
-            >
-              🌸 감7논3
-            </Button>
-            <Button
-              id="btn-merge-e5l5"
-              variant="outline"
-              size="sm"
-              className="rounded-xl border-purple-500/20 bg-purple-500/5 text-purple-400 hover:bg-purple-500/10 text-[10px] h-9"
-              onClick={() => applyPersonaMerge('e5l5')}
-              disabled={analyzing}
-            >
-              ⚖️ 감5논5
-            </Button>
-            <Button
-              id="btn-merge-l7e3"
-              variant="outline"
-              size="sm"
-              className="rounded-xl border-blue-500/20 bg-blue-500/5 text-blue-400 hover:bg-blue-500/10 text-[10px] h-9"
-              onClick={() => applyPersonaMerge('l7e3')}
-              disabled={analyzing}
-            >
-              🧊 논7감3
-            </Button>
-          </div>
-
-          <Button
-            className="w-full rounded-xl border border-border bg-card text-foreground font-medium hover:bg-muted"
-            onClick={() => runDataOnlyAnalysis()}
-          >
-            {analyzingStyle === 'data-only' ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                분석 중...
-              </>
-            ) : (
-              <>
-                <FileJson className="mr-2 h-4 w-4" />
-                📊 데이터 분석 단독 실행
-              </>
-            )}
-          </Button>
         </CardContent>
       </Card>
 
@@ -1579,9 +1497,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                   </>
                 ) : (
                   <p className="text-xs text-muted-foreground italic">
-                    {reading.tarot_reading?.choihanna && reading.tarot_reading?.monad
-                      ? '하단 🌸 감성 버튼을 눌러 통합 리딩을 생성해 주세요.'
-                      : '최한나 + 모나드 분석 완료 후 통합 리딩이 활성화됩니다.'}
+                    상단 AI 분석 실행 버튼을 눌러주세요. 자동으로 생성됩니다.
                   </p>
                 )}
               </div>
@@ -1598,9 +1514,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                   </>
                 ) : (
                   <p className="text-xs text-muted-foreground italic">
-                    {reading.tarot_reading?.choihanna && reading.tarot_reading?.monad
-                      ? '하단 ⚖️ 균형 버튼을 눌러 통합 리딩을 생성해 주세요.'
-                      : '최한나 + 모나드 분석 완료 후 통합 리딩이 활성화됩니다.'}
+                    상단 AI 분석 실행 버튼을 눌러주세요. 자동으로 생성됩니다.
                   </p>
                 )}
               </div>
@@ -1617,9 +1531,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                   </>
                 ) : (
                   <p className="text-xs text-muted-foreground italic">
-                    {reading.tarot_reading?.choihanna && reading.tarot_reading?.monad
-                      ? '하단 🧊 이성 버튼을 눌러 통합 리딩을 생성해 주세요.'
-                      : '최한나 + 모나드 분석 완료 후 통합 리딩이 활성화됩니다.'}
+                    상단 AI 분석 실행 버튼을 눌러주세요. 자동으로 생성됩니다.
                   </p>
                 )}
               </div>

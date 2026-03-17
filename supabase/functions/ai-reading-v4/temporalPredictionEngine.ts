@@ -21,8 +21,8 @@ function extractSajuTimingSignal(sajuResult: any, category?: string): { score: n
   const factors: string[] = [];
 
   if (!sajuResult) return { score, factors };
-
-  const chars: string[] = sajuResult.characteristics || [];
+  
+  const chars = Array.isArray(sajuResult.characteristics) ? sajuResult.characteristics : [];
   const tenGods: Record<string, number> = sajuResult.tenGods || {};
   const daewoon = sajuResult.daewoon?.currentDaewoon;
 
@@ -86,22 +86,22 @@ function extractAstrologyTimingSignal(astroResult: any, category?: string): { sc
   const factors: string[] = [];
 
   if (!astroResult) return { score, factors };
-
-  const chars: string[] = astroResult.characteristics || [];
-  const transits = astroResult.transits || [];
+  
+  const chars = Array.isArray(astroResult.characteristics) ? astroResult.characteristics : [];
+  const transits = Array.isArray(astroResult.transits) ? astroResult.transits : [];
 
   // 1. 주요 Transit (Jupiter/Saturn) 감지
-  if (chars.some(c => /jupiter/i.test(c))) {
+  if (chars.some((c: string) => /jupiter/i.test(c))) {
     score += 0.15;
     factors.push("Jupiter Transit — 확장, 기회, 행운의 에너지 활성");
   }
-  if (chars.some(c => /saturn/i.test(c))) {
+  if (chars.some((c: string) => /saturn/i.test(c))) {
     score += 0.10;
     factors.push("Saturn 정렬 — 내실을 다지고 구조를 재정비하는 시기");
   }
 
   // 2. 외행성(Outer Planet) 영향
-  const outerImpact = chars.filter(c => /pluto|neptune|uranus/i.test(c)).length;
+  const outerImpact = chars.filter((c: string) => /pluto|neptune|uranus/i.test(c)).length;
   if (outerImpact > 0) {
     score += outerImpact * 0.10;
     factors.push(`외행성(${outerImpact}개) 강력한 관여 — 운명의 근본적 변형과 거시적 흐름 형성`);
@@ -109,13 +109,13 @@ function extractAstrologyTimingSignal(astroResult: any, category?: string): { sc
 
   // 3. 질문 유형 기반 행성 매팅
   if (category) {
-    const isWealth = ["재물", "사업", "money", "wealth"].some(k => category.includes(k));
-    if (isWealth && chars.some(c => /venus|jupiter/i.test(c) && /trine|sextile|conjunction/i.test(c))) {
+    const isWealth = ["재물", "사업", "money", "wealth"].some((k: string) => category.includes(k));
+    if (isWealth && chars.some((c: string) => /venus|jupiter/i.test(c) && /trine|sextile|conjunction/i.test(c))) {
       score += 0.15;
       factors.push("금융/가치 행성(Venus, Jupiter)의 조화로운 각도 — 재물운 상승 신호");
     }
-    const isLove = ["연애", "relationship", "love"].some(k => category.includes(k));
-    if (isLove && chars.some(c => /venus|mars/i.test(c) && /trine|conjunction/i.test(c))) {
+    const isLove = ["연애", "relationship", "love"].some((k: string) => category.includes(k));
+    if (isLove && chars.some((c: string) => /venus|mars/i.test(c) && /trine|conjunction/i.test(c))) {
       score += 0.15;
       factors.push("사랑과 열정의 행성(Venus, Mars) 활성화 — 인연운 강화");
     }
@@ -165,11 +165,11 @@ function extractZiweiTimingSignal(ziweiResult: any): { score: number; factors: s
   let score = 0.5;
   const factors: string[] = [];
 
-  if (!ziweiResult) return { score, factors };
-
+  if (!ziweiResult || ziweiResult.skipped) return { score, factors };
+  
   const cmp = ziweiResult.currentMajorPeriod;
   const cmi = ziweiResult.currentMinorPeriod;
-  const chars = ziweiResult.characteristics || [];
+  const chars = Array.isArray(ziweiResult.characteristics) ? ziweiResult.characteristics : [];
 
   // 대한(Major Period) 분석
   if (cmp) {
@@ -209,10 +209,10 @@ function extractTarotTimingSignal(tarotResult: any): { score: number; factors: s
   const factors: string[] = [];
 
   if (!tarotResult) return { score, factors };
-
+  
   const patterns = tarotResult.dominant_patterns || {};
   const chars = Array.isArray(tarotResult.characteristics) ? tarotResult.characteristics : [];
-
+  
   // timing_event, cycle_change, life_transition 차원 확인
   const timingDimensions = ["timing_event", "cycle_change", "life_transition", "sudden_change", "movement"];
   let timingSum = 0;

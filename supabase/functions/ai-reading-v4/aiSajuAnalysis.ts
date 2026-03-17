@@ -14,6 +14,7 @@ export interface SajuAnalysisResult {
   narrative: string;
   tenGods: Record<string, number>;
   yongShin: string;
+  heeShin: string;
   daewoon: any | null; 
   interactions: Interaction[];
   shinsal: Shinsal[];                                   // B-144: 신살
@@ -210,6 +211,7 @@ export async function analyzeSajuStructure(
       narrative: "사주 데이터가 부족합니다.",
       tenGods: {},
       yongShin: "Unknown",
+      heeShin: "Unknown",
       daewoon: null,
       interactions: [],
       shinsal: [],
@@ -243,9 +245,8 @@ export async function analyzeSajuStructure(
   // 지지 장간 분석 (월령 가중치 적용)
   branches.forEach((b, branchIdx) => {
     const hiddenStems = HIDDEN_STEMS[b] || [];
-    // 월지(index 1)는 월령으로 가중치 2.5배 적용
-    // B-178 fix: 월지(index 1)는 월령으로 가중치 1.5배 적용 (기존 2.5배 → 과다 계산 방지)
-    const monthBonus = branchIdx === 1 ? 1.5 : 1.0;
+    // 월지(index 1)는 월령으로 가중치 2.0배 적용 (B-222: 월령 영향력 강화)
+    const monthBonus = branchIdx === 1 ? 2.0 : 1.0;
     hiddenStems.forEach((hs, idx) => {
       const el = STEM_ELEMENT[hs];
       if (el) {
@@ -273,6 +274,31 @@ export async function analyzeSajuStructure(
   else if (supportRatio >= 0.28) strength = "신약";
   else strength = "극신약";
 
+  // ── 2-1. 종격(從格) 판단 (B-222) ──
+  let isSpecialFormat = false;
+  let specialFormatType = "";
+
+  // 종강격(從强格): 비겁+인성이 전체의 75% 이상이고, 관성+재성이 거의 없을 때(1.0 이하)
+  if (supportRatio >= 0.75 && (tenGodCount["관성"] + tenGodCount["재성"]) <= 1.0) {
+    isSpecialFormat = true;
+    specialFormatType = "종강격";
+    strength = "종강";
+  }
+  // 종약격(從弱格/종재격/종관격/종아격): 비겁+인성이 전체의 20% 이하이고, 일간 오행이 0.5 이하
+  else if (supportRatio <= 0.20 && (elements[myElement] || 0) <= 0.5) {
+    isSpecialFormat = true;
+    if (tenGodCount["재성"] >= tenGodCount["관성"] && tenGodCount["재성"] >= tenGodCount["식상"]) {
+      specialFormatType = "종재격";
+      strength = "종재";
+    } else if (tenGodCount["관성"] >= tenGodCount["식상"]) {
+      specialFormatType = "종관격";
+      strength = "종관";
+    } else {
+      specialFormatType = "종아격";
+      strength = "종아";
+    }
+  }
+
   // ── 3. 용신(用神) 추론 ──
   // 월지 기준 계절 파악
   const monthBranch = branches[1]; // 월지
@@ -296,7 +322,18 @@ export async function analyzeSajuStructure(
 
   // 억부용신 결정
   let eokbuYong: string;
-  if (strength === "극신강" || strength === "신강") {
+  if (isSpecialFormat) {
+    // 종격 (B-222): 강한 기운을 따라감
+    if (specialFormatType === "종강격") {
+      eokbuYong = myElement;
+    } else if (specialFormatType === "종재격") {
+      eokbuYong = getConqueredElement(myElement);
+    } else if (specialFormatType === "종관격") {
+      eokbuYong = getConqueringElement(myElement);
+    } else { // 종아격
+      eokbuYong = getProducedElement(myElement);
+    }
+  } else if (strength === "극신강" || strength === "신강") {
     // 신강 → 설기/재성/관성 중 가장 부족한 오행
     const drainElements = [
       getProducedElement(myElement),   // 식상
@@ -337,8 +374,30 @@ export async function analyzeSajuStructure(
     yongsin = eokbuYong; // 조후 없음 → 억부만
   }
 
+  // ── B-253: 희신(喜神) 추론 ──────────────────────────────────────
+  const PRODUCE_MAP: Record<string, string> = { "목":"화", "화":"토", "토":"금", "금":"수", "수":"목" };
+  const SUPPORT_MAP: Record<string, string> = { "목":"수", "화":"목", "토":"화", "금":"토", "수":"금" };
+
+  let heeShin = "";
+  if (yongsin.includes("/")) {
+    // 조후/억부 병기인 경우 — 억부용신 기준으로 희신 산출
+    const mainYong = yongsin.split("/")[1] || yongsin.split("/")[0];
+    heeShin = SUPPORT_MAP[mainYong] || "";
+  } else {
+    // 용신을 생해주는 오행이 희신
+    heeShin = SUPPORT_MAP[yongsin] || "";
+  }
+  // 희신이 용신과 같으면 용신을 생하는 쪽의 생오행으로 대체
+  if (heeShin === yongsin) {
+    heeShin = SUPPORT_MAP[heeShin] || "";
+  }
+
   // ── 4. Characteristics 생성 ──
   const characteristics: string[] = [];
+
+  if (isSpecialFormat) {
+    characteristics.push(`특수격국: ${specialFormatType} — 일반적인 억부 용신 대신 격국에 맞는 용신 적용`);
+  }
 
   // 십성 강약 태깅
   const maxTenGod = Object.entries(tenGodCount).sort((a, b) => b[1] - a[1]);
@@ -408,6 +467,7 @@ export async function analyzeSajuStructure(
     `오행 분포는 ${elementNames.map(n => `${n}(${elements[n] || 0})`).join(", ")}이며, ` +
     `주요 십성 구성은 ${tenGodDesc || "고르게 분포"}입니다. ` +
     `용신은 '${yongsin}'으로 판단됩니다.` +
+    (heeShin ? ` 희신은 '${heeShin}'으로, 용신을 보조하는 역할을 합니다.` : "") +
     chungDesc + harmonyDesc + hyungDesc;
 
   // === 대운 분석 ===
@@ -439,11 +499,17 @@ export async function analyzeSajuStructure(
         if (cd.stemElement === yongShinElement || cd.branchElement === yongShinElement) {
           characteristics.push("대운-용신 합치: 운세 상승기");
         }
-        // 대운에 충이 있으면 경고 태깅 (CHUNG_PAIRS 활용)
         if (CHUNG_PAIRS.some(([a, b]) => 
           (cd.branch === a && branches.includes(b)) || (cd.branch === b && branches.includes(a))
         )) {
           characteristics.push("대운 충 존재: 변동 주의");
+        }
+
+        // ── B-254: 대운 교체 임박 감지 ──
+        if (daewoon.is_daeun_changing_year) {
+          const nextIdx = (cd.index || 0) + 1;
+          const nextD = daewoon.pillars.find(p => p.index === nextIdx);
+          characteristics.push(`대운 교체 임박: ${cd.full} → ${nextD?.full || "다음"} (변화 준비)`);
         }
       }
     }
@@ -456,7 +522,96 @@ export async function analyzeSajuStructure(
     const cd = daewoon.currentDaewoon;
     narrative += ` 현재 ${cd.startAge}~${cd.endAge}세 대운(${cd.full})이 진행 중이며, ` +
       `이 시기의 주요 에너지는 ${cd.tenGodStem}(천간)과 ${cd.tenGodBranch}(지지)입니다.`;
+    
+    if (daewoon.is_daeun_changing_year) {
+      const nextD = daewoon.pillars.find(p => p.index === (cd.index || 0) + 1);
+      narrative += ` 특히 지금은 대운이 교체되는 시기이므로 ${nextD ? `${nextD.full} 대운` : "새로운 흐름"}으로의 전환을 준비해야 합니다.`;
+    }
   }
+
+  // ── B-250: 세운(流年) 분석 ──────────────────────────────────────
+  const currentYear = new Date().getFullYear();
+  const yearStemIdx = (currentYear - 4) % 10;
+  const yearBranchIdx = (currentYear - 4) % 12;
+  const STEMS_KR = ["갑","을","병","정","무","기","경","신","임","계"];
+  const BRANCHES_KR = ["자","축","인","묘","진","사","오","미","신","유","술","해"];
+  const seunStem = STEMS_KR[yearStemIdx];
+  const seunBranch = BRANCHES_KR[yearBranchIdx];
+  const seunFull = `${seunStem}${seunBranch}`;
+
+  // 세운 천간 오행
+  const STEM_ELEMENTS = ["목","목","화","화","토","토","금","금","수","수"];
+  
+  // 지지 한글 매핑 (충/합 체크용)
+  const BRANCH_KO_MAP: Record<string, string> = { "子": "자", "丑": "축", "寅": "인", "卯": "묘", "辰": "진", "巳": "사", "午": "오", "未": "미", "申": "신", "酉": "유", "戌": "술", "亥": "해" };
+  const originalBranches = [pillars.year?.branch, pillars.month?.branch, pillars.day?.branch, pillars.hour?.branch]
+    .filter((b): b is string => !!b)
+    .map(b => BRANCH_KO_MAP[b.charAt(0)] || b);
+
+  // 세운 지지와 원국 지지 충 체크
+  const CHUNG_MAP: Record<string,string> = {"자":"오","축":"미","인":"신","묘":"유","진":"술","사":"해","오":"자","미":"축","신":"인","유":"묘","술":"진","해":"사"};
+  const seunChungs = originalBranches.filter(b => CHUNG_MAP[seunBranch] === b);
+
+  // 세운 지지와 원국 지지 합 체크
+  const HAP_MAP: Record<string,string> = {"자":"축","축":"자","인":"해","묘":"술","진":"유","사":"신","오":"미","미":"오","신":"사","유":"진","술":"묘","해":"인"};
+  const seunHaps = originalBranches.filter(b => HAP_MAP[seunBranch] === b);
+
+  // 결과 태그 추가
+  characteristics.push(`세운: ${seunFull}(${currentYear}년)`);
+  if (seunChungs.length > 0) characteristics.push(`세운-원국 충: ${seunBranch}↔${seunChungs.join(",")} (변동·갈등 주의)`);
+  if (seunHaps.length > 0) characteristics.push(`세운-원국 합: ${seunBranch}↔${seunHaps.join(",")} (조화·기회)`);
+
+  // 세운-용신 관계
+  const seunElement = STEM_ELEMENTS[yearStemIdx];
+  if (yongsin.includes(seunElement)) {
+    characteristics.push("세운-용신 일치: 올해 운세 긍정적");
+  }
+
+  // narrative에 세운 정보 추가
+  narrative += ` ${currentYear}년 세운은 ${seunFull}이며,`;
+  if (seunChungs.length > 0) narrative += ` 원국과 충이 있어 변화·갈등이 예상되고,`;
+  if (seunHaps.length > 0) narrative += ` 원국과 합이 있어 새로운 기회가 열릴 수 있으며,`;
+  if (yongsin.includes(seunElement)) narrative += ` 용신과 일치하여 전반적으로 유리한 흐름입니다.`;
+  else narrative += ` 용신(${yongsin})과의 조화를 의식하며 균형을 유지하는 것이 중요합니다.`;
+
+  // ── B-252: 월운(月運) 분석 ──────────────────────────────────────
+  const currentMonth = new Date().getMonth() + 1; // 양력 1~12
+  const currentDay = new Date().getDate();
+  // 절기 기준 월 매핑 (양력 근사): 절입일 기준
+  const JEOLGI_START = [0, 4, 4, 5, 5, 5, 6, 7, 7, 8, 8, 7, 7]; // [0,1월,2월,...12월] 절입 근사일
+  const jeolgiMonth = (currentDay >= JEOLGI_START[currentMonth]) ? currentMonth : currentMonth - 1;
+  const adjustedMonth = jeolgiMonth < 1 ? 12 : jeolgiMonth;
+  // 월지: 1월=인(2), 2월=묘(3), 3월=진(4)... → (adjustedMonth) % 12
+  const monthBranchIdx = (adjustedMonth) % 12;
+  // 월간: 년상기월법 → (yearStemIdx * 2 + adjustedMonth) % 10
+  const monthStemIdx = (yearStemIdx * 2 + adjustedMonth) % 10;
+  const wolunStem = STEMS_KR[monthStemIdx];
+  const wolunBranch = BRANCHES_KR[monthBranchIdx];
+  const wolunFull = `${wolunStem}${wolunBranch}`;
+
+  // 월운 지지 vs 원국 지지 충/합
+  const wolunChungs = originalBranches.filter(b => CHUNG_MAP[wolunBranch] === b);
+  const wolunHaps = originalBranches.filter(b => HAP_MAP[wolunBranch] === b);
+
+  // 월운 vs 세운 지지 관계 (월-년 시너지/충돌)
+  const wolunSeunChung = CHUNG_MAP[wolunBranch] === seunBranch;
+  const wolunSeunHap = HAP_MAP[wolunBranch] === seunBranch;
+
+  // 월운 오행과 용신
+  const wolunElement = STEM_ELEMENTS[monthStemIdx];
+
+  characteristics.push(`월운: ${wolunFull}(${currentMonth}월)`);
+  if (wolunChungs.length > 0) characteristics.push(`월운-원국 충: ${wolunBranch}↔${wolunChungs.join(",")} (이달 변동 주의)`);
+  if (wolunHaps.length > 0) characteristics.push(`월운-원국 합: ${wolunBranch}↔${wolunHaps.join(",")} (이달 기회)`);
+  if (wolunSeunChung) characteristics.push("월운-세운 충: 이달 특히 갈등·변화 주의");
+  if (wolunSeunHap) characteristics.push("월운-세운 합: 이달 올해 흐름과 조화");
+  if (yongsin.includes(wolunElement)) characteristics.push("월운-용신 일치: 이달 운세 긍정적");
+
+  narrative += ` 이번 달(${currentMonth}월) 월운은 ${wolunFull}이며,`;
+  if (wolunChungs.length > 0) narrative += ` 원국과 충이 있어 주의가 필요하고,`;
+  if (wolunHaps.length > 0) narrative += ` 원국과 합이 있어 좋은 기회가 있으며,`;
+  if (yongsin.includes(wolunElement)) narrative += ` 용신과 일치하여 이달 유리합니다.`;
+  else narrative += ` 용신과 다르므로 신중하게 움직이는 것이 좋습니다.`;
 
   // B-70new: 천간합·지지충·삼합·육합·삼형살 사전 연산
   const interactionStems = [
@@ -474,7 +629,7 @@ export async function analyzeSajuStructure(
   const interactions = calculateInteractions(interactionStems, interactionBranches);
 
   // B-144: 신살 계산
-  const shinsal = calculateShinsal(dm, pillars.day?.branch || "", interactionBranches);
+  const shinsal = calculateShinsal(dm, pillars.day?.branch || "", interactionBranches, pillars.year?.branch);
 
   // B-144: 건강 위험 태그 추출
   const health_risk_tags: string[] = shinsal
@@ -512,6 +667,7 @@ export async function analyzeSajuStructure(
     narrative,
     tenGods: tenGodCount,
     yongShin: yongsin,
+    heeShin: heeShin,
     daewoon,
     interactions,
     shinsal,

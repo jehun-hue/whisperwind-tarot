@@ -1,6 +1,6 @@
 import { findSolarTermJD, MONTH_JEOL_LONGS } from "./solarTerm.ts";
 import { STEMS, BRANCHES, FIVE_ELEMENTS_MAP } from "./fiveElements.ts";
-import { calculateTenGod } from "./tenGods.ts";
+import { calculateTenGod, calculateTenGodBranch } from "./tenGods.ts";
 
 export interface DaewoonPillar {
   index: number;           // 0-based 대운 순번
@@ -45,14 +45,35 @@ export function getDaewoonInfo(
   const currentJeolLong = MONTH_JEOL_LONGS[termIdx];
   const nextJeolLong = MONTH_JEOL_LONGS[(termIdx + 1) % 12];
 
-  const currentJeolJD = findSolarTermJD(yval - (sLong < currentJeolLong ? 1 : 0), currentJeolLong);
-  const nextJeolJD = findSolarTermJD(yval + (sLong >= 315 && nextJeolLong < 315 ? 1 : 0), nextJeolLong);
+  // ── 절기 JD 계산: 출생일(jval) 기준으로 가장 가까운 이전/다음 절기를 찾음 ──
+  // 기존 로직은 황경 범위만으로 연도를 판단하여 오류 발생 (예: 352°→15° 전환 시 +1년 오판)
+  // 수정: JD 기반으로 직접 비교하여 정확한 절기 시점을 결정
+  
+  // 현재 절기 JD: 올해 기준으로 먼저 계산, 출생일보다 미래면 전년도로
+  let currentJeolJD = findSolarTermJD(yval, currentJeolLong);
+  if (currentJeolJD > jval + 1) {
+    currentJeolJD = findSolarTermJD(yval - 1, currentJeolLong);
+  }
+  
+  // 다음 절기 JD: 올해 기준으로 먼저 계산, 출생일보다 과거면 내년도로
+  let nextJeolJD = findSolarTermJD(yval, nextJeolLong);
+  if (nextJeolJD < jval - 1) {
+    nextJeolJD = findSolarTermJD(yval + 1, nextJeolLong);
+  }
 
   let diff = isForward ? (nextJeolJD - jval) : (jval - currentJeolJD);
   
   if (!Number.isFinite(diff) || diff < 0) diff = 0;
 
   const daewoonAge = Math.max(1, Math.round(diff / 3));
+
+  console.log('[DAEWOON DEBUG]', {
+    sLong, jval, yval, termIdx,
+    currentJeolLong, nextJeolLong,
+    currentJeolJD, nextJeolJD,
+    isForward, diff,
+    daewoonAge: Math.max(1, Math.round(diff / 3))
+  });
   const finalAge = Number.isFinite(daewoonAge) ? daewoonAge : 1;
   return { age: finalAge, isForward };
 }
@@ -97,7 +118,7 @@ export function calculateFullDaewoon(
       stemElement: FIVE_ELEMENTS_MAP[stem] || "unknown",
       branchElement: FIVE_ELEMENTS_MAP[branch] || "unknown",
       tenGodStem: calculateTenGod(dayMaster, stem),
-      tenGodBranch: calculateTenGod(dayMaster, branch),  // 본기 기준
+      tenGodBranch: calculateTenGodBranch(dayMaster, branch),  // 본기 기준
       isCurrent,
     });
   }
@@ -122,7 +143,7 @@ export function calculateFullDaewoon(
     stemElement: FIVE_ELEMENTS_MAP[STEMS[seunStemIdx]] || "unknown",
     branchElement: FIVE_ELEMENTS_MAP[BRANCHES[seunBranchIdx]] || "unknown",
     tenGodStem: calculateTenGod(dayMaster, STEMS[seunStemIdx]),
-    tenGodBranch: calculateTenGod(dayMaster, BRANCHES[seunBranchIdx]),
+    tenGodBranch: calculateTenGodBranch(dayMaster, BRANCHES[seunBranchIdx]),
   };
 
   return {

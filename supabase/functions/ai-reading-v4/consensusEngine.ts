@@ -31,16 +31,85 @@ export interface ConsensusOutput {
   alignment_matrix: any[];
   conflict_log: ConflictLog[];
   conflict_summary: string;
+  engine_reliability: Record<string, number>;
+}
+
+/**
+ * B-207: 엔진별 reliability 동적 계산 함수
+ */
+function calculateEngineReliability(engineName: string, engineData: any, hasTime: boolean): number {
+  let score = 1.0;
+
+  if (!engineData || engineData.error || engineData.skipped) {
+    return 0.0;
+  }
+
+  switch (engineName) {
+    case "saju": {
+      const fp = engineData.fourPillars;
+      // 사주 4주 완성도
+      if (!fp) { score -= 0.5; break; }
+      if (!fp.hour?.stem || fp.hour.stem === "미상") score -= 0.25; // 시주 없음
+      if (!fp.day?.stem) score -= 0.4; // 일간 없으면 치명적
+      if (!fp.month?.stem) score -= 0.3;
+      if (!fp.year?.stem) score -= 0.2;
+      // 용신 존재 여부
+      if (!engineData.yongShin && !engineData.ypiResult?.finalYongShin) score -= 0.1;
+      // 대운 존재 여부
+      if (!engineData.daewoon || (Array.isArray(engineData.daewoon) && engineData.daewoon.length === 0)) score -= 0.1;
+      break;
+    }
+    case "astrology": {
+      const planets = engineData.planets || engineData.planetPositions;
+      if (!planets) { score -= 0.5; break; }
+      // ASC 유무
+      const hasASC = engineData.houses?.ASC || engineData.ascendant || (engineData.houses && engineData.houses.raw && engineData.houses.raw[0]);
+      if (!hasASC) score -= 0.2;
+      // 출생시간 유무 (hasTime은 birthTimeProvided로 전달됨)
+      if (!hasTime) score -= 0.25;
+      // 달 위치 존재 여부
+      const moon = Array.isArray(planets) ? planets.find((p: any) => p.planet === "달" || p.name === "Moon") : planets.Moon;
+      if (!moon) score -= 0.1;
+      // location_confidence 반영
+      if (engineData.location_confidence === "very_low") score -= 0.2;
+      else if (engineData.location_confidence === "low") score -= 0.1;
+      break;
+    }
+    case "ziwei": {
+      if (engineData.skipped) return 0.0;
+      if (!hasTime) return 0.0;
+      // 명궁 존재 여부
+      if (!engineData.mingGong && !engineData.palaces) score -= 0.4;
+      // 12궁 완성도
+      const palaceCount = engineData.palaces?.length || 0;
+      if (palaceCount < 12) score -= (12 - palaceCount) * 0.03;
+      break;
+    }
+    case "tarot": {
+      const cards = engineData.card_vectors || engineData.cards || [];
+      if (cards.length === 0) return 0.0;
+      // 카드 수 (5장 기준)
+      if (cards.length < 5) score -= (5 - cards.length) * 0.1;
+      break;
+    }
+    case "numerology": {
+      if (!engineData.life_path_number && !engineData.lifePathNumber) score -= 0.3;
+      break;
+    }
+  }
+
+  return Math.max(0, Math.min(1, score));
 }
 
 export function calculateConsensusV8(
   vectors: SymbolicVector[], 
   birthTimeProvided: boolean = true,
   birthPlaceProvided: boolean = true,
-  customWeights?: Record<string, number>
+  customWeights?: Record<string, number>,
+  systemResults: any[] = []
 ): ConsensusOutput {
   if (vectors.length === 0) {
-    return { consensus_score: 0, confidence_score: 0, prediction_strength: 0, dominant_vector: {}, alignment_matrix: [], conflict_log: [], conflict_summary: "데이터 없음" };
+    return { consensus_score: 0, confidence_score: 0, prediction_strength: 0, dominant_vector: {}, alignment_matrix: [], conflict_log: [], conflict_summary: "데이터 없음", engine_reliability: {} };
   }
 
   // 타로-동양역학 브릿지 매핑 (차원 통합)
@@ -137,9 +206,24 @@ export function calculateConsensusV8(
   const alignmentMatrix: any[] = [];
   const systems = Object.keys(systemGroups);
 
+  // B-207: 동적 신뢰도 맵 생성
+  const reliabilityMap: Record<string, number> = {};
+  systemResults.forEach(res => {
+    const sys = res.system.toLowerCase();
+    reliabilityMap[sys] = calculateEngineReliability(sys, res, birthTimeProvided);
+  });
+
   // B-131 fix: customWeights(토픽 가중치) 우선 적용, 없으면 SYSTEM_WEIGHTS 사용
   const currentWeights = customWeights ? { ...customWeights } : { ...SYSTEM_WEIGHTS };
   let systemCriteria = 5;
+
+  // reliability가 0인 엔진은 가중치 0으로
+  Object.keys(currentWeights).forEach(sys => {
+    if (reliabilityMap[sys] === 0) {
+      currentWeights[sys] = 0;
+    }
+  });
+
   if (!birthTimeProvided) {
     currentWeights["ziwei"] = 0;
     currentWeights["astrology"] = 0;
@@ -167,10 +251,15 @@ export function calculateConsensusV8(
         normalizeVector(systemGroups[sysJ])
       );
 
-      const magI = getMagnitude(systemGroups[sysI]);
+       const magI = getMagnitude(systemGroups[sysI]);
       const magJ = getMagnitude(systemGroups[sysJ]);
-      const weightI = (currentWeights[sysI] || 0.1) * (magI < 0.1 ? 0.5 : 1.0);
-      const weightJ = (currentWeights[sysJ] || 0.1) * (magJ < 0.1 ? 0.5 : 1.0);
+      
+      // B-207: 가중치에 동적 신뢰도 반영
+      const relI = reliabilityMap[sysI] ?? 1.0;
+      const relJ = reliabilityMap[sysJ] ?? 1.0;
+      
+      const weightI = (currentWeights[sysI] || 0.1) * (magI < 0.1 ? 0.5 : 1.0) * relI;
+      const weightJ = (currentWeights[sysJ] || 0.1) * (magJ < 0.1 ? 0.5 : 1.0) * relJ;
       const pairWeight = weightI * weightJ;
 
       if (pairWeight > 0) {
@@ -237,7 +326,32 @@ export function calculateConsensusV8(
     }
   }
 
-  const consensus_score = Math.max(0, totalWeight > 0 ? totalConsensus / totalWeight : 0);
+  const rawConsensus = Math.max(0, totalWeight > 0 ? totalConsensus / totalWeight : 0);
+
+  // ── B-251A: Consensus Score 리매핑 (0.2~0.7 → 0.5~0.9) ──
+  // 이종 시스템 간 코사인 유사도는 구조적으로 낮으므로 체감 보정
+  const remappedConsensus = Math.min(0.85, 0.4 + (rawConsensus - 0.1) * (0.45 / 0.6));
+  
+  // ── B-251B: 지배차원 일치 보너스 ──
+  // 각 시스템의 최고 차원이 같으면 +0.1 (최대 +0.2)
+  const dominantDims: Record<string, string> = {};
+  for (const [sys, vec] of Object.entries(systemGroups)) {
+    if ((currentWeights[sys] || 0) === 0) continue;
+    const norm = normalizeVector(vec);
+    let maxDim = ""; let maxVal = -1;
+    for (const [dim, val] of Object.entries(norm)) {
+      if (val > maxVal) { maxVal = val; maxDim = dim; }
+    }
+    if (maxDim) dominantDims[sys] = maxDim;
+  }
+  const dimValues = Object.values(dominantDims);
+  const dimCounts: Record<string, number> = {};
+  dimValues.forEach(d => { dimCounts[d] = (dimCounts[d] || 0) + 1; });
+  const maxAgreement = Math.max(0, ...Object.values(dimCounts));
+  const dominantDimBonus = maxAgreement >= 3 ? 0.1 : maxAgreement >= 2 ? 0.05 : 0;
+  
+  // 최종 보정 점수
+  const consensus_score = Math.min(1.0, Math.max(0, remappedConsensus + dominantDimBonus));
 
   const reportingSystemsCount = systems.filter(sys => (currentWeights[sys] || 0) > 0).length;
   const severeConflicts = conflictLog.filter(c => c.conflict_level === "severe").length;
@@ -253,7 +367,8 @@ export function calculateConsensusV8(
   const dominantVector: Record<string, number> = {};
   Object.entries(systemGroups).forEach(([sys, vec]) => {
     const mag = getMagnitude(vec);
-    const weight = (currentWeights[sys] || 0.1) * (mag < 0.1 ? 0.5 : 1.0);
+    const rel = reliabilityMap[sys] ?? 1.0;
+    const weight = (currentWeights[sys] || 0.1) * (mag < 0.1 ? 0.5 : 1.0) * rel;
     if (weight > 0) {
       Object.entries(vec).forEach(([dim, val]) => {
         dominantVector[dim] = (dominantVector[dim] || 0) + (Number(val) * weight);
@@ -277,6 +392,7 @@ export function calculateConsensusV8(
     alignment_matrix: alignmentMatrix,
     conflict_log: conflictLog,
     conflict_summary,
+    engine_reliability: reliabilityMap
   };
 }
 
@@ -322,10 +438,11 @@ export function calculateConsensusWithTopic(
   topic: QuestionTopic | string = "general",
   birthTimeProvided: boolean = true,
   birthPlaceProvided: boolean = true,
-  customBlendedWeights?: Record<string, number>
+  customBlendedWeights?: Record<string, number>,
+  systemResults: any[] = []
 ): ConsensusOutput & { is_time_unknown: boolean; topic_weights_used: Record<string, number> } {
 
-  const topicWeights = customBlendedWeights || getTopicWeights(topic);
+  const topicWeights = customBlendedWeights ? { ...customBlendedWeights } : { ...getTopicWeights(topic) };
 
   // 출생시간 미제공 시 ziwei·astrology 비중 0으로
   if (!birthTimeProvided) {
@@ -337,7 +454,7 @@ export function calculateConsensusWithTopic(
     }
   }
 
-  const base = calculateConsensusV8(vectors, birthTimeProvided, birthPlaceProvided, topicWeights);
+  const base = calculateConsensusV8(vectors, birthTimeProvided, birthPlaceProvided, topicWeights, systemResults);
 
   return {
     ...base,

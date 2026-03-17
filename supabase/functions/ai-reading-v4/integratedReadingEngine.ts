@@ -14,15 +14,16 @@ import { runLifeTimelineEngine, type LifeTimelineResult } from "./lifeTimelineEn
 import { analyzeSpreadCCM, lookupCCM, type CCMResult } from "./cardContextMatrix.ts";
 import { predictTemporalV8 } from "./temporalPredictionEngine.ts";
 import { validateEngineOutput } from "./validationLayer.ts";
-import { getLocalizedStyle, buildLocalizedNarrativePrompt } from "./interactivityLayer.ts";
+import { getLocalizedStyle, buildCoreReadingPrompt, buildStyleApplyPrompt } from "./interactivityLayer.ts";
 import { calculateNumerology } from "./numerologyEngine.ts";
 import { validateV3Schema, patchMissingFields, logMonitoringEvent } from "./monitoringLayer.ts";
 import { safeParseGeminiJSON } from "./jsonUtils.ts";
 import { calculateServerAstrology } from "./astrologyEngine.ts";
 import { calculateServerZiWei } from "./ziweiEngine.ts";
-import { classifyWithFallback, TOPIC_SYSTEM_FOCUS } from "./questionClassifier.ts";
+import { classifyWithFallback, classifyQuestion, TOPIC_SYSTEM_FOCUS } from "./questionClassifier.ts";
 import { detectCombinations, aggregateCombinationScore, processCardVector, SPREAD_POSITION_WEIGHTS } from "./tarotCombinationDB.ts";
 import { getCardVector, getCardWuxing, getElementCompatibility } from "./tarotVectorDB.ts";
+import { lunarToSolarAccurate } from "./lunarData.ts";
 
 const READING_VERSION = "v9_symbolic_prediction_engine";
 
@@ -476,7 +477,7 @@ const KOREAN_SOLAR_TERMS = [
   "입추", "백로", "한로", "입동", "대설", "소한"
 ];
 
-export function buildEnginePrompts(input: any, sajuRaw: any, sajuAnalysis: any, ziweiAnalysis?: any, astrologyAnalysis?: any) {
+export function buildEnginePrompts(input: any, sajuRaw: any, sajuAnalysis: any, ziweiAnalysis?: any, astrologyAnalysis?: any, ageContext?: any) {
   const { birthInfo, sajuData: dbSaju } = input;
   
   // 음양(陰陽) 판별 로직 추가
@@ -537,15 +538,16 @@ export function buildEnginePrompts(input: any, sajuRaw: any, sajuAnalysis: any, 
       const next = dw.pillars.find((p: any) => p.index === (cur?.index || 0) + 1);
       return next?.full || null;
     })(),
+    has_time: !!sajuRaw?.has_time
   };
 
   const luckyFactors = LUCKY_MAP[sajuDisplay.yongShin] || { color: "다양함", number: "전체", direction: "중앙" };
 
   // 엔진 상징화 결과 (Calculated Symbolic Results)
-  const mingGong = ziweiAnalysis?.palaces.find((p: any) => p.name === "명궁");
+  const mingGong = ziweiAnalysis?.palaces?.find((p: any) => p.name === "명궁");
   const mingStars = mingGong?.main_stars?.join(", ") || "데이터 부족";
   
-  const ziweiSymbolic = `
+  const ziweiSymbolic = ziweiAnalysis?.skipped ? `(자미두수 데이터 없음: ${ziweiAnalysis.reason})` : `
 - 명궁(${ziweiAnalysis?.mingGong || "미상"}): ${mingStars} 좌정.
 - 국: ${ziweiAnalysis?.bureau || "분석 불가"}
 - 성별: ${birthInfo.gender === 'M' ? '음남(陰男)' : '양녀(陽女)'}
@@ -554,12 +556,12 @@ export function buildEnginePrompts(input: any, sajuRaw: any, sajuAnalysis: any, 
 
   const astrologySymbolic = `
 - 차트 주요 특징: ${astrologyAnalysis?.characteristics?.join(", ") || "데이터 부족"}
-- 지침: 위 엔진 호출 결과(상징)를 그대로 사용하고, 행성 위치를 직접 계산하지 마시오.
+- 지침: 위 엔진 호출 결과(상징)를 그대로 사용하고, 행성 위치를 직접 계산하지 마시오.${sajuDisplay.has_time ? "" : " (시간 미입력: 하우스 분석 제외)"}
 `;
 
 
 
-  const ziweiPrompt = `
+  const ziweiPrompt = ziweiAnalysis?.skipped ? ziweiAnalysis.reason : `
 [자미두수 엔진 호출 결과 - 상징화 완료]
 ${ziweiSymbolic}
 - 기본정보: ${birthInfo.year}년 ${birthInfo.month}월 ${birthInfo.day}일 ${birthInfo.hour}시 ${birthInfo.minute}분 (${birthInfo.gender === 'M' ? '음남 陰男' : '양녀 陽女'})
@@ -580,10 +582,10 @@ ${(ziweiAnalysis?.palaces || []).filter((p: any) =>
   const astrologyPrompt = `
 [점성술 엔진 호출 결과 - 상징화 완료]
 ${astrologySymbolic}
-- 태양: ${astrologyAnalysis?.sunSign || "미상"} / 달: ${astrologyAnalysis?.moonSign || "미상"} / 상승궁: ${astrologyAnalysis?.risingSign || "미상(출생지 필요)"}
-- 지배 원소: ${astrologyAnalysis?.dominantElement || "미상"} / 특질: ${astrologyAnalysis?.dominantQuality || "미상"}
+- 태양: ${astrologyAnalysis?.sunSign || "미상"} / 달: ${astrologyAnalysis?.moonSign || "미상"} / 상승궁: ${astrologyAnalysis?.risingSign || "미상(출생시간 필요)"}
+- 지배 원소: ${astrologyAnalysis?.dominant_element || astrologyAnalysis?.dominantElement || "미상"} / 특질: ${astrologyAnalysis?.dominantQuality || "미상"}
 - 네이탈 주요 어스펙트(상위 5개):
-${(astrologyAnalysis?.keyAspects || []).slice(0, 5).map((a: string) => `  • ${a}`).join("\n") || "  • 데이터 없음"}
+${(astrologyAnalysis?.keyAspects || astrologyAnalysis?.major_aspects || []).slice(0, 5).map((a: string) => `  • ${a}`).join("\n") || "  • 데이터 없음"}
 - 디그니티(품위): ${astrologyAnalysis?.dignityReport?.join(", ") || "없음"}
 - 현재 트랜짓(외행성 → 네이탈 어스펙트):
 ${(astrologyAnalysis?.transits || []).slice(0, 8).map((t: string) => `  • ${t}`).join("\n") || "  • 데이터 없음"}
@@ -626,6 +628,88 @@ ${yinyangMessage}- 핵심 기운: ${sajuDisplay.yongShin} → [상징: ${SYMBOLI
   return { sajuDisplay, luckyFactors, ziweiPrompt, astrologyPrompt, sajuSymbolic };
 }
 
+/**
+ * B-230: CCM(Card Combination Matching) 카드 조합 분석 강화
+ */
+function analyzeCardCombinations(cards: any[]): any[] {
+  if (!cards || cards.length === 0) return [];
+  const combinations: any[] = [];
+  
+  // 핵심 조합 룰 (Major Arcana 위주)
+  const COMBO_RULES: Record<string, { type: string; meaning: string }> = {
+    "The World+The Hermit": { type: "tension", meaning: "완성과 고독의 역설 — 성취했으나 내면은 재평가 중. 다음 사이클 진입 전 성찰 필요." },
+    "The Tower+The Star": { type: "synergy", meaning: "붕괴 후 희망 — 충격적 변화 뒤에 치유와 새 비전이 온다." },
+    "Death+The Sun": { type: "synergy", meaning: "끝과 시작의 동시성 — 낡은 것을 놓으면 밝은 전환이 따른다." },
+    "The Moon+The High Priestess": { type: "amplify", meaning: "무의식 증폭 — 직관이 매우 강하나 환상과 혼동 주의." },
+    "The Emperor+The Empress": { type: "synergy", meaning: "구조와 풍요의 균형 — 실행력과 수용성이 함께 작동." },
+    "The Lovers+The Devil": { type: "tension", meaning: "진심과 집착의 경계 — 관계에서 건강한 선택이 필요." },
+    "Wheel of Fortune+The Hanged Man": { type: "tension", meaning: "변화의 흐름 속 정지 — 타이밍을 기다려야 하는 시점." },
+    "Strength+The Chariot": { type: "synergy", meaning: "내면의 힘과 추진력 결합 — 부드러운 의지로 돌파 가능." },
+    "The Fool+Judgement": { type: "synergy", meaning: "새 출발과 각성 — 과거를 정산하고 순수한 마음으로 도약." },
+    "The Magician+The High Priestess": { type: "synergy", meaning: "의지와 직관의 조화 — 현실적 능력과 내면 지혜를 동시 활용." },
+    "Three of Swords+Ten of Swords": { type: "amplify", meaning: "이중 고통 신호 — 감정적 상처가 극에 달했으나 바닥은 반등의 시작." },
+    "Ace of Cups+Ten of Cups": { type: "synergy", meaning: "감정의 시작과 완성 — 새 관계나 화해가 깊은 만족으로 이어질 잠재력." },
+    "King of Wands+Queen of Wands": { type: "amplify", meaning: "화(火) 에너지 폭발 — 열정과 리더십이 극대화되나 소진 주의." },
+  };
+
+  // 역방향 키도 검색 (A+B = B+A)
+  for (let i = 0; i < cards.length; i++) {
+    for (let j = i + 1; j < cards.length; j++) {
+      const nameA = cards[i]?.name || cards[i]?.card_name || "";
+      const nameB = cards[j]?.name || cards[j]?.card_name || "";
+      const keyAB = `${nameA}+${nameB}`;
+      const keyBA = `${nameB}+${nameA}`;
+      
+      const rule = COMBO_RULES[keyAB] || COMBO_RULES[keyBA];
+      if (rule) {
+        combinations.push({
+          cards: [nameA, nameB],
+          positions: [i + 1, j + 1],
+          type: rule.type,
+          meaning: rule.meaning
+        });
+      }
+    }
+  }
+
+  // 원소 기반 자동 분석 (룰에 없는 조합용)
+  const suitCounts: Record<string, number> = {};
+  const majorCount = cards.filter((c: any) => {
+    const name = c?.name || c?.card_name || "";
+    const suit = c?.suit || "";
+    if (suit && suit !== "major") {
+      suitCounts[suit] = (suitCounts[suit] || 0) + 1;
+    }
+    return !suit || suit === "major";
+  }).length;
+
+  if (majorCount >= 3) {
+    combinations.push({
+      cards: ["Major Arcana x" + majorCount],
+      type: "amplify",
+      meaning: `메이저 아르카나 ${majorCount}장 — 인생의 큰 전환점에 있음. 이 시기의 결정이 장기적 영향을 미침.`
+    });
+  }
+
+  for (const [suit, count] of Object.entries(suitCounts)) {
+    if (count >= 3) {
+      const suitMeanings: Record<string, string> = {
+        "Wands": `완드 ${count}장 — 행동·열정·의지 에너지 집중. 추진력은 강하나 번아웃 주의.`,
+        "Cups": `컵 ${count}장 — 감정·관계·직관 에너지 집중. 마음의 흐름에 따르되 현실 점검 필요.`,
+        "Swords": `소드 ${count}장 — 사고·갈등·결단 에너지 집중. 명확한 판단이 요구되는 시기.`,
+        "Pentacles": `펜타클 ${count}장 — 물질·안정·현실 에너지 집중. 실질적 결과에 집중할 때.`
+      };
+      combinations.push({
+        cards: [`${suit} x${count}`],
+        type: "amplify",
+        meaning: suitMeanings[suit] || `${suit} 원소 ${count}장 집중`
+      });
+    }
+  }
+
+  return combinations;
+}
+
 export async function runFullProductionEngineV8(supabaseClient: any, apiKey: string, input: any) {
   const pipelineStart = Date.now();
   const sessionId = input.sessionId;
@@ -637,6 +721,9 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
   // Normalize birthInfo: client sends {birthDate:"1987-07-17", birthTime:"15:30", gender:"male"}
   // Engine expects {year, month, day, hour, minute, gender}
   const rawBirth = input.birthInfo || {};
+  // B-228 + B-225: 출생시간 "모름" 처리 표준화
+  const hasTime = rawBirth.birthTime !== "" && rawBirth.birthTime !== null && rawBirth.birthTime !== undefined && rawBirth.birthTime !== "모름";
+  
   let birthInfo: any;
   if (rawBirth.year !== undefined) {
     birthInfo = rawBirth;
@@ -709,7 +796,7 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
   // 음력→양력 변환 적용
   const solarBirthInfo = (rawBirth.isLunar || rawBirth.isLunarDate)
     ? (() => {
-        const converted = lunarToSolar(
+        const converted = lunarToSolarAccurate(
           birthInfo.year,
           birthInfo.month,
           birthInfo.day,
@@ -736,10 +823,17 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
 
   // Step 1: Physical Calculation Pipeline
     // 사주 계산 (동기)
-    const sajuRaw = calculateSaju(
-      solarBirthInfo.year, solarBirthInfo.month, solarBirthInfo.day, 
-      solarBirthInfo.hour, solarBirthInfo.minute, solarBirthInfo.gender
-    );
+    let sajuRaw: any = null;
+    try {
+      sajuRaw = calculateSaju(
+        solarBirthInfo.year, solarBirthInfo.month, solarBirthInfo.day, 
+        solarBirthInfo.hour, solarBirthInfo.minute, solarBirthInfo.gender,
+        solarBirthInfo.longitude,
+        hasTime
+      );
+    } catch (e) {
+      console.error("[ENGINE-SAFE] 사주 계산 실패:", e);
+    }
 
     // 타로 심볼릭 (동기)
     const tarotSymbolic = runTarotSymbolicEngine(input.cards || [], input.question);
@@ -769,11 +863,18 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     }
 
     // 점성술 (동기)
-    const serverAstrology = calculateServerAstrology(
-      solarBirthInfo.year, solarBirthInfo.month, solarBirthInfo.day,
-      solarBirthInfo.hour, solarBirthInfo.minute,
-      solarBirthInfo.latitude, solarBirthInfo.longitude
-    );
+    let serverAstrology: any = null;
+    try {
+      serverAstrology = calculateServerAstrology(
+        solarBirthInfo.year, solarBirthInfo.month, solarBirthInfo.day,
+        hasTime ? solarBirthInfo.hour : 12, 
+        hasTime ? solarBirthInfo.minute : 0,
+        solarBirthInfo.latitude, solarBirthInfo.longitude,
+        hasTime
+      );
+    } catch (e) {
+      console.error("[ENGINE-SAFE] 점성술 계산 실패:", e);
+    }
 
     // 점성술 정규화 (Snake Case + Backward Compatibility)
     const astrologyAnalysis = serverAstrology ? {
@@ -797,6 +898,7 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
       house_positions: serverAstrology.house_positions,
       keyAspects: serverAstrology.keyAspects,
       transits: serverAstrology.transits,
+      confidence: serverAstrology.location_confidence,
       rawData: serverAstrology
     } : null;
 
@@ -822,62 +924,106 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     }
 
     // 수비학 (동기)
-    const numerologyResult = calculateNumerology(
-      `${solarBirthInfo.year}-${String(solarBirthInfo.month).padStart(2,'0')}-${String(solarBirthInfo.day).padStart(2,'0')}`,
-      new Date().getFullYear(),
-      input.userName
-    );
+    let numerologyResult: any = null;
+    try {
+      numerologyResult = calculateNumerology(
+        `${solarBirthInfo.year}-${String(solarBirthInfo.month).padStart(2,'0')}-${String(solarBirthInfo.day).padStart(2,'0')}`,
+        new Date().getFullYear(),
+        input.userName
+      );
+    } catch (e) {
+      console.error("[ENGINE-SAFE] 수비학 계산 실패:", e);
+    }
 
-    // 자미두수 (동기)
+    // B-228: 자미두수 건너뜀 및 정규화 통합 처리
+    let ziweiAnalysis: any = null;
     const genderZiwei = (birthInfo.gender === "M" || birthInfo.gender === "male") ? "male" as const : "female" as const;
-    const serverZiwei = calculateServerZiWei(
-      birthInfo.year, ziweiLunarMonth, ziweiLunarDay, ziweiCorrectedHour, ziweiCorrectedMinute, genderZiwei
-    );
+    let serverZiwei: any = null;
+    try {
+      serverZiwei = hasTime ? calculateServerZiWei(
+        birthInfo.year, ziweiLunarMonth, ziweiLunarDay, ziweiCorrectedHour, ziweiCorrectedMinute, genderZiwei
+      ) : null;
+    } catch (e) {
+      console.error("[ENGINE-SAFE] 자미두수 계산 실패:", e);
+    }
 
-    // 자미두수 정규화 (Snake Case + Backward Compatibility)
-    const ziweiAnalysis = serverZiwei ? {
-      life_structure: serverZiwei.lifeStructure || "",
-      palaces: serverZiwei.palaces.map(p => {
-        const majorStars = p.stars.filter((s: any) =>
-          ["자미","천기","태양","무곡","천동","염정","천부","태음","탐랑","거문","천상","천량","칠살","파군"].includes(s.star)
-        ).map((s: any) => s.star);
-        return {
-          name: p.name,
-          main_stars: majorStars,
-          location: p.branch,
-          // B-155 fix: 공궁 정보 포함
-          // B-180 fix: ziweiEngine의 is_empty/is_borrowed_stars 원본 값 사용 (자체 판단 제거)
-          is_empty: (p as any).is_empty ?? (majorStars.length === 0),
-          is_borrowed_stars: (p as any).is_borrowed_stars ?? false,
-          borrowed_from: (p as any).borrowed_from ?? null,
-        };
-      }),
-      key_insights: serverZiwei.keyInsights || [],
-      major_period: serverZiwei.currentMajorPeriod || {},
-      characteristics: [
-        ...serverZiwei.palaces.flatMap(p => p.stars.filter(s =>
-          ["파군", "자미", "천부", "칠살", "무곡", "태양", "천기", "염정"].includes(s.star)
-        ).map(s => s.star)),
-        ...serverZiwei.natalTransformations.map(t => `${t.type} active`),
-      ].filter(Boolean) as string[],
-      period_analysis: serverZiwei.periodAnalysis || "",
-      natal_transformations: serverZiwei.natalTransformations || [],
-      annual_transformations: serverZiwei.annualTransformations || [],
-      annual_year: serverZiwei.annualYear || null,
-      annual_gan: serverZiwei.annualGan || null,
-      currentMinorPeriod: serverZiwei.currentMinorPeriod || null,
-      patterns: serverZiwei.natalTransformations || [],
-      // Backward compatibility aliases
-      mingGong: serverZiwei.mingGong,
-      bureau: serverZiwei.bureau,
-      currentMajorPeriod: serverZiwei.currentMajorPeriod,
-      rawData: serverZiwei
-    } : null;
+    let ziweiWarnings: string[] = [];
+    if (!hasTime) {
+      ziweiAnalysis = {
+        skipped: true,
+        reason: "출생 시간이 필요합니다. 자미두수는 출생 시(時)를 기준으로 명궁을 결정하므로, 정확한 출생 시간 없이는 신뢰할 수 있는 결과를 제공할 수 없습니다."
+      };
+    } else if (serverZiwei) {
+      // ── B-255: 록기충(祿忌沖) 검사 ──────────────────────────────────
+      const dahanTransforms = serverZiwei?.currentMajorPeriod?.transformations || [];
+      const annualTransforms = serverZiwei?.annualTransformations || [];
+
+      for (const annual of annualTransforms) {
+        for (const dahan of dahanTransforms) {
+          // 같은 별에 화록+화기 또는 화기+화록이 걸린 경우
+          if (annual.star === dahan.star) {
+            if ((annual.type === "화기" && dahan.type === "화록") ||
+                (annual.type === "화록" && dahan.type === "화기")) {
+              ziweiWarnings.push(
+                `⚠️ 록기충: ${annual.star}에 대한화${dahan.type === "화록" ? "록" : "기"}과 유년화${annual.type === "화록" ? "록" : "기"}이 동시 작용 → ${annual.palace || dahan.palace} 영역 길흉 혼재, 각별한 주의 필요`
+              );
+            }
+          }
+        }
+      }
+
+      ziweiAnalysis = {
+        life_structure: serverZiwei.lifeStructure || "",
+        palaces: serverZiwei.palaces.map((p: any) => {
+          const majorStars = p.stars.filter((s: any) =>
+            ["자미","천기","태양","무곡","천동","염정","천부","태음","탐랑","거문","천상","천량","칠살","파군"].includes(s.star)
+          ).map((s: any) => s.star);
+          return {
+            name: p.name,
+            main_stars: majorStars,
+            location: p.branch,
+            is_empty: (p as any).is_empty ?? (majorStars.length === 0),
+            is_borrowed_stars: (p as any).is_borrowed_stars ?? false,
+            borrowed_from: (p as any).borrowed_from ?? null,
+          };
+        }),
+        key_insights: serverZiwei.keyInsights || [],
+        major_period: serverZiwei.currentMajorPeriod || {},
+        characteristics: [
+          ...serverZiwei.palaces.flatMap((p: any) => p.stars.filter((s: any) =>
+            ["파군", "자미", "천부", "칠살", "무곡", "태양", "천기", "염정"].includes(s.star)
+          ).map((s: any) => s.star)),
+          ...serverZiwei.natalTransformations.map((t: any) => `${t.type} active`),
+        ].filter(Boolean) as string[],
+        period_analysis: serverZiwei.periodAnalysis || "",
+        natal_transformations: serverZiwei.natalTransformations || [],
+        annual_transformations: serverZiwei.annualTransformations || [],
+        ziwei_warnings: ziweiWarnings,
+        annual_year: serverZiwei.annualYear || null,
+        annual_gan: serverZiwei.annualGan || null,
+        currentMinorPeriod: serverZiwei.currentMinorPeriod || null,
+        patterns: serverZiwei.natalTransformations || [],
+        mingGong: serverZiwei.mingGong,
+        bureau: serverZiwei.bureau,
+        currentMajorPeriod: serverZiwei.currentMajorPeriod,
+        rawData: serverZiwei
+      };
+    }
 
     // 사주 구조 분석 + 질문 분류 병렬 실행
     const [sajuAnalysis, topicResult] = await Promise.all([
-      analyzeSajuStructure(sajuRaw),
-      classifyWithFallback(input.question || "", apiKey)
+      analyzeSajuStructure(sajuRaw).catch(e => {
+        console.error("[ENGINE-SAFE] 사주 구조 분석 실패:", e);
+        return {
+          characteristics: [], narrative: "분석 실패", elements: {}, tenGods: {},
+          yongShin: "Unknown", heeShin: "Unknown", daewoon: null, interactions: [], shinsal: [],
+          health_risk_tags: [], topic_shinsal_map: {}, strength: "Unknown"
+        } as any;
+      }),
+      classifyWithFallback(input.question || "", apiKey).catch(e => {
+        console.error("[ENGINE-SAFE] 질문 분류 실패:", e);
+        return classifyQuestion(input.question || "");
+      })
     ]);
 
     const finalTopic = topicResult?.primary_topic || input.questionType || "general_future";
@@ -888,6 +1034,12 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
   const systemResults = [
     { 
       system: "saju", 
+      fourPillars: {
+        year: sajuRaw.year,
+        month: sajuRaw.month,
+        day: sajuRaw.day,
+        hour: sajuRaw.hour
+      },
       ...sajuAnalysis 
     },
     (() => {
@@ -956,7 +1108,7 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     if (r.system === "tarot") return !!r.category;
     if (r.system === "saju") return !!r.dayMaster;
     if (r.system === "astrology") return !!r.planet_positions;
-    if (r.system === "ziwei") return !!r.palaces;
+    if (r.system === "ziwei") return !!r.palaces && !r.skipped;
     if (r.system === "numerology") return !!r.life_path_number;
     return false;
   });
@@ -1032,9 +1184,10 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
   const consensusResult = calculateConsensusWithTopic(
     patternVectors,
     finalTopic as QuestionTopic,
-    birthTimeProvided,
+    hasTime,
     birthPlaceProvided,
-    blendedWeights
+    blendedWeights,
+    systemResults
   );
   const temporalResult = predictTemporalV8(consensusResult, systemResults, questionType);
   // B-164 fix: data-only 모드에서는 타로 없으므로 validation 강제 통과 처리
@@ -1098,7 +1251,7 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     tarotScoreDetail.reasoning += ` (+${detectedCombinations} combinations detected)`;
   }
 
-  const scores = {
+  let scores = {
     tarot:      tarotScoreDetail,
     saju:       sajuScoreDetail,
     ziwei:      ziweiScoreDetail,
@@ -1109,8 +1262,72 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
 
   // Step 3: Narrative Engine (Gemini JSON) + Monitoring
   
+  // ── age_context 계산 (B-237 fix: 프롬프트 생성 전으로 이동) ──
+  const age_birthYear = solarBirthInfo?.year || birthInfo?.year;
+  const age_birthMonth = solarBirthInfo?.month || birthInfo?.month;
+  const age_birthDay = solarBirthInfo?.day || birthInfo?.day;
+  const age_today = new Date();
+  const age_currentYear = age_today.getFullYear();
+  const age_currentMonth = age_today.getMonth() + 1;
+  const age_currentDay = age_today.getDate();
+
+  let internationalAge = age_currentYear - age_birthYear;
+  if (age_currentMonth < age_birthMonth || (age_currentMonth === age_birthMonth && age_currentDay < age_birthDay)) {
+    internationalAge -= 1;
+  }
+  const koreanAge = age_currentYear - age_birthYear + 1;
+  const ageContext = {
+    international_age: internationalAge,
+    korean_age: koreanAge,
+    year_age: age_currentYear - age_birthYear,
+    birth_year: age_birthYear,
+    standard_used: "international"
+  };
+
   // Step 2-B: Mapping Saju Data for Prompt
-  const { sajuDisplay, luckyFactors, ziweiPrompt, astrologyPrompt, sajuSymbolic } = buildEnginePrompts(input, sajuRaw, sajuAnalysis, ziweiAnalysis, astrologyAnalysis);
+  const { sajuDisplay, luckyFactors, ziweiPrompt, astrologyPrompt, sajuSymbolic } = buildEnginePrompts(input, sajuRaw, sajuAnalysis, ziweiAnalysis, astrologyAnalysis, ageContext);
+  
+  // B-230: 타로 카드 조합 분석 실행
+  const cardCombos = analyzeCardCombinations(tarotCards);
+  
+  console.log("[DEBUG-CRASH] B-240 압축 코드 진입 직전");
+  // B-240: [Compression] Gemini 프롬프트 최적화 (rawData 제거 및 필드 Pick)
+  const promptAstroData = astrologyAnalysis ? {
+    sun_sign: astrologyAnalysis.sun_sign,
+    moon_sign: astrologyAnalysis.moon_sign,
+    rising_sign: astrologyAnalysis.rising_sign,
+    dominant_element: astrologyAnalysis.dominant_element,
+    aspects: (astrologyAnalysis.aspects || []).slice(0, 10),
+    planets: astrologyAnalysis.planets,
+    houses: astrologyAnalysis.houses,
+    transits: (astrologyAnalysis.transits || []).slice(0, 10),
+    patterns: (astrologyAnalysis.patterns || []).slice(0, 10),
+    confidence: astrologyAnalysis.confidence
+  } : null;
+
+  const promptZiweiData = (ziweiAnalysis && !ziweiAnalysis.skipped) ? {
+    mingGong: ziweiAnalysis.mingGong,
+    bureau: ziweiAnalysis.bureau,
+    palaces: (ziweiAnalysis.palaces || []).map((p: any) => ({
+      name: p.name,
+      main_stars: p.main_stars,
+      location: p.location,
+      is_empty: p.is_empty,
+      is_borrowed: p.is_borrowed_stars
+    })),
+    key_insights: (ziweiAnalysis.key_insights || []).slice(0, 5),
+    natal_transformations: (ziweiAnalysis.natal_transformations || []).slice(0, 4),
+    annual_transformations: (ziweiAnalysis.annual_transformations || []).slice(0, 4),
+    major_period: ziweiAnalysis.major_period,
+    currentMinorPeriod: ziweiAnalysis.currentMinorPeriod,
+    period_analysis: typeof ziweiAnalysis.period_analysis === 'string' ? ziweiAnalysis.period_analysis.slice(0, 300) : ziweiAnalysis.period_analysis,
+    characteristics: (ziweiAnalysis.characteristics || []).slice(0, 10)
+  } : ziweiAnalysis;
+
+  const ziweiDataStr = ziweiAnalysis?.skipped ? `(자미두수 데이터 없음: ${ziweiAnalysis.reason})` : JSON.stringify(promptZiweiData);
+  const astrologyDataStr = astrologyAnalysis ? JSON.stringify(promptAstroData) : "(점성술 데이터 없음)";
+
+  const astroNote = hasTime ? "" : "\n⚠️ 출생 시간 미입력: ASC/하우스 정보 없음. 태양/행성 위치 및 사인 위주로 해석할 것. 달 위치는 ±6° 오차 가능.";
   
   const daewoonPromptSection = sajuAnalysis.daewoon?.currentDaewoon
     ? `
@@ -1123,9 +1340,41 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     `
     : "- 대운 정보: 데이터 부족으로 생략";
 
+  // ── B-238: 교차분석 엔진 신뢰도 필터 ──
+  // 점성술 신뢰도 필터
+  const astroConfidenceValue = astrologyAnalysis?.rawData?.location_confidence || 
+                          astrologyAnalysis?.confidence || 1.0;
+  let astroPromptNote = "";
+  if (astroConfidenceValue === "very_low" || (typeof astroConfidenceValue === "number" && astroConfidenceValue < 0.5)) {
+    astroPromptNote = "\n⚠️ 점성술 데이터 신뢰도: 매우 낮음. 출생시간 미입력 또는 출생지 미입력. ASC/하우스/달 위치를 직접 언급하지 마세요. '행성 배치 참고' 수준으로만 활용하세요.";
+  } else if (typeof astroConfidenceValue === "number" && astroConfidenceValue < 0.8) {
+    astroPromptNote = "\n⚠️ 점성술 데이터 신뢰도: 보통. ASC와 하우스 배치는 '추정'임을 명시하고, 태양/외행성 위치 위주로 해석하세요.";
+  }
+
+  // 자미두수 신뢰도 필터
+  const ziweiSkippedFlag = ziweiAnalysis?.skipped === true;
+  let ziweiPromptNote = "";
+  if (ziweiSkippedFlag) {
+    ziweiPromptNote = "\n⚠️ 자미두수: 출생시간 미입력으로 분석이 생략되었습니다. 자미두수 관련 내용을 언급하지 마세요.";
+  } else {
+    const ziweiConfidenceValue = ziweiAnalysis?.confidence || 1.0;
+    if (typeof ziweiConfidenceValue === "number" && ziweiConfidenceValue < 0.7) {
+      ziweiPromptNote = "\n⚠️ 자미두수 데이터 신뢰도: 낮음. 명궁/신궁 위치를 단정하지 말고 '참고 수준'으로만 언급하세요.";
+    }
+  }
+
+  // 사주 신뢰도 필터 (시주 미상일 때)
+  const hourPillarMissing = sajuRaw?.hour?.stem === "미상" || 
+                            sajuRaw?.hour?.stem === "" ||
+                            !sajuRaw?.hour?.stem;
+  let sajuPromptNote = "";
+  if (hourPillarMissing) {
+    sajuPromptNote = "\n⚠️ 사주: 시주(시간 기둥) 미입력. 년월일 3주만으로 분석합니다. 시주 관련 십성/신살은 언급하지 마세요.";
+  }
+
   const dataBlock = `
 [사주 엔진 호출 결과 - 상징화 완료]
-${sajuSymbolic}
+${sajuSymbolic}${sajuPromptNote}
 - 사주 4주: ${sajuDisplay.fourPillars}
 - 일간(Day Master): ${sajuDisplay.dayMaster}
 - 오행 분포: ${sajuDisplay.elements}
@@ -1136,11 +1385,29 @@ ${sajuSymbolic}
 ${sajuDisplay.isDaewoonChanging ? `- ⚠️ 대운 교체 임박: 현재 ${sajuDisplay.currentDaewoon} 대운이 곧 종료되고 ${sajuDisplay.nextDaewoon || "다음"} 대운으로 전환됩니다. 이 전환기의 심리적·운세적 변화를 반드시 분석에 반영하세요.` : `- 현재 대운: ${sajuDisplay.currentDaewoon || "데이터 없음"}`}
 - 행운 요소: 색상(${luckyFactors.color}), 숫자(${luckyFactors.number}), 방향(${luckyFactors.direction})
 - 대운 분석: ${daewoonPromptSection}
-- 타로 카드: ${tarotCards.map((c: any) => `${c.name}${c.isReversed ? "(역)" : ""}`).join(", ")}
+- 사주 세부 지표: ${JSON.stringify(sajuAnalysis?.characteristics || [])}
+- 사주 상세 해석: ${sajuAnalysis?.narrative || "데이터 없음"}
+- [핵심 정보] 연령대: ${ageContext?.international_age || "알 수 없음"}세 (만 나이), 한국나이 ${ageContext?.korean_age || "알 수 없음"}세
+- 타로 카드 (5장 스프레드):
+  1번 (현재 상황): ${tarotCards[0]?.korean || tarotCards[0]?.name || "기록 없음"} (${tarotCards[0]?.isReversed ? "역방향" : "정방향"})
+  2번 (도전/장애): ${tarotCards[1]?.korean || tarotCards[1]?.name || "기록 없음"} (${tarotCards[1]?.isReversed ? "역방향" : "정방향"})
+  3번 (조언): ${tarotCards[2]?.korean || tarotCards[2]?.name || "기록 없음"} (${tarotCards[2]?.isReversed ? "역방향" : "정방향"})
+  4번 (내면/과정): ${tarotCards[3]?.korean || tarotCards[3]?.name || "기록 없음"} (${tarotCards[3]?.isReversed ? "역방향" : "정방향"})
+  5번 (최종 결과/미래): ${tarotCards[4]?.korean || tarotCards[4]?.name || "기록 없음"} (${tarotCards[4]?.isReversed ? "역방향" : "정방향"})
 - 타로 카드 조합 통찰(Clues):
 ${combinationClues}
+${cardCombos.length > 0 ? `
+### 카드 조합 분석 (Card Combinations)
+아래 조합 패턴을 반드시 해석에 반영하세요. tension 타입은 갈등/주의 포인트로, synergy 타입은 시너지로, amplify 타입은 에너지 증폭으로 해석하세요.
+${JSON.stringify(cardCombos, null, 2)}
+` : ""}
+- age_context: ${JSON.stringify(ageContext)}
 
-[점성술 분석]
+[자미두수 분석 데이터]
+${ziweiDataStr}${ziweiPromptNote}
+
+[점성술 분석 데이터]${astroNote}${astroPromptNote}
+${astrologyDataStr}
 ${astrologyPrompt}
 - 하우스 포커스: ${finalTopic === "health" ? "6하우스(건강·일상)" : finalTopic === "career" ? "10하우스(직업·명예)" : finalTopic === "relationship" ? "7하우스(파트너십)" : finalTopic === "finance" ? "2하우스(재물)" : "전체 하우스"}
 
@@ -1149,7 +1416,7 @@ ${ziweiPrompt}
 - 소한궁: ${ziweiAnalysis?.currentMinorPeriod?.palace || "미확인"} → ${ziweiAnalysis?.currentMinorPeriod?.interpretation || ""}
 - 유년사화(${ziweiAnalysis?.annual_year || "올해"}): ${(ziweiAnalysis?.annual_transformations as any[])?.map((t: any) => t.description).join(", ") || "없음"}
 - 선천사화: ${(ziweiAnalysis?.natal_transformations as any[])?.slice(0, 4).map((t: any) => `${t.type}(${t.star}→${t.palace})`).join(", ") || "없음"}
-- 자미두수 포커스: ${finalTopic === "health" ? "질액궁" : finalTopic === "career" ? "관록궁" : finalTopic === "relationship" ? "부처궁" : finalTopic === "finance" ? "재백궁" : "명궁+관록궁"}
+- 자미두수 포커스: ${finalTopic === "health" ? "질액궁" : finalTopic === "career" ? "관록궁" : finalTopic === "relationship" ? "부처궁" : finalTopic === "finance" ? "재백궁" : "명궁+관록궁"}${ziweiWarnings.length > 0 ? `\n- 자미두수 특별 경고: ${ziweiWarnings.join("; ")}` : ""}
 
 [수비학 분석]
 - 생명수 ${(numerologyResult as any)?.life_path_number || "?"}번: ${(numerologyResult as any)?.vibrations?.[0] || ""}
@@ -1166,7 +1433,7 @@ ${ziweiPrompt}
 - 유효 분석 시스템: ${activeEngines.length}개
 
 [추가 분석 지침]
-0. **타로 해석 원칙(최우선 순위)**: 카드의 전통적 의미는 참고만 하고, 질문자의 상황과 맥락에 맞게 유연하게 해석할 것. '이 카드는 ~을 의미합니다' 같은 단정 표현 대신 '이 자리에서 이 카드는 ~의 흐름을 보여줍니다' 형태로 표현할 것.
+0. **타로 해석 원칙(최우선 순위)**: 카드의 전통적 의미는 참고만 하고, 질문자의 상황과 맥락에 맞게 유연하게 해석할 것. '이 카드는 ~을 의미합니다' 같은 단정 표현 대신 '이 자리에서 이 카드는 ~의 흐름을 보여줍니다' 형태로 표현할 것. 카드 조합 분석(Card Combinations)이 제공된 경우, 개별 카드 해석 외에 반드시 '카드 간 관계' 섹션을 포함하여 조합의 긴장, 시너지, 증폭 패턴을 설명하세요.
 1. 제공된 사주 데이터만을 근거로 분석하세요. 오행 분포와 십성 분포를 정확히 반영해야 합니다.
 2. 만약 특정 오행(예: 재성, 관성)이 0이라면 절대로 해당 운이 좋다고 과장하지 마세요.
 3. 트랜짓 행성 위치는 반드시 제공된 데이터만 사용하고, 스스로 추측하지 마세요.
@@ -1188,82 +1455,103 @@ ${finalTopic === "life_change" ? "   → 변화 질문: 사주 운로·점성술
 분석에 참여한 유효 엔진 수: ${patternVectors.map(v => v.system).filter((v, i, a) => a.indexOf(v) === i).length}개
 수렴 분석 시, "데이터 부족"이나 "분석 불가"인 체계는 완전히 제외하고, 실제 데이터가 있는 엔진들 사이의 '일치(Convergence)'와 '충돌(Divergence)'을 구분하여 서술하세요.
 출력 JSON의 "total_systems"는 위 유효 엔진 수를, "converged_count"는 그중 일치도가 높은 엔진 수를 기입하세요.
+
+### 데이터 정확성 규칙 (절대 준수)
+1. 위에 제공된 [사주 데이터], [점성술 데이터], [자미두수 데이터], [타로 카드] 블록에 명시된 값만 사용하세요.
+2. 데이터 블록에 없는 별자리 이름, 궁 이름, 도수, 별 이름, 신살 이름을 절대 만들어내지 마세요.
+3. null, "미상", skipped로 표시된 항목은 리딩에서 언급하지 마세요.
+4. 숫자(도수, 점수, 퍼센트)를 인용할 때는 데이터 블록의 값을 그대로 사용하세요. 반올림하거나 변형하지 마세요.
+5. "~일 수 있습니다", "~로 추정됩니다" 같은 추측 표현 대신, 데이터가 있으면 단정적으로, 없으면 아예 언급하지 마세요.
+6. 데이터 블록에 ⚠️ 경고가 있는 엔진의 구체적 수치(궁 이름, 별자리, 도수)는 언급하지 마세요. 해당 엔진은 "전반적 에너지 흐름" 수준으로만 참고하세요.
 `;
 
   const totalSystems = activeEngines.length;
   const validStyles = ['hanna', 'monad', 'e7l3', 'e5l5', 'l7e3'];
   const requestedStyle = validStyles.includes(input.style) ? input.style : 'hanna';
-  let modelInput = buildLocalizedNarrativePrompt(input.locale || 'kr', dataBlock, totalSystems, requestedStyle);
-  
-  // B-175 fix: 프롬프트 길이 체크 — 32000자 초과 시 dataBlock 압축
-  const MAX_PROMPT_LENGTH = 32000;
-  if (modelInput.length > MAX_PROMPT_LENGTH) {
-    console.warn(`[B-175] Prompt too long (${modelInput.length} chars), compressing dataBlock...`);
-    // 점성술 트랜짓 8개 → 4개로 축소, 자미두수 궁위 → 핵심 3개로 축소
-    const compressedDataBlock = dataBlock
-      .replace(/\[점성술 분석\]([\s\S]*?)(?=\[자미두수|$)/m, (match: string) => match.slice(0, 800))
-      .replace(/\[자미두수 분석\]([\s\S]*?)(?=\[수비학|$)/m, (match: string) => match.slice(0, 600))
-      .replace(/\[추가 분석 지침\]([\s\S]*?)(?=\[질문|$)/m, (match: string) => match.slice(0, 400));
-    modelInput = buildLocalizedNarrativePrompt(input.locale || 'kr', compressedDataBlock, totalSystems, requestedStyle);
-    console.log(`[B-175] Compressed prompt length: ${modelInput.length} chars`);
-  }
-  console.log("[B-175] Final prompt length:", modelInput.length, "chars (~", Math.round(modelInput.length/4), "tokens)");
+  const locale = input.locale || 'kr';
 
-  // Gemini 호출 전 타이밍 시작
-  const geminiStart = Date.now();
+  // --- Step 1: Core Reading (Style-independent, Neutral) ---
+  const coreHash = (input.cards || []).map((c: any) => c.name || "card").join("-") + `_core_${locale}`;
+  const { data: cachedCore } = await supabaseClient
+    .from("reading_results")
+    .select("reading_json")
+    .eq("session_id", sessionId)
+    .eq("spread_hash", coreHash)
+    .eq("reading_version", READING_VERSION)
+    .maybeSingle();
+
+  let coreReading: any;
+  let coreGeminiLatency = 0;
+
+  if (cachedCore?.reading_json) {
+    console.log(`[PlatformV9] Core Reading Cache Hit: ${coreHash}`);
+    coreReading = cachedCore.reading_json;
+  } else {
+    console.log(`[PlatformV9] Generating New Core Reading...`);
+    const corePrompt = buildCoreReadingPrompt(locale, dataBlock, totalSystems);
+    const coreStart = Date.now();
+    const rawCore = await fetchGemini(apiKey, "gemini-2.5-flash", corePrompt, "", 0.15);
+    coreGeminiLatency = Date.now() - coreStart;
+    
+    try {
+      coreReading = JSON.parse(rawCore.replace(/```json|```/g, ""));
+      // Cache core reading
+      if (sessionId && coreReading) {
+        await supabaseClient.from("reading_results").insert({
+          session_id: sessionId,
+          question: input.question,
+          spread_hash: coreHash,
+          reading_version: READING_VERSION,
+          reading_json: coreReading
+        });
+      }
+    } catch (e) {
+      console.error("Core Reading Parse Error:", e, rawCore);
+      coreReading = { overall_conclusion: "분석 데이터를 파싱하는 중 오류가 발생했습니다." };
+    }
+  }
+
+  // --- Step 2: Style Apply (Persona & Tone) ---
+  const STYLE_TEMP_MAP: Record<string, number> = { hanna: 0.4, monad: 0.5, e7l3: 0.45, e5l5: 0.45, l7e3: 0.35 };
+  const requestedTemp = STYLE_TEMP_MAP[requestedStyle] || 0.4;
+  
+  const stylePrompt = buildStyleApplyPrompt(locale, JSON.stringify(coreReading), requestedStyle, totalSystems);
+  const styleStart = Date.now();
   let rawNarrative: string = "";
   let responseType: "valid_json" | "fallback_text" | "parse_error" | "schema_mismatch" | "timeout" | "skipped" = "valid_json";
-  let parseSuccess = true;
-  let schemaResult = { passed: true, missing: [] as string[], extra: [] as string[] };
-  let fetchErrorMessage: string | null = null;
   let geminiLatency = 0;
 
-  let parsed: any;
-
   if (input.mode === "data-only") {
-    console.log("[PlatformV9] Skipping Gemini Narrative (Data-Only Mode)");
+    console.log("[PlatformV9] Skipping Style Application (Data-Only Mode)");
     responseType = "skipped";
-    parseSuccess = true;
-    parsed = buildFallbackReading("데이터 분석 전용 모드입니다. AI 내러티브가 생성되지 않았습니다.", grade, scores, tarotCards, input.question, requestedStyle);
-    // B-152/153 fix: data-only 모드에서 tarot narrative 필드 제거
-    if (parsed?.tarot_reading) {
-      parsed.tarot_reading = { cards: parsed.tarot_reading.cards || [] };
-    }
-    if (parsed?.merged_reading) {
-      parsed.merged_reading = {};
-    }
-    // B-167/168 fix: data-only 모드에서 final_message 텍스트 초기화
-    if (parsed?.final_message) {
-      parsed.final_message = { title: "데이터 분석", summary: "" };
-    }
-    if (parsed?.convergence) {
-      parsed.convergence.common_message = "";
-    }
+    rawNarrative = "{}";
   } else {
     try {
-      rawNarrative = await fetchGemini(apiKey, "gemini-2.5-flash", modelInput, "");
-      geminiLatency = Date.now() - geminiStart;
-      console.log("[PlatformV9] Gemini Latency:", geminiLatency, "ms");
+      rawNarrative = await fetchGemini(apiKey, "gemini-2.5-flash", stylePrompt, "", requestedTemp);
+      geminiLatency = Date.now() - styleStart;
+      console.log("[PlatformV9] Style Application Latency:", geminiLatency, "ms");
     } catch (e: any) {
-      console.error("Gemini call failed:", e);
+      console.error("Style Application Gemini call failed:", e);
       responseType = "timeout";
-      fetchErrorMessage = (e as Error).message;
-      rawNarrative = "FETCH_ERROR: " + fetchErrorMessage;
+      rawNarrative = "FETCH_ERROR: " + e.message;
     }
+  }
 
-    const initialFallback = buildFallbackReading("", grade, scores, tarotCards, input.question, requestedStyle);
+  // --- Step 3: Parsing & Merging ---
+  let parsed: any;
+  let schemaResult = { passed: true, missing: [] as string[], extra: [] as string[] };
+  let parseSuccess = true;
+  const initialFallback = buildFallbackReading("", grade, scores, tarotCards, input.question, requestedStyle);
+
+  if (responseType === "skipped") {
+    parsed = buildFallbackReading("데이터 분석 전용 모드입니다.", grade, scores, tarotCards, input.question, requestedStyle);
+  } else {
     try {
-      // B-175 debug v2: rawNarrative 실제 내용 확인
-      console.log("[B-175] rawNarrative length:", rawNarrative?.length ?? 0);
-      console.log("[B-175] rawNarrative first 300chars:", rawNarrative?.slice(0, 300));
-      console.log("[B-175] rawNarrative last 200chars:", rawNarrative?.slice(-200));
-      console.log("[Parse Stage] safeParseGeminiJSON 시작 (Fallback 수립됨)");
       parsed = safeParseGeminiJSON(rawNarrative, initialFallback);
-      
       if (!parsed || Object.keys(parsed).length === 0) {
-        parseSuccess = false;
         responseType = "parse_error";
         parsed = initialFallback;
+        parseSuccess = false;
       } else {
         schemaResult = validateV3Schema(parsed);
         if (!schemaResult.passed) {
@@ -1272,11 +1560,19 @@ ${finalTopic === "life_change" ? "   → 변화 질문: 사주 운로·점성술
         }
       }
     } catch (_e) {
-      parseSuccess = false;
       responseType = "fallback_text";
       parsed = initialFallback;
+      parseSuccess = false;
     }
   }
+
+  // --- Step 4: Metadata Patching ---
+  // coreReading에서 계산된 점수 반영
+  if (coreReading?.scores) {
+    scores = { ...scores, ...coreReading.scores };
+  }
+
+  const modelInput = stylePrompt || "";
 
   // 비동기 모니터링
   logMonitoringEvent(supabaseClient, {
@@ -1288,7 +1584,7 @@ ${finalTopic === "life_change" ? "   → 변화 질문: 사주 운로·점성술
     schemaValidationPassed: schemaResult.passed,
     missingFields: schemaResult.missing,
     extraFields: schemaResult.extra,
-    geminiLatencyMs: geminiLatency,
+    geminiLatencyMs: geminiLatency + coreGeminiLatency,
     totalPipelineMs: Date.now() - pipelineStart,
     promptTokensEstimate: Math.round(modelInput.length / 4),
     questionType,
@@ -1321,6 +1617,16 @@ ${finalTopic === "life_change" ? "   → 변화 질문: 사주 운로·점성술
     conflict_log: consensusResult.conflict_log
   };
   parsed.scores = scores;
+  // B-228: data-only 모드 시 system_calculations에 원본 데이터 보존 (프론트 표시용)
+  if (input.mode === "data-only") {
+    parsed.system_calculations = {
+      ...parsed.system_calculations,
+      saju: sajuAnalysis,
+      astrology: astrologyAnalysis,
+      ziwei: ziweiAnalysis,
+      numerology: numerologyResult
+    };
+  }
 
   // 비연애 질문이면 love_analysis null 강제
   const isLoveQuestion = ["연애", "reconciliation", "relationship", "marriage", "dating"].includes(questionType);
@@ -1335,16 +1641,8 @@ ${finalTopic === "life_change" ? "   → 변화 질문: 사주 운로·점성술
     ...parsed.convergence,
     consensus_score: Math.round(consensusResult.consensus_score * 100),
     confidence_score: Math.round(consensusResult.confidence_score * 100),
-    grade: grade,
     prediction_strength: consensusResult.prediction_strength,
-    conflict_summary: consensusResult.conflict_summary,
-    conflict_log: consensusResult.conflict_log
-  };
-  parsed.engine = {
-    consensus: consensusResult,
-    consensus_score: consensusResult.consensus_score,
-    confidence_score: consensusResult.confidence_score,
-    prediction_strength: consensusResult.prediction_strength,
+    engine_reliability: consensusResult.engine_reliability,
     timeline: temporalResult,
     validation: validationResult,
     vectors: patternVectors,
@@ -1481,35 +1779,7 @@ ${parsed.action_guide?.do_list?.map((item: string) => `- ${item}`).join('\n') ||
     }
   };
 
-  // ── age_context 생성 (#85) ─────────────────────────────────────
-  const birthYear = solarBirthInfo?.year || birthInfo?.year;
-  const birthMonth = solarBirthInfo?.month || birthInfo?.month;
-  const birthDay = solarBirthInfo?.day || birthInfo?.day;
-  const today = new Date();
-  const currentYear = today.getFullYear();
-  const currentMonth = today.getMonth() + 1;
-  const currentDay = today.getDate();
-
-  // 국제 나이 (만 나이)
-  let internationalAge = currentYear - birthYear;
-  if (currentMonth < birthMonth || (currentMonth === birthMonth && currentDay < birthDay)) {
-    internationalAge -= 1;
-  }
-
-  // 한국 나이 (세는 나이)
-  const koreanAge = currentYear - birthYear + 1;
-
-  // 연 나이 (올해 기준)
-  const yearAge = currentYear - birthYear;
-
-  const ageContext = {
-    international_age: internationalAge,       // 만 나이 (국제 표준)
-    korean_age: koreanAge,                     // 한국 세는 나이
-    year_age: yearAge,                         // 연 나이
-    birth_year: birthYear,
-    standard_used: "international",            // 엔진 기준 나이
-    note: "국제 나이(만 나이) 기준으로 분석. korean_age는 참고용."
-  };
+  // ── age_context 생성 (#85) — 위에서 계산한 값 사용 ────────────────
 
   // ── timeline_sync 생성 (#87) ────────────────────────────────────
   const timelineSync = (() => {
@@ -1760,7 +2030,7 @@ ${parsed.action_guide?.do_list?.map((item: string) => `- ${item}`).join('\n') ||
     result_status: (responseType === "valid_json" && schemaResult.passed) ? "normal" : "degraded",
     response_type: responseType,
     error: (responseType === "timeout") ? "Gemini call failed" : null,
-    error_message: fetchErrorMessage,
+    error_message: null,
     raw_narrative: rawNarrative,
     debug_prompt: modelInput,
     engine: parsed.engine,
@@ -1980,14 +2250,14 @@ function buildFallbackReading(text: string, grade: string, scores: any, cards: a
   };
 }
 
-async function fetchGemini(apiKey: string, model: string, system: string, _user: string): Promise<string> {
+async function fetchGemini(apiKey: string, model: string, system: string, _user: string, temperature: number = 0.2): Promise<string> {
   const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`;
 
   const requestBody = JSON.stringify({
     contents: [{ parts: [{ text: system }] }],
     generationConfig: {
       maxOutputTokens: 16384,
-      temperature: 0.2
+      temperature: temperature
     }
   });
 

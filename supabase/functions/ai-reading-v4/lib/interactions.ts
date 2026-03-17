@@ -4,6 +4,8 @@
  * AI에게 날것의 글자 대신 완성된 상호작용 결과만 전달
  */
 
+import { STEMS, BRANCHES } from "./fiveElements.ts";
+
 // 천간합 테이블 (합이 되는 쌍 → 화하는 오행)
 const STEM_COMBINATIONS: [string, string, string, string][] = [
   ["甲", "己", "토합", "안정·실용적 결합"],
@@ -146,6 +148,24 @@ export function calculateInteractions(
     }
   }
 
+  // 6. B-224: 천간병존(Parallel Stems) 감지
+  const stemCounts: Record<string, number> = {};
+  stems.forEach(s => {
+    if (s && s !== "미상") stemCounts[s] = (stemCounts[s] || 0) + 1;
+  });
+
+  for (const [s, count] of Object.entries(stemCounts)) {
+    if (count >= 2) {
+      interactions.push({
+        type: "천간병존" as any,
+        elements: Array(count).fill(s),
+        result: "병존",
+        meaning_keyword: "동일 에너지 중복·강화",
+        severity: "중립",
+      });
+    }
+  }
+
   return interactions;
 }
 
@@ -212,13 +232,16 @@ const CHEONIL_MAP: Record<string, string[]> = {
 export function calculateShinsal(
   dayMaster: string,
   dayBranch: string,
-  allBranches: string[]
+  allBranches: string[],
+  yearBranch?: string
 ): Shinsal[] {
   const results: Shinsal[] = [];
+  // bSet은 일지/시지/월지/년지 모두 포함
+  const bSet = new Set(allBranches);
 
-  // 1. 도화살
+  // 1. 도화살 (일지 기준)
   const dohwaTarget = DOHWA_MAP[dayBranch];
-  if (dohwaTarget && allBranches.includes(dohwaTarget)) {
+  if (dohwaTarget && bSet.has(dohwaTarget)) {
     results.push({
       name: "도화살",
       type: "도화",
@@ -229,9 +252,9 @@ export function calculateShinsal(
     });
   }
 
-  // 2. 역마살
+  // 2. 역마살 (일지 기준)
   const yeokmaTarget = YEOKMA_MAP[dayBranch];
-  if (yeokmaTarget && allBranches.includes(yeokmaTarget)) {
+  if (yeokmaTarget && bSet.has(yeokmaTarget)) {
     results.push({
       name: "역마살",
       type: "역마",
@@ -242,9 +265,11 @@ export function calculateShinsal(
     });
   }
 
-  // 3. 화개살
-  const hwagaeTarget = HWAGAE_MAP[dayBranch];
-  if (hwagaeTarget && allBranches.includes(hwagaeTarget)) {
+  // 3. 화개살 (연지 기준 - B-223)
+  const yBranch = yearBranch || allBranches[0];
+  const hwagaeTarget = HWAGAE_MAP[yBranch];
+  // 연지 기준이므로 월/일/시 지지에 있는지 확인
+  if (hwagaeTarget && allBranches.slice(1).includes(hwagaeTarget)) {
     results.push({
       name: "화개살",
       type: "화개",
@@ -255,9 +280,9 @@ export function calculateShinsal(
     });
   }
 
-  // 4. 양인살
+  // 4. 양인살 (일간 기준)
   const yanginTarget = YANGIN_MAP[dayMaster];
-  if (yanginTarget && allBranches.includes(yanginTarget)) {
+  if (yanginTarget && bSet.has(yanginTarget)) {
     results.push({
       name: "양인살",
       type: "양인",
@@ -268,10 +293,9 @@ export function calculateShinsal(
     });
   }
 
-  // 5. 천을귀인
+  // 5. 천을귀인 (일간 기준)
   const cheonilTargets = CHEONIL_MAP[dayMaster] || [];
-  const hasCheonil = cheonilTargets.some(t => allBranches.includes(t));
-  if (hasCheonil) {
+  if (cheonilTargets.some(t => bSet.has(t))) {
     results.push({
       name: "천을귀인",
       type: "천을귀인",
@@ -280,6 +304,46 @@ export function calculateShinsal(
       topic_relevance: ["career", "relationship", "general"],
       severity: "길",
     });
+  }
+
+  // 6. 겁살 (연지 기준 - B-223)
+  const GEOBSAL_MAP: Record<string, string> = {
+    "寅": "亥", "午": "亥", "戌": "亥",
+    "巳": "寅", "酉": "寅", "丑": "寅",
+    "申": "巳", "子": "巳", "辰": "巳",
+    "亥": "申", "卯": "申", "未": "申",
+  };
+  const geobsalTarget = GEOBSAL_MAP[yBranch];
+  if (geobsalTarget && allBranches.slice(1).includes(geobsalTarget)) {
+    results.push({
+      name: "겁살",
+      type: "역마", // 분류상 역마 계열에 포함
+      description: "경쟁에서의 탈환, 갑작스러운 손실 또는 획득",
+      health_implication: "외상 주의",
+      topic_relevance: ["finance", "career"],
+      severity: "흉",
+    });
+  }
+
+  // 7. 공망 (일주 기준 - B-223)
+  const sIdx = STEMS.indexOf(dayMaster);
+  const bIdx = BRANCHES.indexOf(dayBranch);
+  if (sIdx >= 0 && bIdx >= 0) {
+    const diff = (bIdx - sIdx + 12) % 12;
+    const g1 = BRANCHES[(diff - 2 + 12) % 12];
+    const g2 = BRANCHES[(diff - 1 + 12) % 12];
+    // 년/월/시 지지에 있는지 확인
+    const checkBranches = [allBranches[0], allBranches[1], allBranches[3]].filter(Boolean);
+    if (checkBranches.includes(g1) || checkBranches.includes(g2)) {
+      results.push({
+        name: "공망",
+        type: "공망",
+        description: "해당 영역의 에너지가 비어있음. 채워지지 않는 갈증",
+        health_implication: "허약 체질 주의",
+        topic_relevance: ["general"],
+        severity: "중립",
+      });
+    }
   }
 
   return results;

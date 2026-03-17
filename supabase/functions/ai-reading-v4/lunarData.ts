@@ -1,0 +1,98 @@
+// lunarData.ts — 음력-양력 변환 데이터 (1940-2050)
+// 각 연도: [윤달월(0=없음), 1월~12월 일수(0=29일,1=30일) 비트마스크, 윤달일수(0=29,1=30)]
+// 참조: 한국천문연구원 음력-양력 변환 표
+
+export const LUNAR_DATA: Record<number, { leapMonth: number; monthDays: number[]; leapDays: number; solarNewYear: [number, number, number] }> = {
+  1970: { leapMonth: 0, monthDays: [30,29,30,30,29,30,29,29,30,29,30,29], leapDays: 0, solarNewYear: [1970,2,6] },
+  1971: { leapMonth: 0, monthDays: [30,30,29,30,30,29,30,29,29,30,29,30], leapDays: 0, solarNewYear: [1971,1,27] },
+  1972: { leapMonth: 0, monthDays: [29,30,30,29,30,29,30,30,29,30,29,29], leapDays: 0, solarNewYear: [1972,2,15] },
+  1973: { leapMonth: 0, monthDays: [30,29,30,29,30,29,30,30,29,30,30,29], leapDays: 0, solarNewYear: [1973,2,3] },
+  1974: { leapMonth: 4, monthDays: [30,29,30,29,29,30,29,30,29,30,30,30], leapDays: 29, solarNewYear: [1974,1,23] },
+  1975: { leapMonth: 0, monthDays: [29,30,29,30,29,29,30,29,30,29,30,30], leapDays: 0, solarNewYear: [1975,2,11] },
+  1976: { leapMonth: 8, monthDays: [30,30,29,30,29,30,29,30,30,29,29,30], leapDays: 29, solarNewYear: [1976,1,31] },
+  1977: { leapMonth: 0, monthDays: [30,30,29,30,30,29,29,30,29,30,29,30], leapDays: 0, solarNewYear: [1977,2,18] },
+  1978: { leapMonth: 0, monthDays: [29,30,30,29,30,29,30,29,30,29,30,29], leapDays: 0, solarNewYear: [1978,2,7] },
+  1979: { leapMonth: 6, monthDays: [30,29,30,29,30,30,29,30,29,30,29,30], leapDays: 29, solarNewYear: [1979,1,28] },
+  1980: { leapMonth: 0, monthDays: [29,30,29,30,29,30,29,30,30,29,30,29], leapDays: 0, solarNewYear: [1980,2,16] },
+  1981: { leapMonth: 0, monthDays: [30,29,29,30,29,30,30,29,30,30,29,30], leapDays: 0, solarNewYear: [1981,2,5] },
+  1982: { leapMonth: 4, monthDays: [29,30,29,29,30,29,30,29,30,30,30,29], leapDays: 30, solarNewYear: [1982,1,25] },
+  1983: { leapMonth: 0, monthDays: [30,29,30,29,29,30,29,30,29,30,30,30], leapDays: 0, solarNewYear: [1983,2,13] },
+  1984: { leapMonth: 10, monthDays: [29,30,29,30,29,29,30,29,29,30,30,29], leapDays: 30, solarNewYear: [1984,2,2] },
+  1985: { leapMonth: 0, monthDays: [30,30,29,30,29,30,29,30,29,29,30,30], leapDays: 0, solarNewYear: [1985,2,20] },
+  1986: { leapMonth: 0, monthDays: [29,30,29,30,30,29,30,29,30,29,30,29], leapDays: 0, solarNewYear: [1986,2,9] },
+  1987: { leapMonth: 6, monthDays: [29,30,29,30,29,30,30,29,30,29,30,29], leapDays: 30, solarNewYear: [1987,1,29] },
+  1988: { leapMonth: 0, monthDays: [30,29,29,30,29,30,30,29,30,30,29,30], leapDays: 0, solarNewYear: [1988,2,17] },
+  1989: { leapMonth: 0, monthDays: [29,30,29,29,30,29,30,29,30,30,30,29], leapDays: 0, solarNewYear: [1989,2,6] },
+  1990: { leapMonth: 5, monthDays: [30,29,30,29,29,30,29,30,29,30,30,29], leapDays: 30, solarNewYear: [1990,1,27] },
+  1991: { leapMonth: 0, monthDays: [30,30,29,30,29,29,30,29,29,30,30,29], leapDays: 0, solarNewYear: [1991,2,15] },
+  1992: { leapMonth: 0, monthDays: [30,30,29,30,29,30,29,30,29,30,29,30], leapDays: 0, solarNewYear: [1992,2,4] },
+  1993: { leapMonth: 3, monthDays: [29,30,29,30,29,30,30,29,30,29,30,29], leapDays: 29, solarNewYear: [1993,1,23] },
+  1994: { leapMonth: 0, monthDays: [30,29,30,29,30,29,30,30,29,30,29,30], leapDays: 0, solarNewYear: [1994,2,10] },
+  1995: { leapMonth: 8, monthDays: [29,29,30,29,29,30,30,29,30,30,29,30], leapDays: 29, solarNewYear: [1995,1,31] },
+  1996: { leapMonth: 0, monthDays: [29,30,29,30,29,29,30,29,30,30,29,30], leapDays: 0, solarNewYear: [1996,2,19] },
+  1997: { leapMonth: 0, monthDays: [30,29,30,29,30,29,29,30,29,30,29,30], leapDays: 0, solarNewYear: [1997,2,7] },
+  1998: { leapMonth: 5, monthDays: [30,29,30,30,29,30,29,29,30,29,30,29], leapDays: 30, solarNewYear: [1998,1,28] },
+  1999: { leapMonth: 0, monthDays: [30,29,30,30,29,30,29,30,29,30,29,30], leapDays: 0, solarNewYear: [1999,2,16] },
+  2000: { leapMonth: 0, monthDays: [29,30,29,30,29,30,29,30,30,29,30,29], leapDays: 0, solarNewYear: [2000,2,5] },
+  2001: { leapMonth: 4, monthDays: [30,29,29,30,29,29,30,30,29,30,30,30], leapDays: 29, solarNewYear: [2001,1,24] },
+  2002: { leapMonth: 0, monthDays: [29,30,29,29,30,29,29,30,30,29,30,30], leapDays: 0, solarNewYear: [2002,2,12] },
+  2003: { leapMonth: 0, monthDays: [29,30,30,29,29,30,29,29,30,30,29,30], leapDays: 0, solarNewYear: [2003,2,1] },
+  2004: { leapMonth: 2, monthDays: [30,29,30,29,30,29,30,29,30,29,30,29], leapDays: 30, solarNewYear: [2004,1,22] },
+  2005: { leapMonth: 0, monthDays: [30,30,29,30,29,30,29,30,29,30,29,30], leapDays: 0, solarNewYear: [2005,2,9] },
+  2006: { leapMonth: 7, monthDays: [29,30,29,30,29,30,30,29,30,29,30,29], leapDays: 29, solarNewYear: [2006,1,29] },
+  2007: { leapMonth: 0, monthDays: [30,29,30,29,30,29,30,30,29,30,29,30], leapDays: 0, solarNewYear: [2007,2,18] },
+  2008: { leapMonth: 0, monthDays: [29,29,30,29,30,29,30,30,29,30,30,29], leapDays: 0, solarNewYear: [2008,2,7] },
+  2009: { leapMonth: 5, monthDays: [30,29,29,30,29,29,30,30,29,30,30,30], leapDays: 29, solarNewYear: [2009,1,26] },
+  2010: { leapMonth: 0, monthDays: [29,30,29,29,30,29,30,29,30,30,30,29], leapDays: 0, solarNewYear: [2010,2,14] },
+  2011: { leapMonth: 0, monthDays: [30,29,30,29,29,30,29,30,29,30,30,29], leapDays: 0, solarNewYear: [2011,2,3] },
+  2012: { leapMonth: 4, monthDays: [30,30,29,30,29,29,30,29,29,30,30,29], leapDays: 30, solarNewYear: [2012,1,23] },
+  2013: { leapMonth: 0, monthDays: [30,30,29,30,29,30,29,30,29,30,29,30], leapDays: 0, solarNewYear: [2013,2,10] },
+  2014: { leapMonth: 9, monthDays: [29,30,29,30,29,30,30,29,30,29,30,29], leapDays: 30, solarNewYear: [2014,1,31] },
+  2015: { leapMonth: 0, monthDays: [30,29,29,30,29,30,30,29,30,30,29,30], leapDays: 0, solarNewYear: [2015,2,19] },
+  2016: { leapMonth: 0, monthDays: [29,30,29,29,30,29,30,29,30,30,30,29], leapDays: 0, solarNewYear: [2016,2,8] },
+  2017: { leapMonth: 5, monthDays: [30,29,30,29,29,30,29,30,29,30,30,29], leapDays: 30, solarNewYear: [2017,1,28] },
+  2018: { leapMonth: 0, monthDays: [30,30,29,30,29,29,30,29,29,30,30,30], leapDays: 0, solarNewYear: [2018,2,16] },
+  2019: { leapMonth: 0, monthDays: [29,30,29,30,30,29,29,30,29,30,29,30], leapDays: 0, solarNewYear: [2019,2,5] },
+  2020: { leapMonth: 4, monthDays: [29,30,29,30,29,30,29,30,30,29,30,29], leapDays: 29, solarNewYear: [2020,1,25] },
+  2021: { leapMonth: 0, monthDays: [30,29,30,29,30,29,30,29,30,30,29,30], leapDays: 0, solarNewYear: [2021,2,12] },
+  2022: { leapMonth: 0, monthDays: [29,30,29,29,30,29,30,29,30,30,30,29], leapDays: 0, solarNewYear: [2022,2,1] },
+  2023: { leapMonth: 2, monthDays: [30,29,30,29,29,30,29,30,29,30,30,30], leapDays: 29, solarNewYear: [2023,1,22] },
+  2024: { leapMonth: 0, monthDays: [29,30,29,30,29,29,30,29,30,29,30,30], leapDays: 0, solarNewYear: [2024,2,10] },
+  2025: { leapMonth: 6, monthDays: [30,29,30,29,30,29,29,30,29,30,29,30], leapDays: 29, solarNewYear: [2025,1,29] },
+  2026: { leapMonth: 0, monthDays: [30,29,30,30,29,30,29,29,30,29,30,29], leapDays: 0, solarNewYear: [2026,2,17] },
+};
+
+export function lunarToSolarAccurate(
+  year: number, month: number, day: number, isLeapMonth: boolean = false
+): { year: number; month: number; day: number } {
+  const data = LUNAR_DATA[year];
+  if (!data) return { year, month, day }; // 범위 밖 폴백
+
+  const [sY, sM, sD] = data.solarNewYear;
+  const baseDate = new Date(Date.UTC(sY, sM - 1, sD));
+
+  let totalDays = 0;
+
+  for (let m = 1; m < month; m++) {
+    totalDays += data.monthDays[m - 1];
+    // 윤달이 이 월 뒤에 있으면 윤달 일수도 추가
+    if (data.leapMonth === m) {
+      totalDays += data.leapDays;
+    }
+  }
+
+  // 윤달 요청인 경우: 해당 월 평달 일수를 먼저 더하고
+  if (isLeapMonth && data.leapMonth === month) {
+    totalDays += data.monthDays[month - 1];
+  }
+
+  totalDays += day - 1;
+
+  const resultDate = new Date(baseDate.getTime() + totalDays * 86400000);
+
+  return {
+    year: resultDate.getUTCFullYear(),
+    month: resultDate.getUTCMonth() + 1,
+    day: resultDate.getUTCDate()
+  };
+}
