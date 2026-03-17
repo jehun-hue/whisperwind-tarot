@@ -557,7 +557,7 @@ export function calculateServerZiWei(
           const tOff = ((posIdx - mingGongIdx) % 12 + 12) % 12;
           annualTransformations.push({
             type, star: targetStar, palace: PALACES[tOff],
-            description: `${currentYear}년 유년${type}: ${targetStar} → ${PALACES[tOff]}궁 활성`,
+            description: `${currentYear}년 유년${type}: ${targetStar} → ${PALACES[tOff]} 활성`,
           });
           break;
         }

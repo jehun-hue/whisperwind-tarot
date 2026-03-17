@@ -349,7 +349,7 @@ export function calculateServerAstrology(
     return {
       planet: p.planet, sign, signEnglish: ZODIAC_ENGLISH[signIdx],
       degree, absoluteDegree: lng, house, dignity, is_retrograde,
-      interpretation: `${p.planet}(${meaning.keyword}) ${sign} ${degree}°, ${house ? `${house}하우스(${HOUSE_MEANINGS[house] || "전반"})` : "하우스 미확정"}${dignityNote}${is_retrograde ? " [역행]" : ""} — ${meaning.domain}이 ${signMeaning}한 방식으로 ${house ? (HOUSE_MEANINGS[house]?.split("·")[0] || "삶") : "일반"} 영역에 영향.${cuspNote}`,
+      interpretation: `${p.planet}(${meaning.keyword}) ${sign} ${degree}°, ${house ? `${house}하우스(${HOUSE_MEANINGS[house] || "전반"})` : "하우스 미확정"}${dignityNote}${is_retrograde ? " [역행]" : ""} — ${meaning.domain}이 ${signMeaning} 방식으로 ${house ? (HOUSE_MEANINGS[house]?.split("·")[0] || "삶") : "일반"} 영역에 영향.${cuspNote}`,
     };
   });
 
