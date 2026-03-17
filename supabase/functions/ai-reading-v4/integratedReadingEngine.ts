@@ -1566,7 +1566,7 @@ ${finalTopic === "life_change" ? "   → 변화 질문: 사주 운로·점성술
   } else {
     try {
       // styleApply: 2.0-flash (비용 절감)
-      rawNarrative = await fetchGemini(apiKey, "gemini-2.0-flash", stylePrompt, "", requestedTemp);
+      rawNarrative = await fetchGemini(apiKey, "gemini-2.5-flash-lite", stylePrompt, "", requestedTemp);
       geminiLatency = Date.now() - styleStart;
       console.log("[PlatformV9] Style Application Latency:", geminiLatency, "ms");
     } catch (e: any) {
@@ -1617,7 +1617,7 @@ ${finalTopic === "life_change" ? "   → 변화 질문: 사주 운로·점성술
   logMonitoringEvent(supabaseClient, {
     sessionId,
     engineVersion: READING_VERSION,
-    geminiModel: input.mode === "data-only" ? "none" : "gemini-2.0-flash",
+    geminiModel: input.mode === "data-only" ? "none" : "gemini-2.5-flash-lite",
     responseType,
     parseSuccess,
     schemaValidationPassed: schemaResult.passed,

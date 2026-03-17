@@ -546,7 +546,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
     }
   };
 
-  const runAIAnalysisV2 = async (style: 'hanna' | 'monad' | 'e7l3' | 'e5l5' | 'l7e3' = 'hanna', isAutoRun = false, overrideSession?: ReadingSession, coreReading?: any, skipDbSave?: boolean) => {
+  const runAIAnalysisV2 = async (style: 'hanna' | 'monad' | 'e7l3' | 'e5l5' | 'l7e3' = 'hanna', isAutoRun = false, overrideSession?: ReadingSession, coreReading?: any) => {
     const currentSession = overrideSession || session;
     console.log(`[runAIAnalysisV2] Start style=${style}, isAutoRun=${isAutoRun}`);
     // 가드 로직: 해당 해석이 이미 존재하면 재생성 방지 (수동 실행 시에만 가드 작동)
@@ -710,24 +710,22 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       const finalResult = await new Promise((resolve, reject) => {
         sessionWriteQueue = sessionWriteQueue.then(async () => {
           try {
-            // DB에서 최신 상태 다시 불러오기
+            // 1. DB에서 가장 최신 상태 다시 불러오기 (머지 충돌 방지)
             const { data: latestDbSession } = await supabase
               .from("reading_sessions")
               .select("ai_reading, status, saju_data")
               .eq("id", currentSession.id)
               .single();
 
-            // 기존 데이터와 병합 (필드별 통합 로직 적용)
-            const existingReading = (latestDbSession?.ai_reading as any) || currentSession.ai_reading || {};
+            // 2. 기존 데이터와 새로 받은 결과(result) 병합
+            const existingReading = (latestDbSession?.ai_reading as any) || {};
             const mergedReading = {
               ...existingReading,
               ...result,
-              // 타로 리딩 통합 (한나/모나드 등 다수 존재 처리)
               tarot_reading: {
                 ...(existingReading.tarot_reading || {}),
                 ...(result.tarot_reading || {}),
               },
-              // 통합 리딩 필드 병합 (덮어쓰기 방지)
               merged_reading: {
                 ...(existingReading.merged_reading || {}),
                 ...(result.merged_reading || {}),
@@ -746,7 +744,6 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
               }
             };
        
-            // B-174 fix: data-only 모드이거나 narrative가 있으면 completed 처리
             const hasNarrative = !!(
               mergedReading.tarot_reading?.choihanna || 
               mergedReading.tarot_reading?.monad ||
@@ -758,14 +755,14 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
               mergedReading.engine?.validation?.message?.includes("Data-Only"));
             const finalStatus = (hasNarrative || isDataOnly) ? "completed" : (latestDbSession?.status || currentSession.status);
        
-            if (!skipDbSave) {
-              await supabase.from("reading_sessions").update({
-                ai_reading: mergedReading as any,
-                saju_data: sajuDataForAI as any,
-                status: finalStatus,
-              }).eq("id", currentSession.id);
-            }
+            // 3. DB 업데이트 (무조건 실행)
+            await supabase.from("reading_sessions").update({
+              ai_reading: mergedReading as any,
+              saju_data: sajuDataForAI as any,
+              status: finalStatus,
+            }).eq("id", currentSession.id);
        
+            // 4. React 상태 업데이트 (함수형 업데이트로 해당 스타일만 독립 저장)
             const updatedSessionData = {
               ...currentSession,
               ai_reading: mergedReading,
@@ -781,6 +778,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
               coreReading: aiData?.coreReading, 
             });
           } catch (e) {
+            console.error(`[Atomic Save Error] Style: ${style}`, e);
             reject(e);
           }
         });
@@ -851,7 +849,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
     toast.success(`${style.toUpperCase()} 스타일 병합 완료`);
   };
 
-  const runDataOnlyAnalysis = async (isAutoRun = false, overrideSession?: ReadingSession, skipDbSave?: boolean) => {
+  const runDataOnlyAnalysis = async (isAutoRun = false, overrideSession?: ReadingSession) => {
     const currentSession = overrideSession || session;
     if (!isAutoRun) {
       const ok = window.confirm(
@@ -977,12 +975,11 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
         mergedReading.engine?.validation?.message?.includes("Data-Only"));
       const finalStatus = (hasNarrative || isDataOnly) ? "completed" : currentSession.status;
  
-      if (!skipDbSave) {
-        await supabase.from("reading_sessions").update({
-          ai_reading: mergedReading as any,
-          status: finalStatus,
-        }).eq("id", currentSession.id);
-      }
+      // Atomic save for data-only
+      await supabase.from("reading_sessions").update({
+        ai_reading: mergedReading as any,
+        status: finalStatus,
+      }).eq("id", currentSession.id);
  
       onUpdate({
         ...currentSession,
@@ -1017,24 +1014,21 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
 
     try {
       setAnalysisError(null);
-      // 로딩 UI는 하나로 통합해서 보여줌
       setAnalyzingStyle('seq_all');
       
       const styles: Array<'hanna' | 'monad' | 'e7l3' | 'e5l5' | 'l7e3'> = 
         ['hanna', 'monad', 'e7l3', 'e5l5', 'l7e3'];
       
       let latestSession: any = session;
-      const aiResults: any[] = [];
       
       // 1. coreReading 생성을 위해 첫 번째 스타일(hanna) 우선 실행
       const firstStyle = styles[0];
       let coreReadingCache: any = null;
       try {
         console.log(`[runParallelAnalysis] FIRST: ${firstStyle} start`);
-        const firstSessionResult = await runAIAnalysisV2(firstStyle, true, latestSession, null, true) as any; // skipDbSave: true 추가
+        const firstSessionResult = await runAIAnalysisV2(firstStyle, true, latestSession, null) as any;
         if (firstSessionResult) {
           latestSession = firstSessionResult;
-          if (firstSessionResult.aiResult) aiResults.push(firstSessionResult.aiResult);
           if (firstSessionResult.coreReading) {
             coreReadingCache = firstSessionResult.coreReading;
           }
@@ -1044,89 +1038,13 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
         toast.error(`${firstStyle} 분석 실패, 다음 스타일로 진행합니다`);
       }
 
-      // 2. 나머지 4개 스타일 병렬 실행 (Promise.allSettled)
-      const restStyles = styles.slice(1);
-      console.log(`[runParallelAnalysis] PARALLEL: rest styles start`, restStyles, `using coreReadingCache:`, !!coreReadingCache);
+      // 2. 나머지 스타일 및 데이터 분석 병렬 실행
+      console.log(`[runParallelAnalysis] Parallel tasks start...`);
       
-      const results = await Promise.allSettled(
-        restStyles.map(async (style) => {
-          return await runAIAnalysisV2(style, true, latestSession, coreReadingCache, true); // skipDbSave: true
-        })
-      );
-      
-      results.forEach((res, idx) => {
-        if (res.status === "rejected") {
-          console.error(`[runParallelAnalysis] ${restStyles[idx]} failed:`, res.reason);
-          toast.error(`${restStyles[idx]} 분석 실패`);
-        } else if (res.status === "fulfilled" && res.value) {
-          const val = res.value as any;
-          if (val.aiResult) aiResults.push(val.aiResult);
-          // 병합은 마지막에 한번에 수행하므로 여기서 latestSession을 매번 덮어쓸 필요 없음
-        }
-      });
-
-      console.log("[runParallelAnalysis] data-only start");
-      const dataOnlyResult: any = await runDataOnlyAnalysis(true, latestSession, true); // skipDbSave: true
-      if (dataOnlyResult && dataOnlyResult.aiResult) {
-        aiResults.push(dataOnlyResult.aiResult);
-      }
-
-      // 3. 모든 분석 완료 후 최종 DB 1회 업데이트 (통합 저장)
-      // sessionWriteQueue를 통해 진행 중인 모든 업데이트가 완료된 후 실행 유도
-      console.log("[runParallelAnalysis] Performing final unified DB update...");
-      await new Promise((resolve) => {
-        sessionWriteQueue = sessionWriteQueue.then(async () => {
-          try {
-            const { data: finalLatest } = await supabase
-              .from("reading_sessions")
-              .select("ai_reading")
-              .eq("id", session.id)
-              .single();
-              
-            let finalCombinedReading = (finalLatest?.ai_reading as any) || latestSession.ai_reading;
-
-            // 모아온 aiResults들을 전부 머지
-            aiResults.forEach(piece => {
-              finalCombinedReading = {
-                ...finalCombinedReading,
-                ...piece,
-                tarot_reading: {
-                  ...(finalCombinedReading.tarot_reading || {}),
-                  ...(piece.tarot_reading || {}),
-                },
-                merged_reading: {
-                  ...(finalCombinedReading.merged_reading || {}),
-                  ...(piece.merged_reading || {}),
-                },
-                convergence: {
-                  ...(finalCombinedReading.convergence || {}),
-                  ...(piece.convergence || {}),
-                },
-                action_guide: {
-                  ...(finalCombinedReading.action_guide || {}),
-                  ...(piece.action_guide || {}),
-                },
-                final_message: {
-                  ...(finalCombinedReading.final_message || {}),
-                  ...(piece.final_message || {}),
-                }
-              };
-            });
-
-            await supabase.from("reading_sessions").update({
-              ai_reading: finalCombinedReading,
-              status: "completed"
-            }).eq("id", session.id);
-
-            const finalUpdate = { ...latestSession, ai_reading: finalCombinedReading, status: "completed" };
-            onUpdate(finalUpdate);
-            resolve(finalUpdate);
-          } catch (e) {
-            console.error("Final unified save failed", e);
-            resolve(null);
-          }
-        });
-      });
+      await Promise.allSettled([
+        ...styles.slice(1).map(style => runAIAnalysisV2(style, true, latestSession, coreReadingCache)),
+        runDataOnlyAnalysis(true, latestSession)
+      ]);
 
       toast.success("통합 병렬 분석 완료!");
     } catch (err) {
