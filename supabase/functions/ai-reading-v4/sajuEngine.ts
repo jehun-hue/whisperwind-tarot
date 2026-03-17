@@ -76,6 +76,7 @@ export function getFullSaju(
   longitude: number = 126.978,
   hasTime: boolean = true
 ) {
+  console.log("[GET FULL SAJU]", { year, month, day, hour, minute });
   // 1. Longitude & DST Correction
   // B-66new: 한국 시간대 히스토리 완전 반영
   // 1954~1961.08.09: UTC+8:30 사용 → KST(UTC+9) 기준 -30분 보정
@@ -134,11 +135,25 @@ export function getFullSaju(
   // 시주(時柱) 계산 시: 자시(子時, branchIdx=0)로 처리
   const isYaJaTime = correctedHour === 23;
 
-  // 일주 계산용 날짜: 야자시면 +1일 (23시는 다음날의 자시)
-  const dayPillarDate = new Date(correctedDate);
+  // 일주 계산용 날짜: KST(현지) 기준 날짜를 명시적으로 추출하여 사용 (B-255 fix)
+  // UTC 기준일(correctedDate)이 현지일(kstSolarDate)보다 하루 빠를 수 있음 (새벽 출생 시)
+  const localSolarYear = kstSolarDate.getUTCFullYear();
+  const localSolarMonth = kstSolarDate.getUTCMonth();
+  const localSolarDay = kstSolarDate.getUTCDate();
+
+  // 기준 날짜는 오찬(12:00) 기준 JD 계산을 위해 UTC Noon으로 설정
+  const dayPillarDate = new Date(Date.UTC(localSolarYear, localSolarMonth, localSolarDay, 12, 0, 0));
+  
   if (isYaJaTime) {
     dayPillarDate.setUTCDate(dayPillarDate.getUTCDate() + 1);
   }
+
+  console.log("[DAY CALC FIX]", { 
+    kstDate: `${localSolarYear}-${localSolarMonth + 1}-${localSolarDay}`, 
+    utcDate: correctedDate.toISOString(), 
+    isYaJa: isYaJaTime,
+    dayPillarDate: dayPillarDate.toISOString()
+  });
 
   // 시주 계산용 시간 (야자시면 0시로 처리)
   const effectiveHour = isYaJaTime ? 0 : correctedHour;
@@ -178,6 +193,13 @@ export function getFullSaju(
   // B-213 fix: JD 기준 일주 오프셋 수정 (50 → 49, 癸亥일/丙申일 기준 재검증)
   const dIdx = Math.floor(jd + 0.5 + 49) % 60;
   const dayPillar = { stem: STEMS[dIdx % 10], branch: BRANCHES[dIdx % 12] };
+  console.log("[DAY PILLAR CALC]", { 
+    inputDate: dayPillarDate.toISOString(),
+    jd: jd,
+    dayGanIndex: dIdx % 10,
+    dayGan: dayPillar.stem,
+    dayBranch: dayPillar.branch
+  });
   const dayMaster = dayPillar.stem;
 
   // 5. Hour Pillar

@@ -871,6 +871,16 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
 
   // Step 1: Physical Calculation Pipeline
     // 사주 계산 (동기)
+    console.log("[SAJU INPUT TRACE]", {
+      solarBirthInfo_year: solarBirthInfo.year,
+      solarBirthInfo_month: solarBirthInfo.month,
+      solarBirthInfo_day: solarBirthInfo.day,
+      rawBirth_year: rawBirth.year,
+      rawBirth_month: rawBirth.month,
+      rawBirth_day: rawBirth.day,
+      isLunar: rawBirth.isLunar
+    });
+
     let sajuRaw: any = null;
     try {
       sajuRaw = calculateSaju(

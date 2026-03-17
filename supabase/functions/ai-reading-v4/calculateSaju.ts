@@ -15,6 +15,7 @@ export function calculateSaju(
   longitude: number = 127.5,
   hasTime: boolean = true
 ) {
+  console.log("[CALC SAJU RECEIVED]", { year, month, day, hour, minute });
   const result = getFullSaju(year, month, day, hour, minute, gender, longitude, hasTime);
   
   // Return in required structure
