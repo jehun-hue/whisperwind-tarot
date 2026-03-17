@@ -25,6 +25,17 @@ import { detectCombinations, aggregateCombinationScore, processCardVector, SPREA
 import { getCardVector, getCardWuxing, getElementCompatibility } from "./tarotVectorDB.ts";
 import { lunarToSolarAccurate } from "./lunarData.ts";
 
+/**
+ * 통합 리딩 엔진 V8
+ * 
+ * 날짜 처리 규칙:
+ * - 사주/점성술: 양력(Solar) 기준 → solarBirthInfo 사용
+ * - 자미두수: 음력(Lunar) 기준 → rawBirth 또는 solarToLunar 변환값 사용
+ * - 수비학: 양력 기준
+ * - 타로: 날짜 무관 (카드 기반)
+ * 
+ * 시간 보정: 경도 기반 진태양시 보정 적용 (기본 서울 127°E → -30분)
+ */
 const READING_VERSION = "v9_symbolic_prediction_engine";
 
 /**
@@ -1153,6 +1164,17 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     const genderZiwei = (birthInfo.gender === "M" || birthInfo.gender === "male") ? "male" as const : "female" as const;
     let serverZiwei: any = null;
     try {
+      /**
+       * 자미두수 시간 기준 문서
+       * ─────────────────────
+       * 1. 입력: 음력 생년월일 + 경도보정 시간
+       *    - isLunar=true → rawBirth.month/day를 그대로 음력으로 사용
+       *    - isLunar=false → solarToLunar 변환 후 음력 월일 사용
+       * 2. 시간: 경도보정(-30분) 적용된 correctedHour 사용
+       *    - 예: 서울(127°) 04:35 → 04:03 (진시 辰時)
+       * 3. 성별: gender 파라미터 그대로 전달
+       * 4. 주의: 사주 엔진은 양력 기준, 자미두수는 음력 기준 (경로 독립)
+       */
       serverZiwei = hasTime ? calculateServerZiWei(
         birthInfo.year, ziweiLunarMonth, ziweiLunarDay, ziweiCorrectedHour, ziweiCorrectedMinute, genderZiwei
       ) : null;
