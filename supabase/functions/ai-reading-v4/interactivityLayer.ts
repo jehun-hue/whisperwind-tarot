@@ -344,9 +344,7 @@ ${dataBlock}
     "conclusion": "교차 검증으로 강화된 최종 결론 (2문장)"
   },
 
-  "risk_points": ["구체적 시나리오 형태의 리스크 1", "구체적 시나리오 형태의 리스크 2"],
-
-  "scores": { "tarot": 0, "saju": 0, "astrology": 0, "ziwei": 0, "overall": 0 }
+  "risk_points": ["구체적 시나리오 형태의 리스크 1", "구체적 시나리오 형태의 리스크 2"]
 }
 
 [절대 규칙 / Absolute Rules]
@@ -455,8 +453,7 @@ ${coreReadingJSON}
     "timingInsight": "coreReading의 결과 시나리오 중 시기 관련 내용",
     "longTermFlow": "coreReading의 최종 흐름(if_act.final_flow) 기반",
     "finalAdvice": "coreReading의 전환 조건을 이 스타일 어조로 최종 정리"
-  },
-  "scores": { "overall": 0 }
+  }
 }
 
 ${cfg.outputLanguage}

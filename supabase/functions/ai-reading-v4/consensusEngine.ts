@@ -269,13 +269,13 @@ export function calculateConsensusV8(
 
       let conflict_level: ConflictLog["conflict_level"] = "none";
       let resolution = "일치 — 두 시스템 신호 강화";
-      if (similarity < 0.0) {
+      if (similarity < 0.3) {
         conflict_level = "severe";
-        resolution = "심각 충돌 — 타로 판단 우선, 보조 엔진 조건부 참고";
-      } else if (similarity < 0.2) {
+        resolution = "심각 충돌 — 가장 신뢰도 높은 엔진 우선, 나머지 참고용";
+      } else if (similarity < 0.45) {
         conflict_level = "moderate";
-        resolution = "중간 충돌 — 타로 방향 유지, 보조 엔진 경고 추가";
-      } else if (similarity < 0.4) {
+        resolution = "중간 충돌 — 두 관점의 차이를 명시하고 균형 있게 서술";
+      } else if (similarity < 0.6) {
         conflict_level = "mild";
         resolution = "경미 충돌 — 두 관점 병기 후 내담자 판단 유도";
       }

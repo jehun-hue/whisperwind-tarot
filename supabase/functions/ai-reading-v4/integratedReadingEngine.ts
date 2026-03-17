@@ -1650,9 +1650,8 @@ ${finalTopic === "life_change" ? "   → 변화 질문: 사주 운로·점성술
 
   // --- Step 4: Metadata Patching ---
   // coreReading에서 계산된 점수 반영
-  if (coreReading?.scores) {
-    scores = { ...scores, ...coreReading.scores };
-  }
+  // Gemini가 반환한 scores는 엔진 계산값을 0으로 덮어쓸 위험이 있으므로 병합하지 않음
+  console.log("[SCORES]", JSON.stringify(scores));
 
   const modelInput = stylePrompt || "";
 
