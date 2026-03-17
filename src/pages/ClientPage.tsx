@@ -223,13 +223,13 @@ export default function ClientPage() {
     let hour = 12
     let minute = 0
 
-    if (birthTime && birthTime !== "unknown") {
+    if (birthTime === "known") {
+      hour = birthHour24;
+      minute = birthMinute;
+    } else if (birthTime && birthTime !== "unknown") {
       const parts = birthTime.split(":")
-      const h = parts[0]
-      const m = parts[1]
-
-      hour = parseInt(h || "12", 10)
-      minute = parseInt(m || "0", 10)
+      hour = parseInt(parts[0] || "12", 10)
+      minute = parseInt(parts[1] || "0", 10)
     }
 
     try {
@@ -298,7 +298,7 @@ export default function ClientPage() {
     const birthInfo = hasBirthDate ? {
       gender,
       birthDate: `${birthYear}-${birthMonth.padStart(2, "0")}-${birthDay.padStart(2, "0")}`,
-      birthTime: birthTime !== "unknown" ? birthTime : "",
+      birthTime: birthTime === "known" ? `${String(birthHour24).padStart(2, "0")}:${String(birthMinute).padStart(2, "0")}` : (birthTime !== "unknown" ? birthTime : ""),
       birthPlace: "",
       isLunar,
       isLeapMonth,

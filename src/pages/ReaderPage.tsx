@@ -62,6 +62,32 @@ interface ReadingSession {
   purchased_grade: string | null;
 }
 
+// ─── 날짜 정규화 헬퍼 함수 (Date Normalization Helpers) ───
+function ensureDateString(val: any): string {
+  if (!val) return "";
+  if (val instanceof Date) {
+    return isNaN(val.getTime()) ? "" : val.toISOString().split("T")[0];
+  }
+  if (typeof val === "number") {
+    const d = new Date(val);
+    return isNaN(d.getTime()) ? "" : d.toISOString().split("T")[0];
+  }
+  const s = String(val).trim();
+  if (/^\d{8}$/.test(s)) {
+    return `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}`;
+  }
+  return s;
+}
+
+function ensureDateObject(val: any): Date | null {
+  if (!val) return null;
+  if (val instanceof Date) return isNaN(val.getTime()) ? null : val;
+  const normalized = ensureDateString(val);
+  if (!normalized) return null;
+  const d = new Date(normalized);
+  return isNaN(d.getTime()) ? null : d;
+}
+
 export default function ReaderPage() {
   const [authed, setAuthed] = useState(false);
   const [pin, setPin] = useState("");
@@ -251,7 +277,7 @@ export default function ReaderPage() {
 }
 
 function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdate: (s: ReadingSession) => void }) {
-  const [analyzingStyle, setAnalyzingStyle] = useState<'hanna' | 'monad' | 'v1' | 'data-only' | 'seq_hanna' | 'seq_monad' | 'seq_data' | 'seq_e7l3' | 'seq_e5l5' | 'seq_l7e3' | 'e7l3' | 'e5l5' | 'l7e3' | null>(null);
+  const [analyzingStyle, setAnalyzingStyle] = useState<'hanna' | 'monad' | 'v1' | 'data-only' | 'seq_hanna' | 'seq_monad' | 'seq_data' | 'seq_e7l3' | 'seq_e5l5' | 'seq_l7e3' | 'e7l3' | 'e5l5' | 'l7e3' | 'seq_all' | null>(null);
   const analyzing = !!analyzingStyle;
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [counselorComment, setCounselorComment] = useState(session.counselor_comment || "");
@@ -476,7 +502,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       const cardsInput = (currentSession.cards as any[]) || [];
       const birthInfo = currentSession.birth_date ? {
         gender: currentSession.gender,
-        birthDate: currentSession.birth_date,
+        birthDate: ensureDateString(currentSession.birth_date), // Use helper here
         birthTime: currentSession.birth_time || "",
         birthPlace: currentSession.birth_place || "",
         isLunar: currentSession.is_lunar || false,
@@ -489,21 +515,34 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
 
       if (birthInfo && birthInfo.birthDate) {
         try {
-          const [y, m, d] = birthInfo.birthDate.split("-").map(Number);
-          const [hour, minute] = birthInfo.birthTime ? birthInfo.birthTime.split(":").map(Number) : [12, 0];
+          const dateStr = ensureDateString(birthInfo.birthDate);
+          const [y, m, d] = dateStr.split("-").map(Number);
+          
+          let hour = 12, minute = 0;
+          if (birthInfo.birthTime && birthInfo.birthTime !== "known") {
+            const parts = birthInfo.birthTime.split(":");
+            if (parts.length >= 2) {
+              hour = parseInt(parts[0], 10);
+              minute = parseInt(parts[1], 10);
+              if (isNaN(hour)) hour = 12;
+              if (isNaN(minute)) minute = 0;
+            }
+          }
 
-          const astro = calculateNatalChart(y, m, d, hour, minute);
-          astroDataForAI = {
-            ...astro,
-            questionAnalysis: getAstrologyForQuestion(astro, qType as any),
-            transits: getCurrentTransits(astro),
-          };
+          if (ensureDateObject(dateStr)) {
+            const astro = calculateNatalChart(y, m, d, hour, minute);
+            astroDataForAI = {
+              ...astro,
+              questionAnalysis: getAstrologyForQuestion(astro, qType as any),
+              transits: getCurrentTransits(astro),
+            };
 
-          const ziwei = calculateZiWei(y, m, d, hour, minute, (birthInfo.gender as "male" | "female") || "female");
-          ziweiDataForAI = {
-            ...ziwei,
-            questionAnalysis: getZiWeiForQuestion(ziwei, qType as any),
-          };
+            const ziwei = calculateZiWei(y, m, d, hour, minute, (birthInfo.gender as "male" | "female") || "female");
+            ziweiDataForAI = {
+              ...ziwei,
+              questionAnalysis: getZiWeiForQuestion(ziwei, qType as any),
+            };
+          }
         } catch (e) {
           console.error("Analysis data prep error:", e);
         }
@@ -527,6 +566,8 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
         style,
         userName: currentSession.user_name,
       };
+
+      console.log("[DEBUG] birthInfo payload:", JSON.stringify(birthInfo));
 
       // 스트리밍: UI 체감 속도 향상용 (병렬 실행)
       setStreamingText("");
@@ -739,21 +780,34 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
 
       if (birthInfo && birthInfo.birthDate) {
         try {
-          const [y, m, d] = birthInfo.birthDate.split("-").map(Number);
-          const [hour, minute] = birthInfo.birthTime ? birthInfo.birthTime.split(":").map(Number) : [12, 0];
+          const dateStr = ensureDateString(birthInfo.birthDate);
+          const [y, m, d] = dateStr.split("-").map(Number);
+          
+          let hour = 12, minute = 0;
+          if (birthInfo.birthTime && birthInfo.birthTime !== "known") {
+            const parts = birthInfo.birthTime.split(":");
+            if (parts.length >= 2) {
+              hour = parseInt(parts[0], 10);
+              minute = parseInt(parts[1], 10);
+              if (isNaN(hour)) hour = 12;
+              if (isNaN(minute)) minute = 0;
+            }
+          }
 
-          const astro = calculateNatalChart(y, m, d, hour, minute);
-          astroDataForAI = {
-            ...astro,
-            questionAnalysis: getAstrologyForQuestion(astro, qType as any),
-            transits: getCurrentTransits(astro),
-          };
+          if (ensureDateObject(dateStr)) {
+            const astro = calculateNatalChart(y, m, d, hour, minute);
+            astroDataForAI = {
+              ...astro,
+              questionAnalysis: getAstrologyForQuestion(astro, qType as any),
+              transits: getCurrentTransits(astro),
+            };
 
-          const ziwei = calculateZiWei(y, m, d, hour, minute, (birthInfo.gender as "male" | "female") || "female");
-          ziweiDataForAI = {
-            ...ziwei,
-            questionAnalysis: getZiWeiForQuestion(ziwei, qType as any),
-          };
+            const ziwei = calculateZiWei(y, m, d, hour, minute, (birthInfo.gender as "male" | "female") || "female");
+            ziweiDataForAI = {
+              ...ziwei,
+              questionAnalysis: getZiWeiForQuestion(ziwei, qType as any),
+            };
+          }
         } catch (e) {
           console.error("Analysis data prep error:", e);
         }
@@ -852,36 +906,57 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       "⚠️ API 비용이 발생합니다!\n\n" +
       "고객: " + (session.user_name || "이름없음") + "\n" +
       "질문: " + session.question + "\n\n" +
-      "5개 스타일 + 데이터분석을 자동 실행하시겠습니까?"
+      "5개 스타일 + 데이터분석을 자동(병렬) 실행하시겠습니까?"
     );
     if (!ok) return;
 
     try {
       setAnalysisError(null);
+      // 로딩 UI는 하나로 통합해서 보여줌
+      setAnalyzingStyle('seq_all');
       
       const styles: Array<'hanna' | 'monad' | 'e7l3' | 'e5l5' | 'l7e3'> = 
         ['hanna', 'monad', 'e7l3', 'e5l5', 'l7e3'];
       
       let latestSession: any = undefined;
       
-      for (const style of styles) {
-        try {
-          console.log(`[runSequentialAnalysis] ${style} start`);
-          setAnalyzingStyle(`seq_${style}`);
-          latestSession = await runAIAnalysisV2(style, true, latestSession) || latestSession;
-        } catch (err) {
-          console.error(`[runSequentialAnalysis] ${style} failed:`, err);
-          toast.error(`${style} 분석 실패, 다음 스타일로 진행합니다`);
-        }
+      // 1. coreReading 생성을 위해 첫 번째 스타일(hanna) 우선 실행
+      const firstStyle = styles[0];
+      try {
+        console.log(`[runParallelAnalysis] FIRST: ${firstStyle} start`);
+        latestSession = await runAIAnalysisV2(firstStyle, true, latestSession) || latestSession;
+      } catch (err) {
+        console.error(`[runParallelAnalysis] ${firstStyle} failed:`, err);
+        toast.error(`${firstStyle} 분석 실패, 다음 스타일로 진행합니다`);
       }
 
-      console.log("[runSequentialAnalysis] data-only start");
-      setAnalyzingStyle('seq_data');
+      // 2. 나머지 4개 스타일 병렬 실행 (Promise.allSettled)
+      const restStyles = styles.slice(1);
+      console.log(`[runParallelAnalysis] PARALLEL: rest styles start`, restStyles);
+      
+      const results = await Promise.allSettled(
+        restStyles.map(async (style) => {
+          // Promise가 resolve될 때 상태가 업데이트 되도록 runAIAnalysisV2 내부에서 처리됨 (onUpdate 등)
+          return await runAIAnalysisV2(style, true, latestSession);
+        })
+      );
+      
+      results.forEach((res, idx) => {
+        if (res.status === "rejected") {
+          console.error(`[runParallelAnalysis] ${restStyles[idx]} failed:`, res.reason);
+          toast.error(`${restStyles[idx]} 분석 실패`);
+        } else if (res.status === "fulfilled" && res.value) {
+          // 가장 마지막으로 성공한 세션을 latestSession으로 유지 (순서는 보장 불가하나, data-only를 위해 필요)
+          latestSession = res.value;
+        }
+      });
+
+      console.log("[runParallelAnalysis] data-only start");
       await runDataOnlyAnalysis(true, latestSession);
 
-      toast.success("통합 분석 완료!");
+      toast.success("통합 병렬 분석 완료!");
     } catch (err) {
-      console.error("Sequential analysis error:", err);
+      console.error("Parallel analysis error:", err);
     } finally {
       setAnalyzingStyle(null);
     }
@@ -1045,26 +1120,30 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
 
       // 2. 점성술 및 자미두수 실시간 계산 (트랜짓 포함 실시간 컨텍스트 생성)
       let calculated_context: any = {};
-      if (birth_date) {
+      const safeBirth = ensureDateString(birth_date);
+      if (safeBirth) {
         try {
-          const [y, m, d] = birth_date.split("-").map(Number);
+          const [y, m, d] = safeBirth.split("-").map(Number);
           const [hour, minute] = birth_time ? birth_time.split(":").map(Number) : [12, 0];
           
-          const natal = calculateNatalChart(y, m, d, hour, minute);
-          const transits = getCurrentTransits(natal);
-          const ziwei = calculateZiWei(y, m, d, hour, minute, (gender as "male" | "female") || "female");
+          const birthObj = ensureDateObject(safeBirth);
+          if (birthObj) {
+            const natal = calculateNatalChart(y, m, d, hour, minute);
+            const transits = getCurrentTransits(natal);
+            const ziwei = calculateZiWei(y, m, d, hour, minute, (gender as "male" | "female") || "female");
 
-          calculated_context = {
-            astrology: {
-              natal_chart: natal,
-              transits: transits,
-              summary: natal.chartSummary,
-            },
-            ziwei: {
-              chart: ziwei,
-              key_palaces: ziwei.palaces?.slice(0, 3) || [],
-            }
-          };
+            calculated_context = {
+              astrology: {
+                natal_chart: natal,
+                transits: transits,
+                summary: natal.chartSummary,
+              },
+              ziwei: {
+                chart: ziwei,
+                key_palaces: ziwei.palaces?.slice(0, 3) || [],
+              }
+            };
+          }
         } catch (e) {
           console.error("Context calculation error for JSON export:", e);
         }

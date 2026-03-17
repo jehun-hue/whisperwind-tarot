@@ -6,7 +6,7 @@
  * - MC/IC/DESC 계산을 위한 Meeus 공식 적용
  */
 
-import * as Astronomy from "npm:astronomy-engine";
+import * as Astronomy from "https://esm.sh/astronomy-engine@2.1.19";
 
 // ═══════════════════════════════════════════════
 // Constants
