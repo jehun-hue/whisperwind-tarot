@@ -67,6 +67,33 @@ const BIRTH_HOURS = [
 ];
 
 
+const HOUR_LABELS: Record<number, string> = {
+  0: "00시 (자정)",
+  1: "01시 (새벽)",
+  2: "02시 (새벽)",
+  3: "03시 (새벽)",
+  4: "04시 (새벽)",
+  5: "05시 (새벽)",
+  6: "06시 (아침)",
+  7: "07시 (아침)",
+  8: "08시 (오전)",
+  9: "09시 (오전)",
+  10: "10시 (오전)",
+  11: "11시 (오전)",
+  12: "12시 (정오)",
+  13: "13시 (오후1시)",
+  14: "14시 (오후2시)",
+  15: "15시 (오후3시)",
+  16: "16시 (오후4시)",
+  17: "17시 (오후5시)",
+  18: "18시 (저녁6시)",
+  19: "19시 (저녁7시)",
+  20: "20시 (밤8시)",
+  21: "21시 (밤9시)",
+  22: "22시 (밤10시)",
+  23: "23시 (밤11시)",
+};
+
 function getRequiredCards(grade: Grade): number {
   switch (grade) {
     case "C":
@@ -159,6 +186,8 @@ export default function ClientPage() {
   const [birthHour24, setBirthHour24] = useState<number>(12);
   const [birthMinute, setBirthMinute] = useState<number>(0);
   const [gender, setGender] = useState<"male" | "female" | "">("");
+  const [showHourPicker, setShowHourPicker] = useState(false);
+  const [showMinutePicker, setShowMinutePicker] = useState(false);
   const [isLunar, setIsLunar] = useState(false);
   const [isLeapMonth, setIsLeapMonth] = useState(false);
 
@@ -601,48 +630,85 @@ export default function ClientPage() {
                       </button>
                     </div>
                     {birthTime !== "unknown" && (
-                      <div className="flex items-center gap-2">
-                        <select
-                          value={birthHour24}
-                          onChange={(e) => setBirthHour24(parseInt(e.target.value))}
-                          className="flex-1 h-14 rounded-xl bg-gradient-to-b from-purple-900/40 to-black/60 border border-purple-400/40 text-white text-center text-lg font-medium shadow-lg shadow-purple-500/10 appearance-none cursor-pointer hover:border-purple-400/70 transition-all"
-                        >
-                          <option value={0}>00시 (자정)</option>
-                          <option value={1}>01시 (새벽)</option>
-                          <option value={2}>02시 (새벽)</option>
-                          <option value={3}>03시 (새벽)</option>
-                          <option value={4}>04시 (새벽)</option>
-                          <option value={5}>05시 (새벽)</option>
-                          <option value={6}>06시 (아침)</option>
-                          <option value={7}>07시 (아침)</option>
-                          <option value={8}>08시 (아침)</option>
-                          <option value={9}>09시 (아침)</option>
-                          <option value={10}>10시 (오전)</option>
-                          <option value={11}>11시 (오전)</option>
-                          <option value={12}>12시 (정오)</option>
-                          <option value={13}>13시 (오후1시)</option>
-                          <option value={14}>14시 (오후2시)</option>
-                          <option value={15}>15시 (오후3시)</option>
-                          <option value={16}>16시 (오후4시)</option>
-                          <option value={17}>17시 (오후5시)</option>
-                          <option value={18}>18시 (저녁6시)</option>
-                          <option value={19}>19시 (저녁7시)</option>
-                          <option value={20}>20시 (밤8시)</option>
-                          <option value={21}>21시 (밤9시)</option>
-                          <option value={22}>22시 (밤10시)</option>
-                          <option value={23}>23시 (밤11시)</option>
-                        </select>
-                        <select
-                          value={birthMinute}
-                          onChange={(e) => setBirthMinute(parseInt(e.target.value))}
-                          className="flex-1 h-14 rounded-xl bg-gradient-to-b from-purple-900/40 to-black/60 border border-purple-400/40 text-white text-center text-lg font-medium shadow-lg shadow-purple-500/10 appearance-none cursor-pointer hover:border-purple-400/70 transition-all"
-                        >
-                          {Array.from({ length: 60 }, (_, i) => (
-                            <option key={i} value={i}>
-                              {String(i).padStart(2, "0")}분
-                            </option>
-                          ))}
-                        </select>
+                      <div className="space-y-3">
+                        <label className="text-sm font-medium text-purple-200">태어난 시간</label>
+                        <div className="flex items-center gap-3">
+                          {/* 시 버튼 */}
+                          <button
+                            type="button"
+                            onClick={() => setShowHourPicker(!showHourPicker)}
+                            className="flex-1 h-14 rounded-xl bg-gradient-to-b from-purple-900/40 to-black/60 border border-purple-400/40 text-white text-center text-lg font-medium shadow-lg shadow-purple-500/10 hover:border-purple-400/70 transition-all"
+                          >
+                            {HOUR_LABELS[birthHour24]}
+                          </button>
+
+                          <span className="text-purple-300 text-xl font-bold">:</span>
+
+                          {/* 분 버튼 */}
+                          <button
+                            type="button"
+                            onClick={() => setShowMinutePicker(!showMinutePicker)}
+                            className="flex-1 h-14 rounded-xl bg-gradient-to-b from-purple-900/40 to-black/60 border border-purple-400/40 text-white text-center text-lg font-medium shadow-lg shadow-purple-500/10 hover:border-purple-400/70 transition-all"
+                          >
+                            {String(birthMinute).padStart(2, "0")}분
+                          </button>
+                        </div>
+
+                        {/* 시 피커 모달 */}
+                        {showHourPicker && (
+                          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowHourPicker(false)}>
+                            <div className="w-full max-w-md rounded-t-2xl bg-gradient-to-b from-gray-900 to-black border-t border-purple-500/30 p-4 pb-8 animate-in slide-in-from-bottom" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex justify-between items-center mb-4">
+                                <span className="text-purple-200 font-medium">시간 선택</span>
+                                <button onClick={() => setShowHourPicker(false)} className="text-purple-400 text-sm">완료</button>
+                              </div>
+                              <div className="grid grid-cols-4 gap-2 max-h-[50vh] overflow-y-auto">
+                                {Array.from({ length: 24 }, (_, i) => (
+                                  <button
+                                    key={i}
+                                    type="button"
+                                    onClick={() => { setBirthHour24(i); setShowHourPicker(false); }}
+                                    className={`py-3 rounded-xl text-sm font-medium transition-all ${
+                                      birthHour24 === i
+                                        ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/30"
+                                        : "bg-white/5 text-purple-200 hover:bg-white/10 border border-white/10"
+                                    }`}
+                                  >
+                                    {HOUR_LABELS[i]}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 분 피커 모달 */}
+                        {showMinutePicker && (
+                          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowMinutePicker(false)}>
+                            <div className="w-full max-w-md rounded-t-2xl bg-gradient-to-b from-gray-900 to-black border-t border-purple-500/30 p-4 pb-8 animate-in slide-in-from-bottom" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex justify-between items-center mb-4">
+                                <span className="text-purple-200 font-medium">분 선택</span>
+                                <button onClick={() => setShowMinutePicker(false)} className="text-purple-400 text-sm">완료</button>
+                              </div>
+                              <div className="grid grid-cols-6 gap-2 max-h-[50vh] overflow-y-auto">
+                                {Array.from({ length: 60 }, (_, i) => (
+                                  <button
+                                    key={i}
+                                    type="button"
+                                    onClick={() => { setBirthMinute(i); setShowMinutePicker(false); }}
+                                    className={`py-3 rounded-xl text-sm font-medium transition-all ${
+                                      birthMinute === i
+                                        ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/30"
+                                        : "bg-white/5 text-purple-200 hover:bg-white/10 border border-white/10"
+                                    }`}
+                                  >
+                                    {String(i).padStart(2, "0")}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                     {birthTime === "unknown" && (
