@@ -14,6 +14,7 @@ export interface SajuAnalysisResult {
   narrative: string;
   tenGods: Record<string, number>;
   yongShin: string;
+  yongShinMethod: string;
   heeShin: string;
   daewoon: any | null; 
   interactions: Interaction[];
@@ -211,6 +212,7 @@ export async function analyzeSajuStructure(
       narrative: "사주 데이터가 부족합니다.",
       tenGods: {},
       yongShin: "Unknown",
+      yongShinMethod: "Unknown",
       heeShin: "Unknown",
       daewoon: null,
       interactions: [],
@@ -414,6 +416,9 @@ export async function analyzeSajuStructure(
     yongsin = eokbuYong; // 조후 없음 → 억부만
   }
 
+  const yongShinMethod = "억부용신";
+  console.log("[YONGSHIN]", { yongShin: yongsin, method: yongShinMethod, reason: strength.includes("강") ? "신강이므로 일간을 억제하는 오행 선택" : "신약이므로 일간을 보완하는 오행 선택" });
+
   // ── B-253: 희신(喜神) 추론 ──────────────────────────────────────
   const PRODUCE_MAP: Record<string, string> = { "목":"화", "화":"토", "토":"금", "금":"수", "수":"목" };
   const SUPPORT_MAP: Record<string, string> = { "목":"수", "화":"목", "토":"화", "금":"토", "수":"금" };
@@ -506,7 +511,7 @@ export async function analyzeSajuStructure(
   let narrative = `일간이 ${dmKorean[dm] || dm}으로, ${strengthDesc[strength] || strength}. ` +
     `오행 분포는 ${elementNames.map(n => `${n}(${elements[n] || 0})`).join(", ")}이며, ` +
     `주요 십성 구성은 ${tenGodDesc || "고르게 분포"}입니다. ` +
-    `용신은 '${yongsin}'으로 판단됩니다.` +
+    `용신은 '${yongsin}'으로 판단됩니다 (${yongShinMethod}법: ${strength.includes("강") ? "신강한 일간을 균형 있게 조절" : "신약한 일간을 생조하여 보완"}).` +
     (heeShin ? ` 희신은 '${heeShin}'으로, 용신을 보조하는 역할을 합니다.` : "") +
     chungDesc + harmonyDesc + hyungDesc;
 
@@ -669,31 +674,31 @@ export async function analyzeSajuStructure(
   const interactions = calculateInteractions(interactionStems, interactionBranches);
 
   // B-144: 신살 계산
-  const shinsal = calculateShinsal(dm, pillars.day?.branch || "", interactionBranches, pillars.year?.branch);
+  const shinsal = calculateShinsal(dm, pillars.day?.branch || "", interactionBranches, interactionStems, pillars.year?.branch, pillars.month?.branch);
 
   // B-144: 건강 위험 태그 추출
   const health_risk_tags: string[] = shinsal
-    .filter(s => s.health_implication)
-    .map(s => `${s.name}: ${s.health_implication}`);
+    .filter((s: Shinsal) => s.health_implication)
+    .map((s: Shinsal) => `${s.name}: ${s.health_implication}`);
 
   // B-145: 토픽별 신살 매핑
   const topic_shinsal_map: Record<string, string[]> = {};
-  shinsal.forEach(s => {
-    s.topic_relevance.forEach(topic => {
+  shinsal.forEach((s: Shinsal) => {
+    s.topic_relevance.forEach((topic: string) => {
       if (!topic_shinsal_map[topic]) topic_shinsal_map[topic] = [];
       topic_shinsal_map[topic].push(s.name);
     });
   });
 
   // 신살 중 역마살 있으면 characteristics에 추가
-  shinsal.forEach(s => {
+  shinsal.forEach((s: Shinsal) => {
     if (s.type === "역마" || s.type === "양인") {
       characteristics.push(`${s.name}: ${s.description}`);
     }
   });
 
   // 충·형살이 있으면 characteristics에 추가
-  interactions.forEach(inter => {
+  interactions.forEach((inter: Interaction) => {
     if (inter.severity === "흉") {
       characteristics.push(`${inter.type}(${inter.elements.join("·")}): ${inter.meaning_keyword}`);
     }
@@ -707,6 +712,7 @@ export async function analyzeSajuStructure(
     narrative,
     tenGods: tenGodCount,
     yongShin: yongsin,
+    yongShinMethod,
     heeShin: heeShin,
     daewoon,
     interactions,

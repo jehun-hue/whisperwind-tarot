@@ -201,6 +201,38 @@ export function calculateConsensusV8(
   });
 
   // 2. Compute Cross-System Alignment (Cosine Similarity) with Dynamic Weights
+  // ── B-252: 용신 기반 사주 벡터 보정 ──
+  if (systemGroups["saju"]) {
+    const sajuData = systemResults.find(r => r.system?.toLowerCase() === "saju");
+    const ys = sajuData?.yongShin || sajuData?.ypiResult?.finalYongShin;
+    if (ys) {
+      const vec = systemGroups["saju"];
+      const adj: Record<string, number> = {};
+      
+      if (ys.includes("수")) {
+        vec.stability = (vec.stability || 0) + 0.15;
+        vec.risk = (vec.risk || 0) - 0.1;
+        adj.stability = 0.15; adj.risk = -0.1;
+      } else if (ys.includes("화")) {
+        vec.growth = (vec.growth || 0) + 0.15;
+        vec.career = (vec.career || 0) + 0.1;
+        adj.growth = 0.15; adj.career = 0.1;
+      } else if (ys.includes("목")) {
+        vec.growth = (vec.growth || 0) + 0.15;
+        vec.relationship = (vec.relationship || 0) + 0.1;
+        adj.growth = 0.15; adj.relationship = 0.1;
+      } else if (ys.includes("금")) {
+        vec.stability = (vec.stability || 0) + 0.1;
+        vec.finance = (vec.finance || 0) + 0.15;
+        adj.stability = 0.1; adj.finance = 0.15;
+      } else if (ys.includes("토")) {
+        vec.stability = (vec.stability || 0) + 0.2;
+        adj.stability = 0.2;
+      }
+      console.log("[YONGSHIN VECTOR]", { yongShin: ys, adjustment: adj });
+    }
+  }
+
   let totalConsensus = 0;
   let totalWeight = 0;
   const alignmentMatrix: any[] = [];
