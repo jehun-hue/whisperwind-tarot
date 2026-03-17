@@ -859,9 +859,14 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       let latestSession: any = undefined;
       
       for (const style of styles) {
-        console.log(`[runSequentialAnalysis] ${style} start`);
-        setAnalyzingStyle(`seq_${style}`);
-        latestSession = await runAIAnalysisV2(style, true, latestSession) || latestSession;
+        try {
+          console.log(`[runSequentialAnalysis] ${style} start`);
+          setAnalyzingStyle(`seq_${style}`);
+          latestSession = await runAIAnalysisV2(style, true, latestSession) || latestSession;
+        } catch (err) {
+          console.error(`[runSequentialAnalysis] ${style} failed:`, err);
+          toast.error(`${style} 분석 실패, 다음 스타일로 진행합니다`);
+        }
       }
 
       console.log("[runSequentialAnalysis] data-only start");
