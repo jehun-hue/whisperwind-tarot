@@ -603,11 +603,11 @@ ${(astrologyAnalysis?.transits || []).slice(0, 8).map((t: string) => `  • ${t}
     : "데이터 없음";
 
   const TEN_GOD_MEANINGS: Record<string, string> = {
-    비견: "독립심·경쟁·자존감", 겁재: "승부욕·충동·투쟁",
-    식신: "창의·표현·안정적 재능 발현", 상관: "혁신·반항·예술적 끼",
-    편재: "유동적 재물·투자·사교성", 정재: "안정적 재물·성실·저축",
-    편관: "권위 도전·강한 책임감·외부 압력", 정관: "규범·명예·사회적 신뢰",
-    편인: "학문·직관·다재다능·불안정", 정인: "학업·지원·보호·안정적 성장",
+    "비겁": "자기 힘·독립심·경쟁의식이 강하며, 형제/동료와의 인연이 두드러짐",
+    "식상": "표현력·창의력·재능 발산이 활발하며, 자유로운 활동을 추구함",
+    "재성": "재물·현실 감각·실용성이 뛰어나며, 대인관계와 사교에 능함",
+    "관성": "책임감·규율·사회적 지위에 대한 의식이 강하며, 조직 내 역할을 중시함",
+    "인성": "학문·지혜·내면의 깊이가 있으며, 보호와 지원을 받는 경향",
   };
 
   const dominantGods = Object.entries(tenGodsData)
@@ -1713,9 +1713,9 @@ ${parsed.action_guide?.do_list?.map((item: string) => `- ${item}`).join('\n') ||
         const stars = Object.keys((sajuAnalysis as any).tenGods || {});
         return {
           signals: [
-            stars.includes("정관") || stars.includes("편관") ? "관성 활성 → 직업/사회적 지위 변동 시사" : null,
-            stars.includes("식신") || stars.includes("상관") ? "식상 활성 → 창의·표현 에너지 증가" : null,
-            stars.includes("편재") || stars.includes("정재") ? "재성 활성 → 재물 흐름 변동" : null,
+            stars.includes("관성") ? "관성 활성 → 직업/사회적 지위 변동 시사" : null,
+            stars.includes("식상") ? "식상 활성 → 창의·표현 에너지 증가" : null,
+            stars.includes("재성") ? "재성 활성 → 재물 흐름 변동" : null,
           ].filter(Boolean),
           key_pillars: Object.entries(pillars).filter(([k]) => ["year", "month", "day", "hour"].includes(k)).map(([k, v]: [string, any]) => `${k}: ${v.stem}${v.branch}`),
           topic_alignment: (localBestSystem as any)?.saju === questionTopic ? "high" : "medium"
