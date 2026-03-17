@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState, useCallback, useEffect } from "react";
+import React, { useMemo, useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import type { BirthInfo } from "@/components/BirthInfoForm";
@@ -749,7 +749,7 @@ export default function ClientPage() {
                 </div>
 
                 <div className="mt-6 mb-8 flex flex-col items-center space-y-6">
-                  <div className="flex items-center justify-center gap-3 w-full max-w-4xl justify-center">
+                  <div className="flex items-center justify-center gap-1.5 sm:gap-3 w-full max-w-4xl">
                     {Array.from({ length: requiredCards }).map((_, idx) => {
                       const card = picked[idx];
                       const spread = ["현재 상황", "핵심 문제", "숨겨진 원인", "조언", "가까운 결과"];
@@ -759,7 +759,7 @@ export default function ClientPage() {
                         return (
                           <div key={idx} className="flex flex-col items-center gap-2">
                             <span className="text-xs font-medium tracking-widest text-muted-foreground/50 whitespace-nowrap break-keep">{positionLabel}</span>
-                            <div className="w-24 sm:w-28 md:w-32 aspect-[0.65] rounded-xl border-2 border-dashed border-border/40 flex flex-col items-center justify-center text-muted-foreground/30 bg-background/20 relative shadow-inner">
+                            <div className="w-[17vw] sm:w-24 md:w-28 lg:w-32 aspect-[0.65] rounded-xl border-2 border-dashed border-border/40 flex flex-col items-center justify-center text-muted-foreground/30 bg-background/20 relative shadow-inner">
                               <span className="text-3xl font-light opacity-40">?</span>
                             </div>
                           </div>
@@ -780,7 +780,7 @@ export default function ClientPage() {
                             koreanName={card.korean} 
                             isReversed={card.isReversed} 
                             image={card.image}
-                            className="w-24 sm:w-28 md:w-32 aspect-[0.65]"
+                            className="w-[17vw] sm:w-24 md:w-28 lg:w-32 aspect-[0.65]"
                             size="md"
                           />
                         </div>
@@ -801,7 +801,7 @@ export default function ClientPage() {
                   </Button>
                 </div>
 
-                <div className="grid grid-cols-6 gap-1.5 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-13">
+                <div className="grid grid-cols-6 gap-1 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-13">
                   {deck.map((card) => {
                     const isSelected = picked.some((p) => p.id === card.id);
                     const isDisabled = card.isPicked || picked.length >= requiredCards;
@@ -816,7 +816,7 @@ export default function ClientPage() {
                         className={`group relative aspect-[0.65] w-full transition-all duration-500 ${isDisabled && !isSelected ? "cursor-not-allowed opacity-40" : "cursor-pointer"} ${isSelected ? "opacity-0 scale-90 pointer-events-none" : "opacity-100 scale-100"}`}
                       >
                         <div className={`absolute inset-0 w-full h-full rounded-lg border flex flex-col items-center justify-center overflow-hidden transition-all duration-300 ${!isSelected && !isDisabled ? "border-border/30 hover:border-gold/30" : "border-border/20"}`}>
-                          <img src={cardBackImg} alt="" className="w-full h-auto object-contain opacity-60 transition-opacity group-hover:opacity-90" />
+                          <img src={cardBackImg} alt="" className="w-full h-auto object-contain opacity-80 transition-opacity group-hover:opacity-90" />
                         </div>
                       </motion.button>
                     );
