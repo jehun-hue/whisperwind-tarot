@@ -389,7 +389,7 @@ export default function ClientPage() {
         <div className="absolute bottom-1/4 right-1/4 h-80 w-80 rounded-full bg-gold/5 blur-[100px]" />
       </div>
 
-      <div className={`relative z-10 mx-auto px-4 py-8 sm:px-6 transition-all duration-500 ${step === "cardSelect" ? "max-w-6xl" : "max-w-lg"}`}>
+      <div className={`relative z-10 mx-auto px-4 py-8 sm:px-6 transition-all duration-500 ${step === "cardSelect" ? "max-w-5xl" : "max-w-lg"}`}>
         {/* Admin button */}
         <button
           onClick={() => navigate("/reader")}
@@ -749,7 +749,7 @@ export default function ClientPage() {
                 </div>
 
                 <div className="mt-6 mb-8 flex flex-col items-center space-y-6">
-                  <div className="flex items-center justify-center gap-1.5 sm:gap-3 w-full max-w-6xl">
+                  <div className="flex items-center justify-center gap-1.5 sm:gap-3 w-full max-w-5xl">
                     {Array.from({ length: requiredCards }).map((_, idx) => {
                       const card = picked[idx];
                       const spread = ["현재 상황", "핵심 문제", "숨겨진 원인", "조언", "가까운 결과"];
@@ -801,7 +801,7 @@ export default function ClientPage() {
                   </Button>
                 </div>
 
-                <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10">
+                <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-12">
                   {deck.map((card) => {
                     const isSelected = picked.some((p) => p.id === card.id);
                     const isDisabled = card.isPicked || picked.length >= requiredCards;
