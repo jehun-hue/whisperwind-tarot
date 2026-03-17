@@ -409,7 +409,7 @@ export function calculateServerAstrology(
     const meaning = PLANET_MEANINGS[sp] || { domain: sp, keyword: sp };
     const speed = SLOW_PLANET_SPEEDS[sp] || 0.01;
 
-    transits.push(`${sp} 트랜짓 ${currentSign}: ${meaning.domain} 영역에서 ${SIGN_MEANINGS[currentSign]?.split(",")[0]}한 에너지 작용.`);
+    transits.push(`${sp} 트랜짓 ${currentSign}: ${meaning.domain} 영역에서 ${SIGN_MEANINGS[currentSign]?.split(",")[0]} 에너지 작용.`);
 
     for (const natalP of aspectInput) {
       const nLng = ((natalP.absoluteDegree % 360) + 360) % 360;
