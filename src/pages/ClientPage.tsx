@@ -68,30 +68,14 @@ const BIRTH_HOURS = [
 
 
 const HOUR_LABELS: Record<number, string> = {
-  0: "00시 (자정)",
-  1: "01시 (새벽)",
-  2: "02시 (새벽)",
-  3: "03시 (새벽)",
-  4: "04시 (새벽)",
-  5: "05시 (새벽)",
-  6: "06시 (아침)",
-  7: "07시 (아침)",
-  8: "08시 (오전)",
-  9: "09시 (오전)",
-  10: "10시 (오전)",
-  11: "11시 (오전)",
-  12: "12시 (정오)",
-  13: "13시 (오후1시)",
-  14: "14시 (오후2시)",
-  15: "15시 (오후3시)",
-  16: "16시 (오후4시)",
-  17: "17시 (오후5시)",
-  18: "18시 (저녁6시)",
-  19: "19시 (저녁7시)",
-  20: "20시 (밤8시)",
-  21: "21시 (밤9시)",
-  22: "22시 (밤10시)",
-  23: "23시 (밤11시)",
+  0: "00시 (오전)", 1: "01시 (오전)", 2: "02시 (오전)",
+  3: "03시 (오전)", 4: "04시 (오전)", 5: "05시 (오전)",
+  6: "06시 (오전)", 7: "07시 (오전)", 8: "08시 (오전)",
+  9: "09시 (오전)", 10: "10시 (오전)", 11: "11시 (오전)",
+  12: "12시 (오후)", 13: "13시 (오후)", 14: "14시 (오후)",
+  15: "15시 (오후)", 16: "16시 (오후)", 17: "17시 (오후)",
+  18: "18시 (오후)", 19: "19시 (오후)", 20: "20시 (오후)",
+  21: "21시 (오후)", 22: "22시 (오후)", 23: "23시 (오후)",
 };
 
 function getRequiredCards(grade: Grade): number {
@@ -597,78 +581,75 @@ export default function ClientPage() {
                     )}
                   </div>
 
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <label className="text-sm text-muted-foreground">출생 시간</label>
-                      <button
-                        onClick={() => {
-                          setBirthTime("unknown");
-                          setBirthHour24(12);
-                          setBirthMinute(0);
-                        }}
-                        className={`flex-1 h-12 rounded-xl font-medium text-sm transition-all shadow-lg ${
-                          birthTime === "unknown"
-                            ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-purple-500/20"
-                            : "bg-black/30 text-purple-300 border border-purple-500/30 hover:border-purple-400/50"
-                        }`}
-                      >
-                        모름
-                      </button>
-                      <button
-                        onClick={() => {
-                          setBirthTime("known");
-                        }}
-                        className={`flex-1 h-12 rounded-xl font-medium text-sm transition-all shadow-lg ${
-                          birthTime !== "unknown"
-                            ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-purple-500/20"
-                            : "bg-black/30 text-purple-300 border border-purple-500/30 hover:border-purple-400/50"
-                        }`}
-                      >
-                        시간 입력
-                      </button>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <label className="text-xs font-medium text-purple-200 whitespace-nowrap">출생 시간</label>
+                      <div className="flex gap-1.5 flex-1">
+                        {/* 시간 입력이 먼저 */}
+                        <button
+                          type="button"
+                          onClick={() => setBirthTime("known")}
+                          className={`flex-1 h-9 rounded-lg text-xs font-medium transition-all ${
+                            birthTime !== "unknown"
+                              ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-500/20"
+                              : "bg-black/30 text-purple-300/60 border border-purple-500/20"
+                          }`}
+                        >
+                          시간 입력
+                        </button>
+                        {/* 모름이 뒤에 */}
+                        <button
+                          type="button"
+                          onClick={() => setBirthTime("unknown")}
+                          className={`flex-1 h-9 rounded-lg text-xs font-medium transition-all ${
+                            birthTime === "unknown"
+                              ? "bg-white/10 text-white border border-white/20"
+                              : "bg-black/30 text-purple-300/60 border border-purple-500/20"
+                          }`}
+                        >
+                          모름
+                        </button>
+                      </div>
                     </div>
+
+                    {birthTime === "unknown" && (
+                      <p className="text-[10px] text-purple-300/50 ml-1">
+                        ⓘ 시간을 모르면 시주를 제외하고 년·월·일주만 사용합니다
+                      </p>
+                    )}
+
                     {birthTime !== "unknown" && (
-                      <div className="space-y-3">
-                        <label className="text-sm font-medium text-purple-200">태어난 시간</label>
-                        <div className="flex items-center gap-2">
-                          {/* 시 */}
-                          <div className="relative flex-1">
-                            <select
-                              value={birthHour24}
-                              onChange={(e) => setBirthHour24(parseInt(e.target.value))}
-                              className="w-full h-12 rounded-lg bg-black/50 border border-purple-500/30 text-white text-center text-base appearance-none cursor-pointer focus:border-purple-400/60 focus:outline-none"
-                              style={{ colorScheme: "dark" }}
-                            >
-                              {Array.from({ length: 24 }, (_, i) => (
-                                <option key={i} value={i}>{HOUR_LABELS[i]}</option>
-                              ))}
-                            </select>
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-purple-400/60 text-xs">▼</div>
-                          </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <div className="relative flex-1">
+                          <select
+                            value={birthHour24}
+                            onChange={(e) => setBirthHour24(parseInt(e.target.value))}
+                            className="w-full h-10 rounded-lg bg-black/40 border border-purple-500/20 text-white text-center text-sm appearance-none cursor-pointer focus:border-purple-400/50 focus:outline-none hover:border-purple-400/40 transition-all"
+                            style={{ colorScheme: "dark" }}
+                          >
+                            {Array.from({ length: 24 }, (_, i) => (
+                              <option key={i} value={i}>{HOUR_LABELS[i]}</option>
+                            ))}
+                          </select>
+                          <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-purple-400/40 text-[10px]">▼</div>
+                        </div>
 
-                          <span className="text-purple-300 text-lg font-bold">:</span>
+                        <span className="text-purple-400/60 text-sm">:</span>
 
-                          {/* 분 */}
-                          <div className="relative flex-[0.6]">
-                            <select
-                              value={birthMinute}
-                              onChange={(e) => setBirthMinute(parseInt(e.target.value))}
-                              className="w-full h-12 rounded-lg bg-black/50 border border-purple-500/30 text-white text-center text-base appearance-none cursor-pointer focus:border-purple-400/60 focus:outline-none"
-                              style={{ colorScheme: "dark" }}
-                            >
-                              {Array.from({ length: 60 }, (_, i) => (
-                                <option key={i} value={i}>{String(i).padStart(2, "0")}분</option>
-                              ))}
-                            </select>
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-purple-400/60 text-xs">▼</div>
-                          </div>
+                        <div className="relative flex-[0.5]">
+                          <select
+                            value={birthMinute}
+                            onChange={(e) => setBirthMinute(parseInt(e.target.value))}
+                            className="w-full h-10 rounded-lg bg-black/40 border border-purple-500/20 text-white text-center text-sm appearance-none cursor-pointer focus:border-purple-400/50 focus:outline-none hover:border-purple-400/40 transition-all"
+                            style={{ colorScheme: "dark" }}
+                          >
+                            {Array.from({ length: 60 }, (_, i) => (
+                              <option key={i} value={i}>{String(i).padStart(2, "0")}분</option>
+                            ))}
+                          </select>
+                          <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-purple-400/40 text-[10px]">▼</div>
                         </div>
                       </div>
-                    )}
-                    {birthTime === "unknown" && (
-                      <p className="text-[10px] text-muted-foreground/70">
-                        ⓘ 시간을 모르면 시주 분석을 제외하고 년·월·일주만 사용합니다.
-                      </p>
                     )}
                   </div>
 
