@@ -2397,15 +2397,15 @@ function calculateSystemScore(
 
   // ── data_quality_score (0~0.85) ─────────────────────────────
   let dq = 0;
-  if (sysData && sysData.data_quality_score) {
-    dq = sysData.data_quality_score;
-  }
-  if (sysData && sysData.characteristics?.length > 0) dq = Math.max(dq, 0.2);
-  if (dataPoints.length > 0) dq = Math.max(dq, 0.15 + (dq > 0 ? 0 : 0)); // 가산 방식 조정
-  if (dataPoints.length >= 3) dq = Math.min(0.85, dq + 0.05);
+  if (sysData && sysData.characteristics?.length > 0) dq += 0.2;
+  if (dataPoints.length > 0) dq += 0.15;
+  if (dataPoints.length >= 3) dq += 0.05;
 
-  if (systemName === "numerology" && sysData?.life_path_number) {
-    dq = Math.max(dq, sysData?.data_quality_score || 0.4);
+  // numerology만 엔진에서 전달된 score가 있으면 우선 적용 (이름 계산 시 0.85)
+  if (systemName === "numerology" && sysData?.data_quality_score) {
+    dq = sysData.data_quality_score;
+  } else if (systemName === "numerology" && sysData?.life_path_number) {
+    dq = Math.max(dq, 0.4);
   }
 
   // 출생 정보 패널티
