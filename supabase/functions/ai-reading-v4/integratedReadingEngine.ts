@@ -713,6 +713,123 @@ function analyzeCardCombinations(cards: any[]): any[] {
   return combinations;
 }
 
+// ═══════════════════════════════════════════════
+// B-256: 수비학 이름 기반 계산 (Numerology Name-based)
+// ═══════════════════════════════════════════════
+
+/**
+ * 피타고라스 변환 테이블 (한글 -> 숫자)
+ * ㄱ=1, ㄴ=2, ㄷ=3, ㄹ=4, ㅁ=5, ㅂ=6, ㅅ=7, ㅇ=8, ㅈ=9
+ * ㅊ=1, ㅋ=2, ㅌ=3, ㅍ=4, ㅎ=5
+ */
+const HANGUL_CONSONANT_MAP: Record<string, number> = {
+  'ㄱ': 1, 'ㄴ': 2, 'ㄷ': 3, 'ㄹ': 4, 'ㅁ': 5, 'ㅂ': 6, 'ㅅ': 7, 'ㅇ': 8, 'ㅈ': 9,
+  'ㅊ': 1, 'ㅋ': 2, 'ㅌ': 3, 'ㅍ': 4, 'ㅎ': 5,
+  'ㄲ': 1, 'ㄸ': 3, 'ㅃ': 6, 'ㅆ': 7, 'ㅉ': 9
+};
+
+/**
+ * 모음 변환 테이블
+ * ㅏ=1, ㅑ=2, ㅓ=3, ㅕ=4, ㅗ=5, ㅛ=6, ㅜ=7, ㅠ=8, ㅡ=9, ㅣ=1
+ */
+const HANGUL_VOWEL_MAP: Record<string, number> = {
+  'ㅏ': 1, 'ㅑ': 2, 'ㅓ': 3, 'ㅕ': 4, 'ㅗ': 5, 'ㅛ': 6, 'ㅜ': 7, 'ㅠ': 8, 'ㅡ': 9, 'ㅣ': 1,
+  'ㅐ': 2, 'ㅒ': 3, 'ㅔ': 4, 'ㅖ': 5, 'ㅘ': 6, 'ㅙ': 7, 'ㅚ': 6, 'ㅝ': 1, 'ㅞ': 2, 'ㅟ': 8, 'ㅢ': 1
+};
+
+/**
+ * 영문 피타고라스 시스템 (A=1 ~ Z=8)
+ */
+const ENGLISH_NUMERO_MAP: Record<string, number> = {
+  'A': 1, 'B': 2, 'C': 3, 'D': 4, 'E': 5, 'F': 6, 'G': 7, 'H': 8, 'I': 9,
+  'J': 1, 'K': 2, 'L': 3, 'M': 4, 'N': 5, 'O': 6, 'P': 7, 'Q': 8, 'R': 9,
+  'S': 1, 'T': 2, 'U': 3, 'V': 4, 'W': 5, 'X': 6, 'Y': 7, 'Z': 8
+};
+
+/**
+ * 수비학 이름 계산 함수
+ * - Expression Number: 전체 합산
+ * - Soul Number: 모음 합산
+ * - Personality Number: 자음 합산
+ */
+function calculateNameNumerology(name: string) {
+  if (!name || name.trim() === "" || name === "이름없음") {
+    return { expression: 0, soul: 0, personality: 0 };
+  }
+
+  let expressionSum = 0;
+  let soulSum = 0;
+  let personalitySum = 0;
+
+  for (const char of name) {
+    const code = char.charCodeAt(0);
+    // 한글 유니코드 범위: 0xAC00 ~ 0xD7A3
+    if (code >= 0xAC00 && code <= 0xD7A3) {
+      const relativeCode = code - 0xAC00;
+      const choseongIdx = Math.floor(relativeCode / (21 * 28));
+      const jungseongIdx = Math.floor((relativeCode % 588) / 28);
+      const jongseongIdx = relativeCode % 28;
+
+      const CHOSEONG = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+      const JUNGSEONG = ['ㅏ', 'ㅐ', 'ㅑ', 'ㅒ', 'ㅓ', 'ㅔ', 'ㅕ', 'ㅖ', 'ㅗ', 'ㅘ', 'ㅙ', 'ㅚ', 'ㅛ', 'ㅜ', 'ㅝ', 'ㅞ', 'ㅟ', 'ㅠ', 'ㅡ', 'ㅢ', 'ㅣ'];
+      const JONGSEONG = ['', 'ㄱ', 'ㄲ', 'ㄳ', 'ㄴ', 'ㄵ', 'ㄶ', 'ㄷ', 'ㄹ', 'ㄺ', 'ㄻ', 'ㄼ', 'ㄽ', 'ㄾ', 'ㄿ', 'ㅀ', 'ㅁ', 'ㅂ', 'ㅄ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+
+      const cho = CHOSEONG[choseongIdx];
+      const jung = JUNGSEONG[jungseongIdx];
+      const jong = JONGSEONG[jongseongIdx];
+
+      // 초성 (자음)
+      const choVal = HANGUL_CONSONANT_MAP[cho] || 0;
+      expressionSum += choVal;
+      personalitySum += choVal;
+
+      // 중성 (모음)
+      const jungVal = HANGUL_VOWEL_MAP[jung] || 0;
+      expressionSum += jungVal;
+      soulSum += jungVal;
+
+      // 종성 (자음)
+      if (jong) {
+        const JONG_DECOMP: Record<string, string[]> = {
+          'ㄳ': ['ㄱ', 'ㅅ'], 'ㄵ': ['ㄴ', 'ㅈ'], 'ㄶ': ['ㄴ', 'ㅎ'],
+          'ㄺ': ['ㄹ', 'ㄱ'], 'ㄻ': ['ㄹ', 'ㅁ'], 'ㄼ': ['ㄹ', 'ㅂ'],
+          'ㄽ': ['ㄹ', 'ㅅ'], 'ㄾ': ['ㄹ', 'ㅌ'], 'ㄿ': ['ㄹ', 'ㅍ'],
+          'ㅀ': ['ㄹ', 'ㅎ'], 'ㅄ': ['ㅂ', 'ㅅ']
+        };
+        const parts = JONG_DECOMP[jong] || [jong];
+        parts.forEach(p => {
+          const val = HANGUL_CONSONANT_MAP[p] || 0;
+          expressionSum += val;
+          personalitySum += val;
+        });
+      }
+    } else if (/[a-zA-Z]/.test(char)) {
+      const upper = char.toUpperCase();
+      const val = ENGLISH_NUMERO_MAP[upper] || 0;
+      expressionSum += val;
+      if (['A', 'E', 'I', 'O', 'U'].includes(upper)) {
+        soulSum += val;
+      } else {
+        personalitySum += val;
+      }
+    }
+  }
+
+  const reduceNumber = (num: number): number => {
+    if (num === 0) return 0;
+    while (num > 9 && num !== 11 && num !== 22 && num !== 33) {
+      num = num.toString().split("").reduce((acc, digit) => acc + (parseInt(digit) || 0), 0);
+    }
+    return num;
+  };
+
+  return {
+    expression: reduceNumber(expressionSum),
+    soul: reduceNumber(soulSum),
+    personality: reduceNumber(personalitySum)
+  };
+}
+
 export async function runFullProductionEngineV8(supabaseClient: any, apiKey: string, input: any) {
   const pipelineStart = Date.now();
   const sessionId = input.sessionId;
@@ -999,14 +1116,34 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
       source: ziweiSource 
     });
 
-    // 수비학 (동기)
+    // 수비학 (생년월일 + 이름 기반)
     let numerologyResult: any = null;
     try {
-      numerologyResult = calculateNumerology(
+      const baseResult = calculateNumerology(
         `${solarBirthInfo.year}-${String(solarBirthInfo.month).padStart(2,'0')}-${String(solarBirthInfo.day).padStart(2,'0')}`,
         new Date().getFullYear(),
-        input.userName
+        rawBirth.name || input.userName
       );
+
+      // B-256: 이름 기반 수비학 추가
+      const name = rawBirth.name || input.userName || "이름없음";
+      const nameResult = calculateNameNumerology(name);
+
+      numerologyResult = {
+        ...baseResult,
+        lifePath: baseResult.life_path_number,
+        expression: nameResult.expression,
+        soul: nameResult.soul,
+        personality: nameResult.personality,
+        data_quality_score: 0.85 // 상향
+      };
+
+      console.log("[NUMEROLOGY NAME]", { 
+        name, 
+        expression: nameResult.expression, 
+        soul: nameResult.soul, 
+        personality: nameResult.personality 
+      });
     } catch (e) {
       console.error("[ENGINE-SAFE] 수비학 계산 실패:", e);
     }
