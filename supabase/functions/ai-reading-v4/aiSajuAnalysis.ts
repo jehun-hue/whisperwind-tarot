@@ -407,14 +407,32 @@ export async function analyzeSajuStructure(
       eokbuYong = getProducedElement(myElement); yongReason = "종아격: 식상 오행 따라감";
     }
   } else if (strength === "극신강" || strength === "신강") {
-    // 신강 → 설기(식상)/재성/관성 중 가장 부족한 오행
-    const drainElements = [
-      getProducedElement(myElement),   // 식상
-      getConqueredElement(myElement),  // 재성
-      getConqueringElement(myElement)  // 관성
+    // B-222 fix: 신강 용신 우선순위 (관성 > 재성 > 식상)
+    const conquerElem = getConqueringElement(myElement); // 관성
+    const drainElem = getConqueredElement(myElement);   // 재성
+    const releaseElem = getProducedElement(myElement);  // 식상
+
+    const candidates = [
+      { elem: conquerElem, priority: 1 },
+      { elem: drainElem, priority: 2 },
+      { elem: releaseElem, priority: 3 }
     ];
-    eokbuYong = drainElements.sort((a, b) => (elements[a] || 0) - (elements[b] || 0))[0];
-    yongReason = `신강: 설기/재성/관성 중 부족한 ${eokbuYong} 선택`;
+
+    // 점수가 낮은 순서대로 정렬하되, 점수가 같으면 우선순위(priority)가 높은 순서대로
+    const sorted = candidates.sort((a, b) => {
+      const countA = elements[a.elem] || 0;
+      const countB = elements[b.elem] || 0;
+      return countA - countB || a.priority - b.priority;
+    });
+
+    eokbuYong = sorted[0].elem;
+    yongReason = `신강: 관성>재성>식상 우선순위 기준 ${eokbuYong} 선택`;
+
+    console.log("[SINGANG YONG]", { 
+      dayMaster: dm, strength, 
+      conquerElem, drainElem, releaseElem, 
+      selected: eokbuYong, reason: yongReason 
+    });
   } else if (strength === "중화") {
     if (isWaterOverflow) {
       eokbuYong = getConqueringElement(myElement);
