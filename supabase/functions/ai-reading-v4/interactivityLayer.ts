@@ -496,6 +496,35 @@ ${priorityEvents && priorityEvents.length > 0 ? `
 [필수 시기 정보]
 ${priorityEvents.map((e: any) => `- ${e.domain}: ${e.peak_period || "올해"} (${e.severity})${e.decision_trigger ? " → " + e.decision_trigger : ""}`).join("\n")}
 위 시기를 본문에 반드시 포함하세요.
+
+${priorityEvents.some(e => e.tarot_stance && e.tarot_stance.length > 0) ? `
+[타로 카드 해석 방향]
+${priorityEvents.filter(e => e.tarot_stance && e.tarot_stance.length > 0).map((e: any) => {
+  const stanceText = e.tarot_stance.map((s: any) => {
+    if (s.type === "confirms") {
+      const instruction = s.bias === "negative" ? "이 영역의 위험을 강조하되 구체적 대안 제시" : "이 영역의 긍정적 기회를 강하게 격려";
+      return `confirms(${s.bias}) — "${s.reason}". ${instruction}.`;
+    }
+    if (s.type === "softens") {
+      const instruction = s.bias === "negative" ? "위험은 인정하되 회복 가능성을 강조" : "지나친 낙관을 경계하고 내실을 다지는 방향으로 유도";
+      return `softens(${s.bias}) — "${s.reason}". ${instruction}.`;
+    }
+    if (s.type === "redirects") {
+      return `redirects → ${s.targetDomain} — "${s.reason}". ${e.domain} 자체보다 ${s.targetDomain} 영역의 기회/돌파구에 초점.`;
+    }
+    if (s.type === "redirected_boost") {
+      return `redirected_boost — "${s.reason}"에 따른 간접적 에너지 강화.`;
+    }
+    return `${s.type} — "${s.reason}"`;
+  }).join(" ");
+  return `- ${e.domain} 영역: 타로가 ${stanceText}`;
+}).join("\n")}
+
+※ 위 타로 stance(해석 방향)를 반드시 리딩에 반영하세요:
+- confirms인 영역은 강하게 경고 또는 강하게 격려.
+- softens인 영역은 "위험은 있지만 완화/회복 여지가 있다"는 희망적 톤 병행.
+- redirects인 영역은 "현재 고민하는 지점보다 다른 곳(targetDomain)에 해결의 실마리가 있다"는 톤 적용.
+` : ""}
 ` : ""}
 
 [출력 형식 / Output Format]
