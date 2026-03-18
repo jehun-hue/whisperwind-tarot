@@ -759,6 +759,29 @@ function extractPeakFromSignals(signals: any[]): string {
 export function generateTimingSummary(priorityEvents: any[]): string {
   if (!priorityEvents || priorityEvents.length === 0) return "";
   
+  const now = new Date();
+  const currentMonth = now.getMonth() + 1; // 1-12
+  const currentYear = now.getFullYear();
+
+  function convertVaguePeriod(peak: string): string {
+    if (peak.includes("단기") || peak.includes("short-term") || peak.includes("0-3")) {
+      const endMonth = currentMonth + 3 > 12 ? (currentMonth + 3 - 12) : currentMonth + 3;
+      const endYear = currentMonth + 3 > 12 ? currentYear + 1 : currentYear;
+      return `${currentYear}년 ${currentMonth}월~${endYear === currentYear ? "" : endYear + "년 "}${endMonth}월`;
+    }
+    if (peak.includes("중기") || peak.includes("middle-term") || peak.includes("3-6")) {
+      const startMonth = currentMonth + 3 > 12 ? (currentMonth + 3 - 12) : currentMonth + 3;
+      const startYear = currentMonth + 3 > 12 ? currentYear + 1 : currentYear;
+      const endMonth = currentMonth + 6 > 12 ? (currentMonth + 6 - 12) : currentMonth + 6;
+      const endYear = currentMonth + 6 > 12 ? currentYear + 1 : currentYear;
+      return `${startYear}년 ${startMonth}월~${endYear === startYear ? "" : endYear + "년 "}${endMonth}월`;
+    }
+    if (peak.includes("장기") || peak.includes("long-term") || peak.includes("6-12")) {
+      return `${currentYear}년 하반기~${currentYear + 1}년 초`;
+    }
+    return peak;
+  }
+
   const lines: string[] = [];
   lines.push("\n\n🕐 시기별 핵심 에너지 흐름\n");
   
@@ -772,7 +795,7 @@ export function generateTimingSummary(priorityEvents: any[]): string {
       "life_transition": "생활환경/변화"
     };
     const label = domainKo[domain] || domain;
-    const peak = event.peak_period || "올해";
+    const peak = convertVaguePeriod(event.peak_period || "올해");
     const severity = event.severity === "HIGH" ? "강한" : "보통";
     const trigger = event.decision_trigger ? ` 이 시기 전후로 중요한 선택의 순간이 올 가능성이 높습니다.` : "";
     
