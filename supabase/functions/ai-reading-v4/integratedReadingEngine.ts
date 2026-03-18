@@ -1525,7 +1525,7 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     standard_used: "international"
   };
 
-  const priorityEvents = generatePriorityEvents(systemResults, patternVectors, consensusResult, temporalResult);
+  const priorityEvents = generatePriorityEvents(systemResults, patternVectors, consensusResult, temporalResult, finalTopic);
   console.log("[INFERENCE LAYER]", JSON.stringify(priorityEvents, null, 2));
 
   // Step 2-B: Mapping Saju Data for Prompt

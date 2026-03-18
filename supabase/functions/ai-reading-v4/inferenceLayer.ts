@@ -37,7 +37,8 @@ export function generatePriorityEvents(
   systemResults: any,
   patternVectors: any[],
   consensusResult: any,
-  temporalResult: any
+  temporalResult: any,
+  finalTopic: string = ""
 ): PriorityEvent[] {
   try {
     const signals: NormalizedSignal[] = [];
@@ -59,7 +60,7 @@ export function generatePriorityEvents(
     if (numerologyData) signals.push(...extractNumerologySignals(numerologyData));
 
     // 2. 신호 수렴 및 사건 도출
-    return calculatePriorityEvents(signals, consensusResult, temporalResult);
+    return calculatePriorityEvents(signals, consensusResult, temporalResult, finalTopic);
   } catch (error) {
     console.error("[INFERENCE LAYER] Error generating priority events:", error);
     return [];
@@ -621,7 +622,8 @@ function extractNumerologySignals(numerology: any): NormalizedSignal[] {
 function calculatePriorityEvents(
   signals: NormalizedSignal[],
   consensusResult: any,
-  temporalResult: any
+  temporalResult: any,
+  finalTopic: string = ""
 ): PriorityEvent[] {
   const DOMAINS = ["career", "finance", "relationship", "vitality", "life_transition"];
   const domainGroups: Record<string, NormalizedSignal[]> = {};
@@ -694,13 +696,32 @@ function calculatePriorityEvents(
     });
   });
 
+  // --- topic 기반 도메인 부스트 추가 ---
+  const topicDomainMap: Record<string, string> = {
+    "money": "finance",
+    "finance": "finance",
+    "career": "career",
+    "job": "career",
+    "love": "relationship",
+    "relationship": "relationship",
+    "health": "vitality",
+    "general": ""
+  };
+
+  const boostedDomain = topicDomainMap[finalTopic] || "";
+  if (boostedDomain) {
+    for (const event of results) {
+      if (event.domain === boostedDomain) {
+        // topic 일치 시 signal_count에 3 추가 (정렬 인센티브)
+        event.signal_count += 3;
+        event.event_statement = `[질문 핵심 영역] ` + event.event_statement;
+      }
+    }
+  }
+
   // 정렬 및 랭크 부여 (최대 3개)
   return results
-    .sort((a, b) => {
-      if (a.severity === "HIGH" && b.severity === "MID") return -1;
-      if (a.severity === "MID" && b.severity === "HIGH") return 1;
-      return (b.signal_count * b.confidence) - (a.signal_count * a.confidence);
-    })
+    .sort((a, b) => b.signal_count - a.signal_count)
     .slice(0, 3)
     .map((ev, idx) => ({ ...ev, rank: idx + 1 }));
 }
