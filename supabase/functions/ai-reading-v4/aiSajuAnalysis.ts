@@ -342,6 +342,10 @@ export async function analyzeSajuStructure(
   const specialFormatType = specialPattern;
 
   // ── 3. 용신(用神) 추론 ──
+  const PRODUCE_ELEM: Record<string, string> = { "목":"화", "화":"토", "토":"금", "금":"수", "수":"목" }; // 생하는 오행
+  const SUPPORT_ELEM: Record<string, string> = { "목":"수", "화":"목", "토":"화", "금":"토", "수":"금" }; // 생하는 오행 (=인성)
+  const CONQUER_ELEM: Record<string, string> = { "목":"토", "화":"금", "토":"수", "금":"목", "수":"화" }; // 극하는 오행 (일간 기신)
+
   // 월지 기준 계절 파악
   const monthBranch = branches[1]; // 월지
   const SEASON_MAP: Record<string, string> = {
@@ -356,84 +360,118 @@ export async function analyzeSajuStructure(
   let johuYong: string | null = null;
   const waterCount = elements["수"] || 0;
   const fireCount = elements["화"] || 0;
-  const woodCount = elements["목"] || 0;
-  // 수(水) 일간이면서 수가 이미 3개 이상이면 조후용신으로 화를 쓰지 않음 (수 과다 상태)
   const isWaterOverflow = myElement === "수" && waterCount >= 3;
-  if (season === "여름" && (elements["수"] || 0) <= 1) johuYong = "수";
+  if (season === "여름" && waterCount <= 1) johuYong = "수";
   else if (season === "겨울" && fireCount <= 1 && !isWaterOverflow) johuYong = "화";
 
   // 억부용신 결정
   let eokbuYong: string;
+  let yongReason = "";
   if (isSpecialFormat) {
     // 종격 (B-222): 강한 기운을 따라감
     if (specialFormatType === "종강격") {
-      eokbuYong = myElement;
+      eokbuYong = myElement; yongReason = "종강격: 일간과 같은 오행 따라감";
     } else if (specialFormatType === "종재격") {
-      eokbuYong = getConqueredElement(myElement);
+      eokbuYong = getConqueredElement(myElement); yongReason = "종재격: 재성 오행 따라감";
     } else if (specialFormatType === "종관격") {
-      eokbuYong = getConqueringElement(myElement);
+      eokbuYong = getConqueringElement(myElement); yongReason = "종관격: 관성 오행 따라감";
     } else { // 종아격
-      eokbuYong = getProducedElement(myElement);
+      eokbuYong = getProducedElement(myElement); yongReason = "종아격: 식상 오행 따라감";
     }
   } else if (strength === "극신강" || strength === "신강") {
-    // 신강 → 설기/재성/관성 중 가장 부족한 오행
+    // 신강 → 설기(식상)/재성/관성 중 가장 부족한 오행
     const drainElements = [
       getProducedElement(myElement),   // 식상
       getConqueredElement(myElement),  // 재성
       getConqueringElement(myElement)  // 관성
     ];
     eokbuYong = drainElements.sort((a, b) => (elements[a] || 0) - (elements[b] || 0))[0];
+    yongReason = `신강: 설기/재성/관성 중 부족한 ${eokbuYong} 선택`;
   } else if (strength === "중화") {
-    // B-177 fix: 중화 → 수 과다 일간이면 토(관성)를 우선 용신으로
     if (isWaterOverflow) {
-      eokbuYong = getConqueringElement(myElement); // 관성(토) 우선
+      eokbuYong = getConqueringElement(myElement);
+      yongReason = "중화+수과다: 관성 용신";
     } else {
       const allElements = ["목", "화", "토", "금", "수"];
       eokbuYong = allElements.sort((a, b) => (elements[a] || 0) - (elements[b] || 0))[0];
+      yongReason = `중화: 가장 부족한 ${eokbuYong} 선택`;
     }
   } else {
-    // 신약/중신약/극신약 → 일간 오행 자체가 부족하면 비겁, 생조 오행이 부족하면 인성
-    const supElement = getProducingElement(myElement); // 인성 오행
+    // 신약/중신약/극신약 → 억부용신: 비겨1(일간과 같은 오행) 또는 인성(일간을 생하는 오행)
+    // 선택 기준: 이미 2개 이상인 오행은 효과적이지 않음→ 부족한 쪽을 채움
+    const supElement = getProducingElement(myElement); // 인성 오행 (=SUPPORT_ELEM[myElement])
     const myElemCount = elements[myElement] || 0;
     const supElemCount = elements[supElement] || 0;
-    // 일간 오행이 이미 충분하면(3개 이상) 인성보다 비겁 우선
-    if (myElemCount >= 3) {
-      eokbuYong = myElement; // 비겁 용신
-    } else if (supElemCount <= 1) {
-      eokbuYong = supElement; // 인성 용신
+
+    if (myElemCount >= 2 && supElemCount < 2) {
+      // 비겨1이 이미 2개+이면 해주고 있음 → 인성으로
+      eokbuYong = supElement;
+      yongReason = `신약: 비겨1(${myElement}) 이미 ${myElemCount}개, 인성(${supElement}) 부족 → 인성 용신`;
+    } else if (supElemCount >= 2 && myElemCount < 2) {
+      // 인성이 이미 2개+이면 해주고 있음 → 비겨1으로
+      eokbuYong = myElement;
+      yongReason = `신약: 인성(${supElement}) 이미 ${supElemCount}개, 비겨1(${myElement}) 부족 → 비겨1 용신`;
+    } else if (myElemCount < supElemCount) {
+      // 둘 다 부족이면 일간을 직접 보강하는 비겨1 용신
+      eokbuYong = myElement;
+      yongReason = `신약: 비겨1(${myElement}=${myElemCount}) < 인성(${supElement}=${supElemCount}) → 비겨1 용신`;
     } else {
-      eokbuYong = (supElemCount < myElemCount) ? supElement : myElement;
+      // 인성 용신 (default)
+      eokbuYong = supElement;
+      yongReason = `신약: 인성(${supElement}=${supElemCount}) <= 비겨1(${myElement}=${myElemCount}) → 인성 용신`;
     }
   }
 
-  // 최종 용신: 조후 + 억부 모두 반환 (조후 우선, 억부 병행)
+  // 최종 용신: 신약일 때는 억부용신 우선 (조후는 보조 참고용)
   let yongsin: string;
-  if (johuYong && johuYong !== eokbuYong) {
-    yongsin = `${johuYong}/${eokbuYong}`; // 예: "화/토"
-  } else if (johuYong) {
-    yongsin = johuYong; // 조후=억부 일치
+  const isWeak = strength !== "극신강" && strength !== "신강" && strength !== "중화" && !isSpecialFormat;
+  if (isWeak) {
+    // 신약 계: 억부용신만 사용 (조후는 참고용으로만)
+    yongsin = eokbuYong;
+  } else if (johuYong && johuYong !== eokbuYong) {
+    yongsin = `${johuYong}/${eokbuYong}`; // 신강계 또는 중화: 조후+억부 병기
   } else {
-    yongsin = eokbuYong; // 조후 없음 → 억부만
+    yongsin = eokbuYong;
   }
 
   const yongShinMethod = "억부용신";
-  console.log("[YONGSHIN]", { yongShin: yongsin, method: yongShinMethod, reason: strength.includes("강") ? "신강이므로 일간을 억제하는 오행 선택" : "신약이므로 일간을 보완하는 오행 선택" });
 
-  // ── B-253: 희신(喜神) 추론 ──────────────────────────────────────
+  // 기신(기픇에 해로운 오행) / 구신(기신을 돕는 오행) / 한신(나머지)
+  const mainYongsin = eokbuYong; // /없는 단일 용신 기준
+  let giShin = ""; // 기신: 일간을 극하는 오행
+  let guShin = ""; // 구신: 기신을 생하는 오행
+  let hanShin = ""; // 한신: 나머지
+  // 희신: 용신을 생하는 오행
+  const heeShinRaw = SUPPORT_ELEM[mainYongsin] || "";
+
+  if (isWeak) {
+    // 신약: 기신 = 일간을 능하는(관성) 오행
+    giShin = CONQUER_ELEM[myElement] || "";
+    guShin = SUPPORT_ELEM[giShin] || ""; // 기신을 생하는 오행
+    // 한신: 용신/희신/기신/구신/일간월소와 다른 오행
+    const usedElements = new Set<string>([mainYongsin, heeShinRaw, giShin, guShin, myElement]);
+    hanShin = ["목", "화", "토", "금", "수"].find(e => !usedElements.has(e)) || "";
+  } else {
+    // 신강: 기신 = 일간을 돕는(비겨1/인성) 오행
+    giShin = myElement;
+    guShin = SUPPORT_ELEM[giShin] || "";
+    const usedElements = new Set<string>([mainYongsin, heeShinRaw, giShin, guShin, myElement]);
+    hanShin = ["목", "화", "토", "금", "수"].find(e => !usedElements.has(e)) || "";
+  }
+
+  console.log("[YONGSHIN CALC]", {
+    dayMaster: dm, strength, eokbuYong, johuYong, yongsin,
+    heeShin: heeShinRaw, giShin, guShin, hanShin, reason: yongReason
+  });
+
+  // ── B-253: 희신(喜神) 추론 ── (PRODUCE_MAP, SUPPORT_MAP은 위에서 SUPPORT_ELEM으로 대체됨)
   const PRODUCE_MAP: Record<string, string> = { "목":"화", "화":"토", "토":"금", "금":"수", "수":"목" };
   const SUPPORT_MAP: Record<string, string> = { "목":"수", "화":"목", "토":"화", "금":"토", "수":"금" };
 
   let heeShin = "";
-  if (yongsin.includes("/")) {
-    // 조후/억부 병기인 경우 — 억부용신 기준으로 희신 산출
-    const mainYong = yongsin.split("/")[1] || yongsin.split("/")[0];
-    heeShin = SUPPORT_MAP[mainYong] || "";
-  } else {
-    // 용신을 생해주는 오행이 희신
-    heeShin = SUPPORT_MAP[yongsin] || "";
-  }
-  // 희신이 용신과 같으면 용신을 생하는 쪽의 생오행으로 대체
-  if (heeShin === yongsin) {
+  const coreYong = yongsin.includes("/") ? yongsin.split("/")[1] || yongsin.split("/")[0] : yongsin;
+  heeShin = SUPPORT_MAP[coreYong] || "";
+  if (heeShin === coreYong) {
     heeShin = SUPPORT_MAP[heeShin] || "";
   }
 
