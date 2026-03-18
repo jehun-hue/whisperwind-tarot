@@ -403,12 +403,12 @@ export async function analyzeSajuStructure(
     const myElemCount = elements[myElement] || 0;
     const supElemCount = elements[supElement] || 0;
 
-    if (myElemCount >= 2 && supElemCount < 2) {
-      // 비겨1이 이미 2개+이면 해주고 있음 → 인성으로
+    if (myElemCount >= 3 && supElemCount < 3) {
+      // 비겁이 이미 3개+이면 충분히 돕고 있음 → 인성으로
       eokbuYong = supElement;
       yongReason = `신약: 비겨1(${myElement}) 이미 ${myElemCount}개, 인성(${supElement}) 부족 → 인성 용신`;
-    } else if (supElemCount >= 2 && myElemCount < 2) {
-      // 인성이 이미 2개+이면 해주고 있음 → 비겨1으로
+    } else if (supElemCount >= 3 && myElemCount < 3) {
+      // 인성이 이미 3개+이면 충분히 돕고 있음 → 비겁으로
       eokbuYong = myElement;
       yongReason = `신약: 인성(${supElement}) 이미 ${supElemCount}개, 비겨1(${myElement}) 부족 → 비겨1 용신`;
     } else if (myElemCount < supElemCount) {
