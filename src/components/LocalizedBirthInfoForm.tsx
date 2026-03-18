@@ -26,7 +26,7 @@ export default function LocalizedBirthInfoForm({ config, onSubmit, onSkip }: Loc
   const [birthDate, setBirthDate] = useState("");
   const [birthTime, setBirthTime] = useState("");
   const [birthTimeUnknown, setBirthTimeUnknown] = useState(false);
-  const [birthPlace, setBirthPlace] = useState("");
+  const [birthPlace, setBirthPlace] = useState("서울");
   const [isLunar, setIsLunar] = useState(false);
 
   const canSubmit = birthDate.length > 0 && gender !== "";

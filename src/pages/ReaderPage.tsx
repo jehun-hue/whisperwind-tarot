@@ -1383,8 +1383,8 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
               {session.birth_time && <><span>•</span><span>{session.birth_time}</span></>}
               {session.birth_place && <><span>•</span><span>{session.birth_place}</span></>}
               {!session.birth_place && (
-                <span className="inline-flex items-center gap-1 rounded-sm bg-yellow-500/10 px-1.5 py-0.5 text-xs text-yellow-400 border border-yellow-500/20">
-                  ⚠️ 출생지 미입력 — ASC·하우스 신뢰도 낮음
+                <span className="inline-flex items-center gap-1 rounded-sm bg-blue-500/10 px-1.5 py-0.5 text-xs text-blue-400 border border-blue-500/20">
+                  ℹ️ 출생지 미입력 — 기본값(서울) 적용
                 </span>
               )}
               <span>•</span>
