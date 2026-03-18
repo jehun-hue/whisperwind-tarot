@@ -712,8 +712,8 @@ function calculatePriorityEvents(
   if (boostedDomain) {
     for (const event of results) {
       if (event.domain === boostedDomain) {
-        // topic 일치 시 signal_count에 3 추가 (정렬 인센티브)
-        event.signal_count += 3;
+        // topic 일치 시 signal_count에 5 추가 (정렬 인센티브)
+        event.signal_count += 5;
         event.event_statement = `[질문 핵심 영역] ` + event.event_statement;
       }
     }
