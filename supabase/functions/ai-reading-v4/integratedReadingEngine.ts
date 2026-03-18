@@ -1765,7 +1765,7 @@ ${finalTopic === "life_change" ? "   → 변화 질문: 사주 운로·점성술
   const STYLE_TEMP_MAP: Record<string, number> = { hanna: 0.4, monad: 0.5, e7l3: 0.45, e5l5: 0.45, l7e3: 0.35 };
   const requestedTemp = STYLE_TEMP_MAP[requestedStyle] || 0.4;
   
-  const stylePrompt = buildStyleApplyPrompt(locale, JSON.stringify(coreReading), requestedStyle, totalSystems);
+  const stylePrompt = buildStyleApplyPrompt(locale, JSON.stringify(coreReading), requestedStyle, totalSystems, priorityEvents);
   const styleStart = Date.now();
   let rawNarrative: string = "";
   let responseType: "valid_json" | "fallback_text" | "parse_error" | "schema_mismatch" | "timeout" | "skipped" = "valid_json";

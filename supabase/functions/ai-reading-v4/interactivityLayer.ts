@@ -438,9 +438,10 @@ ${JSON.stringify(priorityEvents, null, 2)}
  */
 export function buildStyleApplyPrompt(
   locale: string, 
-  coreReadingJSON: string, 
+  coreReadingJson: string, 
   style: string,
-  totalSystems: number
+  totalSystems: number,
+  priorityEvents?: any[]
 ): string {
   const cfg = getLocalePromptConfig(locale);
   const toneOverride = STYLE_TONE_OVERRIDES[locale]?.[style] || cfg.toneDirective;
@@ -489,7 +490,13 @@ ${styleRole}
 Do not change any factual content. Only change expression, tone, sentence structure, and metaphors.
 
 [coreReading 데이터 / Core Reading Data]
-${coreReadingJSON}
+${coreReadingJson}
+
+${priorityEvents && priorityEvents.length > 0 ? `
+[필수 시기 정보]
+${priorityEvents.map((e: any) => `- ${e.domain}: ${e.peak_period || "올해"} (${e.severity})${e.decision_trigger ? " → " + e.decision_trigger : ""}`).join("\n")}
+위 시기를 본문에 반드시 포함하세요.
+` : ""}
 
 [출력 형식 / Output Format]
 기존 integrated_reading 스키마와 동일한 JSON으로 출력하세요.
