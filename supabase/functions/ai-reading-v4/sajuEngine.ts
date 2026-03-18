@@ -73,7 +73,7 @@ export function getFullSaju(
   hour: number,
   minute: number,
   gender: 'M' | 'F' = 'M',
-  longitude: number = 126.978,
+  longitude: number = 127.5,
   hasTime: boolean = true
 ) {
   console.log("[GET FULL SAJU]", { year, month, day, hour, minute });

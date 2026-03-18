@@ -928,7 +928,7 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
         }
 
         const CITY_COORDS: Record<string, [number, number]> = {
-          "서울": [37.5665, 126.9780], "Seoul": [37.5665, 126.9780],
+          "서울": [37.5665, 127.5], "Seoul": [37.5665, 127.5],
           "부산": [35.1796, 129.0756], "Busan": [35.1796, 129.0756],
           "대구": [35.8714, 128.6014], "Daegu": [35.8714, 128.6014],
           "인천": [37.4563, 126.7052], "Incheon": [37.4563, 126.7052],
@@ -947,7 +947,7 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
         if (exactMatch) return { birthPlace: bPlace, latitude: exactMatch[0], longitude: exactMatch[1] };
         const partialKey = Object.keys(CITY_COORDS).find(k => place.includes(k) || k.includes(place));
         if (partialKey) return { birthPlace: bPlace, latitude: CITY_COORDS[partialKey][0], longitude: CITY_COORDS[partialKey][1] };
-        return { birthPlace: bPlace, latitude: lat || 37.5665, longitude: lng || 126.9780 };
+        return { birthPlace: bPlace, latitude: lat || 37.5665, longitude: lng || 127.5 };
       })(),
     };
   }
