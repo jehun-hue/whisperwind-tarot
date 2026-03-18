@@ -129,6 +129,16 @@ export function getFullSaju(
   const kstSolarDate = new Date(correctedDate.getTime() + 9 * 60 * 60000);
   const correctedHour = kstSolarDate.getUTCHours();
   const correctedMinute = kstSolarDate.getUTCMinutes();
+  
+  console.log("[LONGITUDE FIX]", { 
+    rawHour: hour, 
+    rawMinute: minute, 
+    longitude, 
+    totalOffset: totalOffsetMinutes, 
+    correctedHour, 
+    correctedMinute,
+    solarUtcMinutes
+  });
 
   // 야자시(夜子時) 처리: 23:00~23:59는 자시(子時)에 해당
   // 일주(日柱) 계산 시: 야자시는 "다음날"의 자시이므로 날짜를 +1

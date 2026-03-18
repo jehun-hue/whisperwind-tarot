@@ -1003,9 +1003,14 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
       solarBirthInfo_year: solarBirthInfo.year,
       solarBirthInfo_month: solarBirthInfo.month,
       solarBirthInfo_day: solarBirthInfo.day,
+      solarBirthInfo_hour: solarBirthInfo.hour,
+      solarBirthInfo_minute: solarBirthInfo.minute,
+      solarBirthInfo_longitude: solarBirthInfo.longitude,
       rawBirth_year: rawBirth.year,
       rawBirth_month: rawBirth.month,
       rawBirth_day: rawBirth.day,
+      rawBirth_hour: rawBirth.hour,
+      rawBirth_minute: rawBirth.minute,
       isLunar: rawBirth.isLunar
     });
 
