@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Lock, Trash2, RefreshCw, Sparkles, Loader2, Download, Search, ChevronRight, ArrowLeft, Settings, ClipboardCopy, Code, FileJson, Copy, Check, Wand2, TrendingUp, Info } from "lucide-react";
-import { TarotCard } from "@/components/TarotCard";
+import { tarotCards } from "@/data/tarotCards";
 import { supabase } from "@/integrations/supabase/client";
 import { calculateNatalChart, getAstrologyForQuestion, getCurrentTransits } from "@/lib/astrology";
 import { calculateZiWei, getZiWeiForQuestion } from "@/lib/ziwei";
@@ -1575,22 +1575,25 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
 
 
       {/* Cards - Compact Badge Row */}
-      <div className="flex flex-wrap gap-2 py-2">
+      <div className="flex flex-wrap gap-4 py-4 overflow-x-auto">
         {(session.cards as any[])?.map((card: any, idx: number) => {
           const spread = ["현재 상황", "핵심 문제", "숨겨진 원인", "조언", "가까운 결과"];
           const label = spread[idx] || "추가 분석";
+          const tarotData = tarotCards.find((t: any) => t.id === card.id);
+          const imageUrl = tarotData?.image || "";
           return (
-            <div 
-              key={card.id} 
-              className={`flex items-center gap-2 rounded-full border px-3 py-1.5 transition-all bg-secondary/30 ${
-                card.isReversed ? "border-purple-500/30 text-purple-400" : "border-gold/30 text-gold"
-              }`}
-            >
-              <span className="text-[10px] uppercase tracking-wider opacity-60 whitespace-nowrap break-keep">
-                {label}
-              </span>
-              <div className="h-3 w-px bg-border/40" />
-              <span className="text-sm font-semibold whitespace-nowrap break-keep">
+            <div key={card.id} className="flex flex-col items-center gap-1.5 min-w-[80px]">
+              <span className="text-[10px] text-muted-foreground font-medium">{label}</span>
+              <div className={`relative w-[70px] h-[120px] rounded-lg overflow-hidden border border-border/30 shadow-md ${card.isReversed ? "rotate-180" : ""}`}>
+                {imageUrl ? (
+                  <img src={imageUrl} alt={card.korean} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-muted flex items-center justify-center text-xs text-muted-foreground text-center p-1">
+                    {card.korean}
+                  </div>
+                )}
+              </div>
+              <span className="text-[10px] text-foreground/80 font-medium text-center leading-tight">
                 {card.korean}{card.isReversed ? "(역)" : ""}
               </span>
             </div>
