@@ -411,14 +411,10 @@ export async function analyzeSajuStructure(
       // 인성이 이미 3개+이면 충분히 돕고 있음 → 비겁으로
       eokbuYong = myElement;
       yongReason = `신약: 인성(${supElement}) 이미 ${supElemCount}개, 비겨1(${myElement}) 부족 → 비겨1 용신`;
-    } else if (myElemCount < supElemCount) {
-      // 둘 다 부족이면 일간을 직접 보강하는 비겨1 용신
-      eokbuYong = myElement;
-      yongReason = `신약: 비겨1(${myElement}=${myElemCount}) < 인성(${supElement}=${supElemCount}) → 비겨1 용신`;
     } else {
-      // 인성 용신 (default)
-      eokbuYong = supElement;
-      yongReason = `신약: 인성(${supElement}=${supElemCount}) <= 비겨1(${myElement}=${myElemCount}) → 인성 용신`;
+      // 둘 다 < 3: 비겁 우선 원칙 — 일간 직접 보강이 가장 효과적
+      eokbuYong = myElement;
+      yongReason = `신약: 둘 다 부족(비겁${myElemCount}, 인성${supElemCount}) → 비겁 우선 원칙`;
     }
   }
 
