@@ -322,9 +322,37 @@ export async function analyzeSajuStructure(
 
   // 종격 판정
   let specialPattern = "";
+
+  // 종강격 조건: supportRatio >= 0.75 AND 월령 득령 AND 재성/관성 미투출
   if (supportRatio >= 0.75) {
-    specialPattern = "종강격";
-    strengthLevel = "종강";
+    // 천간에 재성/관성이 투출되었는지 확인
+    const hasJaeGwanInStems = stems.some(s => {
+      if (!s || s === dm) return false;
+      const rel = getRelation(myElement, STEM_ELEMENT[s]);
+      return rel === "재성" || rel === "관성";
+    });
+
+    const isJonggang = isDeukyeong && !hasJaeGwanInStems;
+    const jgReason = !isDeukyeong 
+      ? `월지(${monthElement})가 일간(${myElement})을 생/비하지 않음 → 극신강`
+      : hasJaeGwanInStems
+        ? `천간에 재성/관성 투출 → 극신강`
+        : `월령 득령 + 재관 미투출 → 종강격`;
+
+    console.log("[JONGGANG CHECK]", {
+      dayMaster: dm, monthBranch: strengthMonthBranch, monthElement,
+      bigyeop: tenGodCount["비겁"], insung: tenGodCount["인성"],
+      total: adjustedTotal, ratio: supportRatio,
+      isDeukyeong, hasJaeGwanInStems, isJonggang, reason: jgReason
+    });
+
+    if (isJonggang) {
+      specialPattern = "종강격";
+      strengthLevel = "종강";
+    } else {
+      // 종강격 불가 → 극신강 유지
+      strengthLevel = "극신강";
+    }
   } else if (supportRatio <= 0.20) {
     if (tenGodCount["재성"] >= tenGodCount["관성"] && tenGodCount["재성"] >= tenGodCount["식상"]) {
       specialPattern = "종재격";
