@@ -15,7 +15,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const READING_VERSION = "v9_symbolic_prediction_engine";
+const READING_VERSION = "v9.1_symbolic_prediction_engine";
 
 import { safeParseGeminiJSON } from "./jsonUtils.ts";
 

@@ -148,12 +148,7 @@ export function getFullSaju(
     dayPillarDate.setUTCDate(dayPillarDate.getUTCDate() + 1);
   }
 
-  console.log("[DAY CALC FIX]", { 
-    kstDate: `${localSolarYear}-${localSolarMonth + 1}-${localSolarDay}`, 
-    utcDate: correctedDate.toISOString(), 
-    isYaJa: isYaJaTime,
-    dayPillarDate: dayPillarDate.toISOString()
-  });
+  // (Removed log to move after dayPillar calculation)
 
   // 시주 계산용 시간 (야자시면 0시로 처리)
   const effectiveHour = isYaJaTime ? 0 : correctedHour;
@@ -193,12 +188,11 @@ export function getFullSaju(
   // B-213 fix: JD 기준 일주 오프셋 수정 (50 → 49, 癸亥일/丙申일 기준 재검증)
   const dIdx = Math.floor(jd + 0.5 + 49) % 60;
   const dayPillar = { stem: STEMS[dIdx % 10], branch: BRANCHES[dIdx % 12] };
-  console.log("[DAY PILLAR CALC]", { 
-    inputDate: dayPillarDate.toISOString(),
-    jd: jd,
-    dayGanIndex: dIdx % 10,
-    dayGan: dayPillar.stem,
-    dayBranch: dayPillar.branch
+  console.log("[YAJASI CHECK]", { 
+    kstDate: `${localSolarYear}-${localSolarMonth + 1}-${localSolarDay}`, 
+    correctedHour, 
+    isYaJa: isYaJaTime,
+    resultDay: `${dayPillar.stem}${dayPillar.branch}`
   });
   const dayMaster = dayPillar.stem;
 
