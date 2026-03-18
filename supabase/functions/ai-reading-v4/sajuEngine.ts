@@ -121,7 +121,7 @@ export function getFullSaju(
   // ── 경도보정 후 실제 시간(Solar Time) 계산 ──
   const kstToUtcMinutes = -9 * 60;
   // B-116 fix: 진태양시 정밀 계산을 위해 베이스 시간을 UTC로 변환 후 오프셋 적용
-  const solarUtcMinutes = (hour * 60 + minute + totalOffsetMinutes) + kstToUtcMinutes;
+  const solarUtcMinutes = Math.round((hour * 60 + minute + totalOffsetMinutes) + kstToUtcMinutes);
   const correctedDate = new Date(Date.UTC(year, month - 1, day, 0, solarUtcMinutes));
 
   // ── 경도보정 후 시간으로 야자시 판단 ──
@@ -209,8 +209,8 @@ export function getFullSaju(
   //            午(11:30~13:30), 未(13:30~15:30), 申(15:30~17:30),
   //            酉(17:30~19:30), 戌(19:30~21:30), 亥(21:30~23:30)
   const normalizedMinutes = (effectiveHour * 60 + correctedMinute);
-  // 子시 시작을 23:30(=1410분)으로 정렬: +30분 후 2시간(120분) 단위로 나눔
-  const hBranchIdx = Math.floor(((normalizedMinutes + 30) % 1440) / 120);
+  // 子시 시작을 Solar Time 23:00(=1380분)으로 정렬: +60분 후 2시간(120분) 단위로 나눔
+  const hBranchIdx = Math.floor(((normalizedMinutes + 60) % 1440) / 120);
   const hStemBase = (dIdx % 10 * 2) % 10;
   const hStemIdx = (hStemBase + hBranchIdx) % 10;
   // B-228: 출생시간 "모름"일 때 시주 제외
