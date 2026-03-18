@@ -2488,13 +2488,9 @@ function calculateSystemScore(
 function buildFallbackReading(text: string, grade: string, scores: any, cards: any[], question: string, style: string = 'hanna') {
   const defaultText = text || "인공지능 모델의 응답을 파싱하는 과정에서 오류가 발생했습니다. 요약된 정보를 기반으로 조언 드립니다.";
   
-  const tarotReading: any = {
-    choihanna: "",
-    monad: "",
-    e7l3: "",
-    e5l5: "",
-    l7e3: ""
-  };
+  const styles = ['choihanna', 'monad', 'e7l3', 'e5l5', 'l7e3'];
+  const tarotReading: any = {};
+  styles.forEach(s => tarotReading[s] = "");
 
   const tarotCardsData = cards?.map((c: any) => ({ 
     name: c.name, 
@@ -2503,19 +2499,10 @@ function buildFallbackReading(text: string, grade: string, scores: any, cards: a
   })) || [];
 
   const styleKey = style === 'hanna' ? 'choihanna' : style;
-  if (tarotReading.hasOwnProperty(styleKey)) {
-    tarotReading[styleKey] = { 
-      cards: tarotCardsData, 
-      story: defaultText, 
-      key_message: "" 
-    };
+  if (styles.includes(styleKey)) {
+    tarotReading[styleKey] = { cards: tarotCardsData, story: defaultText, key_message: "" };
   } else {
-    // Default to choihanna if style is unknown
-    tarotReading.choihanna = { 
-      cards: tarotCardsData, 
-      story: defaultText, 
-      key_message: "" 
-    };
+    tarotReading.choihanna = { cards: tarotCardsData, story: defaultText, key_message: "" };
   }
 
   return {
