@@ -2518,10 +2518,11 @@ async function fetchGemini(apiKey: string, model: string, system: string, _user:
 
     if (!response.ok) {
       const errText = await response.text();
-      // 503 Retry logic (Max 3 retries)
-      if (response.status === 503 && attempt < 3) {
+      // 500/502/503/429 Retry logic (Max 3 retries)
+      const retryableStatuses = [429, 500, 502, 503];
+      if (retryableStatuses.includes(response.status) && attempt < 3) {
         const waitMs = Math.pow(2, attempt + 1) * 1000; // 2s, 4s, 8s
-        console.log("[GEMINI RETRY]", { attempt: attempt + 1, statusCode: 503, waitMs });
+        console.log("[GEMINI RETRY]", { attempt: attempt + 1, statusCode: response.status, waitMs });
         await new Promise(resolve => setTimeout(resolve, waitMs));
         return doFetch(attempt + 1);
       }
@@ -2565,10 +2566,11 @@ export async function fetchGeminiStream(apiKey: string, model: string, system: s
 
     if (!response.ok) {
       const errText = await response.text();
-      // 503 Retry logic (Max 3 retries)
-      if (response.status === 503 && attempt < 3) {
+      // 500/502/503/429 Retry logic (Max 3 retries)
+      const retryableStatuses = [429, 500, 502, 503];
+      if (retryableStatuses.includes(response.status) && attempt < 3) {
         const waitMs = Math.pow(2, attempt + 1) * 1000;
-        console.log("[GEMINI RETRY]", { attempt: attempt + 1, statusCode: 503, waitMs });
+        console.log("[GEMINI RETRY]", { attempt: attempt + 1, statusCode: response.status, waitMs });
         await new Promise(resolve => setTimeout(resolve, waitMs));
         return doFetch(attempt + 1);
       }
