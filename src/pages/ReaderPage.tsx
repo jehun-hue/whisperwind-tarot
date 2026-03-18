@@ -707,81 +707,88 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       }
 
       // 큐를 사용하여 순차적 DB 갱신 (Race Condition 방지)
-      const finalResult = await new Promise((resolve, reject) => {
-        sessionWriteQueue = sessionWriteQueue.then(async () => {
-          try {
-            // 1. DB에서 가장 최신 상태 다시 불러오기 (머지 충돌 방지)
-            const { data: latestDbSession } = await supabase
-              .from("reading_sessions")
-              .select("ai_reading, status, saju_data")
-              .eq("id", currentSession.id)
-              .single();
+      // sessionWriteQueue는 Promise 체인: 이전 쓰기가 완료된 후에만 다음 쓰기 시작
+      const finalResult = await new Promise<any>((resolve, reject) => {
+        const writeTask = async () => {
+          // 1. DB에서 가장 최신 상태 다시 불러오기 (머지 충돌 방지)
+          const { data: latestDbSession } = await supabase
+            .from("reading_sessions")
+            .select("ai_reading, status, saju_data")
+            .eq("id", currentSession.id)
+            .single();
 
-            // 2. 기존 데이터와 새로 받은 결과(result) 병합
-            const existingReading = (latestDbSession?.ai_reading as any) || {};
-            const mergedReading = {
-              ...existingReading,
-              ...result,
-              tarot_reading: {
-                ...(existingReading.tarot_reading || {}),
-                ...(result.tarot_reading || {}),
-              },
-              merged_reading: {
-                ...(existingReading.merged_reading || {}),
-                ...(result.merged_reading || {}),
-              },
-              convergence: {
-                ...(existingReading.convergence || {}),
-                ...(result.convergence || {}),
-              },
-              action_guide: {
-                ...(existingReading.action_guide || {}),
-                ...(result.action_guide || {}),
-              },
-              final_message: {
-                ...(existingReading.final_message || {}),
-                ...(result.final_message || {}),
-              }
-            };
-       
-            const hasNarrative = !!(
-              mergedReading.tarot_reading?.choihanna || 
-              mergedReading.tarot_reading?.monad ||
-              mergedReading.tarot_reading?.e7l3 ||
-              mergedReading.tarot_reading?.e5l5 ||
-              mergedReading.tarot_reading?.l7e3
-            );
-            const isDataOnly = !!(result?.reading_info?.mode === "data-only" || 
-              mergedReading.engine?.validation?.message?.includes("Data-Only"));
-            const finalStatus = (hasNarrative || isDataOnly) ? "completed" : (latestDbSession?.status || currentSession.status);
-       
-            // 3. DB 업데이트 (무조건 실행)
-            await supabase.from("reading_sessions").update({
-              ai_reading: mergedReading as any,
-              saju_data: sajuDataForAI as any,
-              status: finalStatus,
-            }).eq("id", currentSession.id);
-       
-            // 4. React 상태 업데이트 (함수형 업데이트로 해당 스타일만 독립 저장)
-            const updatedSessionData = {
-              ...currentSession,
-              ai_reading: mergedReading,
-              saju_data: sajuDataForAI,
-              status: finalStatus,
-            };
+          // 2. DB의 최신 데이터와 새 결과를 머지 (클로저의 currentSession이 아님!)
+          const existingReading = (latestDbSession?.ai_reading as any) || {};
+          const mergedReading = {
+            ...existingReading,
+            ...result,
+            tarot_reading: {
+              ...(existingReading.tarot_reading || {}),
+              ...(result.tarot_reading || {}),
+            },
+            merged_reading: {
+              ...(existingReading.merged_reading || {}),
+              ...(result.merged_reading || {}),
+            },
+            convergence: {
+              ...(existingReading.convergence || {}),
+              ...(result.convergence || {}),
+            },
+            action_guide: {
+              ...(existingReading.action_guide || {}),
+              ...(result.action_guide || {}),
+            },
+            final_message: {
+              ...(existingReading.final_message || {}),
+              ...(result.final_message || {}),
+            }
+          };
+     
+          const hasNarrative = !!(
+            mergedReading.tarot_reading?.choihanna || 
+            mergedReading.tarot_reading?.monad ||
+            mergedReading.tarot_reading?.e7l3 ||
+            mergedReading.tarot_reading?.e5l5 ||
+            mergedReading.tarot_reading?.l7e3
+          );
+          const isDataOnly = !!(result?.reading_info?.mode === "data-only" || 
+            mergedReading.engine?.validation?.message?.includes("Data-Only"));
+          const finalStatus = (hasNarrative || isDataOnly) ? "completed" : (latestDbSession?.status || currentSession.status);
+     
+          // 3. DB 업데이트 (무조건 실행)
+          await supabase.from("reading_sessions").update({
+            ai_reading: mergedReading as any,
+            saju_data: sajuDataForAI as any,
+            status: finalStatus,
+          }).eq("id", currentSession.id);
 
-            onUpdate(updatedSessionData);
+          console.log(`[DB WRITE] ${style} saved. tarot_reading keys:`, Object.keys(mergedReading.tarot_reading || {}));
+     
+          // 4. React 상태 업데이트 — DB에서 읽은 최신 머지 결과 사용
+          const updatedSessionData = {
+            ...currentSession,
+            ai_reading: mergedReading,
+            saju_data: sajuDataForAI,
+            status: finalStatus,
+          };
 
-            resolve({
-              ...updatedSessionData,
-              aiResult: result,
-              coreReading: aiData?.coreReading, 
-            });
-          } catch (e) {
+          onUpdate(updatedSessionData);
+
+          return {
+            ...updatedSessionData,
+            aiResult: result,
+            coreReading: aiData?.coreReading, 
+          };
+        };
+
+        // Promise 체인에 직렬 연결: 이전 작업 완료 후에만 이 작업 시작
+        sessionWriteQueue = sessionWriteQueue
+          .then(() => writeTask())
+          .then(resolve)
+          .catch(e => {
             console.error(`[Atomic Save Error] Style: ${style}`, e);
             reject(e);
-          }
-        });
+          });
       });
       return finalResult;
     } catch (err) {
