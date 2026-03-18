@@ -156,8 +156,23 @@ function extractSajuSignals(saju: any): NormalizedSignal[] {
   const strength = saju.strength || "";
   const tenGods = saju.tenGods || {};
   
+  // 재성 0 체크
+  if (tenGods && (tenGods["재성"] === 0 || tenGods.재성 === 0)) {
+    signals.push({ source: "saju", domains: ["finance"], direction: "negative", event_type: "structural_weakness", description: "재성 부재 (재물 기본 구조 약함)", intensity: 0.85 });
+  }
+
+  // 비겁 과다 체크
+  if (tenGods && (tenGods["비겁"] > 3.0 || tenGods.비겁 > 3.0)) {
+    signals.push({ source: "saju", domains: ["finance"], direction: "negative", event_type: "loss_risk", description: "비겁 과다 (재물 경쟁/유출 구조)", intensity: 0.8 });
+  }
+
+  // 극신강 + 재성 0
+  if (strength && strength.includes("극신강") && tenGods && (tenGods["재성"] === 0 || tenGods.재성 === 0)) {
+    signals.push({ source: "saju", domains: ["finance"], direction: "negative", event_type: "structural_weakness", description: "극신강 + 재성 부재 (재물 통제 불능)", intensity: 0.9 });
+  }
+
   if ((strength.includes("극신강") || strength.includes("극신약"))) {
-    if ((tenGods["비겁"] || 0) > 3.0) {
+    if ((tenGods["비겁"] || 0) > 3.0 || (tenGods.비겁 || 0) > 3.0) {
       signals.push({
         source: "saju",
         domains: ["career"],
@@ -167,29 +182,21 @@ function extractSajuSignals(saju: any): NormalizedSignal[] {
         intensity: 0.8
       });
     }
-    if ((tenGods["재성"] || 0) === 0) {
-      signals.push({
-        source: "saju",
-        domains: ["finance"],
-        direction: "negative",
-        event_type: "structural_weakness",
-        description: "재성 무재 및 극단적 강약: 금전적 기반의 불안정성",
-        intensity: 0.75
-      });
-    }
   }
 
   // 5. 세운 십성 및 합
   if (saju.daewoon?.current_seun) {
     const seun = saju.daewoon.current_seun;
-    if (seun.tenGodStem === "겁재" || seun.tenGodStem === "비견") {
+    const seunStem = seun.tenGodStem;
+    const seunBranch = seun.tenGodBranch;
+    if (seunStem === "겁재" || seunStem === "비견" || seunBranch === "겁재" || seunBranch === "비견") {
       signals.push({
         source: "saju",
         domains: ["finance"],
         direction: "negative",
         event_type: "loss_risk",
-        description: `세운 비겁(${seun.full}): 금전 소모 및 탈재 위험 주의`,
-        intensity: 0.7
+        description: `세운 ${seun.full} (${seunStem}/${seunBranch}) - 재물 경쟁/유출 에너지`,
+        intensity: 0.85
       });
     }
     // 세운 합 로직 (간략화)
@@ -258,21 +265,50 @@ function extractAstrologySignals(astrology: any): NormalizedSignal[] {
     });
   }
 
-  // 3. 트랜짓 파싱
+  // 3. 트랜짓 파싱 (도메인 분류 정교화)
   if (astrology.transits) {
     astrology.transits.forEach((tr: string) => {
       let direction: "positive" | "negative" | "neutral" = "neutral";
-      if (tr.includes("사각") || tr.includes("충") || tr.includes("⚠️") || tr.includes("⚡")) direction = "negative";
-      if (tr.includes("삼합") || tr.includes("육분") || tr.includes("💎") || tr.includes("✨")) direction = "positive";
-      if (tr.includes("합(0°)") || tr.includes("정점")) direction = "positive"; // 합은 주로 기회로 해석
+      if (tr.includes("사각") || tr.includes("충") || tr.includes("⚠️") || tr.includes("⚡")) {
+        direction = "negative";
+      } else if (tr.includes("삼합") || tr.includes("육분") || tr.includes("합") || tr.includes("💎") || tr.includes("✨")) {
+        direction = "positive";
+      }
 
-      // 날짜 추출 (YYYY-MM-DD)
+      // [출생] 행성 패턴 정교하게 추출
+      const natalMatch = tr.match(/\[출생\](\S+)/);
+      const natalPlanet = natalMatch ? natalMatch[1].replace(/[:：]/g, "") : "";
+
+      let domains = ["life_transition"];
+      if (tr.includes("목성")) {
+        if (natalPlanet.includes("금성")) domains = ["finance", "relationship"];
+        else if (natalPlanet.includes("달")) domains = ["vitality", "relationship"];
+        else if (natalPlanet.includes("태양")) domains = ["career", "life_transition"];
+      } else if (tr.includes("토성")) {
+        if (natalPlanet.includes("수성")) domains = ["career"];
+        else if (natalPlanet.includes("화성")) domains = ["career"];
+        else if (natalPlanet.includes("해왕성")) domains = ["vitality"];
+      } else if (tr.includes("천왕성")) {
+        if (natalPlanet.includes("태양")) domains = ["life_transition"];
+      } else if (tr.includes("해왕성")) {
+        if (natalPlanet.includes("해왕성")) domains = ["vitality"];
+      } else if (tr.includes("명왕성")) {
+        if (natalPlanet.includes("화성")) domains = ["career", "vitality"];
+        else if (natalPlanet.includes("명왕성")) domains = ["life_transition"];
+      }
+
+      // 날짜 및 단순 설명문 체크
       const dateMatch = tr.match(/(\d{4}-\d{2}-\d{2})/);
       const peakDate = dateMatch ? dateMatch[0] : undefined;
 
+      // 단순 환경 설명문("목성 트랜짓 게자리: ...")은 도메인 특정 어려우면 life_transition 유지 또는 스킵
+      if (!natalMatch && tr.includes("트랜짓") && tr.includes(":")) {
+        domains = ["life_transition"];
+      }
+
       signals.push({
         source: "astrology",
-        domains: ["life_transition"], // 트랜짓은 전반적 흐름에 영향
+        domains: domains,
         direction: direction,
         event_type: direction === "negative" ? "pressure" : "opportunity",
         description: `점성술 트랜짓: ${tr.slice(0, 100)}`,
@@ -347,11 +383,45 @@ function extractZiweiSignals(ziwei: any): NormalizedSignal[] {
     }
   });
 
+  // 현재 대한 궁에서 화기 체크 (finance 등 도메인 보정)
+  const currentPeriod = ziwei.currentMajorPeriod || ziwei.major_period;
+  if (currentPeriod?.transformations) {
+    currentPeriod.transformations.forEach((t: any) => {
+      if (t.type === "화기") {
+        const palaceName = currentPeriod.palace || "";
+        let domain = "life_transition";
+        if (palaceName.includes("전택")) domain = "finance";
+        else if (palaceName.includes("재백")) domain = "finance";
+        else if (palaceName.includes("관록")) domain = "career";
+        else if (palaceName.includes("부처") || palaceName.includes("형제") || palaceName.includes("노복") || palaceName.includes("부모")) domain = "relationship";
+        else if (palaceName.includes("질액") || palaceName.includes("복덕")) domain = "vitality";
+        else if (palaceName.includes("천이")) domain = "life_transition";
+        
+        signals.push({
+          source: "ziwei",
+          domains: [domain],
+          direction: "negative",
+          event_type: "loss_risk",
+          description: `대한 ${palaceName} 화기: ${t.description || "장애 및 손실 주의"}`,
+          intensity: 0.85
+        });
+      }
+    });
+  }
+
   // 특수 궁 주성 체크
   const jaeback = ziwei.palaces?.find((p: any) => p.name === "재백궁");
   if (jaeback) {
-    if (jaeback.main_stars?.includes("칠살") || jaeback.main_stars?.includes("파군")) {
-      signals.push({ source: "ziwei", domains: ["finance"], direction: "neutral", event_type: "high_volatility", description: "재백궁 주성(칠살/파군): 극단적 금전 변동성 및 투자 주의", intensity: 0.8 });
+    const starNames = jaeback.main_stars?.map((s: any) => typeof s === "string" ? s : s.star) || [];
+    if (starNames.includes("칠살") || starNames.includes("파군")) {
+      signals.push({
+        source: "ziwei",
+        domains: ["finance"],
+        direction: "neutral",
+        event_type: "high_volatility",
+        description: `재백궁 ${starNames.join("·")} (결단적 재물, 충동 위험)`,
+        intensity: 0.75
+      });
     }
   }
 
