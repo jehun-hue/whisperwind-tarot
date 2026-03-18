@@ -1,0 +1,100 @@
+﻿  const validStyles = ['hanna', 'monad', 'e7l3', 'e5l5', 'l7e3'];
+  const requestedStyle = validStyles.includes(input.style) ? input.style : 'hanna';
+  const locale = input.locale || 'kr';
+
+  // --- Step 1: Core Reading (Style-independent, Neutral) ---
+  const coreHash = (input.cards || []).map((c: any) => c.name || "card").join("-") + `_core_${locale}`;
+  const { data: cachedCore } = await supabaseClient
+    .from("reading_results")
+    .select("reading_json")
+    .eq("session_id", sessionId)
+    .eq("spread_hash", coreHash)
+    .eq("reading_version", READING_VERSION)
+    .maybeSingle();
+
+  let coreReading: any = input.coreReading;
+  let coreGeminiLatency = 0;
+
+  if (coreReading) {
+    console.log(`[PlatformV9] Reusing provided Core Reading from payload.`);
+  } else if (cachedCore?.reading_json) {
+    console.log(`[PlatformV9] Core Reading Cache Hit: ${coreHash}`);
+    coreReading = cachedCore.reading_json;
+  } else {
+    console.log(`[PlatformV9] Generating New Core Reading...`);
+    const corePrompt = buildCoreReadingPrompt(locale, dataBlock, totalSystems, priorityEvents);
+    const coreStart = Date.now();
+    // coreReading: 2.5-flash (怨좏뭹吏?遺꾩꽍, ?좎?)
+    console.log("[MODEL]", { task: "肄붿뼱遺꾩꽍", model: "gemini-2.5-flash" });
+    const rawCore = await fetchGemini(apiKey, "gemini-2.5-flash", corePrompt, "", 0.15);
+    coreGeminiLatency = Date.now() - coreStart;
+    
+    try {
+      coreReading = JSON.parse(rawCore.replace(/```json|```/g, ""));
+      // Cache core reading
+      if (sessionId && coreReading) {
+        await supabaseClient.from("reading_results").insert({
+          session_id: sessionId,
+          question: input.question,
+          spread_hash: coreHash,
+          reading_version: READING_VERSION,
+          reading_json: coreReading
+        });
+      }
+    } catch (e) {
+      console.error("Core Reading Parse Error:", e, rawCore);
+      coreReading = { overall_conclusion: "遺꾩꽍 ?곗씠?곕? ?뚯떛?섎뒗 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎." };
+    }
+  }
+
+  // --- Step 2: Style Apply (Persona & Tone) ---
+  const STYLE_TEMP_MAP: Record<string, number> = { hanna: 0.4, monad: 0.5, e7l3: 0.45, e5l5: 0.45, l7e3: 0.35 };
+  const requestedTemp = STYLE_TEMP_MAP[requestedStyle] || 0.4;
+  
+  const stylePrompt = buildStyleApplyPrompt(locale, JSON.stringify(coreReading), requestedStyle, totalSystems, priorityEvents);
+  const styleStart = Date.now();
+  let rawNarrative: string = "";
+  let responseType: "valid_json" | "fallback_text" | "parse_error" | "schema_mismatch" | "timeout" | "skipped" = "valid_json";
+  let geminiLatency = 0;
+
+  if (input.mode === "data-only") {
+    console.log("[PlatformV9] Skipping Style Application (Data-Only Mode)");
+    responseType = "skipped";
+    rawNarrative = "{}";
+  } else {
+    try {
+      // styleApply: 2.5-flash (?먮났 - lite ?뚯떛 ?먮윭)
+      console.log("[MODEL]", { task: "?ㅽ??쇱쟻??, model: "gemini-2.5-flash" });
+      rawNarrative = await fetchGemini(apiKey, "gemini-2.5-flash", stylePrompt, "", requestedTemp);
+      geminiLatency = Date.now() - styleStart;
+      console.log("[PlatformV9] Style Application Latency:", geminiLatency, "ms");
+    } catch (e: any) {
+      console.error("Style Application Gemini call failed:", e);
+      responseType = "timeout";
+      rawNarrative = "FETCH_ERROR: " + e.message;
+    }
+  }
+
+  // --- Step 3: Parsing & Merging ---
+  let parsed: any;
+  let schemaResult = { passed: true, missing: [] as string[], extra: [] as string[] };
+  let parseSuccess = true;
+  const initialFallback = buildFallbackReading("", grade, scores, tarotCards, input.question, requestedStyle);
+
+  if (responseType === "skipped") {
+    parsed = buildFallbackReading("?곗씠??遺꾩꽍 ?꾩슜 紐⑤뱶?낅땲??", grade, scores, tarotCards, input.question, requestedStyle);
+  } else {
+    try {
+      parsed = safeParseGeminiJSON(rawNarrative, initialFallback);
+      if (!parsed || Object.keys(parsed).length === 0) {
+        responseType = "parse_error";
+        parsed = initialFallback;
+        parseSuccess = false;
+      } else {
+        schemaResult = validateV3Schema(parsed);
+        if (!schemaResult.passed) {
+          responseType = "schema_mismatch";
+          parsed = patchMissingFields(parsed, scores, grade, tarotCards);
+        }
+      }
+    } catch (_e) {

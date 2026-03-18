@@ -1805,6 +1805,15 @@ ${finalTopic === "life_change" ? "   → 변화 질문: 사주 운로·점성술
         parsed = initialFallback;
         parseSuccess = false;
       } else {
+        // Ensure all styles are present in tarot_reading
+        if (!parsed.tarot_reading) parsed.tarot_reading = {};
+        const styles = ['choihanna', 'monad', 'e7l3', 'e5l5', 'l7e3'];
+        styles.forEach(s => {
+          if (!parsed.tarot_reading[s]) {
+            parsed.tarot_reading[s] = "";
+          }
+        });
+
         schemaResult = validateV3Schema(parsed);
         if (!schemaResult.passed) {
           responseType = "schema_mismatch";
@@ -2479,17 +2488,34 @@ function calculateSystemScore(
 function buildFallbackReading(text: string, grade: string, scores: any, cards: any[], question: string, style: string = 'hanna') {
   const defaultText = text || "인공지능 모델의 응답을 파싱하는 과정에서 오류가 발생했습니다. 요약된 정보를 기반으로 조언 드립니다.";
   
-  const tarotReading: any = {};
-  if (style === 'monad') {
-    tarotReading.monad = { cards: cards?.map((c: any) => ({ name: c.name, position: c.position || "", reversed: c.isReversed || false })) || [], story: defaultText, key_message: "" };
-  } else if (style === 'e7l3') {
-    tarotReading.e7l3 = { cards: cards?.map((c: any) => ({ name: c.name, position: c.position || "", reversed: c.isReversed || false })) || [], story: defaultText, key_message: "" };
-  } else if (style === 'e5l5') {
-    tarotReading.e5l5 = { cards: cards?.map((c: any) => ({ name: c.name, position: c.position || "", reversed: c.isReversed || false })) || [], story: defaultText, key_message: "" };
-  } else if (style === 'l7e3') {
-    tarotReading.l7e3 = { cards: cards?.map((c: any) => ({ name: c.name, position: c.position || "", reversed: c.isReversed || false })) || [], story: defaultText, key_message: "" };
+  const tarotReading: any = {
+    choihanna: "",
+    monad: "",
+    e7l3: "",
+    e5l5: "",
+    l7e3: ""
+  };
+
+  const tarotCardsData = cards?.map((c: any) => ({ 
+    name: c.name, 
+    position: c.position || "", 
+    reversed: c.isReversed || false 
+  })) || [];
+
+  const styleKey = style === 'hanna' ? 'choihanna' : style;
+  if (tarotReading.hasOwnProperty(styleKey)) {
+    tarotReading[styleKey] = { 
+      cards: tarotCardsData, 
+      story: defaultText, 
+      key_message: "" 
+    };
   } else {
-    tarotReading.choihanna = { cards: cards?.map((c: any) => ({ name: c.name, position: c.position || "", reversed: c.isReversed || false })) || [], story: defaultText, key_message: "" };
+    // Default to choihanna if style is unknown
+    tarotReading.choihanna = { 
+      cards: tarotCardsData, 
+      story: defaultText, 
+      key_message: "" 
+    };
   }
 
   return {
