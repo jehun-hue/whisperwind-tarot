@@ -28,6 +28,7 @@ export interface PriorityEvent {
   peak_period: string;
   decision_trigger: string | null;
   confidence: number;
+  tarot_stance?: any[];
 }
 
 /**
@@ -38,7 +39,8 @@ export function generatePriorityEvents(
   patternVectors: any[],
   consensusResult: any,
   temporalResult: any,
-  finalTopic: string = ""
+  finalTopic: string = "",
+  tarotCardVectors?: any[]
 ): PriorityEvent[] {
   try {
     const signals: NormalizedSignal[] = [];
@@ -60,7 +62,7 @@ export function generatePriorityEvents(
     if (numerologyData) signals.push(...extractNumerologySignals(numerologyData));
 
     // 2. 신호 수렴 및 사건 도출
-    return calculatePriorityEvents(signals, consensusResult, temporalResult, finalTopic);
+    return calculatePriorityEvents(signals, consensusResult, temporalResult, finalTopic, tarotCardVectors);
   } catch (error) {
     console.error("[INFERENCE LAYER] Error generating priority events:", error);
     return [];
@@ -623,7 +625,8 @@ function calculatePriorityEvents(
   signals: NormalizedSignal[],
   consensusResult: any,
   temporalResult: any,
-  finalTopic: string = ""
+  finalTopic: string = "",
+  tarotCardVectors?: any[]
 ): PriorityEvent[] {
   const DOMAINS = ["career", "finance", "relationship", "vitality", "life_transition"];
   const domainGroups: Record<string, NormalizedSignal[]> = {};
@@ -715,6 +718,49 @@ function calculatePriorityEvents(
         // topic 일치 시 signal_count에 5 추가 (정렬 인센티브)
         event.signal_count += 5;
         event.event_statement = `[질문 핵심 영역] ` + event.event_statement;
+      }
+    }
+  }
+
+  // === 타로 가설 엔진: stance 반영 ===
+  if (tarotCardVectors && tarotCardVectors.length > 0) {
+    const cardStrings = tarotCardVectors.map((cv: any) => 
+      cv.name + (cv.isReversed ? " Reversed" : "")
+    );
+    const tarotStances = mapTarotToEventSpace(cardStrings);
+    
+    console.log("[TAROT HYPOTHESIS] stances:", JSON.stringify(tarotStances.map(s => ({
+      domain: s.domain, stance: s.stance, bias: s.bias, weight: s.weight
+    }))));
+    
+    // stance를 priority_events에 반영
+    for (const event of results) {
+      const matchingStances = tarotStances.filter(s => s.domain === event.domain);
+      
+      for (const stance of matchingStances) {
+        if (stance.stance === "confirms") {
+          event.signal_count += Math.round(stance.weight * 3);
+          event.confidence = Math.min(1, (event.confidence || 0.5) * (1 + stance.weight * 0.3));
+          if (!event.tarot_stance) event.tarot_stance = [];
+          event.tarot_stance.push({ type: "confirms", bias: stance.bias, reason: stance.reason });
+        } else if (stance.stance === "softens") {
+          event.confidence = Math.max(0.1, (event.confidence || 0.5) * (1 - stance.weight * 0.3));
+          if (!event.tarot_stance) event.tarot_stance = [];
+          event.tarot_stance.push({ type: "softens", bias: stance.bias, reason: stance.reason });
+        } else if (stance.stance === "redirects" && stance.targetDomain) {
+          // redirects: 현재 이벤트 약화 + 타겟 도메인 강화
+          event.signal_count = Math.max(1, event.signal_count - 1);
+          if (!event.tarot_stance) event.tarot_stance = [];
+          event.tarot_stance.push({ type: "redirects", targetDomain: stance.targetDomain, reason: stance.reason });
+          
+          // 타겟 도메인 이벤트 부스트
+          const targetEvent = results.find((e: any) => e.domain === stance.targetDomain);
+          if (targetEvent) {
+            targetEvent.signal_count += 2;
+            if (!targetEvent.tarot_stance) targetEvent.tarot_stance = [];
+            targetEvent.tarot_stance.push({ type: "redirected_boost", reason: stance.reason });
+          }
+        }
       }
     }
   }

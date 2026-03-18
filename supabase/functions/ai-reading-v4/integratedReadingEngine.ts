@@ -1525,7 +1525,9 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     standard_used: "international"
   };
 
-  const priorityEvents = generatePriorityEvents(systemResults, patternVectors, consensusResult, temporalResult, finalTopic);
+  const tarotData = systemResults.find((s: any) => s.system === "tarot");
+  const tarotCardVectors = tarotData?.card_vectors || [];
+  const priorityEvents = generatePriorityEvents(systemResults, patternVectors, consensusResult, temporalResult, finalTopic, tarotCardVectors);
   console.log("[INFERENCE LAYER]", JSON.stringify(priorityEvents, null, 2));
 
   // Step 2-B: Mapping Saju Data for Prompt
