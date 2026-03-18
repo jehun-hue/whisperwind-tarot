@@ -15,7 +15,7 @@ import { analyzeSpreadCCM, lookupCCM, type CCMResult } from "./cardContextMatrix
 import { predictTemporalV8 } from "./temporalPredictionEngine.ts";
 import { validateEngineOutput } from "./validationLayer.ts";
 import { getLocalizedStyle, buildCoreReadingPrompt, buildStyleApplyPrompt } from "./interactivityLayer.ts";
-import { generatePriorityEvents } from "./inferenceLayer.ts";
+import { generatePriorityEvents, generateTimingSummary } from "./inferenceLayer.ts";
 import { calculateNumerology } from "./numerologyEngine.ts";
 import { validateV3Schema, patchMissingFields, logMonitoringEvent } from "./monitoringLayer.ts";
 import { safeParseGeminiJSON } from "./jsonUtils.ts";
@@ -1883,6 +1883,16 @@ ${finalTopic === "life_change" ? "   → 변화 질문: 사주 운로·점성술
   const isLoveQuestion = ["연애", "reconciliation", "relationship", "marriage", "dating"].includes(questionType);
   if (!isLoveQuestion) {
     parsed.love_analysis = null;
+  }
+
+  // --- Step 3-B: Add Timing Summary (Direct Code Generation) ---
+  const timingBlock = generateTimingSummary(priorityEvents);
+  if (timingBlock) {
+    if (parsed.merged_reading) {
+      parsed.merged_reading.coreReading = (parsed.merged_reading.coreReading || "") + timingBlock;
+    } else if (parsed.final_message) {
+      parsed.final_message.summary = (parsed.final_message.summary || "") + timingBlock;
+    }
   }
 
   // [Professional V4 Integrated Fields - Inject into 'parsed' for backward compatibility]

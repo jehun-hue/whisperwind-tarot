@@ -755,3 +755,29 @@ function extractPeakFromSignals(signals: any[]): string {
   }
   return `${months[nearest.getMonth()]} (${nearest.toISOString().slice(0,10)} 전후)`;
 }
+
+export function generateTimingSummary(priorityEvents: any[]): string {
+  if (!priorityEvents || priorityEvents.length === 0) return "";
+  
+  const lines: string[] = [];
+  lines.push("\n\n🕐 시기별 핵심 에너지 흐름\n");
+  
+  for (const event of priorityEvents) {
+    const domain = event.domain || "알 수 없음";
+    const domainKo: Record<string, string> = {
+      "finance": "재물/경제",
+      "vitality": "건강/에너지",
+      "relationship": "인간관계/연애",
+      "career": "직업/사회활동",
+      "life_transition": "생활환경/변화"
+    };
+    const label = domainKo[domain] || domain;
+    const peak = event.peak_period || "올해";
+    const severity = event.severity === "HIGH" ? "강한" : "보통";
+    const trigger = event.decision_trigger ? ` 이 시기 전후로 중요한 선택의 순간이 올 가능성이 높습니다.` : "";
+    
+    lines.push(`• ${label} 영역: ${peak}에 ${severity} 에너지 변화가 집중됩니다.${trigger}`);
+  }
+  
+  return lines.join("\n");
+}
