@@ -804,3 +804,254 @@ export function generateTimingSummary(priorityEvents: any[]): string {
   
   return lines.join("\n");
 }
+
+// ============================================
+// TAROT HYPOTHESIS ENGINE — mapTarotToEventSpace
+// ============================================
+
+interface TarotStance {
+  domain: string;
+  stance: "confirms" | "softens" | "redirects";
+  bias: "positive" | "negative" | "neutral";
+  weight: number;
+  targetDomain?: string;
+  reason: string;
+}
+
+// 마이너 아르카나 슈트 → 기본 도메인 매핑
+const SUIT_DOMAIN_MAP: Record<string, string[]> = {
+  "wands": ["career", "vitality"],
+  "cups": ["relationship", "vitality"],
+  "pentacles": ["finance", "career"],
+  "swords": ["career", "vitality"]
+};
+
+// 마이너 아르카나 숫자 → stance 경향
+const NUMBER_STANCE_MAP: Record<number, { stance: string; bias: string }> = {
+  1: { stance: "confirms", bias: "positive" },   // Ace: 새로운 시작
+  2: { stance: "redirects", bias: "neutral" },    // 선택/균형
+  3: { stance: "confirms", bias: "positive" },    // 성장/협력
+  4: { stance: "softens", bias: "neutral" },      // 안정/정체
+  5: { stance: "confirms", bias: "negative" },    // 갈등/손실
+  6: { stance: "softens", bias: "positive" },     // 조화/회복
+  7: { stance: "redirects", bias: "neutral" },    // 탐색/전략
+  8: { stance: "confirms", bias: "positive" },    // 행동/진전
+  9: { stance: "confirms", bias: "positive" },    // 완성 근접
+  10: { stance: "confirms", bias: "neutral" },    // 완성/과잉
+  11: { stance: "redirects", bias: "neutral" },   // Page: 새 메시지
+  12: { stance: "confirms", bias: "positive" },   // Knight: 추진
+  13: { stance: "softens", bias: "positive" },    // Queen: 성숙/돌봄
+  14: { stance: "confirms", bias: "positive" }    // King: 통제/권위
+};
+
+// 메이저 아르카나 오버라이드 테이블
+const MAJOR_ARCANA_MAP: Record<string, TarotStance[]> = {
+  "the fool": [
+    { domain: "life_transition", stance: "confirms", bias: "positive", weight: 0.8, reason: "새로운 시작, 모험" }
+  ],
+  "the magician": [
+    { domain: "career", stance: "confirms", bias: "positive", weight: 0.8, reason: "능력 발휘, 창조력" }
+  ],
+  "the high priestess": [
+    { domain: "vitality", stance: "softens", bias: "neutral", weight: 0.6, reason: "직관, 내면 탐색" }
+  ],
+  "the empress": [
+    { domain: "relationship", stance: "confirms", bias: "positive", weight: 0.8, reason: "풍요, 모성, 관계 성장" },
+    { domain: "finance", stance: "softens", bias: "positive", weight: 0.5, reason: "물질적 풍요" }
+  ],
+  "the emperor": [
+    { domain: "career", stance: "confirms", bias: "positive", weight: 0.8, reason: "권위, 구조, 통제" },
+    { domain: "finance", stance: "confirms", bias: "positive", weight: 0.6, reason: "안정적 관리" }
+  ],
+  "the hierophant": [
+    { domain: "career", stance: "softens", bias: "neutral", weight: 0.6, reason: "전통, 멘토, 체계" }
+  ],
+  "the lovers": [
+    { domain: "relationship", stance: "confirms", bias: "positive", weight: 0.9, reason: "사랑, 선택, 조화" },
+    { domain: "career", stance: "redirects", bias: "neutral", weight: 0.5, targetDomain: "relationship", reason: "파트너십이 돌파구" }
+  ],
+  "the chariot": [
+    { domain: "career", stance: "confirms", bias: "positive", weight: 0.8, reason: "의지, 승리, 추진력" }
+  ],
+  "strength": [
+    { domain: "vitality", stance: "confirms", bias: "positive", weight: 0.8, reason: "내면의 힘, 인내" }
+  ],
+  "the hermit": [
+    { domain: "life_transition", stance: "redirects", bias: "neutral", weight: 0.7, targetDomain: "vitality", reason: "내면 성찰이 필요" }
+  ],
+  "wheel of fortune": [
+    { domain: "life_transition", stance: "confirms", bias: "neutral", weight: 0.9, reason: "운명적 전환점" },
+    { domain: "finance", stance: "confirms", bias: "neutral", weight: 0.6, reason: "재정적 변동" }
+  ],
+  "justice": [
+    { domain: "career", stance: "confirms", bias: "neutral", weight: 0.7, reason: "공정한 결과, 법적 문제" },
+    { domain: "finance", stance: "confirms", bias: "neutral", weight: 0.6, reason: "균형 회복" }
+  ],
+  "the hanged man": [
+    { domain: "life_transition", stance: "softens", bias: "neutral", weight: 0.7, reason: "멈춤, 관점 전환" }
+  ],
+  "death": [
+    { domain: "life_transition", stance: "confirms", bias: "negative", weight: 0.9, reason: "근본적 변화, 종결" }
+  ],
+  "temperance": [
+    { domain: "vitality", stance: "softens", bias: "positive", weight: 0.7, reason: "균형, 절제, 치유" },
+    { domain: "relationship", stance: "softens", bias: "positive", weight: 0.5, reason: "관계 조화" }
+  ],
+  "the devil": [
+    { domain: "finance", stance: "confirms", bias: "negative", weight: 0.8, reason: "집착, 물질적 속박" },
+    { domain: "relationship", stance: "confirms", bias: "negative", weight: 0.7, reason: "독성 관계, 의존" }
+  ],
+  "the tower": [
+    { domain: "career", stance: "confirms", bias: "negative", weight: 0.9, reason: "급격한 붕괴, 구조 변동" },
+    { domain: "finance", stance: "confirms", bias: "negative", weight: 0.8, reason: "재정적 충격" },
+    { domain: "life_transition", stance: "confirms", bias: "negative", weight: 0.9, reason: "강제적 변화" }
+  ],
+  "the star": [
+    { domain: "vitality", stance: "softens", bias: "positive", weight: 0.8, reason: "희망, 치유, 회복" },
+    { domain: "finance", stance: "softens", bias: "positive", weight: 0.6, reason: "재정 회복 가능성" }
+  ],
+  "the moon": [
+    { domain: "relationship", stance: "redirects", bias: "negative", weight: 0.7, targetDomain: "vitality", reason: "불안, 착각 — 내면 점검 필요" }
+  ],
+  "the sun": [
+    { domain: "vitality", stance: "confirms", bias: "positive", weight: 0.9, reason: "활력, 성공, 기쁨" },
+    { domain: "career", stance: "confirms", bias: "positive", weight: 0.7, reason: "성취, 인정" }
+  ],
+  "judgement": [
+    { domain: "life_transition", stance: "confirms", bias: "positive", weight: 0.8, reason: "재탄생, 소명 발견" }
+  ],
+  "the world": [
+    { domain: "life_transition", stance: "confirms", bias: "positive", weight: 0.9, reason: "완성, 통합, 새 사이클" },
+    { domain: "career", stance: "confirms", bias: "positive", weight: 0.7, reason: "목표 달성" }
+  ]
+};
+
+// 역방향 modifier
+function applyReversedModifier(stances: TarotStance[]): TarotStance[] {
+  return stances.map(s => {
+    const modified = { ...s };
+    if (s.stance === "confirms" && s.bias === "positive") {
+      modified.stance = "softens";
+      modified.bias = "neutral";
+      modified.weight *= 0.7;
+      modified.reason = `[역방향] ${s.reason} — 에너지 약화/지연`;
+    } else if (s.stance === "confirms" && s.bias === "negative") {
+      modified.stance = "softens";
+      modified.bias = "neutral";
+      modified.weight *= 0.8;
+      modified.reason = `[역방향] ${s.reason} — 위험 완화 가능`;
+    } else if (s.stance === "softens") {
+      modified.stance = "confirms";
+      modified.bias = "negative";
+      modified.weight *= 1.2;
+      modified.reason = `[역방향] ${s.reason} — 불안정 심화`;
+    } else if (s.stance === "redirects") {
+      modified.stance = "confirms";
+      modified.bias = "neutral";
+      modified.weight *= 0.9;
+      modified.reason = `[역방향] ${s.reason} — 전환 실패, 현 상태 유지`;
+    }
+    return modified;
+  });
+}
+
+// 마이너 아르카나 → stance 생성
+function generateMinorStance(suit: string, number: number, isReversed: boolean): TarotStance[] {
+  const domains = SUIT_DOMAIN_MAP[suit.toLowerCase()] || ["life_transition"];
+  const numberInfo = NUMBER_STANCE_MAP[number] || { stance: "confirms", bias: "neutral" };
+  
+  const stances: TarotStance[] = domains.map((domain, i) => ({
+    domain,
+    stance: numberInfo.stance as "confirms" | "softens" | "redirects",
+    bias: numberInfo.bias as "positive" | "negative" | "neutral",
+    weight: i === 0 ? 0.7 : 0.4,
+    reason: `${suit} ${number}: ${numberInfo.stance}/${numberInfo.bias}`,
+    ...(numberInfo.stance === "redirects" && domains.length > 1 ? { targetDomain: domains[1 - i] } : {})
+  }));
+  
+  return isReversed ? applyReversedModifier(stances) : stances;
+}
+
+// 카드 이름 파싱
+function parseCardName(cardName: string): { type: "major" | "minor"; suit?: string; number?: number; name?: string; isReversed: boolean } {
+  const lower = cardName.toLowerCase().trim();
+  const isReversed = lower.includes("reversed") || lower.includes("역방향") || lower.includes("역");
+  const clean = lower.replace(/\s*(reversed|역방향|역|\(역\)|\(역방향\))\s*/g, "").trim();
+  
+  // 메이저 아르카나 체크
+  const majorKeys = Object.keys(MAJOR_ARCANA_MAP);
+  for (const key of majorKeys) {
+    if (clean.includes(key) || clean === key) {
+      return { type: "major", name: key, isReversed };
+    }
+  }
+  
+  // 한글 메이저 아르카나 매핑
+  const koreanMajorMap: Record<string, string> = {
+    "바보": "the fool", "마법사": "the magician", "여사제": "the high priestess",
+    "여황제": "the empress", "황제": "the emperor", "교황": "the hierophant",
+    "연인": "the lovers", "전차": "the chariot", "힘": "strength",
+    "은둔자": "the hermit", "운명의 수레바퀴": "wheel of fortune", "정의": "justice",
+    "매달린 사람": "the hanged man", "죽음": "death", "절제": "temperance",
+    "악마": "the devil", "탑": "the tower", "별": "the star",
+    "달": "the moon", "태양": "the sun", "심판": "judgement", "세계": "the world"
+  };
+  for (const [kr, en] of Object.entries(koreanMajorMap)) {
+    if (clean.includes(kr)) {
+      return { type: "major", name: en, isReversed };
+    }
+  }
+  
+  // 마이너 아르카나 파싱
+  const suitMap: Record<string, string> = {
+    "wand": "wands", "wands": "wands", "완드": "wands",
+    "cup": "cups", "cups": "cups", "컵": "cups",
+    "pentacle": "pentacles", "pentacles": "pentacles", "펜타클": "pentacles",
+    "sword": "swords", "swords": "swords", "검": "swords", "소드": "swords"
+  };
+  const courtMap: Record<string, number> = {
+    "page": 11, "시종": 11, "knight": 12, "기사": 12,
+    "queen": 13, "여왕": 13, "king": 14, "왕": 14,
+    "ace": 1, "에이스": 1
+  };
+  
+  for (const [keyword, suit] of Object.entries(suitMap)) {
+    if (clean.includes(keyword)) {
+      // 코트 카드 체크
+      for (const [court, num] of Object.entries(courtMap)) {
+        if (clean.includes(court)) {
+          return { type: "minor", suit, number: num, isReversed };
+        }
+      }
+      // 숫자 카드
+      const numMatch = clean.match(/(\d+)/);
+      if (numMatch) {
+        return { type: "minor", suit, number: parseInt(numMatch[1]), isReversed };
+      }
+    }
+  }
+  
+  return { type: "minor", suit: "wands", number: 1, isReversed };
+}
+
+// 메인 함수: 카드 배열 → stance 배열
+export function mapTarotToEventSpace(cards: string[]): TarotStance[] {
+  const allStances: TarotStance[] = [];
+  
+  for (const card of cards) {
+    const parsed = parseCardName(card);
+    
+    if (parsed.type === "major" && parsed.name) {
+      let stances = MAJOR_ARCANA_MAP[parsed.name] || [];
+      if (parsed.isReversed) {
+        stances = applyReversedModifier(stances);
+      }
+      allStances.push(...stances);
+    } else if (parsed.type === "minor" && parsed.suit && parsed.number) {
+      const stances = generateMinorStance(parsed.suit, parsed.number, parsed.isReversed);
+      allStances.push(...stances);
+    }
+  }
+  
+  return allStances;
+}
