@@ -15,6 +15,7 @@ import { analyzeSpreadCCM, lookupCCM, type CCMResult } from "./cardContextMatrix
 import { predictTemporalV8 } from "./temporalPredictionEngine.ts";
 import { validateEngineOutput } from "./validationLayer.ts";
 import { getLocalizedStyle, buildCoreReadingPrompt, buildStyleApplyPrompt } from "./interactivityLayer.ts";
+import { generatePriorityEvents } from "./inferenceLayer.ts";
 import { calculateNumerology } from "./numerologyEngine.ts";
 import { validateV3Schema, patchMissingFields, logMonitoringEvent } from "./monitoringLayer.ts";
 import { safeParseGeminiJSON } from "./jsonUtils.ts";
@@ -1524,6 +1525,9 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     standard_used: "international"
   };
 
+  const priorityEvents = generatePriorityEvents(systemResults, patternVectors, consensusResult, temporalResult);
+  console.log("[INFERENCE LAYER]", JSON.stringify(priorityEvents, null, 2));
+
   // Step 2-B: Mapping Saju Data for Prompt
   const { sajuDisplay, luckyFactors, ziweiPrompt, astrologyPrompt, sajuSymbolic } = buildEnginePrompts(input, sajuRaw, sajuAnalysis, ziweiAnalysis, astrologyAnalysis, ageContext);
   
@@ -1732,7 +1736,7 @@ ${finalTopic === "life_change" ? "   → 변화 질문: 사주 운로·점성술
     coreReading = cachedCore.reading_json;
   } else {
     console.log(`[PlatformV9] Generating New Core Reading...`);
-    const corePrompt = buildCoreReadingPrompt(locale, dataBlock, totalSystems);
+    const corePrompt = buildCoreReadingPrompt(locale, dataBlock, totalSystems, priorityEvents);
     const coreStart = Date.now();
     // coreReading: 2.5-flash (고품질 분석, 유지)
     console.log("[MODEL]", { task: "코어분석", model: "gemini-2.5-flash" });

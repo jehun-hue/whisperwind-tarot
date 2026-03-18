@@ -281,7 +281,7 @@ const STYLE_IDENTITY: Record<string, Record<string, string>> = {
 /**
  * Step 1: Core Reading Prompt (Style-independent)
  */
-export function buildCoreReadingPrompt(locale: string, dataBlock: string, totalSystems: number): string {
+export function buildCoreReadingPrompt(locale: string, dataBlock: string, totalSystems: number, priorityEvents?: any[]): string {
   const cfg = getLocalePromptConfig(locale);
   
   return `
@@ -296,6 +296,15 @@ ${cfg.culturalContext}
 
 [데이터 / Data]
 ${dataBlock}
+
+${priorityEvents && priorityEvents.length > 0 ? `
+[추론 엔진 분석 결과 / Inference Layer Results]
+아래는 5개 엔진(사주/점성술/자미두수/타로/수비학)의 교차 분석으로 도출된 우선순위 사건입니다.
+이 사건들을 리딩의 핵심 골격으로 사용하십시오.
+rank 1 사건을 가장 비중 있게 다루고, 구체적 시기와 행동 지침을 반드시 포함하십시오.
+severity가 HIGH인 사건은 반드시 언급해야 합니다.
+${JSON.stringify(priorityEvents, null, 2)}
+` : ""}
 
 [출력 형식 - coreReading JSON / Output Format]
 반드시 다음 구조의 JSON으로만 응답하세요. 마크다운 코드 펜스 없이 순수 JSON만 출력하세요.
