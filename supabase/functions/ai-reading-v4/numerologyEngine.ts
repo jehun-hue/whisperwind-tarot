@@ -105,9 +105,13 @@ export function calculateNumerology(
     return str.split("").reduce((acc, digit) => acc + (parseInt(digit) || 0), 0);
   };
 
-  // 1. Life Path: Sum of MM + DD + YYYY
-  const lpSum = sumDigits(monthStr) + sumDigits(dayStr) + sumDigits(yearStr);
-  const lifePath = reduceToSingle(lpSum);
+  const rMonth = reduceToSingle(month);
+  const rDay = reduceToSingle(day);
+  const rYear = reduceToSingle(sumDigits(yearStr));
+
+  // 1. Life Path: Reduced Month + Reduced Day + Reduced Year
+  const lifePath = reduceToSingle(rMonth + rDay + rYear);
+  const lpSum = rMonth + rDay + rYear;
 
   // 2. Name based numbers (English)
   let expression: number | null = null;
@@ -146,9 +150,6 @@ export function calculateNumerology(
   const destiny = calculateDestinyNumber(name || "");
 
   // 7. Pinnacles & Challenges
-  const rMonth = reduceToSingle(month);
-  const rDay = reduceToSingle(day);
-  const rYear = reduceToSingle(year);
 
   const p1 = reduceToSingle(rMonth + rDay);
   const p2 = reduceToSingle(rDay + rYear);
