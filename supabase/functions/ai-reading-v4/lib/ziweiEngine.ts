@@ -188,8 +188,27 @@ function determineBureau(mingGongIdx: number, yearGanIdx: number): Bureau {
   return bureauMap[NAPEUM[n]] || "목삼국";
 }
 function calculateZiWeiPosition(lunarDay: number, bureau: Bureau): number {
-  const bureauNum: Record<Bureau, number> = { 수이국: 2, 목삼국: 3, 금사국: 4, 토오국: 5, 화육국: 6 };
-  return Math.ceil(lunarDay / bureauNum[bureau]) % 12;
+  const bureauNum: Record<Bureau, number> = {
+    수이국: 2, 목삼국: 3, 금사국: 4, 토오국: 5, 화육국: 6
+  };
+  const num = bureauNum[bureau];
+  const remainder = lunarDay % num;
+
+  if (remainder === 0) {
+    const quotient = lunarDay / num;
+    // 인(寅)궁(2)부터 몫만큼 전진
+    return (2 + quotient - 1) % 12;
+  } else {
+    const added = num - remainder;
+    const quotient = (lunarDay + added) / num;
+    const quotientPalace = (2 + quotient - 1) % 12;
+
+    if (added % 2 === 0) {
+      return (quotientPalace + added) % 12;
+    } else {
+      return (quotientPalace - added + 12) % 12;
+    }
+  }
 }
 function placeMajorStars(ziWeiPos: number): Map<number, MajorStar[]> {
   const placements = new Map<number, MajorStar[]>();
