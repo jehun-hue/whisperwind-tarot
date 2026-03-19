@@ -282,9 +282,17 @@ export function calculateZiwei(
     const standardHour = arg4 - (offset - 9);
     return calculateServerZiWei(arg1, lunarMonth, lunarDay, standardHour, arg5, arg6);
   } else {
-    // Stem/Branch based call
+    const HANJA_TO_HANGUL: Record<string, string> = {
+      "子": "자", "丑": "축", "寅": "인", "卯": "묘", "辰": "진", "巳": "사",
+      "午": "오", "未": "미", "申": "신", "酉": "유", "戌": "술", "亥": "해"
+    };
+    const hourBranchStr = String(arg5);
+    const hourBranchHangul = HANJA_TO_HANGUL[hourBranchStr] || hourBranchStr;
     const birthYear = (arg7 && typeof arg7 === "number" && arg7 > 1900 && arg7 < 2100) ? arg7 : 1987;
-    const lMonth = arg3; const lDay = arg4; const hBranchIdx = BRANCHES.indexOf(arg5); const sHour = hBranchIdx * 2;
+    const lMonth = arg3;
+    const lDay = arg4;
+    const hBranchIdx = BRANCHES.indexOf(hourBranchHangul);
+    const sHour = (hBranchIdx >= 0 ? hBranchIdx : 0) * 2;
     return calculateServerZiWei(birthYear, lMonth, lDay, sHour, 0, arg6);
   }
 }
