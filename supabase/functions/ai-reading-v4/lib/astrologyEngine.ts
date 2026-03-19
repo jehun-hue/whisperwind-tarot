@@ -5,7 +5,7 @@
  */
 
 import { Solar, Lunar } from "https://esm.sh/lunar-javascript";
-import { Body, Equator, Ecliptic, Observer, AstroTime } from 'astronomy-engine';
+import { Body, Equator, Ecliptic, Observer, AstroTime } from "npm:astronomy-engine@2.1.19";
 
 export interface AstrologyCalculationInput {
   year: number;
