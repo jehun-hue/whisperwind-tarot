@@ -22,12 +22,14 @@ export interface SajuAnalysisResult {
   health_risk_tags: string[];                           // B-144: 건강 위험 태그
   topic_shinsal_map: Record<string, string[]>;          // B-145: 토픽별 신살 매핑
   twelve_stages?: any;                                  // B-256: 12운성 정보
+  gyeokguk?: GyeokgukResult;                             // B-257: 격국 분석
 }
 
 import { getDaewoonInfo, calculateFullDaewoon, type DaewoonResult } from "./lib/daewoon.ts";
 import { STEMS, BRANCHES, FIVE_ELEMENTS_MAP } from "./lib/fiveElements.ts";
 import { calculateInteractions, calculateShinsal, type Interaction, type Shinsal } from "./lib/interactions.ts";
 import { calculateAllTwelveStages, calculateTwelveStage, getTwelveStageEnergy } from "./lib/twelveStages.ts";
+import { determineGyeokguk, type GyeokgukResult } from "./lib/gyeokguk.ts";
 
 // ═══════════════════════════════════════
 // 천간(天干) 오행 매핑
@@ -322,54 +324,13 @@ export async function analyzeSajuStructure(
     strengthLevel 
   }));
 
-  // 종격 판정
-  let specialPattern = "";
-
-  // 종강격 조건: supportRatio >= 0.75 AND 월령 득령 AND 재성/관성 미투출
-  if (supportRatio >= 0.75) {
-    // 천간에 재성/관성이 투출되었는지 확인
-    const hasJaeGwanInStems = stems.some(s => {
-      if (!s || s === dm) return false;
-      const rel = getRelation(myElement, STEM_ELEMENT[s]);
-      return rel === "재성" || rel === "관성";
-    });
-
-    const isJonggang = isDeukyeong && !hasJaeGwanInStems;
-    const jgReason = !isDeukyeong 
-      ? `월지(${monthElement})가 일간(${myElement})을 생/비하지 않음 → 극신강`
-      : hasJaeGwanInStems
-        ? `천간에 재성/관성 투출 → 극신강`
-        : `월령 득령 + 재관 미투출 → 종강격`;
-
-    console.log("[JONGGANG CHECK]", {
-      dayMaster: dm, monthBranch: strengthMonthBranch, monthElement,
-      bigyeop: tenGodCount["비겁"], insung: tenGodCount["인성"],
-      total: adjustedTotal, ratio: supportRatio,
-      isDeukyeong, hasJaeGwanInStems, isJonggang, reason: jgReason
-    });
-
-    if (isJonggang) {
-      specialPattern = "종강격";
-      strengthLevel = "종강";
-    } else {
-      // 종강격 불가 → 극신강 유지
-      strengthLevel = "극신강";
-    }
-  } else if (supportRatio <= 0.20) {
-    if (tenGodCount["재성"] >= tenGodCount["관성"] && tenGodCount["재성"] >= tenGodCount["식상"]) {
-      specialPattern = "종재격";
-    } else if (tenGodCount["관성"] >= tenGodCount["재성"] && tenGodCount["관성"] >= tenGodCount["식상"]) {
-      specialPattern = "종관격";
-    } else {
-      specialPattern = "종아격";
-    }
-    strengthLevel = specialPattern;
-  }
+  // ── B-257: 격국(格局) 판별 ──────────────────────────────────────
+  const gyeokguk = determineGyeokguk(dm, pillars.month?.branch || "", tenGodCount, { supportRatio, isDeukyeong });
   
   // Back-compatibility for other logic using 'strength' variable
   const strength = strengthLevel;
-  const isSpecialFormat = specialPattern !== "";
-  const specialFormatType = specialPattern;
+  const isSpecialFormat = gyeokguk.type === "외격" || gyeokguk.name === "건록격" || gyeokguk.name === "양인격";
+  const specialFormatType = gyeokguk.name;
 
   // ── 3. 용신(用神) 추론 ──
   const PRODUCE_ELEM: Record<string, string> = { "목":"화", "화":"토", "토":"금", "금":"수", "수":"목" }; // 생하는 오행
@@ -521,6 +482,11 @@ export async function analyzeSajuStructure(
 
   // ── 4. Characteristics 생성 ──
   const characteristics: string[] = [];
+
+  // B-257: 격국 태깅
+  if (gyeokguk) {
+    characteristics.push(`격국: ${gyeokguk.name} (${gyeokguk.type})`);
+  }
 
   if (isSpecialFormat) {
     characteristics.push(`특수격국: ${specialFormatType} — 일반적인 억부 용신 대신 격국에 맞는 용신 적용`);
@@ -835,7 +801,8 @@ export async function analyzeSajuStructure(
       pillars: twelveStageDetails,
       seun: { stage: seunTwelveStage, ...seunTwelveStageEnergy },
       wolun: { stage: wolunTwelveStage, ...wolunTwelveStageEnergy }
-    }
+    },
+    gyeokguk
   };
 }
 
