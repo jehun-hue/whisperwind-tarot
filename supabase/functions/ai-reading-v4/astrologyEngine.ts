@@ -48,6 +48,8 @@ const PLANET_MEANINGS: Record<string, { domain: string; keyword: string }> = {
   천왕성: { domain: "혁신, 변화, 자유", keyword: "혁명" },
   해왕성: { domain: "환상, 영성, 직관", keyword: "영성" },
   명왕성: { domain: "변혁, 죽음과부활, 권력", keyword: "변혁" },
+  "North Node": { domain: "운명적 방향, 성장, 카르마의 목적", keyword: "미래" },
+  "South Node": { domain: "과거의 습관, 숙달된 재능, 카르마적 부채", keyword: "과거" },
 };
 
 const SIGN_MEANINGS: Record<string, string> = {
@@ -106,13 +108,24 @@ interface Aspect {
 }
 
 const ASPECT_TYPES = [
-  { name: "합(conjunction)",    angle: 0,   orb: 6, harmonious: true  },
-  { name: "육분(sextile)",      angle: 60,  orb: 4, harmonious: true  },
-  { name: "사각(square)",       angle: 90,  orb: 6, harmonious: false },
-  { name: "삼합(trine)",        angle: 120, orb: 6, harmonious: true  },
-  { name: "충(opposition)",     angle: 180, orb: 6, harmonious: false },
-  { name: "퀸컨스(quincunx)",   angle: 150, orb: 2, harmonious: false },
+  { name: "합(conjunction)",    angle: 0,   orb: 6, harmonious: true,  symbol: "☌" },
+  { name: "육분(sextile)",      angle: 60,  orb: 4, harmonious: true,  symbol: "⚹" },
+  { name: "사각(square)",       angle: 90,  orb: 6, harmonious: false, symbol: "□" },
+  { name: "삼합(trine)",        angle: 120, orb: 6, harmonious: true,  symbol: "△" },
+  { name: "충(opposition)",     angle: 180, orb: 6, harmonious: false, symbol: "☍" },
+  { name: "퀸컨스(quincunx)",   angle: 150, orb: 2, harmonious: false, symbol: "⚻" },
+  { name: "semi-sextile",       angle: 30,  orb: 2, harmonious: true,  symbol: "⚺" },
+  { name: "semi-square",        angle: 45,  orb: 2, harmonious: false, symbol: "∠" },
+  { name: "sesquiquadrate",     angle: 135, orb: 2, harmonious: false, symbol: "⚼" },
 ];
+
+function getPlanetOrbCorrection(planet: string): number {
+  if (planet === "태양" || planet === "달") return 2;
+  if (planet === "목성" || planet === "토성") return -1;
+  if (planet === "천왕성" || planet === "해왕성" || planet === "명왕성") return -2;
+  if (planet === "North Node" || planet === "South Node") return -1;
+  return 0;
+}
 
 function calculateAspects(positions: { planet: string; absoluteDegree: number }[]): Aspect[] {
   const aspects: Aspect[] = [];
@@ -120,16 +133,22 @@ function calculateAspects(positions: { planet: string; absoluteDegree: number }[
     for (let j = i + 1; j < positions.length; j++) {
       let diff = Math.abs(positions[i].absoluteDegree - positions[j].absoluteDegree);
       if (diff > 180) diff = 360 - diff;
+
+      const p1 = positions[i].planet;
+      const p2 = positions[j].planet;
+      const corr1 = getPlanetOrbCorrection(p1);
+      const corr2 = getPlanetOrbCorrection(p2);
+      const maxCorr = Math.max(corr1, corr2);
+
       for (const at of ASPECT_TYPES) {
+        const finalOrb = at.orb + maxCorr;
         const orbUsed = Math.abs(diff - at.angle);
-        if (orbUsed <= at.orb) {
-          const p1 = positions[i].planet;
-          const p2 = positions[j].planet;
-          const m1 = PLANET_MEANINGS[p1] || { keyword: "영향" };
-          const m2 = PLANET_MEANINGS[p2] || { keyword: "영향" };
+        if (orbUsed <= finalOrb) {
+          const m1 = PLANET_MEANINGS[p1] || { keyword: p1 };
+          const m2 = PLANET_MEANINGS[p2] || { keyword: p2 };
           const interp = at.harmonious
-            ? `${p1}(${m1.keyword})↔${p2}(${m2.keyword}) ${at.name}: 조화 에너지`
-            : `${p1}(${m1.keyword})↔${p2}(${m2.keyword}) ${at.name}: 긴장/성장`;
+            ? `${p1}(${m1.keyword}) ${at.symbol} ${p2}(${m2.keyword}) ${at.name}: 조화`
+            : `${p1}(${m1.keyword}) ${at.symbol} ${p2}(${m2.keyword}) ${at.name}: 긴장/성장`;
           aspects.push({
             planet1: p1, planet2: p2, type: at.name,
             angle: at.angle, orb: Math.round(orbUsed * 100) / 100,
@@ -143,21 +162,32 @@ function calculateAspects(positions: { planet: string; absoluteDegree: number }[
   return aspects;
 }
 
+function calculateMeanNode(date: Date): number {
+  const time = Astronomy.MakeTime(date);
+  const T = (time.tt - 2451545.0) / 36525;
+  let node = 125.0445479 - 1934.1362891 * T + 0.0020754 * T * T + (T * T * T) / 467441 - (T * T * T * T) / 60616000;
+  return ((node % 360) + 360) % 360;
+}
+
 function getHighPrecisionPositions(date: Date, observer: Astronomy.Observer) {
   const time = Astronomy.MakeTime(date);
-  return PLANET_NAMES.map(name => {
+  const planetPositions = PLANET_NAMES.map(name => {
     const body = PLANETS_MAP[name];
     try {
-      // Equator 대신 GeoVector → Ecliptic 변환 시도
       const geoVec = Astronomy.GeoVector(body, time, true);
       const ecl = Astronomy.Ecliptic(geoVec);
       return { planet: name, longitude: ecl.elon };
     } catch (e) {
-      // 폴백: EclipticLongitude 직접 계산
       const lon = Astronomy.EclipticLongitude(body, time);
       return { planet: name, longitude: lon };
     }
   });
+
+  const nodeLng = calculateMeanNode(date);
+  planetPositions.push({ planet: "North Node", longitude: nodeLng });
+  planetPositions.push({ planet: "South Node", longitude: (nodeLng + 180) % 360 });
+
+  return planetPositions;
 }
 
 /**
@@ -328,19 +358,23 @@ export function calculateServerAstrology(
 
     // B-71new: 역행 판별 — 현재 속도 음수 여부 (astronomy-engine GeoVector 기반)
     let is_retrograde = false;
-    try {
-      const time = Astronomy.MakeTime(natalDate);
-      const time2 = Astronomy.MakeTime(new Date(natalDate.getTime() + 86400000));
-      const body = PLANETS_MAP[p.planet];
-      if (body && body !== Astronomy.Body.Sun && body !== Astronomy.Body.Moon) {
-        const lon1 = Astronomy.EclipticLongitude(body, time);
-        const lon2 = Astronomy.EclipticLongitude(body, time2);
-        let diff = lon2 - lon1;
-        if (diff > 180) diff -= 360;
-        if (diff < -180) diff += 360;
-        is_retrograde = diff < 0;
-      }
-    } catch (_) {}
+    if (p.planet === "North Node" || p.planet === "South Node") {
+      is_retrograde = true;
+    } else {
+      try {
+        const time = Astronomy.MakeTime(natalDate);
+        const time2 = Astronomy.MakeTime(new Date(natalDate.getTime() + 86400000));
+        const body = PLANETS_MAP[p.planet];
+        if (body && body !== Astronomy.Body.Sun && body !== Astronomy.Body.Moon) {
+          const lon1 = Astronomy.EclipticLongitude(body, time);
+          const lon2 = Astronomy.EclipticLongitude(body, time2);
+          let diff = lon2 - lon1;
+          if (diff > 180) diff -= 360;
+          if (diff < -180) diff += 360;
+          is_retrograde = diff < 0;
+        }
+      } catch (_) {}
+    }
 
     let dignityNote = "";
     if (dignity.includes("본좌")) dignityNote = " [본좌]";
