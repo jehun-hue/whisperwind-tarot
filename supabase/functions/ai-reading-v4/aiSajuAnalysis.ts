@@ -34,6 +34,7 @@ export interface SajuAnalysisResult {
   strength_detail?: any;                                // B-264: 강약 세부
   cross_interactions?: any;                             // B-265: 교차 합충
   yongsin_detail?: any;                                 // B-266: 용신 상세 (억부, 조후, 통관)
+  tenGodDistribution?: any;                             // B-267: 십신 에너지 분포
 }
 
 import { getDaewoonInfo, calculateFullDaewoon, type DaewoonResult } from "./lib/daewoon.ts";
@@ -43,6 +44,7 @@ import { calculateAllTwelveStages, calculateTwelveStage, calculateAllTwelveStage
 import { determineGyeokguk, type GyeokgukResult } from "./lib/gyeokguk.ts";
 import { getAllPillarJijanggan } from "./lib/jijanggan.ts";
 import { getAllPillarNapeum } from "./lib/napeum.ts";
+import { calculateTenGod } from "./lib/tenGods.ts";
 
 // ═══════════════════════════════════════
 // 천간(天干) 오행 매핑
@@ -981,6 +983,67 @@ export async function analyzeSajuStructure(
     summary: `${currentYear}년 ${seunBranch}(${sBranchH})운이 원국과 작용하여 생활 리듬에 변화가 예상됩니다.`
   };
 
+  // ── B-267: 십신 에너지 분포 정량화 ──
+  const tenGodScores: Record<string, number> = {
+    "비견": 0, "겁재": 0, "식신": 0, "상관": 0,
+    "편재": 0, "정재": 0, "편관": 0, "정관": 0,
+    "편인": 0, "정인": 0
+  };
+
+  const GROUP_MAP: Record<string, string> = {
+    "비견": "비겁", "겁재": "비겁",
+    "식신": "식상", "상관": "식상",
+    "편재": "재성", "정재": "재성",
+    "편관": "관성", "정관": "관성",
+    "편인": "인성", "정인": "인성"
+  };
+
+  // 1. 천간 점수 (일간 제외)
+  const stemsToScore = [pillars.year?.stem, pillars.month?.stem, pillars.hour?.stem].filter(Boolean) as string[];
+  stemsToScore.forEach(s => {
+    const tg = calculateTenGod(dm, s);
+    if (tg && tenGodScores[tg] !== undefined) tenGodScores[tg] += 1.0;
+  });
+
+  // 2. 지지 장간 점수 (본기 0.6, 중기 0.3, 여기 0.1)
+  const branchesToScore = [pillars.year?.branch, pillars.month?.branch, pillars.day?.branch, pillars.hour?.branch].filter(Boolean) as string[];
+  branchesToScore.forEach(b => {
+    const hiddens = HIDDEN_STEMS[b] || [];
+    hiddens.forEach((s, idx) => {
+      const tg = calculateTenGod(dm, s || "");
+      if (tg && tenGodScores[tg] !== undefined) {
+        let weight = 0;
+        if (idx === 0) weight = 0.6;
+        else if (idx === 1) weight = (hiddens.length === 2) ? 0.1 : 0.3;
+        else if (idx === 2) weight = 0.1;
+        tenGodScores[tg] += weight;
+      }
+    });
+  });
+
+  const groupScores: Record<string, number> = { "비겁": 0, "식상": 0, "재성": 0, "관성": 0, "인성": 0 };
+  Object.entries(tenGodScores).forEach(([tg, score]) => {
+    const group = GROUP_MAP[tg];
+    if (group) groupScores[group] += score;
+  });
+
+  const avgScore = Object.values(groupScores).reduce((a, b) => a + b, 0) / 5;
+  const excess: string[] = [];
+  const deficient: string[] = [];
+  Object.entries(groupScores).forEach(([name, score]) => {
+    if (score >= avgScore * 1.5 && score > 0) excess.push(name);
+    else if (score <= avgScore * 0.3) deficient.push(name);
+  });
+
+  const tenGodDistribution = {
+    scores: tenGodScores,
+    groups: groupScores,
+    excess,
+    deficient,
+    analysis: `${excess.length > 0 ? excess.join("/") + " 과잉" : "에너지 균형"}이며, ` +
+               `${deficient.length > 0 ? deficient.join("/") + " 결핍" : "뚜렷한 결핍 없음"} 상태입니다.`
+  };
+
   return {
     dayMaster: dm,
     strength,
@@ -1026,7 +1089,8 @@ export async function analyzeSajuStructure(
     }),
     strength_detail,
     cross_interactions,
-    yongsin_detail
+    yongsin_detail,
+    tenGodDistribution
   };
 }
 

@@ -71,6 +71,15 @@ async function runTest() {
   console.log(`   목:${els.목 || 0}, 화:${els.화 || 0}, 토:${els.토 || 0}, 금:${els.금 || 0}, 수:${els.수 || 0}`);
   console.log("");
 
+  console.log("4-2. 십신 에너지 분포");
+  if (analysis.tenGodDistribution) {
+    const td = analysis.tenGodDistribution;
+    console.log(`   점수계: 비겁(${td.groups.비겁.toFixed(1)}), 식상(${td.groups.식상.toFixed(1)}), 재성(${td.groups.재성.toFixed(1)}), 관성(${td.groups.관성.toFixed(1)}), 인성(${td.groups.인성.toFixed(1)})`);
+    console.log(`   세부: 비견(${td.scores.비견.toFixed(1)}), 겁재(${td.scores.겁재.toFixed(1)}), 식신(${td.scores.식신.toFixed(1)}), 상관(${td.scores.상상 || td.scores.상관 || 0}) ...`);
+    console.log(`   분석: ${td.analysis}`);
+  }
+  console.log("");
+
   console.log("5. 용신·희신·기신 (상세)");
   if (analysis.yongsin_detail) {
     const yd = analysis.yongsin_detail;
