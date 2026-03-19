@@ -229,8 +229,183 @@ export function generateTarotNarrative(card: string, position: string, isReverse
 }
 
 // ═══════════════════════════════════════
-// 3. 통합 하이브리드 리딩
+// 3. 스프레드 및 조합 분석 레이어
 // ═══════════════════════════════════════
+
+export interface DrawnCard {
+  name: string;
+  suit?: 'Wands' | 'Cups' | 'Swords' | 'Pentacles' | string;
+  rank?: number;
+  isMajor: boolean;
+  isReversed: boolean;
+  position: string;
+}
+
+export interface CombinationInsight {
+  pattern: string;        // 패턴명
+  cards: string[];        // 관련 카드
+  meaning: string;        // 한국어 해석
+  significance: 'high' | 'medium' | 'low';
+}
+
+/**
+ * A24: 카드 조합 해석 고도화
+ */
+export function analyzeCardCombinations(drawnCards: DrawnCard[]): CombinationInsight[] {
+  const insights: CombinationInsight[] = [];
+  const count = drawnCards.length;
+  if (count === 0) return [];
+
+  const cardNames = drawnCards.map(c => c.name);
+
+  // 1) 같은 숫자 반복 (3장 이상)
+  const rankMap: Record<number, string[]> = {};
+  drawnCards.forEach(c => {
+    if (c.rank !== undefined) {
+      rankMap[c.rank] = [...(rankMap[c.rank] || []), c.name];
+    }
+  });
+  Object.entries(rankMap).forEach(([rank, names]) => {
+    if (names.length >= 3) {
+      insights.push({
+        pattern: `숫자 ${rank}의 에너지 집중`,
+        cards: names,
+        meaning: `여러 장의 ${rank}번 카드가 동시에 나타난 것은 해당 수비학적 에너지가 현재 삶의 전반에 강력한 화두임을 뜻합니다.`,
+        significance: 'high'
+      });
+    }
+  });
+
+  // 2) 같은 수트 과다 (4장 이상)
+  const suitMap: Record<string, string[]> = {};
+  drawnCards.forEach(c => {
+    if (c.suit) {
+      suitMap[c.suit] = [...(suitMap[c.suit] || []), c.name];
+    }
+  });
+  Object.entries(suitMap).forEach(([suit, names]) => {
+    if (names.length >= 4) {
+      const suitMeanings: Record<string, string> = {
+        Wands: "열정과 행동력, 새로운 도전에 대한 에너지가 매우 강력하게 작용하고 있습니다.",
+        Cups: "관계의 깊이와 정서적 교감, 내면의 흐름이 상황의 핵심 열쇠입니다.",
+        Swords: "이성적인 판단과 결단, 혹은 해결해야 할 논리적 갈등이 주된 테마입니다.",
+        Pentacles: "현실적인 이익과 안정, 결과물에 대한 집중도가 극도로 높아진 시기입니다."
+      };
+      insights.push({
+        pattern: `${suit} 원소 지배적`,
+        cards: names,
+        meaning: suitMeanings[suit] || "특정 원소의 기운이 지배적으로 작용하고 있습니다.",
+        significance: 'high'
+      });
+    }
+  });
+
+  // 3) 메이저 아르카나 비율 (50% 이상)
+  const majorCount = drawnCards.filter(c => c.isMajor).length;
+  if (majorCount / count >= 0.5) {
+    insights.push({
+      pattern: "운명적 전환기",
+      cards: drawnCards.filter(c => c.isMajor).map(c => c.name),
+      meaning: "메이저 카드의 비중이 압도적인 것은 현재 상황이 단순한 일상을 넘어 인생의 큰 흐름이 바뀌는 중요한 변곡점임을 의미합니다.",
+      significance: 'high'
+    });
+  }
+
+  // 4) 연속 숫자 (3장 이상 성장 흐름)
+  const ranks = drawnCards.filter(c => c.rank !== undefined).map(c => c.rank!).sort((a,b) => a-b);
+  let sequenceCount = 1;
+  for (let i = 0; i < ranks.length - 1; i++) {
+    if (ranks[i+1] === ranks[i] + 1) sequenceCount++;
+    else sequenceCount = 1;
+    if (sequenceCount >= 3) {
+      insights.push({
+        pattern: "진행/성장 흐름",
+        cards: [], // 범용 패턴
+        meaning: "단계적인 발전과 성장이 이루어지고 있는 흐름입니다. 서두르지 말고 차근차근 나아가세요.",
+        significance: 'medium'
+      });
+      break;
+    }
+  }
+
+  // 5) 대립 카드 감지 (극과 극의 공존)
+  const conflicts = [
+    { p: ["The Tower", "The Star"], m: "갑작스러운 붕괴 뒤에 찾아오는 거대한 희망과 치유의 메시지입니다." },
+    { p: ["Death", "The Empress"], m: "하나의 완전한 끝이 풍요로운 새로운 시작을 잉태하고 있는 강력한 재생의 흐름입니다." },
+    { p: ["The Devil", "The Lovers"], m: "구속과 자유, 집착과 진정한 사랑 사이에서의 강렬한 선택을 상징합니다." }
+  ];
+  conflicts.forEach(cf => {
+    if (cf.p.every(name => cardNames.includes(name))) {
+      insights.push({
+        pattern: "극과 극의 공존",
+        cards: cf.p,
+        meaning: cf.m,
+        significance: 'high'
+      });
+    }
+  });
+
+  // 6) Court 카드 비율 (Page/Knight/Queen/King)
+  const courtCount = drawnCards.filter(c => ["Page", "Knight", "Queen", "King"].some(role => c.name.includes(role))).length;
+  if (courtCount / count >= 0.4) {
+    insights.push({
+      pattern: "인물 영향력 강함",
+      cards: [],
+      meaning: "상황을 주도하는 것은 사건보다 '사람'입니다. 주변 인물과의 관계나 본인의 사회적 역할이 핵심입니다.",
+      significance: 'medium'
+    });
+  }
+
+  return insights;
+}
+
+export interface SpreadPositionInfo {
+  name: string;           // 위치명 한국어
+  focus: string;          // 이 위치가 보는 것 (1문장)
+  readingTip: string;     // AI가 해석할 때 참고할 팁 (1문장)
+  weight: number;         // 해석 비중 1~10
+}
+
+/**
+ * A25: 스프레드 위치별 의미 강화
+ */
+export function getSpreadPositionContext(spreadType: string, position: number): SpreadPositionInfo {
+  const spreadMap: Record<string, SpreadPositionInfo[]> = {
+    celtic_cross: [
+      { name: "현재 상황", focus: "질문자가 처한 지금의 중심 에너지", readingTip: "질문의 핵심 테마로 삼으세요.", weight: 10 },
+      { name: "장애물", focus: "현재 진행을 가로막는 직접적인 원인", readingTip: "극복해야 할 과제로 해석하세요.", weight: 9 },
+      { name: "기저", focus: "무의식 속에 깔린 근본적인 배경", readingTip: "과거로부터 이어진 뿌리를 찾아보세요.", weight: 7 },
+      { name: "과거", focus: "최근에 지나온 영향력과 원인", readingTip: "이미 일어난 일로 현재의 참고 자료입니다.", weight: 6 },
+      { name: "왕관", focus: "의식적으로 생각하는 목표나 최선의 가능성", readingTip: "질문자가 바라는 이상향입니다.", weight: 6 },
+      { name: "미래", focus: "곧 다가올 사건이나 흐름", readingTip: "현재 흐름이 이어졌을 때의 예정된 결과입니다.", weight: 8 },
+      { name: "자세", focus: "상황을 바라보는 질문자의 주관적 태도", readingTip: "내면의 의지나 태도를 짚어주세요.", weight: 7 },
+      { name: "환경", focus: "타인의 시선이나 주변의 객관적 상황", readingTip: "외부 압력이나 도움의 여부를 확인하세요.", weight: 7 },
+      { name: "희망과 공포", focus: "가장 원하거나 두려워하는 요소", readingTip: "내면의 무의식적 불안을 읽어주세요.", weight: 5 },
+      { name: "최종 결과", focus: "모든 흐름이 도달하게 될 종착역", readingTip: "전체 리딩의 결론으로 강조하세요.", weight: 10 }
+    ],
+    three_card: [
+      { name: "과거", focus: "현재에 이르게 된 인과 관계", readingTip: "무슨 일이 있었는지 설명하세요.", weight: 6 },
+      { name: "현재", focus: "지금 당장 직면한 상황의 정수", readingTip: "가장 비중 있게 다뤄야 할 부분입니다.", weight: 10 },
+      { name: "미래", focus: "현재 흐름의 연장선상에 있는 결과", readingTip: "변화 가능성을 열어두고 조언하세요.", weight: 8 }
+    ],
+    horseshoe: [
+      { name: "과거", focus: "영향력을 미치고 있는 지나온 일들", readingTip: "배경 설명을 풍성하게 하세요.", weight: 5 },
+      { name: "현재", focus: "당장 해결해야 할 상황", readingTip: "지금의 에너지를 정의하세요.", weight: 8 },
+      { name: "숨은 영향", focus: "보이지 않게 작용하는 변수", readingTip: "의외의 사실을 깨닫게 해주세요.", weight: 7 },
+      { name: "장애물", focus: "도전해야 할 어려운 점", readingTip: "명확한 해결책과 연결하세요.", weight: 9 },
+      { name: "외부 환경", focus: "주변 사람이나 사회적 조건", readingTip: "도움이 될지 방해가 될지 판단하세요.", weight: 6 },
+      { name: "조언", focus: "취해야 할 구체적인 행동", readingTip: "희망적인 가이드를 제공하세요.", weight: 10 },
+      { name: "결과", focus: "상황의 최종 마무리", readingTip: "최선을 다했을 때의 결실입니다.", weight: 10 }
+    ],
+    single: [
+      { name: "오늘의 메시지", focus: "오늘 하루를 관통하는 핵심 조언", readingTip: "단호하고 명확한 한 문장으로 시작하세요.", weight: 10 }
+    ]
+  };
+
+  const layout = spreadMap[spreadType] || spreadMap.single;
+  return layout[position % layout.length];
+}
+
 export function hybridTarotReading(cards: any[]) {
   return cards.map(c => ({
     ...c,
