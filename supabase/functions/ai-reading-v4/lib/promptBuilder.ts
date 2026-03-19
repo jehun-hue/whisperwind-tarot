@@ -40,7 +40,7 @@ export function buildReadingPrompt(
   // 3. 자미두수 요약
   const zw = ziwei;
   const starsStr = zw?.core_palaces?.life_palace?.major_stars?.join(", ") ?? "없음";
-  const dahan = zw.currentMajorPeriod;
+  const dahan = .currentMajorPeriod;
 
   // 4. 수비학 요약
   const num = numerology;

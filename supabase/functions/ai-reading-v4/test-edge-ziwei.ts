@@ -34,8 +34,8 @@ async function runTests() {
       const majorStarsCount = result.palaces.reduce((acc, p) => acc + p.stars.length, 0);
       console.log(`  Total Stars Placed: ${majorStarsCount}`);
       
-      if (result.currentMajorPeriod) {
-        console.log(`  Current Major Period: ${result.currentMajorPeriod.startAge}-${result.currentMajorPeriod.endAge} (${result.currentMajorPeriod.palace})`);
+      if (.currentMajorPeriod) {
+        console.log(`  Current Major Period: ${.currentMajorPeriod?.startAge}-${.currentMajorPeriod?.endAge} (${.currentMajorPeriod?.palace})`);
       }
       if (result.currentMinorPeriod) {
         console.log(`  Current Minor Period: ${result.currentMinorPeriod.age}세 (${result.currentMinorPeriod.palace})`);

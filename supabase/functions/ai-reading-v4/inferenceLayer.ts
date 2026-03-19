@@ -405,7 +405,7 @@ function extractZiweiSignals(ziwei: any): NormalizedSignal[] {
   };
 
   // 생년사화, 대한사화, 유년사화 합쳐서 스캔
-  const tSets = [ziwei.natal_transformations, ziwei.annual_transformations, ziwei.currentMajorPeriod?.transformations];
+  const tSets = [ziwei.natal_transformations, ziwei.annual_transformations, .currentMajorPeriod?.transformations];
   tSets.forEach(set => {
     if (Array.isArray(set)) set.forEach(processT);
   });
@@ -431,7 +431,7 @@ function extractZiweiSignals(ziwei: any): NormalizedSignal[] {
   });
 
   // 현재 대한 궁에서 화기 체크 (finance 등 도메인 보정)
-  const currentPeriod = ziwei.currentMajorPeriod || ziwei.major_period;
+  const currentPeriod = .currentMajorPeriod || ziwei.major_period;
   if (currentPeriod) {
     // 현재 대한이 전택궁이면 = 부동산/주거/가산이 핵심 테마
     if (currentPeriod.palace === "전택궁") {

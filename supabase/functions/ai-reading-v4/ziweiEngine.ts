@@ -524,7 +524,7 @@ export function calculateServerZiWei(
 
   let periodAnalysis = "";
   if (currentMajorPeriod) {
-    periodAnalysis += `현재 대한(${currentMajorPeriod.startAge}-${currentMajorPeriod.endAge}세, 한국나이): ${currentMajorPeriod.palace}. ${currentMajorPeriod.interpretation} `;
+    periodAnalysis += `현재 대한(${currentMajorPeriod?.startAge}-${currentMajorPeriod?.endAge}세, 한국나이): ${currentMajorPeriod?.palace}. ${currentMajorPeriod?.interpretation} `;
   }
   if (currentMinorPeriod) periodAnalysis += currentMinorPeriod.interpretation;
 
@@ -540,7 +540,7 @@ export function calculateServerZiWei(
       keyInsights.push(`${label}: ${s.star}(${s.brightness}) → ${isBright ? "길" : "주의"}`);
     }
   }
-  if (currentMajorPeriod) keyInsights.push(`현재 대한: ${currentMajorPeriod.interpretation}`);
+  if (currentMajorPeriod) keyInsights.push(`현재 대한: ${currentMajorPeriod?.interpretation}`);
 
   // ── 연간 유년 사화 계산 (올해 천간 기준) ──
   const currentYearGanIdx = (currentYear - 4) % 10;
