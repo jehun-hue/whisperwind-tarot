@@ -283,7 +283,7 @@ export function calculateZiwei(
     return calculateServerZiWei(arg1, lunarMonth, lunarDay, standardHour, arg5, arg6);
   } else {
     // Stem/Branch based call
-    const birthYear = 2026; // Fallback
+    const birthYear = (arg7 && typeof arg7 === "number" && arg7 > 1900 && arg7 < 2100) ? arg7 : 1987;
     const lMonth = arg3; const lDay = arg4; const hBranchIdx = BRANCHES.indexOf(arg5); const sHour = hBranchIdx * 2;
     return calculateServerZiWei(birthYear, lMonth, lDay, sHour, 0, arg6);
   }

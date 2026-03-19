@@ -384,120 +384,58 @@ interface LunarResult {
 }
 
 function solarToLunar(solarYear: number, solarMonth: number, solarDay: number): LunarResult {
-  // 각 연도의 음력 데이터: [설날 양력월, 설날 양력일, 월별 날수[], 윤달 위치(-1=없음)]
-  const LUNAR_DATA: Record<number, [number, number, number[], number]> = {
-    1970: [2,  6,  [29,30,29,30,29,30,29,30,29,30,30,29], -1],
-    1971: [1, 27,  [30,29,30,29,30,29,30,29,30,29,29,30], -1],
-    1972: [2, 15,  [30,29,30,29,30,30,29,30,29,30,29,29], 3],
-    1973: [2,  3,  [30,29,30,30,29,30,29,30,29,30,29,30], -1],
-    1974: [1, 23,  [29,30,29,30,29,30,30,29,30,29,30,29], -1],
-    1975: [2, 11,  [30,29,29,30,30,29,30,29,30,30,29,30], 8],
-    1976: [1, 31,  [29,30,29,29,30,29,30,29,30,30,30,29], -1],
-    1977: [2, 18,  [30,29,30,29,29,30,29,29,30,30,30,29], -1],
-    1978: [2,  7,  [30,30,29,30,29,29,30,29,29,30,30,29], -1],
-    1979: [1, 28,  [30,30,29,30,29,30,29,30,29,29,30,29], 6],
-    1980: [2, 16,  [30,29,30,30,29,30,29,30,29,30,29,29], -1],
-    1981: [2,  5,  [30,29,30,30,29,30,30,29,30,29,29,30], -1],
-    1982: [1, 25,  [29,30,29,30,29,30,30,30,29,30,29,29], 4],
-    1983: [2, 13,  [30,29,29,30,29,30,30,29,30,30,29,30], -1],
-    1984: [2,  2,  [29,30,29,29,30,29,30,29,30,30,29,30], -1],
-    1985: [2, 20,  [29,30,29,29,30,29,29,30,30,29,30,30], 10],
-    1986: [2,  9,  [29,30,29,30,29,29,30,29,30,29,30,30], -1],
-    1987: [1, 29,  [29,30,30,29,30,29,29,30,29,30,29,30], -1],
-    1988: [2, 17,  [29,29,30,30,29,30,29,29,30,29,30,29], 6],
-    1989: [2,  6,  [30,29,30,30,29,30,29,30,29,29,30,29], -1],
-    1990: [1, 27,  [30,29,30,30,29,30,30,29,30,29,29,29], -1],
-    1991: [2, 15,  [30,29,30,29,30,30,29,30,30,29,30,29], 8],
-    1992: [2,  4,  [29,30,29,29,30,30,29,30,30,29,30,30], -1],
-    1993: [1, 23,  [29,29,30,29,29,30,30,29,30,30,29,30], -1],
-    1994: [2, 10,  [29,30,29,30,29,29,30,29,30,30,29,30], 3],
-    1995: [1, 31,  [30,29,30,29,30,29,29,30,29,30,30,29], -1],
-    1996: [2, 19,  [30,29,30,30,29,30,29,29,30,29,30,29], -1],
-    1997: [2,  7,  [30,29,30,30,30,29,30,29,29,30,29,29], 8],
-    1998: [1, 28,  [30,29,30,30,29,30,30,29,30,29,29,30], -1],
-    1999: [2, 16,  [29,30,29,30,29,30,30,29,30,30,29,29], -1],
-    2000: [2,  5,  [30,29,30,29,29,30,30,29,30,30,29,30], 4],
-    2001: [1, 24,  [29,30,29,29,30,29,30,29,30,30,30,29], -1],
-    2002: [2, 12,  [30,29,30,29,29,30,29,30,29,30,30,29], -1],
-    2003: [2,  1,  [30,29,30,30,29,29,30,29,29,30,30,29], 2],
-    2004: [1, 22,  [30,29,30,30,29,30,29,30,29,29,30,29], -1],
-    2005: [2,  9,  [30,29,30,30,29,30,30,29,30,29,29,29], -1],
-    2006: [1, 29,  [30,29,30,29,30,30,30,29,30,29,29,30], 7],
-    2007: [2, 18,  [29,30,29,29,30,30,29,30,30,29,30,29], -1],
-    2008: [2,  7,  [30,29,30,29,29,30,29,30,30,29,30,30], -1],
-    2009: [1, 26,  [29,30,29,30,29,29,30,29,30,29,30,30], 5],
-    2010: [2, 14,  [29,30,29,30,29,30,29,29,30,29,30,30], -1],
-    2011: [2,  3,  [29,30,29,30,30,29,30,29,29,30,29,30], -1],
-    2012: [1, 23,  [29,30,29,30,30,29,30,30,29,29,30,29], 4],
-    2013: [2, 10,  [30,29,29,30,30,29,30,30,29,30,29,29], -1],
-    2014: [1, 31,  [30,29,30,29,30,29,30,30,29,30,30,29], -1],
-    2015: [2, 19,  [29,30,29,30,29,29,30,30,29,30,30,29], 9],
-    2016: [2,  8,  [30,29,30,29,29,30,29,30,29,30,30,30], -1],
-    2017: [1, 28,  [29,30,29,30,29,29,30,29,30,29,30,30], -1],
-    2018: [2, 16,  [29,30,29,30,29,30,29,29,30,29,30,29], 5],
-    2019: [2,  5,  [30,30,29,30,29,30,29,30,29,29,30,29], -1],
-    2020: [1, 25,  [30,30,29,30,30,29,30,29,30,29,29,30], -1],
-    2021: [2, 12,  [29,30,29,30,30,29,30,29,30,30,29,29], 4],
-    2022: [2,  1,  [30,29,30,29,30,29,30,30,29,30,30,29], -1],
-    2023: [1, 22,  [29,30,29,30,29,30,29,30,30,29,30,29], -1],
-    2024: [2, 10,  [30,29,30,29,30,29,30,29,30,29,30,30], 6],
-    2025: [1, 29,  [29,30,29,30,29,30,29,30,29,30,29,30], -1],
-    2026: [2, 17,  [29,30,29,30,29,30,29,30,29,30,30,29], -1],
-  };
-
-  const data = LUNAR_DATA[solarYear];
-  const prevData = LUNAR_DATA[solarYear - 1];
-
-  // 해당 연도의 설날 양력 날짜
-  const toJulian = (y: number, m: number, d: number) =>
-    Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (m + 1)) + d - 1524;
-
-  const solarJD = toJulian(solarYear, solarMonth > 2 ? solarMonth : solarMonth, solarDay);
-
-  // 설날 기준으로 어느 음력 연도에 속하는지 판별
-  function calcLunar(targetJD: number, yearData: [number, number, number[], number], lunarYear: number): LunarResult {
-    const [nyM, nyD, monthDays, leapMonth] = yearData;
-    const newYearJD = toJulian(lunarYear, nyM, nyD);
-    const diff = targetJD - newYearJD;
-    if (diff < 0) return { lunarYear: -1, lunarMonth: -1, lunarDay: -1, is_leap_month: false, is_leap_month_adjusted: false };
-
-    let remaining = diff;
-    let month = 1;
-    let isLeap = false;
-    for (let i = 0; i < monthDays.length; i++) {
-      const days = monthDays[i];
-      // 윤달: leapMonth 번째 달 다음에 윤달 삽입
-      if (leapMonth !== -1 && i === leapMonth) {
-        // 윤달 길이는 해당 달과 동일
-        const leapDays = monthDays[leapMonth - 1] || 29;
-        if (remaining < leapDays) {
-          return { lunarYear, lunarMonth: leapMonth, lunarDay: remaining + 1, is_leap_month: true, is_leap_month_adjusted: true };
-        }
-        remaining -= leapDays;
+  try {
+    const dateObj = new Date(solarYear, solarMonth - 1, solarDay);
+    const formatter = new Intl.DateTimeFormat('ko-KR-u-ca-chinese', {
+      year: 'numeric', month: 'numeric', day: 'numeric'
+    });
+    const parts = formatter.formatToParts(dateObj);
+    
+    let lunarMonth = 1;
+    let lunarDay = 1;
+    let lunarYear = solarYear;
+    
+    for (const part of parts) {
+      if (part.type === 'month') {
+        lunarMonth = parseInt(part.value.replace(/\D/g, '')) || 1;
       }
-      if (remaining < days) {
-        return { lunarYear, lunarMonth: month, lunarDay: remaining + 1, is_leap_month: false, is_leap_month_adjusted: false };
+      if (part.type === 'day') {
+        lunarDay = parseInt(part.value.replace(/\D/g, '')) || 1;
       }
-      remaining -= days;
-      month++;
+      if (part.type === 'year') {
+        lunarYear = parseInt(part.value.replace(/\D/g, '')) || solarYear;
+      }
     }
-    return { lunarYear, lunarMonth: 12, lunarDay: remaining + 1, is_leap_month: false, is_leap_month_adjusted: false };
+    
+    // 윤달 감지: 같은 음력 월이 연속으로 나오는지 확인
+    const prevDay = new Date(solarYear, solarMonth - 1, solarDay - 30);
+    const prevParts = new Intl.DateTimeFormat('ko-KR-u-ca-chinese', {
+      month: 'numeric'
+    }).formatToParts(prevDay);
+    const prevMonth = parseInt((prevParts.find(p => p.type === 'month')?.value || '').replace(/\D/g, '')) || 0;
+    
+    const nextDay = new Date(solarYear, solarMonth - 1, solarDay + 30);
+    const nextParts = new Intl.DateTimeFormat('ko-KR-u-ca-chinese', {
+      month: 'numeric'
+    }).formatToParts(nextDay);
+    const nextMonth = parseInt((nextParts.find(p => p.type === 'month')?.value || '').replace(/\D/g, '')) || 0;
+    
+    // 윤달이면 전후 30일에 같은 월이 반복됨
+    const isLeapMonth = (prevMonth === lunarMonth) || (nextMonth === lunarMonth && lunarDay <= 15);
+    
+    console.log(`[LUNAR→SOLAR] 양력 ${solarYear}-${solarMonth}-${solarDay} → 음력 ${lunarMonth}월 ${lunarDay}일 (윤달: ${isLeapMonth})`);
+    
+    return {
+      lunarYear,
+      lunarMonth,
+      lunarDay,
+      is_leap_month: isLeapMonth,
+      is_leap_month_adjusted: false
+    };
+  } catch (e) {
+    console.error("[solarToLunar] Intl 변환 실패, 기본값 반환:", e);
+    return { lunarYear: solarYear, lunarMonth: solarMonth, lunarDay: solarDay, is_leap_month: false, is_leap_month_adjusted: false };
   }
-
-  // 해당 연도 시도
-  if (data) {
-    const result = calcLunar(solarJD, data, solarYear);
-    if (result.lunarYear !== -1) return result;
-  }
-
-  // 이전 연도(설날 이전인 경우)
-  if (prevData) {
-    const result = calcLunar(solarJD, prevData, solarYear - 1);
-    if (result.lunarYear !== -1) return result;
-  }
-
-  // 폴백
-  return { lunarYear: solarYear, lunarMonth: solarMonth, lunarDay: solarDay, is_leap_month: false, is_leap_month_adjusted: false };
 }
 
 /** 24절기 한국어 매핑 (입춘 기준) */
@@ -1118,7 +1056,7 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
         ziweiLunarDay,
         birthHourBranch,
         genderZiwei,
-        2026
+        solarBirthInfo.year
       );
     } catch (e) {
       console.error("[ENGINE-SAFE] 자미두수 계산 실패:", e);
