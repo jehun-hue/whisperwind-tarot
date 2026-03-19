@@ -52,6 +52,7 @@ const PENALTIES: [string[], string][] = [
   [["午", "午"], "자형: 화기운 과다, 조급함"],
   [["酉", "酉"], "자형: 냉혹함, 스스로 상처"],
   [["亥", "亥"], "자형: 우울감, 비관주의"],
+  [["卯", "卯"], "자형: 관계 갈등, 스스로 고민 (일부 학파)"],
 ];
 
 // 지지파(破) 테이블
@@ -344,6 +345,11 @@ export function calculateShinsalGrouped(
       return dohwaMap[base] === targetJi;
     });
     if (isDohwa) result[p].push({ name: "도화살", type: "도화", description: "매력과 인기", health_implication: null, topic_relevance: ["relationship"], severity: "중립", pillar: p });
+    
+    // 도화살(좌): 지지가 子, 午, 卯, 酉 중 하나인 경우
+    if (["子", "午", "卯", "酉"].includes(targetJi)) {
+      result[p].push({ name: "도화살(좌)", type: "도화", description: "지지의 자체 매력", health_implication: null, topic_relevance: ["relationship"], severity: "중립", pillar: p });
+    }
   });
   // 나체도화 (일주 기준)
   if (["甲子", "丁卯", "庚午", "癸酉"].includes(dm + pillars.day)) {

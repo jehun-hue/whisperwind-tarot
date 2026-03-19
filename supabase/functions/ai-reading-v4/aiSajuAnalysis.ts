@@ -35,6 +35,10 @@ export interface SajuAnalysisResult {
   cross_interactions?: any;                             // B-265: 교차 합충
   yongsin_detail?: any;                                 // B-266: 용신 상세 (억부, 조후, 통관)
   tenGodDistribution?: any;                             // B-267: 십신 에너지 분포
+  elements_simple?: Record<string, number>;            // v2: 단순 오행 카운트
+  element_adjustments?: any[];                         // v2: 합화 오행 변화
+  daewoon_transition?: any;                            // v2: 대운 전환기 경고
+  daily_pillar?: any;                                  // v2: 일진 분석
 }
 
 import { getDaewoonInfo, calculateFullDaewoon, type DaewoonResult } from "./lib/daewoon.ts";
@@ -45,6 +49,7 @@ import { determineGyeokguk, type GyeokgukResult } from "./lib/gyeokguk.ts";
 import { getAllPillarJijanggan } from "./lib/jijanggan.ts";
 import { getAllPillarNapeum } from "./lib/napeum.ts";
 import { calculateTenGod } from "./lib/tenGods.ts";
+import { getFullSaju } from "./sajuEngine.ts";
 
 // ═══════════════════════════════════════
 // 천간(天干) 오행 매핑
@@ -362,6 +367,13 @@ export async function analyzeSajuStructure(
   const pillars = sajuRaw.pillars || { year: sajuRaw.year, month: sajuRaw.month, day: sajuRaw.day, hour: sajuRaw.hour };
   const stems: string[] = [pillars.year?.stem, pillars.month?.stem, pillars.day?.stem, pillars.hour?.stem].filter(Boolean);
   const branches: string[] = [pillars.year?.branch, pillars.month?.branch, pillars.day?.branch, pillars.hour?.branch].filter(Boolean);
+
+  // v2: 오행 단순 카운트 (elements_simple)
+  const elements_simple: Record<string, number> = { "목": 0, "화": 0, "토": 0, "금": 0, "수": 0 };
+  [pillars.year, pillars.month, pillars.day, pillars.hour].forEach(p => {
+    if (p?.stem && STEM_ELEMENT[p.stem]) elements_simple[STEM_ELEMENT[p.stem]]++;
+    if (p?.branch && BRANCH_ELEMENT[p.branch]) elements_simple[BRANCH_ELEMENT[p.branch]]++;
+  });
 
   // B-222: 십성 세력 계산 (천간 + 지장간)
   const tenGodCount: Record<string, number> = {
@@ -730,6 +742,24 @@ export async function analyzeSajuStructure(
     console.error("[Daewoon] Calculation failed:", e);
   }
 
+  // v2: 대운 전환기 경고
+  let daewoon_transition: any = { isTransitioning: false, yearsUntilNext: 0, nextDaewoon: null, warning: null };
+  if (daewoon && daewoon.currentDaewoon) {
+    const cd = daewoon.currentDaewoon;
+    const birthYear = Number(pillars.year?.year || sajuRaw.year);
+    const currentAge = new Date().getFullYear() - (Number.isFinite(birthYear) ? birthYear : 1990) + 1;
+    const yearsUntilNext = cd.endAge - currentAge + 1;
+    const nextIdx = (cd.index || 0) + 1;
+    const nextD = daewoon.pillars.find(p => p.index === nextIdx);
+    
+    daewoon_transition = {
+      isTransitioning: yearsUntilNext <= 2,
+      yearsUntilNext,
+      nextDaewoon: nextD?.full || "미상",
+      warning: yearsUntilNext <= 2 ? `대운 전환기 ${yearsUntilNext}년 이내 — 변동성 주의` : null
+    };
+  }
+
   // narrative에 대운 정보 통합
   if (daewoon?.currentDaewoon) {
     const cd = daewoon.currentDaewoon;
@@ -851,6 +881,23 @@ export async function analyzeSajuStructure(
   ].filter((b): b is string => !!b);
   const interactions = calculateInteractions(interactionStems, interactionBranches);
 
+  // v2: 합충 결과의 오행 변화 (element_adjustments)
+  const element_adjustments: any[] = [];
+  const SAMHAP_ELEMENTS: Record<string, string> = { "수국 삼합": "수", "화국 삼합": "화", "금국 삼합": "금", "목국 삼합": "목" };
+  
+  interactions.forEach(inter => {
+    if (inter.type === "지지삼합") {
+      const isFull = !inter.result.includes("반합");
+      const baseName = inter.meaning_keyword.split(" ")[0];
+      const targetElem = SAMHAP_ELEMENTS[baseName] || "목";
+      element_adjustments.push({
+        type: isFull ? "삼합성립" : "반합경향",
+        combination: inter.elements.join("") + " " + inter.result,
+        effect: isFull ? `${targetElem} 에너지 +1.5, 관련 지지 오행 약화` : `${targetElem} 에너지 강화 경향, 완전 합화 미성립`
+      });
+    }
+  });
+
   // B-144: 신살 계산
   const targetYearBranch = sajuRaw.target_year_branch || "午";
   const shinsal = calculateShinsal(
@@ -918,7 +965,7 @@ export async function analyzeSajuStructure(
     hour: pillars.hour?.branch || "",
   });
 
-  const twelveStagesGeobup = calculateAllTwelveStagesGeobup({
+  const twelveStagesGeobup = calculateAllTwelveStagesGeobup(dm, {
     year: pillars.year?.branch || "",
     month: pillars.month?.branch || "",
     day: pillars.day?.branch || "",
@@ -1044,6 +1091,41 @@ export async function analyzeSajuStructure(
                `${deficient.length > 0 ? deficient.join("/") + " 결핍" : "뚜렷한 결핍 없음"} 상태입니다.`
   };
 
+  // v2: 일진 분석 (Daily Pillar)
+  let daily_pillar: any = null;
+  try {
+    const today = new Date("2026-03-19T12:00:00+09:00");
+    const todaySaju = getFullSaju(today.getFullYear(), today.getMonth() + 1, today.getDate(), today.getHours(), today.getMinutes());
+    const dailyStem = todaySaju.pillars.day.stem;
+    const dailyBranch = todaySaju.pillars.day.branch;
+    const stemTenGod = calculateTenGod(dm, dailyStem);
+    const branchRelations: any[] = [];
+    
+    [
+      { name: "년지", branch: pillars.year?.branch },
+      { name: "월지", branch: pillars.month?.branch },
+      { name: "일지", branch: pillars.day?.branch },
+      { name: "시지", branch: pillars.hour?.branch }
+    ].forEach(p => {
+      if (p.branch) {
+        const rel = checkBranchRelation(dailyBranch, p.branch);
+        if (rel) branchRelations.push({ with: `${p.name} ${p.branch}`, type: rel.type });
+      }
+    });
+
+    daily_pillar = {
+      date: today.toISOString().split("T")[0],
+      stem: dailyStem,
+      branch: dailyBranch,
+      pillar: `${dailyStem}${dailyBranch}`,
+      stem_tenGod: stemTenGod,
+      branch_relation: branchRelations,
+      interpretation: `오늘의 에너지: ${stemTenGod} 기운, 원국 지지와 ${branchRelations.length > 0 ? branchRelations.map(r => r.type).join("/") : "조화로운"} 관계`
+    };
+  } catch (e) {
+    console.error("[Daily Pillar] Calculation failed:", e);
+  }
+
   return {
     dayMaster: dm,
     strength,
@@ -1090,7 +1172,11 @@ export async function analyzeSajuStructure(
     strength_detail,
     cross_interactions,
     yongsin_detail,
-    tenGodDistribution
+    tenGodDistribution,
+    elements_simple,
+    element_adjustments,
+    daewoon_transition,
+    daily_pillar
   };
 }
 

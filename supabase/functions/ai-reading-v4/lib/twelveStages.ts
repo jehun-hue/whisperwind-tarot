@@ -76,17 +76,31 @@ export function calculateTwelveStageGeobup(branch: string): string {
 }
 
 /**
- * 사주 4개 지지에 대해 12운성 거법 계산
+ * 사주 4개 지지에 대해 12운성 거법 계산 (v2 패치: 두 가지 방식 지원)
+ * method1: 지지 본기 장간을 일간으로 상정하고 해당 지지에서의 12운성 (전통적 거법)
+ * method2: 일간을 기준으로 해당 지지에서의 12운성 (봉법과 동일한 기준의 지지 에너지)
  */
 export function calculateAllTwelveStagesGeobup(
+  dayStem: string,
   fourPillars: { year: string; month: string; day: string; hour: string }
 ) {
-  return {
+  // Method 1: Traditional Geobup (Branch Main Root as Stem)
+  const method1 = {
     year: calculateTwelveStageGeobup(fourPillars.year),
     month: calculateTwelveStageGeobup(fourPillars.month),
     day: calculateTwelveStageGeobup(fourPillars.day),
     hour: calculateTwelveStageGeobup(fourPillars.hour),
   };
+
+  // Method 2: Day Stem based (Same as Bongbup base)
+  const method2 = {
+    year: calculateTwelveStage(dayStem, fourPillars.year),
+    month: calculateTwelveStage(dayStem, fourPillars.month),
+    day: calculateTwelveStage(dayStem, fourPillars.day),
+    hour: calculateTwelveStage(dayStem, fourPillars.hour),
+  };
+
+  return { method1, method2 };
 }
 
 /**
