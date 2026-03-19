@@ -23,6 +23,9 @@ export interface SajuAnalysisResult {
   topic_shinsal_map: Record<string, string[]>;          // B-145: 토픽별 신살 매핑
   twelve_stages?: any;                                  // B-256: 12운성 정보
   gyeokguk?: GyeokgukResult;                             // B-257: 격국 분석
+  giShin: string;                                       // B-258: 기신
+  guShin: string;                                       // B-258: 구신
+  hanShin: string;                                      // B-258: 한신
 }
 
 import { getDaewoonInfo, calculateFullDaewoon, type DaewoonResult } from "./lib/daewoon.ts";
@@ -223,6 +226,9 @@ export async function analyzeSajuStructure(
       shinsal: [],
       health_risk_tags: [],
       topic_shinsal_map: {},
+      giShin: "",
+      guShin: "",
+      hanShin: "",
     };
   }
 
@@ -441,27 +447,30 @@ export async function analyzeSajuStructure(
 
   const yongShinMethod = "억부용신";
 
-  // 기신(기픇에 해로운 오행) / 구신(기신을 돕는 오행) / 한신(나머지)
   const mainYongsin = eokbuYong; // /없는 단일 용신 기준
-  let giShin = ""; // 기신: 일간을 극하는 오행
-  let guShin = ""; // 구신: 기신을 생하는 오행
-  let hanShin = ""; // 한신: 나머지
-  // 희신: 용신을 생하는 오행
   const heeShinRaw = SUPPORT_ELEM[mainYongsin] || "";
 
-  if (isWeak) {
-    // 신약: 기신 = 일간을 능하는(관성) 오행
-    giShin = CONQUER_ELEM[myElement] || "";
-    guShin = SUPPORT_ELEM[giShin] || ""; // 기신을 생하는 오행
-    // 한신: 용신/희신/기신/구신/일간월소와 다른 오행
-    const usedElements = new Set<string>([mainYongsin, heeShinRaw, giShin, guShin, myElement]);
-    hanShin = ["목", "화", "토", "금", "수"].find(e => !usedElements.has(e)) || "";
-  } else {
-    // 신강: 기신 = 일간을 돕는(비겨1/인성) 오행
-    giShin = myElement;
-    guShin = SUPPORT_ELEM[giShin] || "";
-    const usedElements = new Set<string>([mainYongsin, heeShinRaw, giShin, guShin, myElement]);
-    hanShin = ["목", "화", "토", "금", "수"].find(e => !usedElements.has(e)) || "";
+  // ── B-258: 기신(忌神) / 구신(仇神) / 한신(閑神) 정밀 분류 ──
+  // 용신: 최선, 희신: 차선(용신 생조), 기신: 흉(용신 극), 구신: 대흉(기신 생조), 한신: 중립
+  const ELEMENTS_ORDER = ["목", "화", "토", "금", "수"];
+  const yongIdx = ELEMENTS_ORDER.indexOf(mainYongsin);
+  
+  let giShin = "";
+  let guShin = "";
+  let hanShin = "";
+  
+  if (yongIdx >= 0) {
+    // 용신을 극하는 오행 (기신)
+    const giIdx = (yongIdx - 2 + 5) % 5;
+    giShin = ELEMENTS_ORDER[giIdx];
+    
+    // 기신을 생하는 오행 (구신)
+    const guIdx = (giIdx - 1 + 5) % 5;
+    guShin = ELEMENTS_ORDER[guIdx];
+    
+    // 나머지 하나 (한신)
+    const used = new Set([mainYongsin, heeShinRaw, giShin, guShin]);
+    hanShin = ELEMENTS_ORDER.find(e => !used.has(e)) || "";
   }
 
   console.log("[YONGSHIN CALC]", {
@@ -566,11 +575,11 @@ export async function analyzeSajuStructure(
   // === 대운 분석 ===
   let daewoon: DaewoonResult | null = null;
   try {
-    const yearStemIdx = STEMS.indexOf(sajuRaw.year?.stem || (typeof sajuRaw.year === 'string' ? sajuRaw.year[0] : undefined));
-    const monthStemIdx = STEMS.indexOf(sajuRaw.month?.stem);
-    const monthBranchIdx = BRANCHES.indexOf(sajuRaw.month?.branch);
+    const yearStemIdx = STEMS.indexOf(pillars.year?.stem);
+    const monthStemIdx = STEMS.indexOf(pillars.month?.stem);
+    const monthBranchIdx = BRANCHES.indexOf(pillars.month?.branch);
     const gender = (sajuRaw.gender === 'F' || sajuRaw.gender === 'female') ? 'F' : 'M';
-    const birthYear = Number(sajuRaw.year?.year || sajuRaw.year);
+    const birthYear = Number(pillars.year?.year || sajuRaw.year);
     const currentAge = new Date().getFullYear() - (Number.isFinite(birthYear) ? birthYear : 1990) + 1;
     const sLong = sajuRaw.sunLong ?? sajuRaw.sun_long ?? 0;
     const jdVal = sajuRaw.jd ?? sajuRaw.julian_day ?? 0;
@@ -797,6 +806,9 @@ export async function analyzeSajuStructure(
     shinsal,
     health_risk_tags,
     topic_shinsal_map,
+    giShin,
+    guShin,
+    hanShin,
     twelve_stages: {
       pillars: twelveStageDetails,
       seun: { stage: seunTwelveStage, ...seunTwelveStageEnergy },
