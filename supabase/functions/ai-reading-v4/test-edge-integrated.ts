@@ -5,7 +5,7 @@
 
 import { getFullSaju } from "./sajuEngine.ts";
 import { analyzeSajuStructure } from "./aiSajuAnalysis.ts";
-import { calculateServerAstrology } from "./astrologyEngine.ts";
+import { calculateServerAstrology } from "./lib/astrologyEngine.ts";
 import { calculateServerZiWei } from "./ziweiEngine.ts";
 import { calculateNumerology } from "./numerologyEngine.ts";
 import { drawCards } from "./drawTarot.ts";

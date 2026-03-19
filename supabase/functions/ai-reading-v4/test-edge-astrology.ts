@@ -3,7 +3,7 @@
  * 점성술 엔진 엣지케이스 테스트 스크립트
  */
 
-import { calculateServerAstrology } from "./astrologyEngine.ts";
+import { calculateServerAstrology } from "./lib/astrologyEngine.ts";
 
 const TEST_CASES = [
   // 1) 기본 검증

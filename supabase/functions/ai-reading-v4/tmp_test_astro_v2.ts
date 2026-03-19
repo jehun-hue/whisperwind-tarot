@@ -1,5 +1,5 @@
 
-import { calculateServerAstrology } from "./astrologyEngine.ts";
+import { calculateServerAstrology } from "./lib/astrologyEngine.ts";
 
 console.log("--- Natal 1987-07-17 ---");
 const result = calculateServerAstrology(1987, 7, 17, 15, 30);

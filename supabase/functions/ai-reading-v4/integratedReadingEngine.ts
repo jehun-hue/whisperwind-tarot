@@ -18,7 +18,7 @@ import { getLocalizedStyle } from "./interactivityLayer.ts";
 import { calculateNumerology } from "./numerologyEngine.ts";
 import { validateV3Schema, patchMissingFields, logMonitoringEvent } from "./monitoringLayer.ts";
 import { safeParseGeminiJSON } from "./jsonUtils.ts";
-import { calculateServerAstrology } from "./astrologyEngine.ts";
+import { calculateServerAstrology } from "./lib/astrologyEngine.ts";
 import { calculateZiwei, ServerZiWeiResult } from "./lib/ziweiEngine.ts";
 import { classifyWithFallback, classifyQuestion, TOPIC_SYSTEM_FOCUS } from "./questionClassifier.ts";
 import { detectCombinations, aggregateCombinationScore, processCardVector, SPREAD_POSITION_WEIGHTS } from "./tarotCombinationDB.ts";
