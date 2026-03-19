@@ -1,9 +1,10 @@
 /**
- * tarotSymbolicEngine.ts (v9)
+ * tarotSymbolicEngine.ts (v10)
  * - PART 1: Question Classification Engine.
  * - PART 2: 78 Tarot Card Pattern Vector Mapping (COMPLETE).
  * - PART 3: Spread Context & Aggregation Model.
  * - v9: 17장 → 78장 전체 벡터 완성
+ * - v10: 수트 분포, 숫자 시퀀스, 메이저 비율, TCVE Lite 교차검증 추가
  */
 
 export type TarotCategory = "relationship" | "reconciliation" | "dating" | "marriage" | "career" | "business" | "finance" | "life_direction" | "self_growth" | "general_future" | "health";
@@ -241,5 +242,216 @@ export function runTarotSymbolicEngine(cards: any[], question: string) {
     confidence,
     matched_cards: matchedCards,
     total_cards: totalCards
+  };
+}
+
+// ══════════════════════════════════════
+// 4. Suit, Number, Ratio Analysis (v10)
+// ══════════════════════════════════════
+
+const MAJOR_ORDER = [
+  "The Fool", "The Magician", "The High Priestess", "The Empress", "The Emperor",
+  "The Hierophant", "The Lovers", "The Chariot", "Strength", "The Hermit",
+  "Wheel of Fortune", "Justice", "The Hanged Man", "Death", "Temperance",
+  "The Devil", "The Tower", "The Star", "The Moon", "The Sun", "Judgement", "The World"
+];
+
+const NUMBER_MAP: Record<string, number> = {
+  "Ace": 1, "Two": 2, "Three": 3, "Four": 4, "Five": 5,
+  "Six": 6, "Seven": 7, "Eight": 8, "Nine": 9, "Ten": 10
+};
+
+const ENERGY_BY_NUMBER: Record<number, string> = {
+  1: "시작, 잠재력", 2: "선택, 균형, 이원성", 3: "창조, 확장, 표현",
+  4: "안정, 구조, 제한", 5: "변화, 갈등, 자유", 6: "조화, 책임, 선택",
+  7: "성찰, 분석, 내면", 8: "힘, 성취, 순환", 9: "완성, 지혜, 마무리", 10: "종결, 전환, 과잉"
+};
+
+export function analyzeSuitDistribution(cards: any[]): any {
+  const counts: Record<string, number> = { Wands: 0, Cups: 0, Swords: 0, Pentacles: 0, Major: 0 };
+  cards.forEach(c => {
+    const name = c.name || "";
+    if (MAJOR_ORDER.includes(name)) counts.Major++;
+    else if (name.includes("Wands")) counts.Wands++;
+    else if (name.includes("Cups")) counts.Cups++;
+    else if (name.includes("Swords")) counts.Swords++;
+    else if (name.includes("Pentacles")) counts.Pentacles++;
+  });
+
+  const suits = ["Wands", "Cups", "Swords", "Pentacles"];
+  const dominant = suits.reduce((a, b) => counts[a] > counts[b] ? a : b);
+  const absent = suits.filter(s => counts[s] === 0);
+
+  const analysisMap: Record<string, string> = {
+    Wands: "지팡이(Wands) 지배 — 열정·행동·창의적 에너지가 분출되는 시기.",
+    Cups: "컵(Cups) 지배 — 감정·관계·직관적 흐름이 중심이 되는 시기.",
+    Swords: "검(Swords) 지배 — 사고·분석·결단과 냉철한 판단이 요구되는 시기.",
+    Pentacles: "펜타클(Pentacles) 지배 — 현실·금전·안정과 결실에 집중하는 시기."
+  };
+
+  const ELEMENT_MAP: Record<string, string> = { Wands: "火(Fire)", Cups: "水(Water)", Swords: "木/金(Air)", Pentacles: "土(Earth)" };
+
+  return {
+    counts,
+    dominant,
+    absent,
+    analysis: `${analysisMap[dominant]} ${absent.length > 0 ? `${absent.join(", ")} 부재 — 해당 영역의 에너지가 현재 비활성 상태.` : ""}`,
+    elementMapping: {
+      dominant_element: ELEMENT_MAP[dominant],
+      absent_element: absent.map(s => ELEMENT_MAP[s]),
+      imbalance: `${absent.length > 0 ? `${absent.join("/")} 부족, ` : ""}${dominant} 과잉`
+    }
+  };
+}
+
+export function analyzeNumberPatterns(cards: any[], personalYear?: number): any {
+  const nums: number[] = [];
+  cards.forEach(c => {
+    const name = c.name || "";
+    const firstWord = name.split(" ")[0];
+    if (NUMBER_MAP[firstWord]) nums.push(NUMBER_MAP[firstWord]);
+    else {
+      const idx = MAJOR_ORDER.indexOf(name);
+      if (idx !== -1) nums.push(idx > 10 ? (idx % 10) || 10 : idx); // Major No. reduction for resonance
+    }
+  });
+
+  const repeating: any[] = [];
+  const counts: Record<number, number> = {};
+  nums.forEach(n => { if (n > 0) counts[n] = (counts[n] || 0) + 1; });
+  Object.entries(counts).forEach(([n, c]) => {
+    if (c >= 2) repeating.push({ number: parseInt(n), count: c, meaning: `${n}의 반복 — ${ENERGY_BY_NUMBER[parseInt(n)]}의 강조` });
+  });
+
+  const sortedNums = Array.from(new Set(nums.filter(n => n > 0))).sort((a, b) => a - b);
+  const sequences: any[] = [];
+  let currentSeq: number[] = [];
+  for (let i = 0; i < sortedNums.length; i++) {
+    if (i === 0 || sortedNums[i] === sortedNums[i - 1] + 1) {
+      currentSeq.push(sortedNums[i]);
+    } else {
+      if (currentSeq.length >= 3) sequences.push({ numbers: [...currentSeq], meaning: "상승 시퀀스 — 에너지의 단계적 진행 흐름" });
+      currentSeq = [sortedNums[i]];
+    }
+  }
+  if (currentSeq.length >= 3) sequences.push({ numbers: currentSeq, meaning: "상승 시퀀스 — 에너지의 단계적 진행 흐름" });
+
+  let resonance = null;
+  if (personalYear && nums.includes(personalYear)) {
+    resonance = {
+      personalYear,
+      matchingCount: nums.filter(n => n === personalYear).length,
+      resonance: `개인년수 ${personalYear}와 타로 숫자가 공명 — 올해의 핵심 테마가 현재 상황에서 강력하게 작용 중.`
+    };
+  }
+
+  return { repeating, sequences, numerologyResonance: resonance };
+}
+
+export function analyzeMajorMinorRatio(cards: any[]): any {
+  const total = cards.length || 1;
+  const majorCount = cards.filter(c => MAJOR_ORDER.includes(c.name)).length;
+  const ratio = majorCount / total;
+
+  let interpretation = "";
+  if (ratio >= 0.5) interpretation = "운명적 힘이 강하게 작용. 큰 흐름의 변화기.";
+  else if (ratio >= 0.3) interpretation = "운명과 일상의 균형. 자유의지와 흐름이 공존.";
+  else if (ratio > 0) interpretation = "일상적 에너지 중심. 구체적이고 실용적인 시기.";
+  else interpretation = "완전히 실용적/일상적 영역의 질문. 큰 운명적 전환은 없음.";
+
+  return {
+    majorCount,
+    minorCount: total - majorCount,
+    totalCards: total,
+    majorRatio: ratio,
+    interpretation: `메이저 ${Math.round(ratio * 100)}% — ${interpretation}`
+  };
+}
+
+// ══════════════════════════════════════
+// 5. TCVE™ Lite Mapping & CrossCheck
+// ══════════════════════════════════════
+
+const TCVE_MAJOR_MAPPING: Record<number, any> = {
+  0:  { name: "Fool",           astro: "천왕성/물병",    tenGod: "식신",   ziwei: "천동", element: "風/木" },
+  1:  { name: "Magician",       astro: "수성/쌍둥이",    tenGod: "편인",   ziwei: "천기", element: "風/木" },
+  2:  { name: "High Priestess", astro: "달/게",          tenGod: "정인",   ziwei: "태음", element: "水" },
+  3:  { name: "Empress",        astro: "금성/황소",      tenGod: "정재",   ziwei: "탐랑", element: "地/土" },
+  4:  { name: "Emperor",        astro: "화성/양",        tenGod: "편관",   ziwei: "자미", element: "火" },
+  5:  { name: "Hierophant",     astro: "황소/금성",      tenGod: "정관",   ziwei: "천량", element: "地/土" },
+  6:  { name: "Lovers",         astro: "쌍둥이/수성",    tenGod: "겁재",   ziwei: "태양+태음", element: "風/木" },
+  7:  { name: "Chariot",        astro: "게/달",          tenGod: "비견",   ziwei: "천부", element: "水" },
+  8:  { name: "Strength",       astro: "사자/태양",      tenGod: "비견",   ziwei: "무곡", element: "火" },
+  9:  { name: "Hermit",         astro: "처녀/수성",      tenGod: "편인",   ziwei: "천량", element: "地/土" },
+  10: { name: "Wheel",          astro: "목성",           tenGod: "편재",   ziwei: "록존", element: "火" },
+  11: { name: "Justice",        astro: "천칭/금성",      tenGod: "정관",   ziwei: "염정", element: "風/金" },
+  12: { name: "Hanged Man",     astro: "해왕성/물고기",  tenGod: "식신",   ziwei: "천동", element: "水" },
+  13: { name: "Death",          astro: "전갈/명왕성",    tenGod: "편관",   ziwei: "칠살", element: "水" },
+  14: { name: "Temperance",     astro: "사수/목성",      tenGod: "정인",   ziwei: "천량", element: "火" },
+  15: { name: "Devil",          astro: "염소/토성",      tenGod: "겁재",   ziwei: "탐랑", element: "地/土" },
+  16: { name: "Tower",          astro: "화성",           tenGod: "상관",   ziwei: "파군", element: "火" },
+  17: { name: "Star",           astro: "물병/천왕성",    tenGod: "식신",   ziwei: "천동", element: "風/木" },
+  18: { name: "Moon",           astro: "물고기/해왕성",  tenGod: "편인",   ziwei: "태음", element: "水" },
+  19: { name: "Sun",            astro: "태양/사자",      tenGod: "정재",   ziwei: "태양", element: "火" },
+  20: { name: "Judgement",      astro: "명왕성/전갈",    tenGod: "상관",   ziwei: "칠살", element: "火/水" },
+  21: { name: "World",          astro: "토성",           tenGod: "정관",   ziwei: "자미", element: "地/토" }
+};
+
+export function tcveCrossCheck(
+  cards: any[],
+  sajuResult?: any,
+  astrologyResult?: any
+): any {
+  const checks: any[] = [];
+  let totalScore = 0;
+  let majorCount = 0;
+
+  cards.forEach(card => {
+    const idx = MAJOR_ORDER.indexOf(card.name);
+    if (idx === -1) return;
+    majorCount++;
+    const mapping = TCVE_MAJOR_MAPPING[idx];
+    if (!mapping) return;
+
+    let sajuMatch = { found: false, detail: "", score: 0 };
+    if (sajuResult) {
+      const match = sajuResult.vibrations?.some((v: string) => v.includes(mapping.tenGod)) 
+        || sajuResult.day_un?.ten_god === mapping.tenGod;
+      if (match) sajuMatch = { found: true, detail: `사주에서 ${mapping.tenGod} 에너지가 활성화된 상태`, score: 2 };
+    }
+
+    let astroMatch = { found: false, detail: "", score: 0 };
+    if (astrologyResult) {
+      const astroRef = mapping.astro.split("/")[0];
+      const match = (astrologyResult.transits || []).some((t: string) => t.includes(astroRef))
+        || (astrologyResult.major_aspects || []).some((a: string) => a.toLowerCase().includes(astroRef.toLowerCase()));
+      if (match) astroMatch = { found: true, detail: `점성술 트랜짓/애스펙트에서 ${astroRef} 영향 확인`, score: 1 };
+    }
+
+    const cardScore = (sajuMatch.score * 0.4 + astroMatch.score * 0.4 + 1.0 * 0.2); // Base confidence 1.0
+    totalScore += cardScore;
+
+    checks.push({
+      card: `${card.name} (${idx})`,
+      tcveMapping: mapping,
+      sajuMatch,
+      astroMatch,
+      cardScore
+    });
+  });
+
+  const avgCAS = majorCount > 0 ? totalScore / majorCount : 0;
+  let grade = "C";
+  if (avgCAS >= 1.6) grade = "S";
+  else if (avgCAS >= 1.0) grade = "A";
+  else if (avgCAS >= 0.4) grade = "B";
+  else if (avgCAS >= -0.3) grade = "C";
+  else grade = "D";
+
+  return {
+    checks,
+    overallCAS: Math.round(avgCAS * 100) / 100,
+    confidenceGrade: grade,
+    interpretation: `타로와 명리·점성술 데이터가 ${grade}급의 일치도를 보입니다. ${grade === "S" || grade === "A" ? "다양한 역학 체계에서 공통된 에너지가 관측되어 리딩의 신뢰도가 매우 높습니다." : "각 체계의 에너지가 분산되어 있으므로 다각적인 접근이 필요합니다."}`
   };
 }
