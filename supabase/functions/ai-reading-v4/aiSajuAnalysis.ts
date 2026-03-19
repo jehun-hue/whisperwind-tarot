@@ -21,11 +21,13 @@ export interface SajuAnalysisResult {
   shinsal: Shinsal[];                                   // B-144: 신살
   health_risk_tags: string[];                           // B-144: 건강 위험 태그
   topic_shinsal_map: Record<string, string[]>;          // B-145: 토픽별 신살 매핑
+  twelve_stages?: any;                                  // B-256: 12운성 정보
 }
 
 import { getDaewoonInfo, calculateFullDaewoon, type DaewoonResult } from "./lib/daewoon.ts";
 import { STEMS, BRANCHES, FIVE_ELEMENTS_MAP } from "./lib/fiveElements.ts";
 import { calculateInteractions, calculateShinsal, type Interaction, type Shinsal } from "./lib/interactions.ts";
+import { calculateAllTwelveStages, calculateTwelveStage, getTwelveStageEnergy } from "./lib/twelveStages.ts";
 
 // ═══════════════════════════════════════
 // 천간(天干) 오행 매핑
@@ -616,8 +618,13 @@ export async function analyzeSajuStructure(
       // 현재 대운 특성 태깅
       if (daewoon.currentDaewoon) {
         const cd = daewoon.currentDaewoon;
+        // B-256: 대운 12운성 추가
+        cd.twelveStage = calculateTwelveStage(dm, cd.branch);
+        cd.twelveStageEnergy = getTwelveStageEnergy(cd.twelveStage);
+        
         characteristics.push(`현재 대운: ${cd.full} (${cd.startAge}~${cd.endAge}세)`);
         characteristics.push(`대운 십성: ${cd.tenGodStem}/${cd.tenGodBranch}`);
+        characteristics.push(`대운 12운성: ${cd.twelveStage} (${cd.twelveStageEnergy.level}점)`);
         
         // 대운이 용신과 같은 오행이면 긍정 태깅
         const yongShinElement = FIVE_ELEMENTS_MAP[yongsin] || "unknown";
@@ -692,6 +699,11 @@ export async function analyzeSajuStructure(
     characteristics.push("세운-용신 일치: 올해 운세 긍정적");
   }
 
+  // B-256: 세운 12운성
+  const seunTwelveStage = calculateTwelveStage(dm, BRANCHES[yearBranchIdx]);
+  const seunTwelveStageEnergy = getTwelveStageEnergy(seunTwelveStage);
+  characteristics.push(`세운 12운성: ${seunTwelveStage} (${seunTwelveStageEnergy.level}점)`);
+
   // narrative에 세운 정보 추가
   narrative += ` ${currentYear}년 세운은 ${seunFull}이며,`;
   if (seunChungs.length > 0) narrative += ` 원국과 충이 있어 변화·갈등이 예상되고,`;
@@ -731,6 +743,11 @@ export async function analyzeSajuStructure(
   if (wolunSeunChung) characteristics.push("월운-세운 충: 이달 특히 갈등·변화 주의");
   if (wolunSeunHap) characteristics.push("월운-세운 합: 이달 올해 흐름과 조화");
   if (yongsin.includes(wolunElement)) characteristics.push("월운-용신 일치: 이달 운세 긍정적");
+
+  // B-256: 월운 12운성
+  const wolunTwelveStage = calculateTwelveStage(dm, BRANCHES[monthBranchIdx]);
+  const wolunTwelveStageEnergy = getTwelveStageEnergy(wolunTwelveStage);
+  characteristics.push(`월운 12운성: ${wolunTwelveStage} (${wolunTwelveStageEnergy.level}점)`);
 
   narrative += ` 이번 달(${currentMonth}월) 월운은 ${wolunFull}이며,`;
   if (wolunChungs.length > 0) narrative += ` 원국과 충이 있어 주의가 필요하고,`;
@@ -784,6 +801,21 @@ export async function analyzeSajuStructure(
     }
   });
 
+  // B-256: 12운성(포태법) 계산
+  const twelveStages = calculateAllTwelveStages(dm, {
+    year: pillars.year?.branch || "",
+    month: pillars.month?.branch || "",
+    day: pillars.day?.branch || "",
+    hour: pillars.hour?.branch || "",
+  });
+
+  const twelveStageDetails = {
+    year: { stage: twelveStages.year, ...getTwelveStageEnergy(twelveStages.year) },
+    month: { stage: twelveStages.month, ...getTwelveStageEnergy(twelveStages.month) },
+    day: { stage: twelveStages.day, ...getTwelveStageEnergy(twelveStages.day) },
+    hour: { stage: twelveStages.hour, ...getTwelveStageEnergy(twelveStages.hour) }
+  };
+
   return {
     dayMaster: dm,
     strength,
@@ -799,6 +831,11 @@ export async function analyzeSajuStructure(
     shinsal,
     health_risk_tags,
     topic_shinsal_map,
+    twelve_stages: {
+      pillars: twelveStageDetails,
+      seun: { stage: seunTwelveStage, ...seunTwelveStageEnergy },
+      wolun: { stage: wolunTwelveStage, ...wolunTwelveStageEnergy }
+    }
   };
 }
 

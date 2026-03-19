@@ -14,6 +14,8 @@ export interface DaewoonPillar {
   tenGodStem: string;      // 일간 기준 십성 (천간)
   tenGodBranch: string;    // 일간 기준 십성 (지지 본기)
   isCurrent: boolean;      // 현재 대운인지
+  twelveStage?: string;    // B-256: 12운성
+  twelveStageEnergy?: any; // B-256: 12운성 에너지
 }
 
 export interface DaewoonResult {
