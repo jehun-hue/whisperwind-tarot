@@ -175,7 +175,7 @@ function transformZiweiData(frontZiwei: any): any {
     mingGong: frontZiwei.mingGong || "Unknown",
     bureau: frontZiwei.bureau || "Unknown",
     four_transformations: frontZiwei.fourTransformations || frontZiwei.siHwa || frontZiwei.natalTransformations || {},
-    currentMajorPeriod: .currentMajorPeriod || null,
+    currentMajorPeriod: frontZiwei?.currentMajorPeriod || null,
     currentMinorPeriod: frontZiwei.currentMinorPeriod || null,
     questionAnalysis: frontZiwei.questionAnalysis || null
   };

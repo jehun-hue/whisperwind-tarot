@@ -167,7 +167,7 @@ function extractZiweiTimingSignal(ziweiResult: any): { score: number; factors: s
 
   if (!ziweiResult || ziweiResult.skipped) return { score, factors };
   
-  const cmp = .currentMajorPeriod;
+  const cmp = ziweiResult?.currentMajorPeriod;
   const cmi = ziweiResult.currentMinorPeriod;
   const chars = Array.isArray(ziweiResult.characteristics) ? ziweiResult.characteristics : [];
 

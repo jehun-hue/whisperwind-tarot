@@ -107,7 +107,7 @@ export async function crossValidate(
   // 2. 타이밍 교차검증
   // 2-1) 사주 대운 ↔ 자미두수 대한
   const sajuDaewoonGood = saju.daewoon?.is_good || false; // 임의 필드 (실제는 분석 필요)
-  const ziweiMajorGood = .currentMajorPeriod?.interpretation.includes("길") || false;
+  const ziweiMajorGood = ziwei?.currentMajorPeriod?.interpretation.includes("길") || false;
   const timingMatch1 = sajuDaewoonGood === ziweiMajorGood;
 
   detailsT.push({
