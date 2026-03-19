@@ -73,7 +73,7 @@ async function runIntegratedTests() {
     // 3. Ziwei Engine
     try {
         const zw = calculateServerZiWei(user.birth.lunar.year, user.birth.lunar.month, user.birth.lunar.day, hour, minute, user.gender as any);
-        console.log(`  3. Ziwei: Bureau:${zw.bureau} | LifePalace:${zw.core_palaces.life_palace.major_stars.join(",")} ✅`);
+        console.log(`  3. Ziwei: Bureau:${zw.bureau} | LifePalace:${zw?.core_palaces?.life_palace?.major_stars?.join(",") ?? ''} ✅`);
         userPassCount++;
     } catch (e: any) { console.error(`  3. Ziwei FAIL: ${e.message}`); }
 

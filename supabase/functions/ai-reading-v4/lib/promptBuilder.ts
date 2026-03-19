@@ -39,7 +39,7 @@ export function buildReadingPrompt(
 
   // 3. 자미두수 요약
   const zw = ziwei;
-  const starsStr = zw.core_palaces.life_palace.major_stars.join(", ");
+  const starsStr = zw?.core_palaces?.life_palace?.major_stars?.join(", ") ?? "없음";
   const dahan = zw.currentMajorPeriod;
 
   // 4. 수비학 요약
@@ -101,7 +101,7 @@ export function buildReadingPrompt(
 - 명궁: ${zw.mingGong} / 주성: ${starsStr}
 - 오행국: ${zw.bureau}
 - 현재 대한: ${dahan?.palace || "정보없음"} (${dahan?.startAge || ""}~${dahan?.endAge || ""}세)
-- 보성 특이사항: ${zw.core_palaces.life_palace.lucky_stars.join(", ")} 정점
+- 보성 특이사항: ${zw?.core_palaces?.life_palace?.lucky_stars?.join(", ") ?? "없음"} 정점
 
 ## 4. 수비학 분석
 - 생명수: ${num.life_path_number} / 표현수: ${num.destiny_number || "N/A"} / 영혼수: ${num.soulUrgeNumber || "N/A"}

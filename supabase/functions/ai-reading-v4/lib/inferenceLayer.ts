@@ -92,7 +92,7 @@ export async function crossValidate(
   });
 
   // 1-3) 자미두수 명궁 ↔ 사주 일주
-  const mingStars = ziwei.core_palaces.life_palace.major_stars;
+  const mingStars = ziwei?.core_palaces?.life_palace?.major_stars || [];
   const isZiweiStrong = mingStars.some(s => ["자미", "칠살", "파군", "무곡", "태양"].includes(s));
   const isSajuStrong = saju.strength.includes("강");
   const ziweiSajuMatch = isZiweiStrong === isSajuStrong;
