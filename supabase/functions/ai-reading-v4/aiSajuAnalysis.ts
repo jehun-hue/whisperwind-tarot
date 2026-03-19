@@ -998,6 +998,19 @@ export async function analyzeSajuStructure(
     }
   });
 
+  // Gongmang을 shinsal 배열에도 추가 (검증 테스트용)
+  if (gongmang.emptied.length > 0) {
+    shinsal.push({
+      name: "공망",
+      type: "중립",
+      description: `사주의 공망: ${gongmang.emptied.join(", ")} 지지 (${gongmang.affectedPillars.join(", ")} 해당).`,
+      health_implication: "허약 체질 및 갈증 주의",
+      topic_relevance: ["general", "spirituality"],
+      severity: "중립",
+      pillar: "general"
+    });
+  }
+
   // 충·형살이 있으면 characteristics에 추가
   interactions.forEach((inter: Interaction) => {
     if (inter.severity === "흉") {
