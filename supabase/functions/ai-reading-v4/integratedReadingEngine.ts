@@ -720,6 +720,7 @@ function calculateNameNumerology(name: string) {
 export async function runFullProductionEngineV8(supabaseClient: any, apiKey: string, input: any) {
   const pipelineStart = Date.now();
   const sessionId = input.sessionId;
+  const style = input.style || "hanna";
   const tarotCards = input.cards || [];
   const combinationClues = tarotCards
     .map((c: any) => `- ${c.korean}: ${c.cardCombination || "정보 없음"}`)
@@ -858,38 +859,15 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
         }
 
         const result = { ...birthInfo, year: converted.year, month: converted.month, day: converted.day };
-        console.log("[LUNAR→SOLAR]", { 
-          input: { year: birthInfo.year, month: birthInfo.month, day: birthInfo.day }, 
-          isLunar, 
-          isLeapMonth: isLeapMonthInput,
-          converted: { year: result.year, month: result.month, day: result.day },
-          success: true 
-        });
         return result;
       })()
     : { ...birthInfo };
 
   if (!isLunar) {
-    console.log("[LUNAR→SOLAR] 양력 입력 유지:", { year: solarBirthInfo.year, month: solarBirthInfo.month, day: solarBirthInfo.day });
   }
 
   // Step 1: Physical Calculation Pipeline
     // 사주 계산 (동기)
-    console.log("[SAJU INPUT TRACE]", {
-      solarBirthInfo_year: solarBirthInfo.year,
-      solarBirthInfo_month: solarBirthInfo.month,
-      solarBirthInfo_day: solarBirthInfo.day,
-      solarBirthInfo_hour: solarBirthInfo.hour,
-      solarBirthInfo_minute: solarBirthInfo.minute,
-      solarBirthInfo_longitude: solarBirthInfo.longitude,
-      rawBirth_year: rawBirth.year,
-      rawBirth_month: rawBirth.month,
-      rawBirth_day: rawBirth.day,
-      rawBirth_hour: rawBirth.hour,
-      rawBirth_minute: rawBirth.minute,
-      isLunar: rawBirth.isLunar
-    });
-
     let sajuRaw: any = null;
     try {
       sajuRaw = calculateSaju(
@@ -999,15 +977,6 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
       ziweiSource = "양력→음력변환";
     }
 
-    console.log("[ZIWEI INPUT]", { 
-      year: birthInfo.year,
-      ziweiLunarMonth, 
-      ziweiLunarDay, 
-      isLeap: ziweiIsLeapMonth,
-      isLunar, 
-      source: ziweiSource 
-    });
-
     // 수비학 (생년월일 + 이름 기반)
     let numerologyResult: any = null;
     try {
@@ -1030,12 +999,6 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
         data_quality_score: 0.85 // 상향
       };
 
-      console.log("[NUMEROLOGY NAME]", { 
-        name, 
-        expression: nameResult.expression, 
-        soul: nameResult.soul, 
-        personality: nameResult.personality 
-      });
     } catch (e) {
       console.error("[ENGINE-SAFE] 수비학 계산 실패:", e);
     }
@@ -1465,9 +1428,8 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
   let coreReading = null; // Legacy sync
 
   if (input.mode === "data-only") {
-    console.log("[PlatformV10] Skipping Narrative (Data-Only Mode)");
     responseType = "skipped";
-    parsed = buildFallbackReading("데이터 분석 전용 모드입니다.", grade, scores, tarotCards, input.question, 'hanna');
+    parsed = buildFallbackReading("데이터 분석 전용 모드입니다.", grade, scores, tarotCards, input.question, style);
   } else {
     try {
       const geminiStart = Date.now();
@@ -1480,7 +1442,7 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
         throw new Error("Empty narrative from Gemini");
       }
 
-      parsed = buildFallbackReading("", grade, scores, tarotCards, input.question, 'hanna');
+      parsed = buildFallbackReading("", grade, scores, tarotCards, input.question, style);
       parsed.integrated_summary = rawNarrative;
       parsed.final_message.summary = rawNarrative;
       
@@ -1496,14 +1458,12 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     } catch (e: any) {
       console.error("Gemini Whisperwind Error:", e);
       responseType = "timeout";
-      parsed = buildFallbackReading("시간 내에 운세 결과를 생성하지 못했습니다. 잠시 후 서비스 안정화 후 다시 시도해주세요.", grade, scores, tarotCards, input.question, 'hanna');
+      parsed = buildFallbackReading("시간 내에 운세 결과를 생성하지 못했습니다. 잠시 후 서비스 안정화 후 다시 시도해주세요.", grade, scores, tarotCards, input.question, style);
     }
   }
 
   // --- Step 4: Metadata Patching ---
   // coreReading에서 계산된 점수 반영
-  // Gemini가 반환한 scores는 엔진 계산값을 0으로 덮어쓸 위험이 있으므로 병합하지 않음
-  console.log("[SCORES]", JSON.stringify(scores));
 
   const modelInputSummary = stylePrompts?.join("\n\n") || "";
 
