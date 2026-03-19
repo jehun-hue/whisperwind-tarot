@@ -4,8 +4,8 @@
  */
 
 export * from "./sajuInterpretation.ts";
-export * from "./sajuInterpretation2.ts";
 export * from "./astrologyInterpretation.ts";
+export * from "./astrologyExtra.ts";
 export * from "./numerologyInterpretation.ts";
 export * from "./tarotInterpretation.ts";
 export * from "./ziweiInterpretation.ts";
