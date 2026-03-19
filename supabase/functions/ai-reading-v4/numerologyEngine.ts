@@ -217,3 +217,79 @@ export function calculateNumerology(
     vibrations
   };
 }
+
+export interface PinnacleResult {
+  pinnacles: { number: number; startAge: number; endAge: number | null }[];
+  challenges: { number: number; startAge: number; endAge: number | null }[];
+}
+
+/**
+ * A22: Pinnacle & Challenge 계산
+ */
+export function calculatePinnacles(birthDate: Date): PinnacleResult {
+  const month = birthDate.getMonth() + 1;
+  const day = birthDate.getDate();
+  const year = birthDate.getFullYear();
+  
+  const sumDigitsValue = (n: number | string): number => {
+    return n.toString().split("").reduce((acc, digit) => acc + (parseInt(digit) || 0), 0);
+  };
+
+  const rMonth = reduceToSingle(month);
+  const rDay = reduceToSingle(day);
+  const rYear = reduceToSingle(sumDigitsValue(year));
+  const lifePath = reduceToSingle(rMonth + rDay + rYear);
+
+  const p1 = reduceToSingle(rMonth + rDay);
+  const p2 = reduceToSingle(rDay + rYear);
+  const p3 = reduceToSingle(p1 + p2);
+  const p4 = reduceToSingle(rMonth + rYear);
+
+  const c1 = reduceToSingle(Math.abs(rMonth - rDay));
+  const c2 = reduceToSingle(Math.abs(rDay - rYear));
+  const c3 = reduceToSingle(Math.abs(c1 - c2));
+  const c4 = reduceToSingle(Math.abs(rMonth - rYear));
+
+  const p1End = 36 - (lifePath > 9 ? reduceToSingle(lifePath) : lifePath);
+
+  return {
+    pinnacles: [
+      { number: p1, startAge: 0, endAge: p1End },
+      { number: p2, startAge: p1End + 1, endAge: p1End + 9 },
+      { number: p3, startAge: p1End + 10, endAge: p1End + 18 },
+      { number: p4, startAge: p1End + 19, endAge: null }
+    ],
+    challenges: [
+      { number: c1, startAge: 0, endAge: p1End },
+      { number: c2, startAge: p1End + 1, endAge: p1End + 9 },
+      { number: c3, startAge: p1End + 10, endAge: p1End + 18 },
+      { number: c4, startAge: p1End + 19, endAge: null }
+    ]
+  };
+}
+
+/**
+ * A23: Personal Month & Personal Day
+ */
+export function calculatePersonalMonth(
+  birthDate: Date,
+  targetYear: number,
+  targetMonth: number
+): number {
+  const bMonth = birthDate.getMonth() + 1;
+  const bDay = birthDate.getDate();
+  const sumDigitsValue = (n: number | string): number => {
+    return n.toString().split("").reduce((acc, digit) => acc + (parseInt(digit) || 0), 0);
+  };
+  
+  const py = reduceToSingle(sumDigitsValue(targetYear) + bMonth + bDay);
+  return reduceToSingle(py + targetMonth);
+}
+
+export function calculatePersonalDay(
+  birthDate: Date,
+  targetDate: Date
+): number {
+  const pm = calculatePersonalMonth(birthDate, targetDate.getFullYear(), targetDate.getMonth() + 1);
+  return reduceToSingle(pm + targetDate.getDate());
+}
