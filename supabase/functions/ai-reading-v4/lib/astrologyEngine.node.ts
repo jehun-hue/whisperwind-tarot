@@ -1,4 +1,4 @@
-import * as Astronomy from "https://esm.sh/astronomy-engine@2.1.19";
+﻿import * as AstronomyModule from " astronomy-engine\; const Astronomy = (AstronomyModule as any).default || AstronomyModule;
 
 const { 
   Body, 
@@ -249,55 +249,44 @@ function getHighPrecisionPositions(date: Date, observer: Observer) {
  * Manual Calculation of ASC, MC, IC, DESC
  * Formulas from Jean Meeus, Astronomical Algorithms
  */
-function calculateHousesManual(date: Date, observer: any) {
+function calculateHousesManual(date: Date, observer: Observer) {
   const time = MakeTime(date);
+  const lst = (SiderealTime(time) + (observer.longitude / 15.0) + 24) % 24;
+  const ramc = (lst * 15.0) % 360;
   
-  // LST (Local Sidereal Time) in hours
-  const gst = SiderealTime(time);
-  const lst = ((gst + observer.longitude / 15.0) % 24 + 24) % 24;
-  
-  // RAMC in degrees
-  const ramc = lst * 15.0;
-  
-  // Obliquity
+  // Use astronomical obliquity for precision
   const tilt = e_tilt(time);
   const epsRad = (tilt?.tobl || 23.43929) * Math.PI / 180;
   const phiRad = observer.latitude * Math.PI / 180;
+  
   const ramcRad = ramc * Math.PI / 180;
 
-  // MC (Midheaven): tan(MC) = tan(RAMC) / cos(eps)
-  // Must handle quadrant correctly
-  let mcDeg = Math.atan2(Math.sin(ramcRad), Math.cos(ramcRad) * Math.cos(epsRad)) * 180 / Math.PI;
-  mcDeg = (mcDeg + 360) % 360;
-  
-  // Quadrant correction for MC: MC must be in same half as RAMC
-  // If RAMC is 0-180, MC should be 0-180; if RAMC is 180-360, MC should be 180-360
-  if (ramc >= 0 && ramc < 180 && mcDeg >= 180) mcDeg -= 180;
-  if (ramc >= 180 && ramc < 360 && mcDeg < 180) mcDeg += 180;
+  // Midheaven (MC): λ = atan2(sin(α), cos(α) * cos(ε))
+  const mcRad = Math.atan2(Math.sin(ramcRad), Math.cos(ramcRad) * Math.cos(epsRad));
+  const mcDeg = (mcRad * 180 / Math.PI + 360) % 360;
 
-  // ASC (Ascendant)
-  // ASC = atan2(cos(RAMC), -(sin(eps)*tan(phi) + cos(eps)*sin(RAMC)))
-  const y = Math.cos(ramcRad);
+  // Ascendant (ASC): λ = atan2(cos(α), -(sin(ε)tan(φ) + cos(ε)sin(α)))
+  // Removal of the legacy +90 degree bug
   const x = -(Math.sin(epsRad) * Math.tan(phiRad) + Math.cos(epsRad) * Math.sin(ramcRad));
-  let ascDeg = Math.atan2(y, x) * 180 / Math.PI;
-  ascDeg = (ascDeg + 360) % 360;
-  
-  // ASC must be ~90-degree ahead of MC (counter-clockwise)
-  const diff = (ascDeg - mcDeg + 360) % 360;
-  if (diff > 180) {
-    ascDeg = (ascDeg + 180) % 360;
-  }
+  const y = Math.cos(ramcRad);
+  const ascRad = Math.atan2(y, x);
+  const ascDeg = (ascRad * 180 / Math.PI + 360) % 360; 
 
   const icDeg = (mcDeg + 180) % 360;
   const descDeg = (ascDeg + 180) % 360;
 
-  return {
-    asc: ascDeg,
-    mc: mcDeg,
-    ic: icDeg,
-    desc: descDeg,
-    isConsistent: true,
-    angleBetween: (ascDeg - mcDeg + 360) % 360
+  // Geometric Consistency Verification
+  const angle = (ascDeg - mcDeg + 360) % 360;
+  // Physically valid range for mid-latitudes (37.5N): typically 60-120 degrees
+  const isConsistent = angle > 40 && angle < 140;
+
+  return { 
+    asc: ascDeg, 
+    mc: mcDeg, 
+    ic: icDeg, 
+    desc: descDeg, 
+    isConsistent,
+    angleBetween: angle
   };
 }
 
@@ -497,16 +486,13 @@ export interface ServerAstrologyResult {
   } | null;
 }
 
-import { getKoreanTimezoneOffset } from './timeUtils.ts';
-
 export function calculateServerAstrology(
   year: number, month: number, day: number, hour: number, minute: number = 0,
   latitude?: number, longitude?: number,
   hasTime: boolean = true,
   targetDate?: Date
 ): ServerAstrologyResult {
-  const offset = getKoreanTimezoneOffset(year, month, day);
-  const natalDate = new Date(Date.UTC(year, month - 1, day, hour - offset, minute));
+  const natalDate = new Date(Date.UTC(year, month - 1, day, hour - 9, minute));
 
   // 출생지 제공 여부 확인
   const birthPlaceProvided = !!(latitude && latitude !== 0 && longitude && longitude !== 0);

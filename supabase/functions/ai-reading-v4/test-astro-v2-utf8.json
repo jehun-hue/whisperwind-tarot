@@ -1,0 +1,939 @@
+﻿?룧 [House Calculation] ASC: 235.81 MC: 157.33 Consistency: true
+[DEBUG-ASTRO] House Calculation ?꾨즺, ?ㅼ쓬 ?④퀎 吏꾩엯
+{
+  "is_time_exact": true,
+  "core_identity": {
+    "sun": {
+      "sign": "寃뚯옄由?,
+      "signEnglish": "Cancer",
+      "house": 8,
+      "degree": 24.17,
+      "is_retrograde": false,
+      "dignity": "?놁쓬"
+    },
+    "moon": {
+      "sign": "?묒옄由?,
+      "signEnglish": "Aries",
+      "house": 5,
+      "degree": 17.18,
+      "is_retrograde": false,
+      "dignity": "?놁쓬"
+    },
+    "ascendant": {
+      "sign": "?꾧컝?먮━",
+      "degree": 25.81
+    }
+  },
+  "angles": {
+    "asc_self": "?꾧컝?먮━",
+    "mc_career": "泥섎??먮━",
+    "ic_roots": "臾쇨퀬湲곗옄由?,
+    "dsc_partner": "?⑹냼?먮━"
+  },
+  "ai_synthesis_tags": [
+    "臾??먯냼 怨쇰떎(Heavy 臾?",
+    "North Node ??뻾湲?異쒖깮",
+    "South Node ??뻾湲?異쒖깮",
+    "MC 泥섎??먮━(遺꾩꽍??",
+    "?덉쐞 ?됱꽦: ?댁솗???쇱냼?먮━: 異붾씫(fall), 紐낆솗???꾧컝?먮━: 蹂몄쥖(domicile)"
+  ],
+  "sunSign": "寃뚯옄由?,
+  "moonSign": "?묒옄由?,
+  "risingSign": "?꾧컝?먮━",
+  "planet_positions": [
+    {
+      "planet": "?쒖뼇",
+      "sign": "寃뚯옄由?,
+      "signEnglish": "Cancer",
+      "degree": 24.17,
+      "absoluteDegree": 114.16949312295662,
+      "house": 8,
+      "dignity": "?놁쓬",
+      "is_retrograde": false,
+      "interpretation": "?쒖뼇(?뺤껜?? 寃뚯옄由?24.17째, 8?섏슦??蹂?샕룰났?좎옱臾셋룹떖痢듭떖由? ???먯븘, ?섏?, ?앸챸?μ씠 蹂댄샇??諛⑹떇?쇰줈 蹂???곸뿭???곹뼢."
+    },
+    {
+      "planet": "??,
+      "sign": "?묒옄由?,
+      "signEnglish": "Aries",
+      "degree": 17.18,
+      "absoluteDegree": 17.176977931183103,
+      "house": 5,
+      "dignity": "?놁쓬",
+      "is_retrograde": false,
+      "interpretation": "??媛먯젙) ?묒옄由?17.18째, 5?섏슦??李쎌쓽쨌?곗븷쨌?먮?쨌利먭굅?) ??媛먯젙, 臾댁쓽?? 蹂몃뒫??媛쒖쿃??諛⑹떇?쇰줈 李쎌쓽 ?곸뿭???곹뼢."
+    },
+    {
+      "planet": "?섏꽦",
+      "sign": "寃뚯옄由?,
+      "signEnglish": "Cancer",
+      "degree": 7.57,
+      "absoluteDegree": 97.57317895430418,
+      "house": 8,
+      "dignity": "?놁쓬",
+      "is_retrograde": false,
+      "interpretation": "?섏꽦(?ш퀬) 寃뚯옄由?7.57째, 8?섏슦??蹂?샕룰났?좎옱臾셋룹떖痢듭떖由? ???뚰넻, 吏?? ?숈뒿??蹂댄샇??諛⑹떇?쇰줈 蹂???곸뿭???곹뼢."
+    },
+    {
+      "planet": "湲덉꽦",
+      "sign": "寃뚯옄由?,
+      "signEnglish": "Cancer",
+      "degree": 14.01,
+      "absoluteDegree": 104.01130098606092,
+      "house": 8,
+      "dignity": "?놁쓬",
+      "is_retrograde": false,
+      "interpretation": "湲덉꽦(?щ옉) 寃뚯옄由?14.01째, 8?섏슦??蹂?샕룰났?좎옱臾셋룹떖痢듭떖由? ???щ옉, 誘? 媛移섍???蹂댄샇??諛⑹떇?쇰줈 蹂???곸뿭???곹뼢."
+    },
+    {
+      "planet": "?붿꽦",
+      "sign": "?ъ옄?먮━",
+      "signEnglish": "Leo",
+      "degree": 6.74,
+      "absoluteDegree": 126.74306622326134,
+      "house": 9,
+      "dignity": "?놁쓬",
+      "is_retrograde": false,
+      "interpretation": "?붿꽦(?됰룞) ?ъ옄?먮━ 6.74째, 9?섏슦??泥좏븰쨌?댁쇅쨌怨좊벑援먯쑁) ???됰룞, ?먮꼫吏, ?뺣쭩???밸떦 諛⑹떇?쇰줈 泥좏븰 ?곸뿭???곹뼢."
+    },
+    {
+      "planet": "紐⑹꽦",
+      "sign": "?묒옄由?,
+      "signEnglish": "Aries",
+      "degree": 27.94,
+      "absoluteDegree": 27.940449276122365,
+      "house": 5,
+      "dignity": "?놁쓬",
+      "is_retrograde": false,
+      "interpretation": "紐⑹꽦(?됱슫) ?묒옄由?27.94째, 5?섏슦??李쎌쓽쨌?곗븷쨌?먮?쨌利먭굅?) ???뺤옣, ?됱슫, 泥좏븰??媛쒖쿃??諛⑹떇?쇰줈 李쎌쓽 ?곸뿭???곹뼢."
+    },
+    {
+      "planet": "?좎꽦",
+      "sign": "?ъ닔?먮━",
+      "signEnglish": "Sagittarius",
+      "degree": 15.38,
+      "absoluteDegree": 255.3814746880921,
+      "house": 1,
+      "dignity": "?놁쓬",
+      "is_retrograde": false,
+      "interpretation": "?좎꽦(?쒕젴) ?ъ닔?먮━ 15.38째, 1?섏슦???먯븘쨌?몃え쨌泥レ씤?? ???쒗븳, 梨낆엫, 援ъ“???먯쑀 諛⑹떇?쇰줈 ?먯븘 ?곸뿭???곹뼢."
+    },
+    {
+      "planet": "泥쒖솗??,
+      "sign": "?ъ닔?먮━",
+      "signEnglish": "Sagittarius",
+      "degree": 23.55,
+      "absoluteDegree": 263.55088135980054,
+      "house": 1,
+      "dignity": "?놁쓬",
+      "is_retrograde": false,
+      "interpretation": "泥쒖솗???곷챸) ?ъ닔?먮━ 23.55째, 1?섏슦???먯븘쨌?몃え쨌泥レ씤?? ???곸떊, 蹂?? ?먯쑀???먯쑀 諛⑹떇?쇰줈 ?먯븘 ?곸뿭???곹뼢."
+    },
+    {
+      "planet": "?댁솗??,
+      "sign": "?쇱냼?먮━",
+      "signEnglish": "Capricorn",
+      "degree": 6.13,
+      "absoluteDegree": 276.13455835352534,
+      "house": 2,
+      "dignity": "異붾씫(fall)",
+      "is_retrograde": false,
+      "interpretation": "?댁솗???곸꽦) ?쇱냼?먮━ 6.13째, 2?섏슦???щЪ쨌媛移섍?쨌?뚯쑀) ???섏긽, ?곸꽦, 吏곴????쇱떖??諛⑹떇?쇰줈 ?щЪ ?곸뿭???곹뼢."
+    },
+    {
+      "planet": "紐낆솗??,
+      "sign": "?꾧컝?먮━",
+      "signEnglish": "Scorpio",
+      "degree": 7.15,
+      "absoluteDegree": 217.14983375905456,
+      "house": 12,
+      "dignity": "蹂몄쥖(domicile)",
+      "is_retrograde": false,
+      "interpretation": "紐낆솗??蹂?? ?꾧컝?먮━ 7.15째, 12?섏슦???좎옱?섏떇쨌??붋룹뭅瑜대쭏) [蹂몄쥖] ??蹂?? 二쎌쓬怨쇰??? 沅뚮젰??吏묒쨷??諛⑹떇?쇰줈 ?좎옱?섏떇 ?곸뿭???곹뼢."
+    },
+    {
+      "planet": "North Node",
+      "sign": "?꾧컝?먮━",
+      "signEnglish": "Scorpio",
+      "degree": 22.99,
+      "absoluteDegree": 232.98528279129823,
+      "house": 12,
+      "dignity": "?놁쓬",
+      "is_retrograde": true,
+      "interpretation": "North Node(誘몃옒) ?꾧컝?먮━ 22.99째, 12?섏슦???좎옱?섏떇쨌??붋룹뭅瑜대쭏) [??뻾] ???대챸??諛⑺뼢, ?깆옣, 移대Ⅴ留덉쓽 紐⑹쟻??吏묒쨷??諛⑹떇?쇰줈 ?좎옱?섏떇 ?곸뿭???곹뼢."
+    },
+    {
+      "planet": "South Node",
+      "sign": "?⑹냼?먮━",
+      "signEnglish": "Taurus",
+      "degree": 22.99,
+      "absoluteDegree": 52.98528279129823,
+      "house": 6,
+      "dignity": "?놁쓬",
+      "is_retrograde": true,
+      "interpretation": "South Node(怨쇨굅) ?⑹냼?먮━ 22.99째, 6?섏슦??嫄닿컯쨌?쇱긽쨌?쒕퉬?? [??뻾] ??怨쇨굅???듦?, ?숇떖???щ뒫, 移대Ⅴ留덉쟻 遺梨꾩씠 ?덉젙??諛⑹떇?쇰줈 嫄닿컯 ?곸뿭???곹뼢."
+    },
+    {
+      "planet": "Chiron",
+      "sign": "?⑹냼?먮━",
+      "signEnglish": "Taurus",
+      "degree": 16.74,
+      "absoluteDegree": 46.7438373399566,
+      "house": 6,
+      "dignity": "?놁쓬",
+      "is_retrograde": false,
+      "interpretation": "Chiron(移섏쑀) ?⑹냼?먮━ 16.74째, 6?섏슦??嫄닿컯쨌?쇱긽쨌?쒕퉬?? ???몃씪?곕쭏, 移섏쑀, 援먯쑁, ????섑븰???덉젙??諛⑹떇?쇰줈 嫄닿컯 ?곸뿭???곹뼢."
+    },
+    {
+      "planet": "Lilith",
+      "sign": "?띾뫁?댁옄由?,
+      "signEnglish": "Gemini",
+      "degree": 5.56,
+      "absoluteDegree": 65.5631227591075,
+      "house": 7,
+      "dignity": "?놁쓬",
+      "is_retrograde": false,
+      "interpretation": "Lilith(蹂몃뒫) ?띾뫁?댁옄由?5.56째, 7?섏슦???뚰듃?덉떗쨌寃고샎쨌怨꾩빟) ??臾댁쓽?? ?깆쟻 ?먮꼫吏, 湲덇린, ?낅┰???뚰넻??諛⑹떇?쇰줈 ?뚰듃?덉떗 ?곸뿭???곹뼢."
+    }
+  ],
+  "house_positions": {
+    "ASC": "?꾧컝?먮━",
+    "MC": "泥섎??먮━",
+    "IC": "臾쇨퀬湲곗옄由?,
+    "DESC": "?⑹냼?먮━",
+    "raw": [
+      235.81123617127946,
+      157.3288876507654,
+      337.3288876507654,
+      55.81123617127946
+    ]
+  },
+  "major_aspects": [
+    "?쒖뼇(?뺤껜?? ????媛먯젙) ?ш컖(square): 湲댁옣/?깆옣",
+    "?쒖뼇(?뺤껜?? ??紐⑹꽦(?됱슫) ?ш컖(square): 湲댁옣/?깆옣",
+    "?쒖뼇(?뺤껜?? ??泥쒖솗???곷챸) ?몄빻??quincunx): 湲댁옣/?깆옣",
+    "?쒖뼇(?뺤껜?? ??North Node(誘몃옒) ?쇳빀(trine): 議고솕",
+    "?쒖뼇(?뺤껜?? ??South Node(怨쇨굅) ?〓텇(sextile): 議고솕",
+    "?쒖뼇(?뺤껜?? ??Lilith(蹂몃뒫) semi-square: 湲댁옣/?깆옣",
+    "??媛먯젙) ??湲덉꽦(?щ옉) ?ш컖(square): 湲댁옣/?깆옣",
+    "??媛먯젙) ???좎꽦(?쒕젴) ?쇳빀(trine): 議고솕",
+    "??媛먯젙) ??泥쒖솗???곷챸) ?쇳빀(trine): 議고솕",
+    "??媛먯젙) ??Chiron(移섏쑀) semi-sextile: 議고솕",
+    "??媛먯젙) ??Lilith(蹂몃뒫) semi-square: 湲댁옣/?깆옣",
+    "?섏꽦(?ш퀬) ???붿꽦(?됰룞) semi-sextile: 議고솕",
+    "?섏꽦(?ш퀬) ???댁솗???곸꽦) 異?opposition): 湲댁옣/?깆옣",
+    "?섏꽦(?ш퀬) ??紐낆솗??蹂?? ?쇳빀(trine): 議고솕",
+    "?섏꽦(?ш퀬) ??North Node(誘몃옒) sesquiquadrate: 湲댁옣/?깆옣",
+    "?섏꽦(?ш퀬) ??South Node(怨쇨굅) semi-square: 湲댁옣/?깆옣",
+    "湲덉꽦(?щ옉) ???좎꽦(?쒕젴) ?몄빻??quincunx): 湲댁옣/?깆옣",
+    "湲덉꽦(?щ옉) ??Chiron(移섏쑀) ?〓텇(sextile): 議고솕",
+    "?붿꽦(?됰룞) ??泥쒖솗???곷챸) sesquiquadrate: 湲댁옣/?깆옣",
+    "?붿꽦(?됰룞) ???댁솗???곸꽦) ?몄빻??quincunx): 湲댁옣/?깆옣",
+    "?붿꽦(?됰룞) ??紐낆솗??蹂?? ?ш컖(square): 湲댁옣/?깆옣",
+    "?붿꽦(?됰룞) ??Lilith(蹂몃뒫) ?〓텇(sextile): 議고솕",
+    "紐⑹꽦(?됱슫) ??泥쒖솗???곷챸) ?쇳빀(trine): 議고솕",
+    "泥쒖솗???곷챸) ??North Node(誘몃옒) semi-sextile: 議고솕",
+    "泥쒖솗???곷챸) ??South Node(怨쇨굅) ?몄빻??quincunx): 湲댁옣/?깆옣",
+    "?댁솗???곸꽦) ??紐낆솗??蹂?? ?〓텇(sextile): 議고솕",
+    "?댁솗???곸꽦) ??Lilith(蹂몃뒫) ?몄빻??quincunx): 湲댁옣/?깆옣",
+    "North Node(誘몃옒) ??South Node(怨쇨굅) 異?opposition): 湲댁옣/?깆옣"
+  ],
+  "planets": [
+    {
+      "planet": "?쒖뼇",
+      "sign": "寃뚯옄由?,
+      "signEnglish": "Cancer",
+      "degree": 24.17,
+      "absoluteDegree": 114.16949312295662,
+      "house": 8,
+      "dignity": "?놁쓬",
+      "is_retrograde": false,
+      "interpretation": "?쒖뼇(?뺤껜?? 寃뚯옄由?24.17째, 8?섏슦??蹂?샕룰났?좎옱臾셋룹떖痢듭떖由? ???먯븘, ?섏?, ?앸챸?μ씠 蹂댄샇??諛⑹떇?쇰줈 蹂???곸뿭???곹뼢."
+    },
+    {
+      "planet": "??,
+      "sign": "?묒옄由?,
+      "signEnglish": "Aries",
+      "degree": 17.18,
+      "absoluteDegree": 17.176977931183103,
+      "house": 5,
+      "dignity": "?놁쓬",
+      "is_retrograde": false,
+      "interpretation": "??媛먯젙) ?묒옄由?17.18째, 5?섏슦??李쎌쓽쨌?곗븷쨌?먮?쨌利먭굅?) ??媛먯젙, 臾댁쓽?? 蹂몃뒫??媛쒖쿃??諛⑹떇?쇰줈 李쎌쓽 ?곸뿭???곹뼢."
+    },
+    {
+      "planet": "?섏꽦",
+      "sign": "寃뚯옄由?,
+      "signEnglish": "Cancer",
+      "degree": 7.57,
+      "absoluteDegree": 97.57317895430418,
+      "house": 8,
+      "dignity": "?놁쓬",
+      "is_retrograde": false,
+      "interpretation": "?섏꽦(?ш퀬) 寃뚯옄由?7.57째, 8?섏슦??蹂?샕룰났?좎옱臾셋룹떖痢듭떖由? ???뚰넻, 吏?? ?숈뒿??蹂댄샇??諛⑹떇?쇰줈 蹂???곸뿭???곹뼢."
+    },
+    {
+      "planet": "湲덉꽦",
+      "sign": "寃뚯옄由?,
+      "signEnglish": "Cancer",
+      "degree": 14.01,
+      "absoluteDegree": 104.01130098606092,
+      "house": 8,
+      "dignity": "?놁쓬",
+      "is_retrograde": false,
+      "interpretation": "湲덉꽦(?щ옉) 寃뚯옄由?14.01째, 8?섏슦??蹂?샕룰났?좎옱臾셋룹떖痢듭떖由? ???щ옉, 誘? 媛移섍???蹂댄샇??諛⑹떇?쇰줈 蹂???곸뿭???곹뼢."
+    },
+    {
+      "planet": "?붿꽦",
+      "sign": "?ъ옄?먮━",
+      "signEnglish": "Leo",
+      "degree": 6.74,
+      "absoluteDegree": 126.74306622326134,
+      "house": 9,
+      "dignity": "?놁쓬",
+      "is_retrograde": false,
+      "interpretation": "?붿꽦(?됰룞) ?ъ옄?먮━ 6.74째, 9?섏슦??泥좏븰쨌?댁쇅쨌怨좊벑援먯쑁) ???됰룞, ?먮꼫吏, ?뺣쭩???밸떦 諛⑹떇?쇰줈 泥좏븰 ?곸뿭???곹뼢."
+    },
+    {
+      "planet": "紐⑹꽦",
+      "sign": "?묒옄由?,
+      "signEnglish": "Aries",
+      "degree": 27.94,
+      "absoluteDegree": 27.940449276122365,
+      "house": 5,
+      "dignity": "?놁쓬",
+      "is_retrograde": false,
+      "interpretation": "紐⑹꽦(?됱슫) ?묒옄由?27.94째, 5?섏슦??李쎌쓽쨌?곗븷쨌?먮?쨌利먭굅?) ???뺤옣, ?됱슫, 泥좏븰??媛쒖쿃??諛⑹떇?쇰줈 李쎌쓽 ?곸뿭???곹뼢."
+    },
+    {
+      "planet": "?좎꽦",
+      "sign": "?ъ닔?먮━",
+      "signEnglish": "Sagittarius",
+      "degree": 15.38,
+      "absoluteDegree": 255.3814746880921,
+      "house": 1,
+      "dignity": "?놁쓬",
+      "is_retrograde": false,
+      "interpretation": "?좎꽦(?쒕젴) ?ъ닔?먮━ 15.38째, 1?섏슦???먯븘쨌?몃え쨌泥レ씤?? ???쒗븳, 梨낆엫, 援ъ“???먯쑀 諛⑹떇?쇰줈 ?먯븘 ?곸뿭???곹뼢."
+    },
+    {
+      "planet": "泥쒖솗??,
+      "sign": "?ъ닔?먮━",
+      "signEnglish": "Sagittarius",
+      "degree": 23.55,
+      "absoluteDegree": 263.55088135980054,
+      "house": 1,
+      "dignity": "?놁쓬",
+      "is_retrograde": false,
+      "interpretation": "泥쒖솗???곷챸) ?ъ닔?먮━ 23.55째, 1?섏슦???먯븘쨌?몃え쨌泥レ씤?? ???곸떊, 蹂?? ?먯쑀???먯쑀 諛⑹떇?쇰줈 ?먯븘 ?곸뿭???곹뼢."
+    },
+    {
+      "planet": "?댁솗??,
+      "sign": "?쇱냼?먮━",
+      "signEnglish": "Capricorn",
+      "degree": 6.13,
+      "absoluteDegree": 276.13455835352534,
+      "house": 2,
+      "dignity": "異붾씫(fall)",
+      "is_retrograde": false,
+      "interpretation": "?댁솗???곸꽦) ?쇱냼?먮━ 6.13째, 2?섏슦???щЪ쨌媛移섍?쨌?뚯쑀) ???섏긽, ?곸꽦, 吏곴????쇱떖??諛⑹떇?쇰줈 ?щЪ ?곸뿭???곹뼢."
+    },
+    {
+      "planet": "紐낆솗??,
+      "sign": "?꾧컝?먮━",
+      "signEnglish": "Scorpio",
+      "degree": 7.15,
+      "absoluteDegree": 217.14983375905456,
+      "house": 12,
+      "dignity": "蹂몄쥖(domicile)",
+      "is_retrograde": false,
+      "interpretation": "紐낆솗??蹂?? ?꾧컝?먮━ 7.15째, 12?섏슦???좎옱?섏떇쨌??붋룹뭅瑜대쭏) [蹂몄쥖] ??蹂?? 二쎌쓬怨쇰??? 沅뚮젰??吏묒쨷??諛⑹떇?쇰줈 ?좎옱?섏떇 ?곸뿭???곹뼢."
+    },
+    {
+      "planet": "North Node",
+      "sign": "?꾧컝?먮━",
+      "signEnglish": "Scorpio",
+      "degree": 22.99,
+      "absoluteDegree": 232.98528279129823,
+      "house": 12,
+      "dignity": "?놁쓬",
+      "is_retrograde": true,
+      "interpretation": "North Node(誘몃옒) ?꾧컝?먮━ 22.99째, 12?섏슦???좎옱?섏떇쨌??붋룹뭅瑜대쭏) [??뻾] ???대챸??諛⑺뼢, ?깆옣, 移대Ⅴ留덉쓽 紐⑹쟻??吏묒쨷??諛⑹떇?쇰줈 ?좎옱?섏떇 ?곸뿭???곹뼢."
+    },
+    {
+      "planet": "South Node",
+      "sign": "?⑹냼?먮━",
+      "signEnglish": "Taurus",
+      "degree": 22.99,
+      "absoluteDegree": 52.98528279129823,
+      "house": 6,
+      "dignity": "?놁쓬",
+      "is_retrograde": true,
+      "interpretation": "South Node(怨쇨굅) ?⑹냼?먮━ 22.99째, 6?섏슦??嫄닿컯쨌?쇱긽쨌?쒕퉬?? [??뻾] ??怨쇨굅???듦?, ?숇떖???щ뒫, 移대Ⅴ留덉쟻 遺梨꾩씠 ?덉젙??諛⑹떇?쇰줈 嫄닿컯 ?곸뿭???곹뼢."
+    },
+    {
+      "planet": "Chiron",
+      "sign": "?⑹냼?먮━",
+      "signEnglish": "Taurus",
+      "degree": 16.74,
+      "absoluteDegree": 46.7438373399566,
+      "house": 6,
+      "dignity": "?놁쓬",
+      "is_retrograde": false,
+      "interpretation": "Chiron(移섏쑀) ?⑹냼?먮━ 16.74째, 6?섏슦??嫄닿컯쨌?쇱긽쨌?쒕퉬?? ???몃씪?곕쭏, 移섏쑀, 援먯쑁, ????섑븰???덉젙??諛⑹떇?쇰줈 嫄닿컯 ?곸뿭???곹뼢."
+    },
+    {
+      "planet": "Lilith",
+      "sign": "?띾뫁?댁옄由?,
+      "signEnglish": "Gemini",
+      "degree": 5.56,
+      "absoluteDegree": 65.5631227591075,
+      "house": 7,
+      "dignity": "?놁쓬",
+      "is_retrograde": false,
+      "interpretation": "Lilith(蹂몃뒫) ?띾뫁?댁옄由?5.56째, 7?섏슦???뚰듃?덉떗쨌寃고샎쨌怨꾩빟) ??臾댁쓽?? ?깆쟻 ?먮꼫吏, 湲덇린, ?낅┰???뚰넻??諛⑹떇?쇰줈 ?뚰듃?덉떗 ?곸뿭???곹뼢."
+    }
+  ],
+  "aspects": [
+    {
+      "planet1": "?쒖뼇",
+      "planet2": "??,
+      "type": "?ш컖(square)",
+      "angle": 90,
+      "orb": 6.99,
+      "interpretation": "?쒖뼇(?뺤껜?? ????媛먯젙) ?ш컖(square): 湲댁옣/?깆옣",
+      "isHarmonious": false
+    },
+    {
+      "planet1": "?쒖뼇",
+      "planet2": "紐⑹꽦",
+      "type": "?ш컖(square)",
+      "angle": 90,
+      "orb": 3.77,
+      "interpretation": "?쒖뼇(?뺤껜?? ??紐⑹꽦(?됱슫) ?ш컖(square): 湲댁옣/?깆옣",
+      "isHarmonious": false
+    },
+    {
+      "planet1": "?쒖뼇",
+      "planet2": "泥쒖솗??,
+      "type": "?몄빻??quincunx)",
+      "angle": 150,
+      "orb": 0.62,
+      "interpretation": "?쒖뼇(?뺤껜?? ??泥쒖솗???곷챸) ?몄빻??quincunx): 湲댁옣/?깆옣",
+      "isHarmonious": false
+    },
+    {
+      "planet1": "?쒖뼇",
+      "planet2": "North Node",
+      "type": "?쇳빀(trine)",
+      "angle": 120,
+      "orb": 1.18,
+      "interpretation": "?쒖뼇(?뺤껜?? ??North Node(誘몃옒) ?쇳빀(trine): 議고솕",
+      "isHarmonious": true
+    },
+    {
+      "planet1": "?쒖뼇",
+      "planet2": "South Node",
+      "type": "?〓텇(sextile)",
+      "angle": 60,
+      "orb": 1.18,
+      "interpretation": "?쒖뼇(?뺤껜?? ??South Node(怨쇨굅) ?〓텇(sextile): 議고솕",
+      "isHarmonious": true
+    },
+    {
+      "planet1": "?쒖뼇",
+      "planet2": "Lilith",
+      "type": "semi-square",
+      "angle": 45,
+      "orb": 3.61,
+      "interpretation": "?쒖뼇(?뺤껜?? ??Lilith(蹂몃뒫) semi-square: 湲댁옣/?깆옣",
+      "isHarmonious": false
+    },
+    {
+      "planet1": "??,
+      "planet2": "湲덉꽦",
+      "type": "?ш컖(square)",
+      "angle": 90,
+      "orb": 3.17,
+      "interpretation": "??媛먯젙) ??湲덉꽦(?щ옉) ?ш컖(square): 湲댁옣/?깆옣",
+      "isHarmonious": false
+    },
+    {
+      "planet1": "??,
+      "planet2": "?좎꽦",
+      "type": "?쇳빀(trine)",
+      "angle": 120,
+      "orb": 1.8,
+      "interpretation": "??媛먯젙) ???좎꽦(?쒕젴) ?쇳빀(trine): 議고솕",
+      "isHarmonious": true
+    },
+    {
+      "planet1": "??,
+      "planet2": "泥쒖솗??,
+      "type": "?쇳빀(trine)",
+      "angle": 120,
+      "orb": 6.37,
+      "interpretation": "??媛먯젙) ??泥쒖솗???곷챸) ?쇳빀(trine): 議고솕",
+      "isHarmonious": true
+    },
+    {
+      "planet1": "??,
+      "planet2": "Chiron",
+      "type": "semi-sextile",
+      "angle": 30,
+      "orb": 0.43,
+      "interpretation": "??媛먯젙) ??Chiron(移섏쑀) semi-sextile: 議고솕",
+      "isHarmonious": true
+    },
+    {
+      "planet1": "??,
+      "planet2": "Lilith",
+      "type": "semi-square",
+      "angle": 45,
+      "orb": 3.39,
+      "interpretation": "??媛먯젙) ??Lilith(蹂몃뒫) semi-square: 湲댁옣/?깆옣",
+      "isHarmonious": false
+    },
+    {
+      "planet1": "?섏꽦",
+      "planet2": "?붿꽦",
+      "type": "semi-sextile",
+      "angle": 30,
+      "orb": 0.83,
+      "interpretation": "?섏꽦(?ш퀬) ???붿꽦(?됰룞) semi-sextile: 議고솕",
+      "isHarmonious": true
+    },
+    {
+      "planet1": "?섏꽦",
+      "planet2": "?댁솗??,
+      "type": "異?opposition)",
+      "angle": 180,
+      "orb": 1.44,
+      "interpretation": "?섏꽦(?ш퀬) ???댁솗???곸꽦) 異?opposition): 湲댁옣/?깆옣",
+      "isHarmonious": false
+    },
+    {
+      "planet1": "?섏꽦",
+      "planet2": "紐낆솗??,
+      "type": "?쇳빀(trine)",
+      "angle": 120,
+      "orb": 0.42,
+      "interpretation": "?섏꽦(?ш퀬) ??紐낆솗??蹂?? ?쇳빀(trine): 議고솕",
+      "isHarmonious": true
+    },
+    {
+      "planet1": "?섏꽦",
+      "planet2": "North Node",
+      "type": "sesquiquadrate",
+      "angle": 135,
+      "orb": 0.41,
+      "interpretation": "?섏꽦(?ш퀬) ??North Node(誘몃옒) sesquiquadrate: 湲댁옣/?깆옣",
+      "isHarmonious": false
+    },
+    {
+      "planet1": "?섏꽦",
+      "planet2": "South Node",
+      "type": "semi-square",
+      "angle": 45,
+      "orb": 0.41,
+      "interpretation": "?섏꽦(?ш퀬) ??South Node(怨쇨굅) semi-square: 湲댁옣/?깆옣",
+      "isHarmonious": false
+    },
+    {
+      "planet1": "湲덉꽦",
+      "planet2": "?좎꽦",
+      "type": "?몄빻??quincunx)",
+      "angle": 150,
+      "orb": 1.37,
+      "interpretation": "湲덉꽦(?щ옉) ???좎꽦(?쒕젴) ?몄빻??quincunx): 湲댁옣/?깆옣",
+      "isHarmonious": false
+    },
+    {
+      "planet1": "湲덉꽦",
+      "planet2": "Chiron",
+      "type": "?〓텇(sextile)",
+      "angle": 60,
+      "orb": 2.73,
+      "interpretation": "湲덉꽦(?щ옉) ??Chiron(移섏쑀) ?〓텇(sextile): 議고솕",
+      "isHarmonious": true
+    },
+    {
+      "planet1": "?붿꽦",
+      "planet2": "泥쒖솗??,
+      "type": "sesquiquadrate",
+      "angle": 135,
+      "orb": 1.81,
+      "interpretation": "?붿꽦(?됰룞) ??泥쒖솗???곷챸) sesquiquadrate: 湲댁옣/?깆옣",
+      "isHarmonious": false
+    },
+    {
+      "planet1": "?붿꽦",
+      "planet2": "?댁솗??,
+      "type": "?몄빻??quincunx)",
+      "angle": 150,
+      "orb": 0.61,
+      "interpretation": "?붿꽦(?됰룞) ???댁솗???곸꽦) ?몄빻??quincunx): 湲댁옣/?깆옣",
+      "isHarmonious": false
+    },
+    {
+      "planet1": "?붿꽦",
+      "planet2": "紐낆솗??,
+      "type": "?ш컖(square)",
+      "angle": 90,
+      "orb": 0.41,
+      "interpretation": "?붿꽦(?됰룞) ??紐낆솗??蹂?? ?ш컖(square): 湲댁옣/?깆옣",
+      "isHarmonious": false
+    },
+    {
+      "planet1": "?붿꽦",
+      "planet2": "Lilith",
+      "type": "?〓텇(sextile)",
+      "angle": 60,
+      "orb": 1.18,
+      "interpretation": "?붿꽦(?됰룞) ??Lilith(蹂몃뒫) ?〓텇(sextile): 議고솕",
+      "isHarmonious": true
+    },
+    {
+      "planet1": "紐⑹꽦",
+      "planet2": "泥쒖솗??,
+      "type": "?쇳빀(trine)",
+      "angle": 120,
+      "orb": 4.39,
+      "interpretation": "紐⑹꽦(?됱슫) ??泥쒖솗???곷챸) ?쇳빀(trine): 議고솕",
+      "isHarmonious": true
+    },
+    {
+      "planet1": "泥쒖솗??,
+      "planet2": "North Node",
+      "type": "semi-sextile",
+      "angle": 30,
+      "orb": 0.57,
+      "interpretation": "泥쒖솗???곷챸) ??North Node(誘몃옒) semi-sextile: 議고솕",
+      "isHarmonious": true
+    },
+    {
+      "planet1": "泥쒖솗??,
+      "planet2": "South Node",
+      "type": "?몄빻??quincunx)",
+      "angle": 150,
+      "orb": 0.57,
+      "interpretation": "泥쒖솗???곷챸) ??South Node(怨쇨굅) ?몄빻??quincunx): 湲댁옣/?깆옣",
+      "isHarmonious": false
+    },
+    {
+      "planet1": "?댁솗??,
+      "planet2": "紐낆솗??,
+      "type": "?〓텇(sextile)",
+      "angle": 60,
+      "orb": 1.02,
+      "interpretation": "?댁솗???곸꽦) ??紐낆솗??蹂?? ?〓텇(sextile): 議고솕",
+      "isHarmonious": true
+    },
+    {
+      "planet1": "?댁솗??,
+      "planet2": "Lilith",
+      "type": "?몄빻??quincunx)",
+      "angle": 150,
+      "orb": 0.57,
+      "interpretation": "?댁솗???곸꽦) ??Lilith(蹂몃뒫) ?몄빻??quincunx): 湲댁옣/?깆옣",
+      "isHarmonious": false
+    },
+    {
+      "planet1": "North Node",
+      "planet2": "South Node",
+      "type": "異?opposition)",
+      "angle": 180,
+      "orb": 0,
+      "interpretation": "North Node(誘몃옒) ??South Node(怨쇨굅) 異?opposition): 湲댁옣/?깆옣",
+      "isHarmonious": false
+    }
+  ],
+  "elements": {
+    "遺?: 6.5,
+    "??: 1.5,
+    "怨듦린": 0.5,
+    "臾?: 7
+  },
+  "qualities": {
+    "?쒕룞沅?: 10,
+    "怨좎젙沅?: 3.5,
+    "蹂?듦턿": 2
+  },
+  "dominantElement": "臾?遺?(?쇳빀)",
+  "dominantQuality": "?쒕룞沅?,
+  "chartSummary": "?쒖뼇: 寃뚯옄由?24.17째)\n?? ?묒옄由?17.18째)\n?곸듅沅? ?꾧컝?먮━\n吏諛??먯냼: 臾?遺?(?쇳빀) / ?뱀쭏: ?쒕룞沅?n?붽렇?덊떚: ?댁솗???쇱냼?먮━: 異붾씫(fall), 紐낆솗???꾧컝?먮━: 蹂몄쥖(domicile)",
+  "keyAspects": [
+    "?쒖뼇(?뺤껜?? ????媛먯젙) ?ш컖(square): 湲댁옣/?깆옣",
+    "?쒖뼇(?뺤껜?? ??紐⑹꽦(?됱슫) ?ш컖(square): 湲댁옣/?깆옣",
+    "?쒖뼇(?뺤껜?? ??泥쒖솗???곷챸) ?몄빻??quincunx): 湲댁옣/?깆옣",
+    "?쒖뼇(?뺤껜?? ??North Node(誘몃옒) ?쇳빀(trine): 議고솕",
+    "?쒖뼇(?뺤껜?? ??South Node(怨쇨굅) ?〓텇(sextile): 議고솕",
+    "?쒖뼇(?뺤껜?? ??Lilith(蹂몃뒫) semi-square: 湲댁옣/?깆옣",
+    "??媛먯젙) ??湲덉꽦(?щ옉) ?ш컖(square): 湲댁옣/?깆옣",
+    "??媛먯젙) ???좎꽦(?쒕젴) ?쇳빀(trine): 議고솕",
+    "??媛먯젙) ??泥쒖솗???곷챸) ?쇳빀(trine): 議고솕",
+    "??媛먯젙) ??Chiron(移섏쑀) semi-sextile: 議고솕",
+    "??媛먯젙) ??Lilith(蹂몃뒫) semi-square: 湲댁옣/?깆옣",
+    "?섏꽦(?ш퀬) ???붿꽦(?됰룞) semi-sextile: 議고솕",
+    "?섏꽦(?ш퀬) ???댁솗???곸꽦) 異?opposition): 湲댁옣/?깆옣",
+    "?섏꽦(?ш퀬) ??紐낆솗??蹂?? ?쇳빀(trine): 議고솕",
+    "?섏꽦(?ш퀬) ??North Node(誘몃옒) sesquiquadrate: 湲댁옣/?깆옣",
+    "?섏꽦(?ш퀬) ??South Node(怨쇨굅) semi-square: 湲댁옣/?깆옣",
+    "湲덉꽦(?щ옉) ???좎꽦(?쒕젴) ?몄빻??quincunx): 湲댁옣/?깆옣",
+    "湲덉꽦(?щ옉) ??Chiron(移섏쑀) ?〓텇(sextile): 議고솕",
+    "?붿꽦(?됰룞) ??泥쒖솗???곷챸) sesquiquadrate: 湲댁옣/?깆옣",
+    "?붿꽦(?됰룞) ???댁솗???곸꽦) ?몄빻??quincunx): 湲댁옣/?깆옣",
+    "?붿꽦(?됰룞) ??紐낆솗??蹂?? ?ш컖(square): 湲댁옣/?깆옣",
+    "?붿꽦(?됰룞) ??Lilith(蹂몃뒫) ?〓텇(sextile): 議고솕",
+    "紐⑹꽦(?됱슫) ??泥쒖솗???곷챸) ?쇳빀(trine): 議고솕",
+    "泥쒖솗???곷챸) ??North Node(誘몃옒) semi-sextile: 議고솕",
+    "泥쒖솗???곷챸) ??South Node(怨쇨굅) ?몄빻??quincunx): 湲댁옣/?깆옣",
+    "?댁솗???곸꽦) ??紐낆솗??蹂?? ?〓텇(sextile): 議고솕",
+    "?댁솗???곸꽦) ??Lilith(蹂몃뒫) ?몄빻??quincunx): 湲댁옣/?깆옣",
+    "North Node(誘몃옒) ??South Node(怨쇨굅) 異?opposition): 湲댁옣/?깆옣"
+  ],
+  "dignityReport": [
+    "?댁솗???쇱냼?먮━: 異붾씫(fall)",
+    "紐낆솗???꾧컝?먮━: 蹂몄쥖(domicile)"
+  ],
+  "transits": [
+    "紐⑹꽦 ?몃옖吏?寃뚯옄由? ?뺤옣, ?됱슫, 泥좏븰 ?곸뿭?먯꽌 蹂댄샇???먮꼫吏 ?묒슜.",
+    "?좑툘 [?몃옖吏?紐⑹꽦 ?ш컖(90째) [異쒖깮]?? 2026-04-12寃??뺤젏 ?덉긽 (24??李⑥씠)",
+    "??[?몃옖吏?紐⑹꽦 ??0째) [異쒖깮]湲덉꽦: 2026-03-05寃??뺤젏 ?듦낵 (14??李⑥씠)",
+    "??[?몃옖吏?紐⑹꽦 ?〓텇(60째) [異쒖깮]Chiron: 2026-04-07寃??뺤젏 ?덉긽 (19??李⑥씠)",
+    "?좎꽦 ?몃옖吏??묒옄由? ?쒗븳, 梨낆엫, 援ъ“ ?곸뿭?먯꽌 媛쒖쿃???먮꼫吏 ?묒슜.",
+    "?좑툘 [?몃옖吏??좎꽦 ?ш컖(90째) [異쒖깮]?섏꽦: 2026-07-02寃??뺤젏 ?덉긽 (105??李⑥씠)",
+    "?뭿 [?몃옖吏??좎꽦 ?쇳빀(120째) [異쒖깮]?붿꽦: 2026-06-08寃??뺤젏 ?덉긽 (81??李⑥씠)",
+    "?좑툘 [?몃옖吏??좎꽦 ?ш컖(90째) [異쒖깮]?댁솗?? 2026-05-21寃??뺤젏 ?덉긽 (63??李⑥씠)",
+    "??[?몃옖吏??좎꽦 ?〓텇(60째) [異쒖깮]Lilith: 2026-05-04寃??뺤젏 ?덉긽 (46??李⑥씠)",
+    "泥쒖솗???몃옖吏??⑹냼?먮━: ?곸떊, 蹂?? ?먯쑀 ?곸뿭?먯꽌 ?덉젙???먮꼫吏 ?묒슜.",
+    "??[?몃옖吏?泥쒖솗???〓텇(60째) [異쒖깮]?쒖뼇: 2025-04-11寃??뺤젏 ?듦낵 (342??李⑥씠)",
+    "?댁솗???몃옖吏??묒옄由? ?섏긽, ?곸꽦, 吏곴? ?곸뿭?먯꽌 媛쒖쿃???먮꼫吏 ?묒슜.",
+    "?좑툘 [?몃옖吏??댁솗???ш컖(90째) [異쒖깮]?댁솗?? 2028-03-21寃??뺤젏 ?덉긽 (733??李⑥씠)",
+    "??[?몃옖吏??댁솗???〓텇(60째) [異쒖깮]Lilith: 2027-12-16寃??뺤젏 ?덉긽 (637??李⑥씠)",
+    "紐낆솗???몃옖吏?臾쇰퀝?먮━: 蹂?? 二쎌쓬怨쇰??? 沅뚮젰 ?곸뿭?먯꽌 ?낆갹???먮꼫吏 ?묒슜.",
+    "?뽳툘 [?몃옖吏?紐낆솗??異?180째) [異쒖깮]?붿꽦: 2027-06-02寃??뺤젏 ?덉긽 (440??李⑥씠)",
+    "?좑툘 [?몃옖吏?紐낆솗???ш컖(90째) [異쒖깮]紐낆솗?? 2027-09-11寃??뺤젏 ?덉긽 (541??李⑥씠)",
+    "?뭿 [?몃옖吏?紐낆솗???쇳빀(120째) [異쒖깮]Lilith: 2026-08-11寃??뺤젏 ?덉긽 (145??李⑥씠)"
+  ],
+  "location_confidence": "high",
+  "location_warning": null,
+  "houses": {
+    "system": "Placidus",
+    "cusps": [
+      235.81123617127946,
+      269.6504533311081,
+      303.48967049093676,
+      337.3288876507654,
+      3.48967049093676,
+      29.65045333110811,
+      55.81123617127946,
+      89.65045333110811,
+      123.48967049093676,
+      157.3288876507654,
+      183.48967049093676,
+      209.6504533311081
+    ],
+    "ascendant": 235.81123617127946,
+    "mc": 157.3288876507654
+  },
+  "progression": {
+    "date": "1987-08-24",
+    "sun": {
+      "longitude": 151.22507458083896,
+      "sign": "泥섎??먮━",
+      "degree": "1째14'"
+    },
+    "moon": {
+      "longitude": 156.15347242183702,
+      "sign": "泥섎??먮━",
+      "degree": "6째9'"
+    },
+    "moon_house": 9,
+    "moon_aspects": [
+      {
+        "planet": "natal ?섏꽦",
+        "aspect": "sextile",
+        "orb": 1.42
+      },
+      {
+        "planet": "natal ?댁솗??,
+        "aspect": "trine",
+        "orb": 0.02
+      },
+      {
+        "planet": "natal 紐낆솗??,
+        "aspect": "sextile",
+        "orb": 1
+      },
+      {
+        "planet": "natal Lilith",
+        "aspect": "square",
+        "orb": 0.59
+      }
+    ]
+  },
+  "solarReturn": {
+    "year": 2026,
+    "exactDate": "2026-07-16T16:37:57.725Z",
+    "sun": {
+      "planet": "?쒖뼇",
+      "longitude": 114.16940310127978,
+      "sign": "寃뚯옄由?,
+      "degree": "24째10'",
+      "house": 3
+    },
+    "moon": {
+      "planet": "??,
+      "longitude": 145.5742867943133,
+      "sign": "?ъ옄?먮━",
+      "degree": "25째34'",
+      "house": 4
+    },
+    "ascendant": {
+      "longitude": 59.49884872024177,
+      "sign": "?⑹냼?먮━"
+    },
+    "mc": {
+      "longitude": 308.57620753158915,
+      "sign": "臾쇰퀝?먮━"
+    },
+    "planets": [
+      {
+        "planet": "?쒖뼇",
+        "longitude": 114.16940310127978,
+        "sign": "寃뚯옄由?,
+        "degree": "24째10'",
+        "house": 3
+      },
+      {
+        "planet": "??,
+        "longitude": 145.5742867943133,
+        "sign": "?ъ옄?먮━",
+        "degree": "25째34'",
+        "house": 4
+      },
+      {
+        "planet": "?섏꽦",
+        "longitude": 108.50169505590128,
+        "sign": "寃뚯옄由?,
+        "degree": "18째30'",
+        "house": 3
+      },
+      {
+        "planet": "湲덉꽦",
+        "longitude": 157.70067420812393,
+        "sign": "泥섎??먮━",
+        "degree": "7째42'",
+        "house": 4
+      },
+      {
+        "planet": "?붿꽦",
+        "longitude": 72.5863541904327,
+        "sign": "?띾뫁?댁옄由?,
+        "degree": "12째35'",
+        "house": 1
+      },
+      {
+        "planet": "紐⑹꽦",
+        "longitude": 123.57595452689463,
+        "sign": "?ъ옄?먮━",
+        "degree": "3째35'",
+        "house": 3
+      },
+      {
+        "planet": "?좎꽦",
+        "longitude": 14.660063335593861,
+        "sign": "?묒옄由?,
+        "degree": "14째40'",
+        "house": 11
+      },
+      {
+        "planet": "泥쒖솗??,
+        "longitude": 64.4345291944444,
+        "sign": "?띾뫁?댁옄由?,
+        "degree": "4째26'",
+        "house": 1
+      },
+      {
+        "planet": "?댁솗??,
+        "longitude": 4.39861328122231,
+        "sign": "?묒옄由?,
+        "degree": "4째24'",
+        "house": 11
+      },
+      {
+        "planet": "紐낆솗??,
+        "longitude": 304.53188208380675,
+        "sign": "臾쇰퀝?먮━",
+        "degree": "4째32'",
+        "house": 9
+      },
+      {
+        "planet": "North Node",
+        "longitude": 198.599948262432,
+        "sign": "泥쒖묶?먮━",
+        "degree": "18째36'",
+        "house": 5
+      },
+      {
+        "planet": "South Node",
+        "longitude": 18.599948262432008,
+        "sign": "?묒옄由?,
+        "degree": "18째36'",
+        "house": 11
+      },
+      {
+        "planet": "Chiron",
+        "longitude": 7.586209956095615,
+        "sign": "?묒옄由?,
+        "degree": "7째35'",
+        "house": 11
+      },
+      {
+        "planet": "Lilith",
+        "longitude": 212.44206377508817,
+        "sign": "?꾧컝?먮━",
+        "degree": "2째27'",
+        "house": 6
+      }
+    ],
+    "aspects": [
+      "?쒖뼇(?뺤껜?? ????媛먯젙) semi-sextile: 議고솕",
+      "?쒖뼇(?뺤껜?? ???섏꽦(?ш퀬) ??conjunction): 議고솕",
+      "?쒖뼇(?뺤껜?? ??湲덉꽦(?щ옉) semi-square: 湲댁옣/?깆옣",
+      "?쒖뼇(?뺤껜?? ???붿꽦(?됰룞) semi-square: 湲댁옣/?깆옣",
+      "?쒖뼇(?뺤껜?? ??North Node(誘몃옒) ?ш컖(square): 湲댁옣/?깆옣",
+      "?쒖뼇(?뺤껜?? ??South Node(怨쇨굅) ?ш컖(square): 湲댁옣/?깆옣",
+      "??媛먯젙) ??South Node(怨쇨굅) ?쇳빀(trine): 議고솕",
+      "??媛먯젙) ??Chiron(移섏쑀) sesquiquadrate: 湲댁옣/?깆옣",
+      "?섏꽦(?ш퀬) ???좎꽦(?쒕젴) ?ш컖(square): 湲댁옣/?깆옣",
+      "?섏꽦(?ш퀬) ??泥쒖솗???곷챸) semi-square: 湲댁옣/?깆옣",
+      "?섏꽦(?ш퀬) ??North Node(誘몃옒) ?ш컖(square): 湲댁옣/?깆옣",
+      "?섏꽦(?ш퀬) ??South Node(怨쇨굅) ?ш컖(square): 湲댁옣/?깆옣",
+      "湲덉꽦(?щ옉) ???붿꽦(?됰룞) ?ш컖(square): 湲댁옣/?깆옣",
+      "湲덉꽦(?щ옉) ??泥쒖솗???곷챸) ?ш컖(square): 湲댁옣/?깆옣",
+      "湲덉꽦(?щ옉) ??Chiron(移섏쑀) ?몄빻??quincunx): 湲댁옣/?깆옣",
+      "?붿꽦(?됰룞) ???좎꽦(?쒕젴) ?〓텇(sextile): 議고솕",
+      "紐⑹꽦(?됱슫) ??泥쒖솗???곷챸) ?〓텇(sextile): 議고솕",
+      "紐⑹꽦(?됱슫) ???댁솗???곸꽦) ?쇳빀(trine): 議고솕",
+      "紐⑹꽦(?됱슫) ??紐낆솗??蹂?? 異?opposition): 湲댁옣/?깆옣",
+      "紐⑹꽦(?됱슫) ??Chiron(移섏쑀) ?쇳빀(trine): 議고솕",
+      "紐⑹꽦(?됱슫) ??Lilith(蹂몃뒫) ?ш컖(square): 湲댁옣/?깆옣",
+      "?좎꽦(?쒕젴) ??North Node(誘몃옒) 異?opposition): 湲댁옣/?깆옣",
+      "?좎꽦(?쒕젴) ??South Node(怨쇨굅) ??conjunction): 議고솕",
+      "泥쒖솗???곷챸) ???댁솗???곸꽦) ?〓텇(sextile): 議고솕",
+      "泥쒖솗???곷챸) ??紐낆솗??蹂?? ?쇳빀(trine): 議고솕",
+      "泥쒖솗???곷챸) ??North Node(誘몃옒) sesquiquadrate: 湲댁옣/?깆옣",
+      "泥쒖솗???곷챸) ??South Node(怨쇨굅) semi-square: 湲댁옣/?깆옣",
+      "?댁솗???곸꽦) ??紐낆솗??蹂?? ?〓텇(sextile): 議고솕",
+      "?댁솗???곸꽦) ??Chiron(移섏쑀) ??conjunction): 議고솕",
+      "紐낆솗??蹂?? ??Lilith(蹂몃뒫) ?ш컖(square): 湲댁옣/?깆옣",
+      "North Node(誘몃옒) ??South Node(怨쇨굅) 異?opposition): 湲댁옣/?깆옣"
+    ],
+    "highlights": [
+      "?붾씪 由ы꽩 ASC媛 ?⑹냼?먮━?먮━ ???ы빐???섎Ⅴ?뚮굹? ?쒕룞 ?뚮쭏",
+      "?붾씪 由ы꽩 ?ъ씠 4?섏슦?????ы빐 ?뺤꽌???먮꼫吏? 愿?ъ씠 吏묒쨷?섎뒗 ?곸뿭"
+    ]
+  }
+}
