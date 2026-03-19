@@ -84,6 +84,15 @@ const EXALTATIONS: Record<string, number> = {
   목성: 3, 토성: 6, 천왕성: 7, 해왕성: 3, 명왕성: 4,
 };
 
+const HOUSE_MEANINGS: Record<number, string> = {
+  1: "자아·외모·첫인상", 2: "재물·가치관·소유",
+  3: "소통·형제·단거리이동", 4: "가정·뿌리·내면",
+  5: "창의·연애·자녀·즐거움", 6: "건강·일상·서비스",
+  7: "파트너십·결혼·계약", 8: "변환·공유재물·심층심리",
+  9: "철학·해외·고등교육", 10: "사회적지위·직업·명예",
+  11: "우정·사회참여·목표", 12: "잠재의식·은둔·카르마",
+};
+
 // ═══════════════════════════════════════════════
 // Helper Functions
 // ═══════════════════════════════════════════════
@@ -235,6 +244,57 @@ function calculateHousesManual(date: Date, observer: Astronomy.Observer) {
   };
 }
 
+function calculateHouseCuspsPlacidus(asc: number, mc: number) {
+  const ic = (mc + 180) % 360;
+  const desc = (asc + 180) % 360;
+
+  const q1Dist = (asc - mc + 360) % 360;
+  const q2Dist = (ic - asc + 360) % 360;
+  const q3Dist = (desc - ic + 360) % 360;
+  const q4Dist = (mc - desc + 360) % 360;
+
+  return [
+    asc,                         // 1
+    (asc + q2Dist / 3) % 360,    // 2
+    (asc + 2 * q2Dist / 3) % 360, // 3
+    ic,                          // 4
+    (ic + q3Dist / 3) % 360,     // 5
+    (ic + 2 * q3Dist / 3) % 360, // 6
+    desc,                        // 7
+    (desc + q4Dist / 3) % 360,   // 8
+    (desc + 2 * q4Dist / 3) % 360, // 9
+    mc,                          // 10
+    (mc + q1Dist / 3) % 360,     // 11
+    (mc + 2 * q1Dist / 3) % 360  // 12
+  ];
+}
+
+function getHouseForLongitude(longitude: number, cusps: number[]): number {
+  for (let i = 0; i < 11; i++) {
+    const start = cusps[i];
+    const end = cusps[i + 1];
+    if (start < end) {
+      if (longitude >= start && longitude < end) return i + 1;
+    } else {
+      if (longitude >= start || longitude < end) return i + 1;
+    }
+  }
+  return 12;
+}
+
+function formatPosition(longitude: number) {
+  const lng = ((longitude % 360) + 360) % 360;
+  const signIdx = Math.floor(lng / 30) % 12;
+  const degree = lng % 30;
+  const deg = Math.floor(degree);
+  const min = Math.round((degree - deg) * 60);
+  return {
+    longitude: lng,
+    sign: ZODIAC_SIGNS[signIdx],
+    degree: `${deg}°${min}'`
+  };
+}
+
 // ═══════════════════════════════════════════════
 // Public Interface
 // ═══════════════════════════════════════════════
@@ -249,22 +309,18 @@ export interface CoreIdentityPlanet {
 }
 
 export interface ServerAstrologyResult {
-  // B-86new: 출생시 정확도 플래그
   is_time_exact: boolean;
-  // B-87new: core_identity (Big3 + dignity)
   core_identity: {
     sun: CoreIdentityPlanet;
     moon: CoreIdentityPlanet;
     ascendant: { sign: string; degree: number } | null;
   };
-  // B-88new: angles 4축 분리
   angles: {
     asc_self: string;
     mc_career: string;
     ic_roots: string;
     dsc_partner: string;
   } | null;
-  // B-89new: ai_synthesis_tags
   ai_synthesis_tags: string[];
   sunSign: string;
   moonSign: string;
@@ -276,7 +332,7 @@ export interface ServerAstrologyResult {
     IC: string;
     DESC: string;
     raw: number[];
-  } | null; // Changed to be nullable as per the instruction's implied fix
+  } | null;
   major_aspects: string[];
   planets: {
     planet: string;
@@ -300,6 +356,19 @@ export interface ServerAstrologyResult {
   transits: string[];
   location_confidence: string;
   location_warning: string | null;
+  houses: {
+    system: string;
+    cusps: number[];
+    ascendant: number;
+    mc: number;
+  } | null;
+  progression: {
+    date: string;
+    sun: any;
+    moon: any;
+    moon_house: number | null;
+    moon_aspects: any[];
+  } | null;
 }
 
 export function calculateServerAstrology(
@@ -335,14 +404,7 @@ export function calculateServerAstrology(
   const icSign = ZODIAC_SIGNS[Math.floor(houseData.ic / 30) % 12];
   const descSign = ZODIAC_SIGNS[Math.floor(houseData.desc / 30) % 12];
 
-  const HOUSE_MEANINGS: Record<number, string> = {
-    1: "자아·외모·첫인상", 2: "재물·가치관·소유",
-    3: "소통·형제·단거리이동", 4: "가정·뿌리·내면",
-    5: "창의·연애·자녀·즐거움", 6: "건강·일상·서비스",
-    7: "파트너십·결혼·계약", 8: "변환·공유재물·심층심리",
-    9: "철학·해외·고등교육", 10: "사회적지위·직업·명예",
-    11: "우정·사회참여·목표", 12: "잠재의식·은둔·카르마",
-  };
+  const cusps = hasTime ? calculateHouseCuspsPlacidus(houseData.asc, houseData.mc) : [];
 
   const planets = rawPositions.map((p, i) => {
     const lng = ((p.longitude % 360) + 360) % 360;
@@ -351,7 +413,7 @@ export function calculateServerAstrology(
     const isCusp = degree <= 1 || degree >= 29;
     const cuspNote = isCusp ? `(경계: ${degree <= 1 ? ZODIAC_SIGNS[(signIdx + 11) % 12] : ZODIAC_SIGNS[(signIdx + 1) % 12]} 영향 가능)` : "";
     const sign = ZODIAC_SIGNS[signIdx];
-    const house = hasTime ? (((signIdx - Math.floor(houseData.asc / 30) + 12) % 12) + 1) : null;
+    const house = hasTime ? getHouseForLongitude(lng, cusps) : null;
     const dignity = getPlanetDignity(p.planet, signIdx);
     const meaning = PLANET_MEANINGS[p.planet] || { domain: "", keyword: "" };
     const signMeaning = SIGN_MEANINGS[sign]?.split(",")[0] || "";
@@ -450,7 +512,6 @@ export function calculateServerAstrology(
       const diffFromNatal = (cLng - nLng + 360) % 360;
 
       for (const ta of TRANSIT_ASPECTS) {
-        // 합/충은 한 방향, 나머지는 두 방향(예: 90도, 270도) 체크
         const targets = (ta.angle === 0 || ta.angle === 180) ? [ta.angle] : [ta.angle, 360 - ta.angle];
 
         for (const target of targets) {
@@ -510,6 +571,33 @@ export function calculateServerAstrology(
   // B-86new: is_time_exact
   const is_time_exact = !!(hour && hour !== 12);
 
+  // Secondary Progression
+  const ageInDays = (now.getTime() - natalDate.getTime()) / (1000 * 60 * 60 * 24);
+  const ageInYears = ageInDays / 365.25;
+  const progressedDate = new Date(natalDate.getTime() + ageInYears * 24 * 60 * 60 * 1000);
+  const progPositions = getHighPrecisionPositions(progressedDate, observer);
+
+  const progSun = progPositions.find(p => p.planet === "태양")!;
+  const progMoon = progPositions.find(p => p.planet === "달")!;
+  const moonAspects: any[] = [];
+  const ASPECT_TYPES_SHORT = [
+    { name: "conjunction", angle: 0, orb: 2 },
+    { name: "sextile", angle: 60, orb: 2 },
+    { name: "square", angle: 90, orb: 2 },
+    { name: "trine", angle: 120, orb: 2 },
+    { name: "opposition", angle: 180, orb: 2 }
+  ];
+
+  planets.forEach(np => {
+    let diff = Math.abs(progMoon.longitude - np.absoluteDegree);
+    if (diff > 180) diff = 360 - diff;
+    for (const at of ASPECT_TYPES_SHORT) {
+      if (Math.abs(diff - at.angle) <= at.orb) {
+        moonAspects.push({ planet: `natal ${np.planet}`, aspect: at.name, orb: Math.round(Math.abs(diff - at.angle) * 100) / 100 });
+      }
+    }
+  });
+
   return {
     is_time_exact,
     core_identity,
@@ -528,5 +616,13 @@ export function calculateServerAstrology(
     dignityReport, transits,
     location_confidence: locationConfidence,
     location_warning: locationWarning,
+    houses: hasTime ? { system: "Placidus", cusps, ascendant: houseData.asc, mc: houseData.mc } : null,
+    progression: {
+      date: progressedDate.toISOString().split('T')[0],
+      sun: formatPosition(progSun.longitude),
+      moon: formatPosition(progMoon.longitude),
+      moon_house: hasTime ? getHouseForLongitude(progMoon.longitude, cusps) : null,
+      moon_aspects: moonAspects
+    }
   };
 }
