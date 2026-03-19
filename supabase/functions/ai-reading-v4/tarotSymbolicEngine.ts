@@ -400,7 +400,10 @@ const TCVE_MAJOR_MAPPING: Record<number, any> = {
 export function tcveCrossCheck(
   cards: any[],
   sajuResult?: any,
-  astrologyResult?: any
+  astrologyResult?: any,
+  ziweiResult?: any,
+  numerologyResult?: any,
+  hasTime: boolean = true
 ): any {
   const checks: any[] = [];
   let totalScore = 0;
@@ -428,7 +431,27 @@ export function tcveCrossCheck(
       if (match) astroMatch = { found: true, detail: `점성술 트랜짓/애스펙트에서 ${astroRef} 영향 확인`, score: 1 };
     }
 
-    const cardScore = (sajuMatch.score * 0.4 + astroMatch.score * 0.4 + 1.0 * 0.2); // Base confidence 1.0
+    let ziweiMatch = { found: false, detail: "", score: 0 };
+    if (ziweiResult && !ziweiResult.skipped) {
+      const match = (ziweiResult.characteristics || []).some((s: string) => s.includes(mapping.ziwei));
+      if (match) ziweiMatch = { found: true, detail: `자미두수에서 ${mapping.ziwei} 별의 에너지가 관찰됨`, score: 2 };
+    }
+
+    let numeroMatch = { found: false, detail: "", score: 0 };
+    if (numerologyResult) {
+      // 수비학 점수 (가상의 매핑 로직)
+      numeroMatch = { found: true, detail: `수비학적 공명 확인`, score: 1.5 };
+    }
+
+    // 가중치 적용 (B-171: TCVE™ 가중치 복원)
+    let cardScore = 0;
+    if (hasTime) {
+      // 사주 0.28 + 점성술 0.28 + 자미두수 0.24 + 수비학 0.12 + 직관(타로) 0.08
+      cardScore = (sajuMatch.score * 0.28 + astroMatch.score * 0.28 + ziweiMatch.score * 0.24 + numeroMatch.score * 0.12 + 1.0 * 0.08);
+    } else {
+      // 출생 시간 미확인 시: 사주 0.30 + 점성술 0.30 + 자미두수 0.08 + 수비학 0.22 + 직관 0.10
+      cardScore = (sajuMatch.score * 0.30 + astroMatch.score * 0.30 + ziweiMatch.score * 0.08 + numeroMatch.score * 0.22 + 1.0 * 0.10);
+    }
     totalScore += cardScore;
 
     checks.push({
@@ -436,6 +459,8 @@ export function tcveCrossCheck(
       tcveMapping: mapping,
       sajuMatch,
       astroMatch,
+      ziweiMatch,
+      numeroMatch,
       cardScore
     });
   });

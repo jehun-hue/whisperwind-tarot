@@ -7,7 +7,7 @@
 
 import { calculateSaju } from "./calculateSaju.ts";
 import { analyzeSajuStructure } from "./aiSajuAnalysis.ts";
-import { runTarotSymbolicEngine } from "./tarotSymbolicEngine.ts";
+import { runTarotSymbolicEngine, tcveCrossCheck } from "./tarotSymbolicEngine.ts";
 import { generatePatternVectors, SymbolicVector } from "./symbolicPatternEngine.ts";
 import { calculateConsensusV8, calculateConsensusWithTopic, getTopicWeights, type QuestionTopic } from "./consensusEngine.ts";
 import { runLifeTimelineEngine, type LifeTimelineResult } from "./lifeTimelineEngine.ts";
@@ -20,7 +20,7 @@ import { calculateNumerology } from "./numerologyEngine.ts";
 import { validateV3Schema, patchMissingFields, logMonitoringEvent } from "./monitoringLayer.ts";
 import { safeParseGeminiJSON } from "./jsonUtils.ts";
 import { calculateServerAstrology } from "./astrologyEngine.ts";
-import { calculateServerZiWei } from "./ziweiEngine.ts";
+import { calculateZiwei } from "./lib/ziweiEngine.ts";
 import { classifyWithFallback, classifyQuestion, TOPIC_SYSTEM_FOCUS } from "./questionClassifier.ts";
 import { detectCombinations, aggregateCombinationScore, processCardVector, SPREAD_POSITION_WEIGHTS } from "./tarotCombinationDB.ts";
 import { getCardVector, getCardWuxing, getElementCompatibility } from "./tarotVectorDB.ts";
@@ -1170,20 +1170,19 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     const genderZiwei = (birthInfo.gender === "M" || birthInfo.gender === "male") ? "male" as const : "female" as const;
     let serverZiwei: any = null;
     try {
-      /**
-       * 자미두수 시간 기준 문서
-       * ─────────────────────
-       * 1. 입력: 음력 생년월일 + 경도보정 시간
-       *    - isLunar=true → rawBirth.month/day를 그대로 음력으로 사용
-       *    - isLunar=false → solarToLunar 변환 후 음력 월일 사용
-       * 2. 시간: 경도보정(-30분) 적용된 correctedHour 사용
-       *    - 예: 서울(127°) 04:35 → 04:03 (진시 辰時)
-       * 3. 성별: gender 파라미터 그대로 전달
-       * 4. 주의: 사주 엔진은 양력 기준, 자미두수는 음력 기준 (경로 독립)
-       */
-      serverZiwei = hasTime ? calculateServerZiWei(
-        birthInfo.year, ziweiLunarMonth, ziweiLunarDay, ziweiCorrectedHour, ziweiCorrectedMinute, genderZiwei
-      ) : null;
+      const ziweiYearStem = sajuRaw?.year?.stem || "丁";
+      const ziweiYearBranch = sajuRaw?.year?.branch || "卯";
+      const birthHourBranch = hasTime ? (sajuRaw?.hour?.branch || "午") : "午";
+
+      serverZiwei = calculateZiwei(
+        ziweiYearStem,
+        ziweiYearBranch,
+        ziweiLunarMonth,
+        ziweiLunarDay,
+        birthHourBranch,
+        genderZiwei,
+        2026
+      );
     } catch (e) {
       console.error("[ENGINE-SAFE] 자미두수 계산 실패:", e);
     }
@@ -1192,62 +1191,41 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     if (!hasTime) {
       ziweiAnalysis = {
         skipped: true,
-        reason: "출생 시간이 필요합니다. 자미두수는 출생 시(時)를 기준으로 명궁을 결정하므로, 정확한 출생 시간 없이는 신뢰할 수 있는 결과를 제공할 수 없습니다."
+        reason: "출생 시간이 필요합니다. 자속두수는 출생 시(時)를 기준으로 명궁을 결정하므로, 정확한 출생 시간 없이는 신뢰할 수 있는 결과를 제공할 수 없습니다.",
+        warning: "출생 시간 미확인으로 명궁 정확도가 낮을 수 있습니다"
       };
     } else if (serverZiwei) {
-      // ── B-255: 록기충(祿忌沖) 검사 ──────────────────────────────────
-      const dahanTransforms = serverZiwei?.currentMajorPeriod?.transformations || [];
-      const annualTransforms = serverZiwei?.annualTransformations || [];
-
-      for (const annual of annualTransforms) {
-        for (const dahan of dahanTransforms) {
-          // 같은 별에 화록+화기 또는 화기+화록이 걸린 경우
-          if (annual.star === dahan.star) {
-            if ((annual.type === "화기" && dahan.type === "화록") ||
-                (annual.type === "화록" && dahan.type === "화기")) {
-              ziweiWarnings.push(
-                `⚠️ 록기충: ${annual.star}에 대한화${dahan.type === "화록" ? "록" : "기"}과 유년화${annual.type === "화록" ? "록" : "기"}이 동시 작용 → ${annual.palace || dahan.palace} 영역 길흉 혼재, 각별한 주의 필요`
-              );
-            }
-          }
-        }
-      }
+      const ziweiPalaces = Object.entries(serverZiwei.palaces).map(([branch, data]: [string, any]) => ({
+        name: data.name,
+        main_stars: data.mainStars || [],
+        location: branch,
+        is_empty: data.mainStars?.length === 0,
+        is_borrowed_stars: false,
+        borrowed_from: null
+      }));
 
       ziweiAnalysis = {
-        life_structure: serverZiwei.lifeStructure || "",
-        palaces: serverZiwei.palaces.map((p: any) => {
-          const majorStars = p.stars.filter((s: any) =>
-            ["자미","천기","태양","무곡","천동","염정","천부","태음","탐랑","거문","천상","천량","칠살","파군"].includes(s.star)
-          ).map((s: any) => s.star);
-          return {
-            name: p.name,
-            main_stars: majorStars,
-            location: p.branch,
-            is_empty: (p as any).is_empty ?? (majorStars.length === 0),
-            is_borrowed_stars: (p as any).is_borrowed_stars ?? false,
-            borrowed_from: (p as any).borrowed_from ?? null,
-          };
-        }),
-        key_insights: serverZiwei.keyInsights || [],
-        major_period: serverZiwei.currentMajorPeriod || {},
+        life_structure: "", 
+        palaces: ziweiPalaces,
+        key_insights: [],
+        major_period: serverZiwei.dahan?.[0] || {},
         characteristics: [
-          ...serverZiwei.palaces.flatMap((p: any) => p.stars.filter((s: any) =>
-            ["파군", "자미", "천부", "칠살", "무곡", "태양", "천기", "염정"].includes(s.star)
-          ).map((s: any) => s.star)),
-          ...serverZiwei.natalTransformations.map((t: any) => `${t.type} active`),
+          ...ziweiPalaces.flatMap(p => p.main_stars),
+          ...Object.values(serverZiwei.birthSihua || {}),
         ].filter(Boolean) as string[],
-        period_analysis: serverZiwei.periodAnalysis || "",
-        natal_transformations: serverZiwei.natalTransformations || [],
-        annual_transformations: serverZiwei.annualTransformations || [],
+        period_analysis: "",
+        natal_transformations: serverZiwei.birthSihua || {},
+        annual_transformations: serverZiwei.liunian?.sihua || {},
         ziwei_warnings: ziweiWarnings,
-        annual_year: serverZiwei.annualYear || null,
-        annual_gan: serverZiwei.annualGan || null,
-        currentMinorPeriod: serverZiwei.currentMinorPeriod || null,
-        patterns: serverZiwei.natalTransformations || [],
+        annual_year: serverZiwei.liunian?.year || 2026,
+        annual_gan: serverZiwei.liunian?.stem || "",
+        currentMinorPeriod: serverZiwei.liunian || null,
+        patterns: [],
         mingGong: serverZiwei.mingGong,
-        bureau: serverZiwei.bureau,
-        currentMajorPeriod: serverZiwei.currentMajorPeriod,
-        rawData: serverZiwei
+        bureau: serverZiwei.wuxingJu?.name,
+        currentMajorPeriod: serverZiwei.dahan?.[0],
+        rawData: serverZiwei,
+        shenGong: serverZiwei.shenGong
       };
     }
 
@@ -1271,6 +1249,16 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     const secondaryTopic = topicResult?.secondary_topic || null;
     const detectedSubtopic = topicResult?.subtopic || null;
     const isDualTopic = secondaryTopic !== null && secondaryTopic !== finalTopic;
+
+    // B-171: TCVE™ Lite 교차검증 실행
+    const tcveResult = tcveCrossCheck(
+      input.cards || [],
+      sajuAnalysis,
+      astrologyAnalysis,
+      ziweiAnalysis,
+      numerologyResult,
+      hasTime
+    );
 
   const systemResults = [
     { 
@@ -1679,6 +1667,8 @@ ${ziweiPrompt}
 - 질문 유형: ${finalTopic}${isDualTopic ? ` + ${secondaryTopic} (복합 질문)` : ""}
 - 서브토픽: ${detectedSubtopic || "없음"}
 - 유효 분석 시스템: ${activeEngines.length}개
+- [TCVE™ 동조율] 등급: ${tcveResult?.confidenceGrade || "C"}, 점수: ${tcveResult?.overallCAS || 0}
+- TCVE 분석 요약: ${tcveResult?.interpretation || ""}
 
 [추가 분석 지침]
 0. **타로 해석 원칙(최우선 순위)**: 카드의 전통적 의미는 참고만 하고, 질문자의 상황과 맥락에 맞게 유연하게 해석할 것. '이 카드는 ~을 의미합니다' 같은 단정 표현 대신 '이 자리에서 이 카드는 ~의 흐름을 보여줍니다' 형태로 표현할 것. 카드 조합 분석(Card Combinations)이 제공된 경우, 개별 카드 해석 외에 반드시 '카드 간 관계' 섹션을 포함하여 조합의 긴장, 시너지, 증폭 패턴을 설명하세요.
