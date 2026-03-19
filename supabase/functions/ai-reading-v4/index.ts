@@ -20,6 +20,8 @@ const READING_VERSION = "v9.1_symbolic_prediction_engine";
 import { safeParseGeminiJSON } from "./jsonUtils.ts";
 
 serve(async (req: Request) => {
+  console.log("[LUNAR DEBUG] 1987-07-17 →", new Intl.DateTimeFormat('ko-KR-u-ca-chinese', { day: 'numeric', month: 'numeric' }).format(new Date(1987, 6, 17)));
+
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
