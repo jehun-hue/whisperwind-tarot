@@ -401,6 +401,7 @@ export default function LocalizedClientPage({ config }: LocalizedClientPageProps
               <LocalizedBirthInfoForm
                 key="birthInfo"
                 config={config}
+                locale={config.lang}
                 onSubmit={handleBirthInfoSubmit}
                 onSkip={handleBirthInfoSkip}
               />

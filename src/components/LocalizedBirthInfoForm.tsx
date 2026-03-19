@@ -10,6 +10,7 @@ import type { LocaleConfig } from "@/config/locales";
 
 interface LocalizedBirthInfoFormProps {
   config: LocaleConfig;
+  locale?: string;
   onSubmit: (info: BirthInfo) => void;
   onSkip: () => void;
 }
@@ -20,13 +21,18 @@ const unknownLabel: Record<string, string> = {
   us: "Unknown",
 };
 
-export default function LocalizedBirthInfoForm({ config, onSubmit, onSkip }: LocalizedBirthInfoFormProps) {
+export default function LocalizedBirthInfoForm({ config, locale, onSubmit, onSkip }: LocalizedBirthInfoFormProps) {
+  const getDefaultBirthPlace = (loc: string) => {
+    if (loc === "ko" || loc === "kr") return "서울";
+    return "";
+  };
+
   const [name, setName] = useState("");
   const [gender, setGender] = useState<"male" | "female" | "">("");
   const [birthDate, setBirthDate] = useState("");
   const [birthTime, setBirthTime] = useState("");
   const [birthTimeUnknown, setBirthTimeUnknown] = useState(false);
-  const [birthPlace, setBirthPlace] = useState("서울");
+  const [birthPlace, setBirthPlace] = useState(getDefaultBirthPlace(locale || config.lang || "ko"));
   const [isLunar, setIsLunar] = useState(false);
 
   const canSubmit = birthDate.length > 0 && gender !== "";
