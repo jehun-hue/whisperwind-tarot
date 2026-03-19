@@ -1,12 +1,19 @@
-/**
- * astrologyEngine.ts
- * Swiss Ephemeris (via astronomy-engine) 기반 행성 위치 & 트랜짓 계산 엔진
- * - 고정렬 Astronomy Engine 사용으로 정밀도 & 안정성 확보
- * - 어스펙트, 에센셜 디그니티, 트랜짓 분석 포함
- * - MC/IC/DESC 계산을 위한 Meeus 공식 적용
- */
+import AstronomyRaw from "astronomy-engine";
+const Astronomy: any = (AstronomyRaw as any).default || AstronomyRaw;
 
-import * as Astronomy from "https://esm.sh/astronomy-engine@2.1.19";
+const { 
+  Body, 
+  GeoVector, 
+  EclipticLongitude, 
+  MakeTime, 
+  SiderealTime, 
+  e_tilt, 
+  SearchSunLongitude, 
+  Vector, 
+  Ecliptic, 
+  Observer,
+  AstroTime
+} = Astronomy;
 
 // ═══════════════════════════════════════════════
 // Constants
@@ -22,17 +29,17 @@ const ZODIAC_ENGLISH = [
   "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces",
 ] as const;
 
-const PLANETS_MAP: Record<string, Astronomy.Body> = {
-  "태양": Astronomy.Body.Sun,
-  "달": Astronomy.Body.Moon,
-  "수성": Astronomy.Body.Mercury,
-  "금성": Astronomy.Body.Venus,
-  "화성": Astronomy.Body.Mars,
-  "목성": Astronomy.Body.Jupiter,
-  "토성": Astronomy.Body.Saturn,
-  "천왕성": Astronomy.Body.Uranus,
-  "해왕성": Astronomy.Body.Neptune,
-  "명왕성": Astronomy.Body.Pluto,
+const PLANETS_MAP: Record<string, Body> = {
+  "태양": Body.Sun,
+  "달": Body.Moon,
+  "수성": Body.Mercury,
+  "금성": Body.Venus,
+  "화성": Body.Mars,
+  "목성": Body.Jupiter,
+  "토성": Body.Saturn,
+  "천왕성": Body.Uranus,
+  "해왕성": Body.Neptune,
+  "명왕성": Body.Pluto,
 };
 
 const PLANET_NAMES = Object.keys(PLANETS_MAP);
@@ -174,13 +181,13 @@ function calculateAspects(positions: { planet: string; absoluteDegree: number }[
 }
 
 function calculateMeanNode(date: Date): number {
-  const time = Astronomy.MakeTime(date);
+  const time = MakeTime(date);
   const T = (time.tt - 2451545.0) / 36525;
   let node = 125.0445479 - 1934.1362891 * T + 0.0020754 * T * T + (T * T * T) / 467441 - (T * T * T * T) / 60616000;
   return ((node % 360) + 360) % 360;
 }
 
-function calculateChironLongitude(time: Astronomy.AstroTime): number {
+function calculateChironLongitude(time: AstroTime): number {
   const D = time.tt - 2451545.0;
   const a = 13.648, e = 0.3786;
   const iRad = 6.926 * Math.PI / 180;
@@ -203,28 +210,28 @@ function calculateChironLongitude(time: Astronomy.AstroTime): number {
   const y_h = r * (Math.sin(nodeRad) * Math.cos(phi) + Math.cos(nodeRad) * Math.sin(phi) * Math.cos(iRad));
   const z_h = r * Math.sin(phi) * Math.sin(iRad);
 
-  const sunGeo = Astronomy.GeoVector(Astronomy.Body.Sun, time, true);
+  const sunGeo = GeoVector(Body.Sun, time, true);
   const chironGeo = { x: x_h + sunGeo.x, y: y_h + sunGeo.y, z: z_h + sunGeo.z };
-  const ecl = Astronomy.Ecliptic(new Astronomy.Vector(chironGeo.x, chironGeo.y, chironGeo.z, time.tt));
+  const ecl = Ecliptic(new Vector(chironGeo.x, chironGeo.y, chironGeo.z, time));
   return ecl.elon;
 }
 
-function calculateLilithLongitude(time: Astronomy.AstroTime): number {
+function calculateLilithLongitude(time: AstroTime): number {
   const D = time.tt - 2451545.0;
   const lon = 83.353 + 0.11140353 * D;
   return ((lon % 360) + 360) % 360;
 }
 
-function getHighPrecisionPositions(date: Date, observer: Astronomy.Observer) {
-  const time = Astronomy.MakeTime(date);
+function getHighPrecisionPositions(date: Date, observer: Observer) {
+  const time = MakeTime(date);
   const planetPositions = PLANET_NAMES.map(name => {
     const body = PLANETS_MAP[name];
     try {
-      const geoVec = Astronomy.GeoVector(body, time, true);
-      const ecl = Astronomy.Ecliptic(geoVec);
+      const geoVec = GeoVector(body, time, true);
+      const ecl = Ecliptic(geoVec);
       return { planet: name, longitude: ecl.elon };
     } catch (e) {
-      const lon = Astronomy.EclipticLongitude(body, time);
+      const lon = EclipticLongitude(body, time);
       return { planet: name, longitude: lon };
     }
   });
@@ -243,13 +250,13 @@ function getHighPrecisionPositions(date: Date, observer: Astronomy.Observer) {
  * Manual Calculation of ASC, MC, IC, DESC
  * Formulas from Jean Meeus, Astronomical Algorithms
  */
-function calculateHousesManual(date: Date, observer: Astronomy.Observer) {
-  const time = Astronomy.MakeTime(date);
-  const lst = (Astronomy.SiderealTime(time) + (observer.longitude / 15.0) + 24) % 24;
+function calculateHousesManual(date: Date, observer: Observer) {
+  const time = MakeTime(date);
+  const lst = (SiderealTime(time) + (observer.longitude / 15.0) + 24) % 24;
   const ramc = (lst * 15.0) % 360;
   
   // Use astronomical obliquity for precision
-  const tilt = Astronomy.e_tilt(time);
+  const tilt = e_tilt(time);
   const epsRad = (tilt?.tobl || 23.43929) * Math.PI / 180;
   const phiRad = observer.latitude * Math.PI / 180;
   
@@ -335,11 +342,11 @@ function formatPosition(longitude: number) {
   };
 }
 
-function calculateSolarReturn(natalSunLon: number, birthMonth: number, birthDay: number, observer: Astronomy.Observer, currentYear: number = 2026) {
+function calculateSolarReturn(natalSunLon: number, birthMonth: number, birthDay: number, observer: Observer, currentYear: number = 2026) {
   const searchStart = new Date(Date.UTC(currentYear, birthMonth - 1, birthDay - 5, 0, 0, 0));
-  const startTime = Astronomy.MakeTime(searchStart);
+  const startTime = MakeTime(searchStart);
   
-  const srTime = Astronomy.SearchSunLongitude(natalSunLon, startTime, 10);
+  const srTime = SearchSunLongitude(natalSunLon, startTime, 10);
   if (!srTime) return null;
 
   const srDate = srTime.date;
@@ -483,7 +490,8 @@ export interface ServerAstrologyResult {
 export function calculateServerAstrology(
   year: number, month: number, day: number, hour: number, minute: number = 0,
   latitude?: number, longitude?: number,
-  hasTime: boolean = true
+  hasTime: boolean = true,
+  targetDate?: Date
 ): ServerAstrologyResult {
   const natalDate = new Date(Date.UTC(year, month - 1, day, hour - 9, minute));
 
@@ -491,7 +499,7 @@ export function calculateServerAstrology(
   const birthPlaceProvided = !!(latitude && latitude !== 0 && longitude && longitude !== 0);
   const lat = birthPlaceProvided ? latitude! : 37.5;
   const lon = birthPlaceProvided ? longitude! : 127.0;
-  const observer = new Astronomy.Observer(lat, lon, 0);
+  const observer = new Observer(lat, lon, 0);
 
   // 출생지 없을 때 신뢰도 경고 플래그
   const locationConfidence = hasTime ? (birthPlaceProvided ? "high" : "low") : "very_low";
@@ -533,18 +541,18 @@ export function calculateServerAstrology(
       is_retrograde = p.planet === "Lilith" ? false : true;
     } else if (p.planet === "Chiron") {
       try {
-        const t1 = Astronomy.MakeTime(natalDate);
-        const t2 = Astronomy.MakeTime(new Date(natalDate.getTime() + 86400000));
+        const t1 = MakeTime(natalDate);
+        const t2 = MakeTime(new Date(natalDate.getTime() + 86400000));
         is_retrograde = calculateChironLongitude(t2) < calculateChironLongitude(t1);
       } catch (_) {}
     } else {
       try {
-        const time = Astronomy.MakeTime(natalDate);
-        const time2 = Astronomy.MakeTime(new Date(natalDate.getTime() + 86400000));
+        const time = MakeTime(natalDate);
+        const time2 = MakeTime(new Date(natalDate.getTime() + 86400000));
         const body = PLANETS_MAP[p.planet];
-        if (body && body !== Astronomy.Body.Sun && body !== Astronomy.Body.Moon) {
-          const lon1 = Astronomy.EclipticLongitude(body, time);
-          const lon2 = Astronomy.EclipticLongitude(body, time2);
+        if (body && body !== Body.Sun && body !== Body.Moon) {
+          const lon1 = EclipticLongitude(body, time);
+          const lon2 = EclipticLongitude(body, time2);
           let diff = lon2 - lon1;
           if (diff > 180) diff -= 360;
           if (diff < -180) diff += 360;
@@ -607,7 +615,7 @@ export function calculateServerAstrology(
     { name: "충(180°)", angle: 180, icon: "⚖️" },
   ];
 
-  const now = new Date();
+  const now = targetDate || new Date();
   const currentPositions = getHighPrecisionPositions(now, observer);
   const transits: string[] = [];
   const slowPlanets = ["목성", "토성", "천왕성", "해왕성", "명왕성"];

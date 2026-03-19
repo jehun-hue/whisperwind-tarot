@@ -9,6 +9,25 @@ const BRANCHES = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申",
 const STEMS = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"];
 
 /**
+ * ZiWei Result Interface for Server-side
+ */
+export interface ServerZiWeiResult {
+  mingGong: string;
+  shenGong: string;
+  wuxingJu: { name: string; value: number };
+  ziweiPosition: string;
+  birthSihua: Record<string, string>;
+  dahan: any[];
+  liunian: { year: number; stem: string; branch: string; sihua: any };
+  palaces: Record<string, any>;
+  currentMajorPeriod?: any;
+  bureau?: string;
+  core_palaces: {
+    life_palace: { major_stars: string[]; lucky_stars: string[]; unlucky_stars: string[] };
+  };
+}
+
+/**
  * 1. 사화(四化) 계산
  */
 export function calculateSihua(stem: string): Record<string, string> {

@@ -14,17 +14,31 @@ import { runLifeTimelineEngine, type LifeTimelineResult } from "./lifeTimelineEn
 import { analyzeSpreadCCM, lookupCCM, type CCMResult } from "./cardContextMatrix.ts";
 import { predictTemporalV8 } from "./temporalPredictionEngine.ts";
 import { validateEngineOutput } from "./validationLayer.ts";
-import { getLocalizedStyle, buildCoreReadingPrompt, buildStyleApplyPrompt } from "./interactivityLayer.ts";
-import { generatePriorityEvents, generateTimingSummary } from "./inferenceLayer.ts";
+import { getLocalizedStyle } from "./interactivityLayer.ts";
 import { calculateNumerology } from "./numerologyEngine.ts";
 import { validateV3Schema, patchMissingFields, logMonitoringEvent } from "./monitoringLayer.ts";
 import { safeParseGeminiJSON } from "./jsonUtils.ts";
 import { calculateServerAstrology } from "./astrologyEngine.ts";
-import { calculateZiwei } from "./lib/ziweiEngine.ts";
+import { calculateZiwei, ServerZiWeiResult } from "./lib/ziweiEngine.ts";
 import { classifyWithFallback, classifyQuestion, TOPIC_SYSTEM_FOCUS } from "./questionClassifier.ts";
 import { detectCombinations, aggregateCombinationScore, processCardVector, SPREAD_POSITION_WEIGHTS } from "./tarotCombinationDB.ts";
 import { getCardVector, getCardWuxing, getElementCompatibility } from "./tarotVectorDB.ts";
 import { lunarToSolarAccurate } from "./lunarData.ts";
+
+/** New Phase 2 Analysis Modules */
+import { 
+  buildReadingPrompt, 
+  UserInfo 
+} from "./lib/promptBuilder.ts";
+import { 
+  buildUnifiedTimeline, 
+  UnifiedTimeline 
+} from "./lib/timelineEngine.ts";
+import { 
+  crossValidate, 
+  CrossValidationResult 
+} from "./lib/inferenceLayer.ts";
+import { analyzeCardCombinations, DrawnCard } from "./hybridTarotEngine.ts";
 
 /**
  * 통합 리딩 엔진 V8
@@ -646,84 +660,7 @@ ${yinyangMessage}- 핵심 기운: ${sajuDisplay.yongShin} → [상징: ${SYMBOLI
 /**
  * B-230: CCM(Card Combination Matching) 카드 조합 분석 강화
  */
-function analyzeCardCombinations(cards: any[]): any[] {
-  if (!cards || cards.length === 0) return [];
-  const combinations: any[] = [];
-  
-  // 핵심 조합 룰 (Major Arcana 위주)
-  const COMBO_RULES: Record<string, { type: string; meaning: string }> = {
-    "The World+The Hermit": { type: "tension", meaning: "완성과 고독의 역설 — 성취했으나 내면은 재평가 중. 다음 사이클 진입 전 성찰 필요." },
-    "The Tower+The Star": { type: "synergy", meaning: "붕괴 후 희망 — 충격적 변화 뒤에 치유와 새 비전이 온다." },
-    "Death+The Sun": { type: "synergy", meaning: "끝과 시작의 동시성 — 낡은 것을 놓으면 밝은 전환이 따른다." },
-    "The Moon+The High Priestess": { type: "amplify", meaning: "무의식 증폭 — 직관이 매우 강하나 환상과 혼동 주의." },
-    "The Emperor+The Empress": { type: "synergy", meaning: "구조와 풍요의 균형 — 실행력과 수용성이 함께 작동." },
-    "The Lovers+The Devil": { type: "tension", meaning: "진심과 집착의 경계 — 관계에서 건강한 선택이 필요." },
-    "Wheel of Fortune+The Hanged Man": { type: "tension", meaning: "변화의 흐름 속 정지 — 타이밍을 기다려야 하는 시점." },
-    "Strength+The Chariot": { type: "synergy", meaning: "내면의 힘과 추진력 결합 — 부드러운 의지로 돌파 가능." },
-    "The Fool+Judgement": { type: "synergy", meaning: "새 출발과 각성 — 과거를 정산하고 순수한 마음으로 도약." },
-    "The Magician+The High Priestess": { type: "synergy", meaning: "의지와 직관의 조화 — 현실적 능력과 내면 지혜를 동시 활용." },
-    "Three of Swords+Ten of Swords": { type: "amplify", meaning: "이중 고통 신호 — 감정적 상처가 극에 달했으나 바닥은 반등의 시작." },
-    "Ace of Cups+Ten of Cups": { type: "synergy", meaning: "감정의 시작과 완성 — 새 관계나 화해가 깊은 만족으로 이어질 잠재력." },
-    "King of Wands+Queen of Wands": { type: "amplify", meaning: "화(火) 에너지 폭발 — 열정과 리더십이 극대화되나 소진 주의." },
-  };
-
-  // 역방향 키도 검색 (A+B = B+A)
-  for (let i = 0; i < cards.length; i++) {
-    for (let j = i + 1; j < cards.length; j++) {
-      const nameA = cards[i]?.name || cards[i]?.card_name || "";
-      const nameB = cards[j]?.name || cards[j]?.card_name || "";
-      const keyAB = `${nameA}+${nameB}`;
-      const keyBA = `${nameB}+${nameA}`;
-      
-      const rule = COMBO_RULES[keyAB] || COMBO_RULES[keyBA];
-      if (rule) {
-        combinations.push({
-          cards: [nameA, nameB],
-          positions: [i + 1, j + 1],
-          type: rule.type,
-          meaning: rule.meaning
-        });
-      }
-    }
-  }
-
-  // 원소 기반 자동 분석 (룰에 없는 조합용)
-  const suitCounts: Record<string, number> = {};
-  const majorCount = cards.filter((c: any) => {
-    const name = c?.name || c?.card_name || "";
-    const suit = c?.suit || "";
-    if (suit && suit !== "major") {
-      suitCounts[suit] = (suitCounts[suit] || 0) + 1;
-    }
-    return !suit || suit === "major";
-  }).length;
-
-  if (majorCount >= 3) {
-    combinations.push({
-      cards: ["Major Arcana x" + majorCount],
-      type: "amplify",
-      meaning: `메이저 아르카나 ${majorCount}장 — 인생의 큰 전환점에 있음. 이 시기의 결정이 장기적 영향을 미침.`
-    });
-  }
-
-  for (const [suit, count] of Object.entries(suitCounts)) {
-    if (count >= 3) {
-      const suitMeanings: Record<string, string> = {
-        "Wands": `완드 ${count}장 — 행동·열정·의지 에너지 집중. 추진력은 강하나 번아웃 주의.`,
-        "Cups": `컵 ${count}장 — 감정·관계·직관 에너지 집중. 마음의 흐름에 따르되 현실 점검 필요.`,
-        "Swords": `소드 ${count}장 — 사고·갈등·결단 에너지 집중. 명확한 판단이 요구되는 시기.`,
-        "Pentacles": `펜타클 ${count}장 — 물질·안정·현실 에너지 집중. 실질적 결과에 집중할 때.`
-      };
-      combinations.push({
-        cards: [`${suit} x${count}`],
-        type: "amplify",
-        meaning: suitMeanings[suit] || `${suit} 원소 ${count}장 집중`
-      });
-    }
-  }
-
-  return combinations;
-}
+// [Redundant local function removed: Handled by hybridTarotEngine.ts]
 
 // ═══════════════════════════════════════════════
 // B-256: 수비학 이름 기반 계산 (Numerology Name-based)
@@ -1384,7 +1321,7 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
   const conflictingSystems = Object.keys(systemWins).filter(s => systemWins[s] !== finalTopic);
   const topicAlignmentScore = Math.round((alignedSystems.length / activeSystems.length) * 100);
 
-  const crossValidation = {
+  const topicValidation = {
     topic: CATEGORY_KOREAN[finalTopic] || finalTopic,
     topic_alignment_score: topicAlignmentScore,
     aligned_systems: alignedSystems,
@@ -1513,319 +1450,115 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     standard_used: "international"
   };
 
-  const tarotData = systemResults.find((s: any) => s.system === "tarot");
-  const tarotCardVectors = tarotData?.card_vectors || [];
-  const priorityEvents = generatePriorityEvents(systemResults, patternVectors, consensusResult, temporalResult, finalTopic, tarotCardVectors);
-  console.log("[INFERENCE LAYER]", JSON.stringify(priorityEvents, null, 2));
+  // ── [Phase 2] Cross-Validation & Unified Timeline ──
+  const userInfo: UserInfo = {
+    name: input.userName || "님",
+    birthDate: birthInfo.birthDate,
+    birthTime: birthInfo.birthTime || (hasTime ? `${birthInfo.hour}:${birthInfo.minute}` : "모름"),
+    gender: birthInfo.gender === "M" ? "남성" : "여성",
+    question: input.question,
+    language: input.locale === 'ja' ? 'ja' : input.locale === 'en' ? 'en' : 'ko'
+  };
 
-  // Step 2-B: Mapping Saju Data for Prompt
-  const { sajuDisplay, luckyFactors, ziweiPrompt, astrologyPrompt, sajuSymbolic } = buildEnginePrompts(input, sajuRaw, sajuAnalysis, ziweiAnalysis, astrologyAnalysis, ageContext);
-  
-  // B-230: 타로 카드 조합 분석 실행
-  const cardCombos = analyzeCardCombinations(tarotCards);
-  
-  console.log("[DEBUG-CRASH] B-240 압축 코드 진입 직전");
-  // B-240: [Compression] Gemini 프롬프트 최적화 (rawData 제거 및 필드 Pick)
-  const promptAstroData = astrologyAnalysis ? {
-    sun_sign: astrologyAnalysis.sun_sign,
-    moon_sign: astrologyAnalysis.moon_sign,
-    rising_sign: astrologyAnalysis.rising_sign,
-    dominant_element: astrologyAnalysis.dominant_element,
-    aspects: (astrologyAnalysis.aspects || []).slice(0, 10),
-    planets: astrologyAnalysis.planets,
-    houses: astrologyAnalysis.houses,
-    transits: (astrologyAnalysis.transits || []).slice(0, 10),
-    patterns: (astrologyAnalysis.patterns || []).slice(0, 10),
-    confidence: astrologyAnalysis.confidence
-  } : null;
+  const normalizedCards: DrawnCard[] = tarotCards.map((c: any) => ({
+    name: c.name,
+    isMajor: ["The Fool", "The Magician", "The High Priestess", "The Empress", "The Emperor", "The Hierophant", "The Lovers", "The Chariot", "Strength", "The Hermit", "Wheel of Fortune", "Justice", "The Hanged Man", "Death", "Temperance", "The Devil", "The Tower", "The Star", "The Moon", "The Sun", "Judgement", "The World"].includes(c.name),
+    isReversed: !!c.isReversed,
+    position: c.position || "current",
+    suit: c.suit,
+    rank: c.rank
+  }));
 
-  const promptZiweiData = (ziweiAnalysis && !ziweiAnalysis.skipped) ? {
-    mingGong: ziweiAnalysis.mingGong,
-    bureau: ziweiAnalysis.bureau,
-    palaces: (ziweiAnalysis.palaces || []).map((p: any) => ({
-      name: p.name,
-      main_stars: p.main_stars,
-      location: p.location,
-      is_empty: p.is_empty,
-      is_borrowed: p.is_borrowed_stars
-    })),
-    key_insights: (ziweiAnalysis.key_insights || []).slice(0, 5),
-    natal_transformations: (ziweiAnalysis.natal_transformations || []).slice(0, 4),
-    annual_transformations: (ziweiAnalysis.annual_transformations || []).slice(0, 4),
-    major_period: ziweiAnalysis.major_period,
-    currentMinorPeriod: ziweiAnalysis.currentMinorPeriod,
-    period_analysis: typeof ziweiAnalysis.period_analysis === 'string' ? ziweiAnalysis.period_analysis.slice(0, 300) : ziweiAnalysis.period_analysis,
-    characteristics: (ziweiAnalysis.characteristics || []).slice(0, 10)
-  } : ziweiAnalysis;
+  const cardInsights = analyzeCardCombinations(normalizedCards);
 
-  const ziweiDataStr = ziweiAnalysis?.skipped ? `(자미두수 데이터 없음: ${ziweiAnalysis.reason})` : JSON.stringify(promptZiweiData);
-  const astrologyDataStr = astrologyAnalysis ? JSON.stringify(promptAstroData) : "(점성술 데이터 없음)";
+  // 1. 교차검증 실행
+  const crossValidationResult = await crossValidate(
+    sajuAnalysis,
+    astrologyAnalysis as any,
+    ziweiAnalysis as any,
+    numerologyResult as any,
+    { cards: normalizedCards, insights: cardInsights }
+  );
 
-  const astroNote = hasTime ? "" : "\n⚠️ 출생 시간 미입력: ASC/하우스 정보 없음. 태양/행성 위치 및 사인 위주로 해석할 것. 달 위치는 ±6° 오차 가능.";
-  
-  const daewoonPromptSection = sajuAnalysis.daewoon?.currentDaewoon
-    ? `
-- 현재 대운: ${sajuAnalysis.daewoon.currentDaewoon.full} (${sajuAnalysis.daewoon.currentDaewoon.startAge}~${sajuAnalysis.daewoon.currentDaewoon.endAge}세)
-- 대운 천간 십성: ${sajuAnalysis.daewoon.currentDaewoon.tenGodStem}
-- 대운 지지 십성: ${sajuAnalysis.daewoon.currentDaewoon.tenGodBranch}
-- 대운 진행방향: ${sajuAnalysis.daewoon.isForward ? "순행" : "역행"}
-- B-175 압축: 전체 대운 중 현재+다음 2개만 포함
-- 다음 대운: ${sajuAnalysis.daewoon.pillars?.find((p: any) => p.index === (sajuAnalysis.daewoon.currentDaewoon.index || 0) + 1)?.full || "없음"}
-    `
-    : "- 대운 정보: 데이터 부족으로 생략";
-
-  // ── B-238: 교차분석 엔진 신뢰도 필터 ──
-  // 점성술 신뢰도 필터
-  const astroConfidenceValue = astrologyAnalysis?.rawData?.location_confidence || 
-                          astrologyAnalysis?.confidence || 1.0;
-  let astroPromptNote = "";
-  if (astroConfidenceValue === "very_low" || (typeof astroConfidenceValue === "number" && astroConfidenceValue < 0.5)) {
-    astroPromptNote = "\n⚠️ 점성술 데이터 신뢰도: 매우 낮음. 출생시간 미입력 또는 출생지 미입력. ASC/하우스/달 위치를 직접 언급하지 마세요. '행성 배치 참고' 수준으로만 활용하세요.";
-  } else if (typeof astroConfidenceValue === "number" && astroConfidenceValue < 0.8) {
-    astroPromptNote = "\n⚠️ 점성술 데이터 신뢰도: 보통. ASC와 하우스 배치는 '추정'임을 명시하고, 태양/외행성 위치 위주로 해석하세요.";
-  }
-
-  // 자미두수 신뢰도 필터
-  const ziweiSkippedFlag = ziweiAnalysis?.skipped === true;
-  let ziweiPromptNote = "";
-  if (ziweiSkippedFlag) {
-    ziweiPromptNote = "\n⚠️ 자미두수: 출생시간 미입력으로 분석이 생략되었습니다. 자미두수 관련 내용을 언급하지 마세요.";
-  } else {
-    const ziweiConfidenceValue = ziweiAnalysis?.confidence || 1.0;
-    if (typeof ziweiConfidenceValue === "number" && ziweiConfidenceValue < 0.7) {
-      ziweiPromptNote = "\n⚠️ 자미두수 데이터 신뢰도: 낮음. 명궁/신궁 위치를 단정하지 말고 '참고 수준'으로만 언급하세요.";
+  // 2. 통합 타임라인 생성
+  const unifiedTimeline = buildUnifiedTimeline(
+    ageContext.international_age,
+    new Date().getFullYear(),
+    { 
+      daewoon: sajuAnalysis.daewoon, 
+      sewoon: sajuAnalysis.sewoon, 
+      wolwoon: sajuAnalysis.wolwoon 
+    },
+    { 
+      transits: astrologyAnalysis?.transits || [], 
+      transitAspects: astrologyAnalysis?.aspects || [], 
+      progressions: (astrologyAnalysis as any)?.progressions || [] 
+    },
+    { 
+      dahan: ziweiAnalysis?.dahan || [], 
+      sohan: ziweiAnalysis?.liunian || null 
+    },
+    { 
+      personalYear: numerologyResult?.personal_year || 0, 
+      personalMonth: numerologyResult?.personal_month || 0, 
+      pinnacle: (numerologyResult as any)?.pinnacles?.[0] || {} 
     }
-  }
+  );
 
-  // 사주 신뢰도 필터 (시주 미상일 때)
-  const hourPillarMissing = sajuRaw?.hour?.stem === "미상" || 
-                            sajuRaw?.hour?.stem === "" ||
-                            !sajuRaw?.hour?.stem;
-  let sajuPromptNote = "";
-  if (hourPillarMissing) {
-    sajuPromptNote = "\n⚠️ 사주: 시주(시간 기둥) 미입력. 년월일 3주만으로 분석합니다. 시주 관련 십성/신살은 언급하지 마세요.";
-  }
-
-  console.log(`[DEBUG-userName] input.userName = "${input.userName}", type = ${typeof input.userName}`);
-  const dataBlock = `
-- [질문자 성함] ${input.userName || "님"}
-[사주 엔진 호출 결과 - 상징화 완료]
-${sajuSymbolic}${sajuPromptNote}
-- 사주 4주: ${sajuDisplay.fourPillars}
-- 일간(Day Master): ${sajuDisplay.dayMaster}
-- 오행 분포: ${sajuDisplay.elements}
-- 용신(Yong-Shin): ${sajuDisplay.yongShin}
-- 희신: ${sajuDisplay.heeShin}
-- 신강/신약: ${sajuDisplay.strength}
-- 태어난 절기: ${sajuDisplay.termName}
-${sajuDisplay.isDaewoonChanging ? `- ⚠️ 대운 교체 임박: 현재 ${sajuDisplay.currentDaewoon} 대운이 곧 종료되고 ${sajuDisplay.nextDaewoon || "다음"} 대운으로 전환됩니다. 이 전환기의 심리적·운세적 변화를 반드시 분석에 반영하세요.` : `- 현재 대운: ${sajuDisplay.currentDaewoon || "데이터 없음"}`}
-- 행운 요소: 색상(${luckyFactors.color}), 숫자(${luckyFactors.number}), 방향(${luckyFactors.direction})
-- 대운 분석: ${daewoonPromptSection}
-- 사주 세부 지표: ${JSON.stringify(sajuAnalysis?.characteristics || [])}
-- 사주 상세 해석: ${sajuAnalysis?.narrative || "데이터 없음"}
-- [핵심 정보] 연령대: ${ageContext?.international_age || "알 수 없음"}세 (만 나이), 한국나이 ${ageContext?.korean_age || "알 수 없음"}세
-- 타로 카드 (5장 스프레드):
-  1번 (현재 상황): ${tarotCards[0]?.korean || tarotCards[0]?.name || "기록 없음"} (${tarotCards[0]?.isReversed ? "역방향" : "정방향"})
-  2번 (도전/장애): ${tarotCards[1]?.korean || tarotCards[1]?.name || "기록 없음"} (${tarotCards[1]?.isReversed ? "역방향" : "정방향"})
-  3번 (조언): ${tarotCards[2]?.korean || tarotCards[2]?.name || "기록 없음"} (${tarotCards[2]?.isReversed ? "역방향" : "정방향"})
-  4번 (내면/과정): ${tarotCards[3]?.korean || tarotCards[3]?.name || "기록 없음"} (${tarotCards[3]?.isReversed ? "역방향" : "정방향"})
-  5번 (최종 결과/미래): ${tarotCards[4]?.korean || tarotCards[4]?.name || "기록 없음"} (${tarotCards[4]?.isReversed ? "역방향" : "정방향"})
-- 타로 카드 조합 통찰(Clues):
-${combinationClues}
-${cardCombos.length > 0 ? `
-### 카드 조합 분석 (Card Combinations)
-아래 조합 패턴을 반드시 해석에 반영하세요. tension 타입은 갈등/주의 포인트로, synergy 타입은 시너지로, amplify 타입은 에너지 증폭으로 해석하세요.
-${JSON.stringify(cardCombos, null, 2)}
-` : ""}
-- age_context: ${JSON.stringify(ageContext)}
-
-[자미두수 분석 데이터]
-${ziweiDataStr}${ziweiPromptNote}
-
-[점성술 분석 데이터]${astroNote}${astroPromptNote}
-${astrologyDataStr}
-${astrologyPrompt}
-- 하우스 포커스: ${finalTopic === "health" ? "6하우스(건강·일상)" : finalTopic === "career" ? "10하우스(직업·명예)" : finalTopic === "relationship" ? "7하우스(파트너십)" : finalTopic === "finance" ? "2하우스(재물)" : "전체 하우스"}
-
-[자미두수 분석]
-${ziweiPrompt}
-- 소한궁: ${ziweiAnalysis?.currentMinorPeriod?.palace || "미확인"} → ${ziweiAnalysis?.currentMinorPeriod?.interpretation || ""}
-- 유년사화(${ziweiAnalysis?.annual_year || "올해"}): ${(ziweiAnalysis?.annual_transformations as any[])?.map((t: any) => t.description).join(", ") || "없음"}
-- 선천사화: ${(ziweiAnalysis?.natal_transformations as any[])?.slice(0, 4).map((t: any) => `${t.type}(${t.star}→${t.palace})`).join(", ") || "없음"}
-- 자미두수 포커스: ${finalTopic === "health" ? "질액궁" : finalTopic === "career" ? "관록궁" : finalTopic === "relationship" ? "부처궁" : finalTopic === "finance" ? "재백궁" : "명궁+관록궁"}${ziweiWarnings.length > 0 ? `\n- 자미두수 특별 경고: ${ziweiWarnings.join("; ")}` : ""}
-
-[수비학 분석]
-- 생명수 ${(numerologyResult as any)?.life_path_number || "?"}번: ${(numerologyResult as any)?.vibrations?.[0] || ""}
-- 개인년 ${(numerologyResult as any)?.personal_year || "?"}: ${(numerologyResult as any)?.vibrations?.[3] || ""}
-- 운명수: ${(numerologyResult as any)?.destiny_number || "없음"}
-
-[통합 지표]
-- 합의도: consensus_score=${consensusResult.consensus_score.toFixed(3)}
-- 합의 신뢰도: confidence_score=${consensusResult.confidence_score.toFixed(3)}
-- 충돌 요약: ${consensusResult.conflict_summary}
-- 시간축 예측: ${JSON.stringify(temporalResult)?.slice(0, 200)}
-- 질문 유형: ${finalTopic}${isDualTopic ? ` + ${secondaryTopic} (복합 질문)` : ""}
-- 서브토픽: ${detectedSubtopic || "없음"}
-- 유효 분석 시스템: ${activeEngines.length}개
-- [TCVE™ 동조율] 등급: ${tcveResult?.confidenceGrade || "C"}, 점수: ${tcveResult?.overallCAS || 0}
-- TCVE 분석 요약: ${tcveResult?.interpretation || ""}
-
-[추가 분석 지침]
-0. **타로 해석 원칙(최우선 순위)**: 카드의 전통적 의미는 참고만 하고, 질문자의 상황과 맥락에 맞게 유연하게 해석할 것. '이 카드는 ~을 의미합니다' 같은 단정 표현 대신 '이 자리에서 이 카드는 ~의 흐름을 보여줍니다' 형태로 표현할 것. 카드 조합 분석(Card Combinations)이 제공된 경우, 개별 카드 해석 외에 반드시 '카드 간 관계' 섹션을 포함하여 조합의 긴장, 시너지, 증폭 패턴을 설명하세요.
-1. 제공된 사주 데이터만을 근거로 분석하세요. 오행 분포와 십성 분포를 정확히 반영해야 합니다.
-2. 만약 특정 오행(예: 재성, 관성)이 0이라면 절대로 해당 운이 좋다고 과장하지 마세요.
-3. 트랜짓 행성 위치는 반드시 제공된 데이터만 사용하고, 스스로 추측하지 마세요.
-4. 자미두수 명반의 국과 주성, 사화(선천+유년) 영향을 정확히 반영하여 리딩을 전개하세요.
-5. 행운 요소(색상, 숫자, 방향)는 반드시 action_guide.lucky 섹션에 반영하세요.
-6. **사주 분석 어조 및 구조(파이x준쌤 스타일)**:
-   - 'merged_reading.structureInsight' 섹션은 반드시 다음 5단계 구조로 작성하세요:
-     ① 사회흐름 ② 절기 기반 기질 ③ 핵심 코드 ④ 전략 ⑤ 행동계획
-   - 어조는 단호하면서도 통찰력 있는 '마스터'의 문체를 사용하세요.
-7. **타로 조합 분석**: 제공된 카드 조합 시나리오 중 스프레드 안에 해당되는 조합이 있다면 핵심 터닝포인트로 강조하세요.
-8. **질문 유형별 우선 분석 엔진**:
-${finalTopic === "health" ? "   → 건강 질문: 사주 질액궁 오행·점성술 6하우스·자미두수 질액궁을 최우선 분석하세요." : ""}
-${finalTopic === "career" ? "   → 진로 질문: 사주 관성·점성술 10하우스·자미두수 관록궁을 최우선 분석하세요." : ""}
-${finalTopic === "relationship" ? "   → 관계 질문: 사주 재성·점성술 7하우스·자미두수 부처궁을 최우선 분석하세요." : ""}
-${finalTopic === "finance" ? "   → 재물 질문: 사주 재성·점성술 2·8하우스·자미두수 재백궁을 최우선 분석하세요." : ""}
-${finalTopic === "life_change" ? "   → 변화 질문: 사주 운로·점성술 1·9하우스·자미두수 천이궁을 최우선 분석하세요." : ""}
-
-[수렴 분석 지침]
-분석에 참여한 유효 엔진 수: ${patternVectors.map(v => v.system).filter((v, i, a) => a.indexOf(v) === i).length}개
-수렴 분석 시, "데이터 부족"이나 "분석 불가"인 체계는 완전히 제외하고, 실제 데이터가 있는 엔진들 사이의 '일치(Convergence)'와 '충돌(Divergence)'을 구분하여 서술하세요.
-출력 JSON의 "total_systems"는 위 유효 엔진 수를, "converged_count"는 그중 일치도가 높은 엔진 수를 기입하세요.
-
-### 데이터 정확성 규칙 (절대 준수)
-1. 위에 제공된 [사주 데이터], [점성술 데이터], [자미두수 데이터], [타로 카드] 블록에 명시된 값만 사용하세요.
-2. 데이터 블록에 없는 별자리 이름, 궁 이름, 도수, 별 이름, 신살 이름을 절대 만들어내지 마세요.
-3. null, "미상", skipped로 표시된 항목은 리딩에서 언급하지 마세요.
-4. 숫자(도수, 점수, 퍼센트)를 인용할 때는 데이터 블록의 값을 그대로 사용하세요. 반올림하거나 변형하지 마세요.
-5. "~일 수 있습니다", "~로 추정됩니다" 같은 추측 표현 대신, 데이터가 있으면 단정적으로, 없으면 아예 언급하지 마세요.
-6. 데이터 블록에 ⚠️ 경고가 있는 엔진의 구체적 수치(궁 이름, 별자리, 도수)는 언급하지 마세요. 해당 엔진은 "전반적 에너지 흐름" 수준으로만 참고하세요.
-`;
-
-  const totalSystems = activeEngines.length;
-  const validStyles = ['hanna', 'monad', 'e7l3', 'e5l5', 'l7e3'];
-  const requestedStyle = validStyles.includes(input.style) ? input.style : 'hanna';
-  const locale = input.locale || 'kr';
-
-  // --- Step 1: Core Reading (Style-independent, Neutral) ---
-  const coreHash = (input.cards || []).map((c: any) => c.name || "card").join("-") + `_core_${locale}`;
-  const { data: cachedCore } = await supabaseClient
-    .from("reading_results")
-    .select("reading_json")
-    .eq("session_id", sessionId)
-    .eq("spread_hash", coreHash)
-    .eq("reading_version", READING_VERSION)
-    .maybeSingle();
-
-  let coreReading: any = input.coreReading;
-  let coreGeminiLatency = 0;
-
-  if (coreReading) {
-    console.log(`[PlatformV9] Reusing provided Core Reading from payload.`);
-  } else if (cachedCore?.reading_json) {
-    console.log(`[PlatformV9] Core Reading Cache Hit: ${coreHash}`);
-    coreReading = cachedCore.reading_json;
-  } else {
-    console.log(`[PlatformV9] Generating New Core Reading...`);
-    const corePrompt = buildCoreReadingPrompt(locale, dataBlock, totalSystems, priorityEvents);
-    const coreStart = Date.now();
-    // coreReading: 2.5-flash (고품질 분석, 유지)
-    console.log("[MODEL]", { task: "코어분석", model: "gemini-2.5-flash" });
-    const rawCore = await fetchGemini(apiKey, "gemini-2.5-flash", corePrompt, "", 0.15);
-    coreGeminiLatency = Date.now() - coreStart;
-    
-    try {
-      coreReading = JSON.parse(rawCore.replace(/```json|```/g, ""));
-      // Cache core reading
-      if (sessionId && coreReading) {
-        await supabaseClient.from("reading_results").insert({
-          session_id: sessionId,
-          question: input.question,
-          spread_hash: coreHash,
-          reading_version: READING_VERSION,
-          reading_json: coreReading
-        });
-      }
-    } catch (e) {
-      console.error("Core Reading Parse Error:", e, rawCore);
-      coreReading = { overall_conclusion: "분석 데이터를 파싱하는 중 오류가 발생했습니다." };
-    }
-  }
-
-  // --- Step 2: Style Apply (Persona & Tone) ---
-  const STYLE_TEMP_MAP: Record<string, number> = { hanna: 0.4, monad: 0.5, e7l3: 0.45, e5l5: 0.45, l7e3: 0.35 };
+  // 3. 통합 프롬프트 빌드
+  const finalPrompt = buildReadingPrompt(
+    userInfo,
+    sajuAnalysis,
+    astrologyAnalysis as any,
+    ziweiAnalysis as any,
+    numerologyResult as any,
+    { cards: normalizedCards, insights: cardInsights },
+    crossValidationResult,
+    unifiedTimeline
+  );
 
   let responseType: "valid_json" | "fallback_text" | "parse_error" | "schema_mismatch" | "timeout" | "skipped" = "valid_json";
   let geminiLatency = 0;
+  let coreGeminiLatency = 0; // Legacy
   let parseSuccess = true;
   let schemaResult = { passed: true, missing: [] as string[], extra: [] as string[] };
   let parsed: any = {};
-  let stylePrompts: string[] = [];
+  let stylePrompts: string[] = [finalPrompt]; // Legacy sync
+  let coreReading = null; // Legacy sync
 
   if (input.mode === "data-only") {
-    console.log("[PlatformV9] Skipping Style Application (Data-Only Mode)");
+    console.log("[PlatformV10] Skipping Narrative (Data-Only Mode)");
     responseType = "skipped";
-    parsed = buildFallbackReading("데이터 분석 전용 모드입니다.", grade, scores, tarotCards, input.question, requestedStyle);
+    parsed = buildFallbackReading("데이터 분석 전용 모드입니다.", grade, scores, tarotCards, input.question, 'hanna');
   } else {
     try {
-      stylePrompts = validStyles.map(s => buildStyleApplyPrompt(locale, JSON.stringify(coreReading), s, totalSystems, priorityEvents));
-      const styleStart = Date.now();
+      const geminiStart = Date.now();
+      console.log("[MODEL]", { task: "통합 리딩 생성", model: "gemini-2.5-flash" });
       
-      console.log("[MODEL]", { task: "5개 스타일 리딩 생성", model: "gemini-2.5-flash" });
-      const rawNarratives = await Promise.all(validStyles.map((s, idx) => 
-        fetchGemini(apiKey, "gemini-2.5-flash", stylePrompts[idx], "", STYLE_TEMP_MAP[s] || 0.4)
-          .catch(e => {
-            console.error(`Gemini call failed for style ${s}:`, e);
-            return null;
-          })
-      ));
-      
-      geminiLatency = Date.now() - styleStart;
-      console.log("[PlatformV9] Parallel Style Application Latency:", geminiLatency, "ms");
+      const rawNarrative = await fetchGemini(apiKey, "gemini-2.5-flash", finalPrompt, "당신은 위스퍼윈드입니다. 반드시 JSON 형식이 아닌 친절하고 심도 있는 텍스트 리딩으로 응답하세요.", 0.2);
+      geminiLatency = Date.now() - geminiStart;
 
-      // Merge all parsed results into tarot_reading
-      parsed.tarot_reading = {};
-      rawNarratives.forEach((raw, idx) => {
-        const currentStyleName = validStyles[idx];
-        const initialFallback = buildFallbackReading("", grade, scores, tarotCards, input.question, currentStyleName);
-        
-        if (!raw) {
-          parsed.tarot_reading[currentStyleName === 'hanna' ? 'choihanna' : currentStyleName] = initialFallback.tarot_reading[currentStyleName === 'hanna' ? 'choihanna' : currentStyleName];
-          return;
-        }
-
-        const currentParsed = safeParseGeminiJSON(raw, initialFallback);
-        const styleKey = currentStyleName === 'hanna' ? 'choihanna' : currentStyleName;
-        
-        if (currentParsed && currentParsed.tarot_reading && currentParsed.tarot_reading[styleKey]) {
-          parsed.tarot_reading[styleKey] = currentParsed.tarot_reading[styleKey];
-          // Use first valid one for global structure if needed
-          if (Object.keys(parsed).length === 1) { 
-            parsed = { ...currentParsed, tarot_reading: parsed.tarot_reading }; 
-          }
-        } else {
-          parsed.tarot_reading[styleKey] = initialFallback.tarot_reading[styleKey];
-        }
-      });
-
-      // Basic structure validation on merged result
-      if (!parsed.tarot_reading || Object.keys(parsed.tarot_reading).length === 0) {
-        responseType = "parse_error";
-        parsed = buildFallbackReading("파싱 오류가 발생했습니다.", grade, scores, tarotCards, input.question, requestedStyle);
-        parseSuccess = false;
-      } else {
-        schemaResult = validateV3Schema(parsed);
-        if (!schemaResult.passed) {
-          responseType = "schema_mismatch";
-          parsed = patchMissingFields(parsed, scores, grade, tarotCards);
-        }
+      if (!rawNarrative) {
+        throw new Error("Empty narrative from Gemini");
       }
+
+      parsed = buildFallbackReading("", grade, scores, tarotCards, input.question, 'hanna');
+      parsed.integrated_summary = rawNarrative;
+      parsed.final_message.summary = rawNarrative;
+      
+      const styleKeys = ['choihanna', 'monad', 'e7l3', 'e5l5', 'l7e3'];
+      parsed.tarot_reading = {};
+      styleKeys.forEach(key => {
+        parsed.tarot_reading[key] = {
+          cards: tarotCards.map((c: any) => ({ name: c.name, position: c.position, reversed: !!c.isReversed })),
+          story: rawNarrative,
+          key_message: "통합 분석에 기반한 위스퍼윈드의 제언입니다."
+        };
+      });
     } catch (e: any) {
-      console.error("General Style Application Error:", e);
+      console.error("Gemini Whisperwind Error:", e);
       responseType = "timeout";
-      parsed = buildFallbackReading("시간 초과 또는 예외가 발생했습니다.", grade, scores, tarotCards, input.question, requestedStyle);
-      parseSuccess = false;
+      parsed = buildFallbackReading("시간 내에 운세 결과를 생성하지 못했습니다. 잠시 후 서비스 안정화 후 다시 시도해주세요.", grade, scores, tarotCards, input.question, 'hanna');
     }
   }
 
@@ -1896,16 +1629,7 @@ ${finalTopic === "life_change" ? "   → 변화 질문: 사주 운로·점성술
     parsed.love_analysis = null;
   }
 
-  // --- Step 3-B: Add Timing Summary (Direct Code Generation) ---
-  const timingBlock = generateTimingSummary(priorityEvents);
-  if (timingBlock) {
-    if (parsed.merged_reading) {
-      parsed.merged_reading.coreReading = (parsed.merged_reading.coreReading || "") + timingBlock;
-    } else if (parsed.final_message) {
-      parsed.final_message.summary = (parsed.final_message.summary || "") + timingBlock;
-    }
-  }
-
+  // --- Step 3-B: Add Timing Summary (Unified Pipeline) ---
   // [Professional V4 Integrated Fields - Inject into 'parsed' for backward compatibility]
   parsed.integrated_summary = parsed.final_message?.summary || parsed.merged_reading?.coreReading || "분석 결과를 생성하는 중입니다. 잠시만 기다려주세요.";
   parsed.practical_advice = parsed.action_guide || { do_list: [], dont_list: [], lucky: {} };
@@ -2308,7 +2032,8 @@ ${parsed.action_guide?.do_list?.map((item: string) => `- ${item}`).join('\n') ||
     engine: parsed.engine,
     system_scores: scores,
     detected_combinations: detectedCombinations,
-    cross_validation: crossValidation,
+    cross_validation: crossValidationResult,
+    topic_validation: topicValidation,
     question_specific_analysis: questionSpecificAnalysis,
     validation: validation,
     system_vectors: systemVectors,
