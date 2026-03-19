@@ -521,3 +521,119 @@ export function calculateShinsal(dayMaster: string, dayBranch: string, allBranch
   const g = calculateShinsalGrouped(dayMaster, dayBranch, { year: yearBranch || allBranches[0], month: monthBranch || allBranches[1], day: dayBranch, hour: allBranches[3] || "" }, allStems, currentYearBranch);
   return [...g.year, ...g.month, ...g.day, ...g.hour, ...g.general];
 }
+
+// ══════════════════════════════════════════════════════
+// B-266: 변환 결과(Transformation) 분석
+// ══════════════════════════════════════════════════════
+
+export interface TransformationResult {
+  type: '삼합' | '방합' | '육합' | '충' | '형' | '파' | '해';
+  branches: string[];
+  resultElement?: string;       // 변환된 오행
+  strength: number;             // 0~100
+  isComplete: boolean;          // 완전합 여부
+  isBroken: boolean;            // 충으로 깨졌는지
+  affectedOrgans?: string[];    // 건강 영향 장부
+  description: string;          // 한국어 설명
+}
+
+export function analyzeTransformations(branches: string[]): TransformationResult[] {
+  const results: TransformationResult[] = [];
+  const branchSet = new Set(branches.filter(b => b && b !== "미상"));
+
+  // 1. 삼합 (Samhap)
+  BRANCH_THREE_COMBINATIONS.forEach(([combo, res, key]) => {
+    const hits = combo.filter(b => branchSet.has(b));
+    if (hits.length >= 2) {
+      const isComplete = hits.length === 3;
+      const elem = res.includes("화") ? "화" : (res.includes("목") ? "목" : (res.includes("수") ? "수" : "금"));
+      results.push({
+        type: '삼합',
+        branches: hits,
+        resultElement: elem,
+        strength: isComplete ? 100 : 50,
+        isComplete,
+        isBroken: false,
+        description: `${key}${isComplete ? " (완전삼합)" : " (반합)"}으로 인해 ${elem} 기운이 생성됩니다.`
+      });
+    }
+  });
+
+  // 2. 방합 (Banghap)
+  BRANCH_DIRECTION_COMBINATIONS.forEach(([combo, res, key]) => {
+    if (combo.every(b => branchSet.has(b))) {
+      const elem = res.includes("목") ? "목" : (res.includes("화") ? "화" : (res.includes("금") ? "금" : "수"));
+      results.push({
+        type: '방합',
+        branches: combo,
+        resultElement: elem,
+        strength: 100,
+        isComplete: true,
+        isBroken: false,
+        description: `${key} 완성으로 해당 방위의 ${elem} 에너지가 강력해집니다.`
+      });
+    }
+  });
+
+  // 3. 육합 (Yuk-hap)
+  BRANCH_SIX_COMBINATIONS.forEach(([b1, b2, res, key]) => {
+    if (branchSet.has(b1) && branchSet.has(b2)) {
+      const elem = res.includes("토") ? "토" : (res.includes("목") ? "목" : (res.includes("화") ? "화" : (res.includes("금") ? "금" : "수")));
+      results.push({
+        type: '육합',
+        branches: [b1, b2],
+        resultElement: elem,
+        strength: 80,
+        isComplete: true,
+        isBroken: false,
+        description: `육합 연산: ${key} 성립. ${elem} 기운으로 변화합니다.`
+      });
+    }
+  });
+
+  // 4. 충 (Chung)
+  BRANCH_CONFLICTS.forEach(([b1, b2, key]) => {
+    if (branchSet.has(b1) && branchSet.has(b2)) {
+      results.push({
+        type: '충',
+        branches: [b1, b2],
+        strength: 100,
+        isComplete: true,
+        isBroken: false,
+        description: `${b1}와 ${b2}가 상충(${key})하여 지장간의 에너지가 요동치고 불안정해집니다.`
+      });
+      // Broken logic for Yuk-hap
+      results.filter(r => r.type === '육합').forEach(r => {
+        if (r.branches.includes(b1) || r.branches.includes(b2)) r.isBroken = true;
+      });
+    }
+  });
+
+  // 5. 형 (Hyung)
+  const ORGAN_MAP: Record<string, string[]> = {
+    "寅巳申": ["심장", "혈관", "신경계"],
+    "丑戌未": ["위장", "비장", "소화기"],
+    "子卯": ["생식기", "자궁", "신장"],
+    "辰辰": ["정신건강", "피부"],
+    "午午": ["심장", "시력"],
+    "酉酉": ["폐", "호흡기"],
+    "亥亥": ["신장", "방광"]
+  };
+
+  PENALTIES.forEach(([group, label]) => {
+    if (group.every(b => branchSet.has(b))) {
+      const gKey = group.join("");
+      results.push({
+        type: '형',
+        branches: group,
+        strength: 90,
+        isComplete: true,
+        isBroken: false,
+        affectedOrgans: ORGAN_MAP[gKey] || [],
+        description: `${label}: ${ORGAN_MAP[gKey]?.join(", ") || "관련 장부"}의 불균형을 야기할 수 있습니다.`
+      });
+    }
+  });
+
+  return results;
+}

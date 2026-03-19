@@ -1,6 +1,7 @@
 import { findSolarTermJD, MONTH_JEOL_LONGS } from "./solarTerm.ts";
 import { STEMS, BRANCHES, FIVE_ELEMENTS_MAP } from "./fiveElements.ts";
 import { calculateTenGod, calculateTenGodBranch } from "./tenGods.ts";
+import { checkStemRelation, checkBranchRelation } from "./interactions.ts";
 
 export interface DaewoonPillar {
   index: number;           // 0-based 대운 순번
@@ -14,8 +15,17 @@ export interface DaewoonPillar {
   tenGodStem: string;      // 일간 기준 십성 (천간)
   tenGodBranch: string;    // 일간 기준 십성 (지지 본기)
   isCurrent: boolean;      // 현재 대운인지
-  twelveStage?: string;    // B-256: 12운성
-  twelveStageEnergy?: any; // B-256: 12운성 에너지
+  twelveStage?: string;    // 12운성
+  twelveStageEnergy?: any; // 12운성 에너지
+}
+
+export interface TransitionInfo {
+  isTransition: boolean;
+  previous: DaewoonPillar | null;
+  current: DaewoonPillar | null;
+  next: DaewoonPillar | null;
+  transitionYear: number;
+  description: string;
 }
 
 export interface DaewoonResult {
@@ -26,6 +36,7 @@ export interface DaewoonResult {
   currentAge: number;
   is_daeun_changing_year: boolean;
   current_seun: any;
+  transitionInfo?: TransitionInfo; // B-266: 전환기 정보 추가
 }
 
 export function getDaewoonInfo(
@@ -35,7 +46,6 @@ export function getDaewoonInfo(
   jd: number, 
   year: number
 ): { age: number; isForward: boolean } {
-  // Ensure we have numbers
   const sLong = Number(sunLong) || 0;
   const jval = Number(jd) || 0;
   const yval = Number(year) || 2000;
@@ -46,48 +56,130 @@ export function getDaewoonInfo(
   const termIdx = Math.floor((sLong - 315 + 360) % 360 / 30);
   const currentJeolLong = MONTH_JEOL_LONGS[termIdx];
   const nextJeolLong = MONTH_JEOL_LONGS[(termIdx + 1) % 12];
-
-  // ── 절기 JD 계산: 출생일(jval) 기준으로 가장 가까운 이전/다음 절기를 찾음 ──
-  // 기존 로직은 황경 범위만으로 연도를 판단하여 오류 발생 (예: 352°→15° 전환 시 +1년 오판)
-  // 수정: JD 기반으로 직접 비교하여 정확한 절기 시점을 결정
   
-  // 현재 절기 JD: 올해 기준으로 먼저 계산, 출생일보다 미래면 전년도로
   let currentJeolJD = findSolarTermJD(yval, currentJeolLong);
   if (currentJeolJD > jval + 1) {
     currentJeolJD = findSolarTermJD(yval - 1, currentJeolLong);
   }
   
-  // 다음 절기 JD: 올해 기준으로 먼저 계산, 출생일보다 과거면 내년도로
   let nextJeolJD = findSolarTermJD(yval, nextJeolLong);
   if (nextJeolJD < jval - 1) {
     nextJeolJD = findSolarTermJD(yval + 1, nextJeolLong);
   }
 
   let diff = isForward ? (nextJeolJD - jval) : (jval - currentJeolJD);
-  
   if (!Number.isFinite(diff) || diff < 0) diff = 0;
 
   const daewoonAge = Math.max(1, Math.round(diff / 3));
-
-  console.log('[DAEWOON DEBUG]', {
-    sLong, jval, yval, termIdx,
-    currentJeolLong, nextJeolLong,
-    currentJeolJD, nextJeolJD,
-    isForward, diff,
-    daewoonAge: Math.max(1, Math.round(diff / 3))
-  });
   const finalAge = Number.isFinite(daewoonAge) ? daewoonAge : 1;
   return { age: finalAge, isForward };
 }
 
 /**
+ * 1) 대운 전환기(교운기) 정보 생성 내부 함수
+ */
+function calculateTransitionInfo(currentAge: number, pillars: DaewoonPillar[]): TransitionInfo | undefined {
+  const koreanAge = currentAge + 1;
+  const currentIdx = pillars.findIndex(p => p.isCurrent);
+  if (currentIdx === -1) return undefined;
+
+  const current = pillars[currentIdx];
+  const previous = currentIdx > 0 ? pillars[currentIdx - 1] : null;
+  const next = currentIdx < pillars.length - 1 ? pillars[currentIdx + 1] : null;
+
+  // 교운기 판별: 대운 시작 나이 ±1년
+  const isTransition = Math.abs(koreanAge - current.startAge) <= 1;
+
+  return {
+    isTransition,
+    current,
+    previous,
+    next,
+    transitionYear: current.startAge,
+    description: isTransition 
+      ? `현재 ${current.startAge}세 대운 교체 주기에 머물러 있어 환경과 심경의 큰 변화가 예상되는 '교운기'입니다.`
+      : `${current.startAge}세 대운의 안정된 흐름 속에 있습니다.`
+  };
+}
+
+/**
+ * 2) 세운(연운) 계산
+ */
+export function calculateSeWoon(targetYear: number): { stem: string, branch: string, full: string } {
+  const diff = (targetYear - 4) % 60;
+  const sIdx = ((diff % 10) + 10) % 10;
+  const bIdx = ((diff % 12) + 12) % 12;
+  return {
+    stem: STEMS[sIdx],
+    branch: BRANCHES[bIdx],
+    full: `${STEMS[sIdx]}${BRANCHES[bIdx]}`
+  };
+}
+
+/**
+ * 3) 월운 계산
+ */
+export function calculateWolWoon(yearStem: string, month: number): { stem: string, branch: string, full: string } {
+  const sIdx = STEMS.indexOf(yearStem);
+  if (sIdx < 0) return { stem: "", branch: "", full: "" };
+  
+  const startStemIdx = (sIdx * 2 + 2) % 10; // 인(寅)월의 천간
+  const stemIdx = (startStemIdx + (month - 1)) % 10;
+  const branchIdx = (BRANCHES.indexOf("寅") + (month - 1)) % 12;
+  return {
+    stem: STEMS[stemIdx],
+    branch: BRANCHES[branchIdx],
+    full: `${STEMS[stemIdx]}${BRANCHES[branchIdx]}`
+  };
+}
+
+/**
+ * 4) 대운+세운 상호작용 분석
+ */
+export function analyzeWoonInteractions(
+  dStem: string, dBranch: string, 
+  sStem: string, sBranch: string,
+  natalStems: string[], natalBranches: string[]
+): { clashes: string[], harmonies: string[] } {
+  const clashes: string[] = [];
+  const harmonies: string[] = [];
+  const labels = ["년", "월", "일", "시"];
+
+  // 1. 대운 vs 세운
+  const dsStemRel = checkStemRelation(dStem, sStem);
+  if (dsStemRel) {
+    if (dsStemRel.type.includes("합")) harmonies.push(`대운-세운 천간합: ${dsStemRel.description}`);
+    else clashes.push(`대운-세운 천간갈등: ${dsStemRel.description}`);
+  }
+  const dsBranchRel = checkBranchRelation(dBranch, sBranch);
+  if (dsBranchRel) {
+    if (dsBranchRel.type.includes("합")) harmonies.push(`대운-세운 지지합: ${dsBranchRel.description}`);
+    else clashes.push(`대운-세운 지지충돌: ${dsBranchRel.description}`);
+  }
+
+  // 2. 대운 vs 원국
+  natalStems.forEach((ns, i) => {
+    const rel = checkStemRelation(dStem, ns);
+    if (rel) {
+      const label = labels[i] || "미상";
+      if (rel.type.includes("합")) harmonies.push(`대운-원국(${label}간) 합: ${rel.description}`);
+      else clashes.push(`대운-원국(${label}간) 갈등: ${rel.description}`);
+    }
+  });
+  natalBranches.forEach((nb, i) => {
+    const rel = checkBranchRelation(dBranch, nb);
+    if (rel) {
+      const label = labels[i] || "미상";
+      if (rel.type.includes("합")) harmonies.push(`대운-원국(${label}지) 합: ${rel.description}`);
+      else clashes.push(`대운-원국(${label}지) 충돌: ${rel.description}`);
+    }
+  });
+
+  return { clashes, harmonies };
+}
+
+/**
  * 전체 대운 기둥 10개 생성
- * @param monthStemIdx - 월주 천간 인덱스 (0~9)
- * @param monthBranchIdx - 월주 지지 인덱스 (0~11)
- * @param dayMaster - 일간 한자 (예: "甲")
- * @param startAge - getDaewoonInfo()에서 반환한 시작 나이
- * @param isForward - 순행 여부
- * @param currentAge - 현재 나이 (만 나이)
  */
 export function calculateFullDaewoon(
   monthStemIdx: number,
@@ -108,8 +200,6 @@ export function calculateFullDaewoon(
     const branch = BRANCHES[branchIdx];
     const pillarStartAge = startAge + i * 10;
     const pillarEndAge = pillarStartAge + 9;
-    // 한국 사주 전통: 세는 나이(한국 나이) 기준으로 대운 판정
-    // currentAge가 만 나이로 전달되므로 +1 하여 한국 나이로 변환
     const koreanAge = currentAge + 1;
     const isCurrent = koreanAge >= pillarStartAge && koreanAge <= pillarEndAge;
 
@@ -123,33 +213,28 @@ export function calculateFullDaewoon(
       stemElement: FIVE_ELEMENTS_MAP[stem] || "unknown",
       branchElement: FIVE_ELEMENTS_MAP[branch] || "unknown",
       tenGodStem: calculateTenGod(dayMaster, stem),
-      tenGodBranch: calculateTenGodBranch(dayMaster, branch),  // 본기 기준
+      tenGodBranch: calculateTenGodBranch(dayMaster, branch),
       isCurrent,
     });
   }
 
   const currentDaewoon = pillars.find(p => p.isCurrent) || null;
+  const transitionInfo = calculateTransitionInfo(currentAge, pillars);
 
-  // B-69new: 대운 교체기 감지 — 현재 나이가 대운 시작 후 1년 이내 또는 종료 전 1년 이내
   const koreanAgeForChanging = currentAge + 1;
   const isDaewoonChangingYear = currentDaewoon
     ? (koreanAgeForChanging - currentDaewoon.startAge <= 1) || (currentDaewoon.endAge - koreanAgeForChanging <= 1)
     : false;
 
-  // B-69new: 세운(올해 운) 계산 — 현재 연도 천간·지지
   const CURRENT_YEAR = new Date().getFullYear();
-  const seunYearIdx = (CURRENT_YEAR - 4) % 60;
-  const seunStemIdx = ((seunYearIdx % 10) + 10) % 10;
-  const seunBranchIdx = ((seunYearIdx % 12) + 12) % 12;
+  const seun = calculateSeWoon(CURRENT_YEAR);
   const currentSeun = {
     year: CURRENT_YEAR,
-    stem: STEMS[seunStemIdx],
-    branch: BRANCHES[seunBranchIdx],
-    full: `${STEMS[seunStemIdx]}${BRANCHES[seunBranchIdx]}`,
-    stemElement: FIVE_ELEMENTS_MAP[STEMS[seunStemIdx]] || "unknown",
-    branchElement: FIVE_ELEMENTS_MAP[BRANCHES[seunBranchIdx]] || "unknown",
-    tenGodStem: calculateTenGod(dayMaster, STEMS[seunStemIdx]),
-    tenGodBranch: calculateTenGodBranch(dayMaster, BRANCHES[seunBranchIdx]),
+    ...seun,
+    stemElement: FIVE_ELEMENTS_MAP[seun.stem] || "unknown",
+    branchElement: FIVE_ELEMENTS_MAP[seun.branch] || "unknown",
+    tenGodStem: calculateTenGod(dayMaster, seun.stem),
+    tenGodBranch: calculateTenGodBranch(dayMaster, seun.branch),
   };
 
   return {
@@ -160,5 +245,6 @@ export function calculateFullDaewoon(
     currentAge,
     is_daeun_changing_year: isDaewoonChangingYear,
     current_seun: currentSeun,
+    transitionInfo,
   };
 }

@@ -505,7 +505,7 @@ export async function analyzeSajuStructure(
   const supportRatio = (deukseTarget + 0.1) / (tenGodCount["비겁"] + tenGodCount["인성"] + tenGodCount["식상"] + tenGodCount["재성"] + tenGodCount["관성"] + 0.1);
 
   // ── B-257: 격국(格局) 판별 ──────────────────────────────────────
-  const gyeokguk = determineGyeokguk(dm, pillars.month?.branch || "", tenGodCount, { supportRatio, isDeukyeong });
+  const gyeokguk = determineGyeokguk(dm, pillars.month?.branch || "", tenGodCount, { supportRatio, isDeukyeong }, stems, branches);
   
   // Back-compatibility for other logic using 'strength' variable
   const strength = strengthLevel;
