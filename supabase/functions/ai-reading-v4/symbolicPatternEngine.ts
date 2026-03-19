@@ -19,7 +19,7 @@ export interface SymbolicVector {
  */
 function findMapping(symbolName: string) {
   if (!symbolName) return null;
-  const normalized = symbolName.trim();
+  const normalized = (symbolName || '').trim();
   
   // 1차: 정확히 일치
   const exact = SYMBOL_MAPPINGS.find(m => m.symbol_name === normalized);
@@ -155,7 +155,7 @@ export function generatePatternVectors(systemResults: any[]): SymbolicVector[] {
           "불": "화 일간의 열정", "흙": "토 일간의 안정",
           "공기": "목 일간의 생명력", "물": "수 일간의 유연"
         };
-        const elTag = elTagMap[domEl.split("/")[0].trim()];
+        const elTag = elTagMap[(domEl.split("/")[0] || '').trim()];
         if (elTag) {
           const mapping = findMapping(elTag);
           if (mapping) vectors.push({ system: "astrology", symbol: domEl, vector: mapping.semantic_values, patterns: mapping.linked_patterns });
