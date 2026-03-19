@@ -1583,7 +1583,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
           const imageUrl = tarotData?.image || "";
           return (
             <div key={card.id} className="flex flex-col items-center gap-2">
-              <span className="text-xs text-muted-foreground font-medium">{label}</span>
+              <span className="text-sm text-muted-foreground font-semibold">{label}</span>
               <div className={`relative w-full aspect-[2/3] rounded-lg overflow-hidden border border-border/30 shadow-md ${card.isReversed ? "rotate-180" : ""}`}>
                 {imageUrl ? (
                   <img src={imageUrl} alt={card.korean} className="w-full h-full object-cover" />
@@ -1593,7 +1593,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                   </div>
                 )}
               </div>
-              <span className="text-xs text-foreground/80 font-medium text-center leading-tight">
+              <span className="text-sm text-foreground/80 font-semibold text-center leading-tight">
                 {card.korean}{card.isReversed ? "(역)" : ""}
               </span>
             </div>
