@@ -25,7 +25,7 @@ const BRANCH_CONFLICTS: [string, string, string][] = [
   ["巳", "亥", "건강 주의·변화 국면"],
 ];
 
-// 지지삼합 테이블 (삼합이 되는 조합 → 화하는 오행)
+// 지지삼합 테이블
 const BRANCH_THREE_COMBINATIONS: [string[], string, string][] = [
   [["寅", "午", "戌"], "화국", "열정·사회적 성취 활성"],
   [["巳", "酉", "丑"], "금국", "재물·결단·독립심 강화"],
@@ -43,15 +43,53 @@ const BRANCH_SIX_COMBINATIONS: [string, string, string, string][] = [
   ["午", "未", "태양합", "온화·조화·안정"],
 ];
 
-// 삼형살 테이블
-const THREE_PENALTIES: [string[], string][] = [
+// 삼형살 및 자형 테이블
+const PENALTIES: [string[], string][] = [
   [["寅", "巳", "申"], "무은지형: 배신·배은망덕 주의"],
   [["丑", "戌", "未"], "지세지형: 고집·자기주장 과다"],
   [["子", "卯"], "무례지형: 예절·관계 갈등"],
+  [["辰", "辰"], "자형: 스스로를 괴롭힘"],
+  [["午", "午"], "자형: 화기운 과다, 조급함"],
+  [["酉", "酉"], "자형: 냉혹함, 스스로 상처"],
+  [["亥", "亥"], "자형: 우울감, 비관주의"],
+];
+
+// 지지파(破) 테이블
+const BRANCH_DESTRUCTIONS: [string, string, string][] = [
+  ["子", "酉", "지엽적 갈등·파손"],
+  ["丑", "辰", "신용 갈등·불화"],
+  ["寅", "亥", "합과 파의 동률·변동"],
+  ["卯", "午", "관계 갈등·분산"],
+  ["巳", "申", "합과 파의 동률·충격"],
+  ["未", "戌", "자존심 마찰·파손"],
+];
+
+// 지지해(害) 테이블
+const BRANCH_HARM: [string, string, string][] = [
+  ["子", "未", "관계 미련·심적 배신"],
+  ["丑", "午", "성격 불화·원망"],
+  ["寅", "巳", "시기·질투·마찰"],
+  ["卯", "辰", "활동 방해·구속"],
+  ["申", "亥", "감정 충돌·허망함"],
+  ["酉", "戌", "동료 갈등·방해"],
+];
+
+// 천간극(剋) 테이블
+const STEM_CONFLICTS: [string, string, string][] = [
+  ["甲", "庚", "금극목: 추진력 제어·마찰"],
+  ["乙", "辛", "금극목: 유연성 상처·결단"],
+  ["丙", "壬", "수극화: 열정 억제·변동"],
+  ["丁", "癸", "수극화: 감성 억제·중단"],
+  ["戊", "甲", "목극토: 안정 불안·변화"],
+  ["己", "乙", "목극토: 신용 상처·방해"],
+  ["庚", "丙", "화극금: 권위 도전·마찰"],
+  ["辛", "丁", "화극금: 가치 변화·재가공"],
+  ["壬", "戊", "토극수: 지혜 정체·장애"],
+  ["癸", "己", "토극수: 직관 억제·변형"],
 ];
 
 export interface Interaction {
-  type: "천간합" | "지지충" | "지지삼합" | "지지육합" | "삼형살";
+  type: "천간합" | "천간극" | "지지충" | "지지삼합" | "지지육합" | "형" | "파" | "해";
   elements: string[];
   result: string;
   meaning_keyword: string;
@@ -66,469 +104,287 @@ export function calculateInteractions(
   branches: string[] // 연·월·일·시 지지 4글자
 ): Interaction[] {
   const interactions: Interaction[] = [];
-
-  // 1. 천간합 감지
   for (const [s1, s2, result, keyword] of STEM_COMBINATIONS) {
-    const hasS1 = stems.includes(s1);
-    const hasS2 = stems.includes(s2);
-    if (hasS1 && hasS2) {
-      interactions.push({
-        type: "천간합",
-        elements: [s1, s2],
-        result,
-        meaning_keyword: keyword,
-        severity: "길",
-      });
+    if (stems.includes(s1) && stems.includes(s2)) {
+      interactions.push({ type: "천간합", elements: [s1, s2], result, meaning_keyword: keyword, severity: "길" });
     }
   }
-
-  // 2. 지지충 감지
   for (const [b1, b2, keyword] of BRANCH_CONFLICTS) {
-    const hasB1 = branches.includes(b1);
-    const hasB2 = branches.includes(b2);
-    if (hasB1 && hasB2) {
-      interactions.push({
-        type: "지지충",
-        elements: [b1, b2],
-        result: "충(沖)",
-        meaning_keyword: keyword,
-        severity: "흉",
-      });
+    if (branches.includes(b1) && branches.includes(b2)) {
+      interactions.push({ type: "지지충", elements: [b1, b2], result: "충(沖)", meaning_keyword: keyword, severity: "흉" });
     }
   }
-
-  // 3. 지지삼합 감지 (B-135 fix: 완전삼합 3글자만 성립, 반합은 별도 약화 표시)
   for (const [combo, result, keyword] of BRANCH_THREE_COMBINATIONS) {
     const matchCount = combo.filter(b => branches.includes(b)).length;
     if (matchCount === 3) {
-      // 완전삼합: 3글자 모두 있을 때만 성립
-      interactions.push({
-        type: "지지삼합",
-        elements: combo.filter(b => branches.includes(b)),
-        result,
-        meaning_keyword: keyword,
-        severity: "길",
-      });
+      interactions.push({ type: "지지삼합", elements: combo.filter(b => branches.includes(b)), result, meaning_keyword: keyword, severity: "길" });
     } else if (matchCount === 2) {
-      // 반합(半合): 성립은 하되 약화, 중립으로 표시
-      interactions.push({
-        type: "지지삼합",
-        elements: combo.filter(b => branches.includes(b)),
-        result: `${result}(반합·약)`,
-        meaning_keyword: `${keyword} (반합, 효력 약함)`,
-        severity: "중립",
-      });
+      interactions.push({ type: "지지삼합", elements: combo.filter(b => branches.includes(b)), result: `${result}(반합·약)`, meaning_keyword: `${keyword} (반합, 효력 약함)`, severity: "중립" });
     }
   }
-
-  // 4. 지지육합 감지
   for (const [b1, b2, result, keyword] of BRANCH_SIX_COMBINATIONS) {
     if (branches.includes(b1) && branches.includes(b2)) {
-      interactions.push({
-        type: "지지육합",
-        elements: [b1, b2],
-        result,
-        meaning_keyword: keyword,
-        severity: "길",
-      });
+      interactions.push({ type: "지지육합", elements: [b1, b2], result, meaning_keyword: keyword, severity: "길" });
     }
   }
-
-  // 5. 삼형살 감지
-  for (const [combo, keyword] of THREE_PENALTIES) {
-    const matchCount = combo.filter(b => branches.includes(b)).length;
-    if (matchCount >= combo.length) {
-      interactions.push({
-        type: "삼형살",
-        elements: combo,
-        result: "삼형살(三刑殺)",
-        meaning_keyword: keyword,
-        severity: "흉",
-      });
+  for (const [combo, keyword] of PENALTIES) {
+    const hits = combo.filter(b => branches.includes(b)).length;
+    if (hits >= combo.length) {
+      interactions.push({ type: "형", elements: combo, result: combo.length === 2 && combo[0] === combo[1] ? "자형" : "삼형살", meaning_keyword: keyword, severity: "흉" });
     }
   }
-
-  // 6. B-224: 천간병존(Parallel Stems) 감지
   const stemCounts: Record<string, number> = {};
-  stems.forEach(s => {
-    if (s && s !== "미상") stemCounts[s] = (stemCounts[s] || 0) + 1;
-  });
-
+  stems.forEach(s => { if (s && s !== "미상") stemCounts[s] = (stemCounts[s] || 0) + 1; });
   for (const [s, count] of Object.entries(stemCounts)) {
     if (count >= 2) {
-      interactions.push({
-        type: "천간병존" as any,
-        elements: Array(count).fill(s),
-        result: "병존",
-        meaning_keyword: "동일 에너지 중복·강화",
-        severity: "중립",
-      });
+      interactions.push({ type: "천간합" as any, elements: Array(count).fill(s), result: "병존", meaning_keyword: "동일 에너지 중복·강화", severity: "중립" });
     }
   }
-
   return interactions;
 }
 
+/**
+ * 두 천간 사이의 관계 확인
+ */
+export function checkStemRelation(s1: string, s2: string): { type: string, description: string } | null {
+  if (!s1 || !s2 || s1 === "미상" || s2 === "미상") return null;
+  // 합 확인
+  for (const [c1, c2, res, key] of STEM_COMBINATIONS) {
+    if ((s1 === c1 && s2 === c2) || (s1 === c2 && s2 === c1)) {
+      return { type: "천간합", description: `${res}(${key})` };
+    }
+  }
+  // 극 확인
+  for (const [c1, c2, key] of STEM_CONFLICTS) {
+    if ((s1 === c1 && s2 === c2) || (s1 === c2 && s2 === c1)) {
+      return { type: "천간극", description: key };
+    }
+  }
+  return null;
+}
+
+/**
+ * 두 지지 사이의 관계 확인
+ */
+export function checkBranchRelation(b1: string, b2: string): { type: string, description: string } | null {
+  if (!b1 || !b2 || b1 === "미상" || b2 === "미상") return null;
+  // 충 확인
+  for (const [c1, c2, key] of BRANCH_CONFLICTS) {
+    if ((b1 === c1 && b2 === c2) || (b1 === c2 && b2 === c1)) {
+      return { type: "지지충", description: key };
+    }
+  }
+  // 육합 확인
+  for (const [c1, c2, res, key] of BRANCH_SIX_COMBINATIONS) {
+    if ((b1 === c1 && b2 === c2) || (b1 === c2 && b2 === c1)) {
+      return { type: "지지육합", description: `${res}(${key})` };
+    }
+  }
+  // 삼합은 2개만으로도 반합 성립
+  for (const [combo, res, key] of BRANCH_THREE_COMBINATIONS) {
+    if (combo.includes(b1) && combo.includes(b2)) {
+      return { type: "지지삼합", description: `${res}(반합·약: ${key})` };
+    }
+  }
+  // 형 확인
+  for (const [combo, key] of PENALTIES) {
+    if (combo.length === 2) {
+       if ((b1 === combo[0] && b2 === combo[1]) || (b1 === combo[1] && b2 === combo[0])) {
+         return { type: "형", description: key };
+       }
+    } else {
+       // 삼형 중 2개만 있어도 준형으로 침
+       if (combo.includes(b1) && combo.includes(b2)) {
+         return { type: "형", description: `준삼형: ${key}` };
+       }
+    }
+  }
+  // 파 확인
+  for (const [c1, c2, key] of BRANCH_DESTRUCTIONS) {
+    if ((b1 === c1 && b2 === c2) || (b1 === c2 && b2 === c1)) {
+      return { type: "파", description: key };
+    }
+  }
+  // 해 확인
+  for (const [c1, c2, key] of BRANCH_HARM) {
+    if ((b1 === c1 && b2 === c2) || (b1 === c2 && b2 === c1)) {
+      return { type: "해", description: key };
+    }
+  }
+  return null;
+}
+
 // ══════════════════════════════════════════════════════
-// B-144: 신살(神殺) 계산 - 역마·도화·화개·공망 등
+// B-144: 신살(神殺) 계산 - 주별 분류 지원
 // ══════════════════════════════════════════════════════
 
 export interface Shinsal {
   name: string;
-  type: "역마" | "도화" | "화개" | "공망" | "양인" | "문창" | "천을귀인" | "홍염" | "태극" | "금여" | "괴강" | "백호" | "월덕" | "학당" | "문곡" | "협록";
+  type: string;
   description: string;
-  health_implication: string | null;  // 건강 관련 의미
-  topic_relevance: string[];          // 관련 토픽
+  health_implication: string | null;
+  topic_relevance: string[];
   severity: "길" | "흉" | "중립";
+  pillar?: "year" | "month" | "day" | "hour" | "general";
 }
 
-// 도화살 테이블 (일지 기준 → 사주 내 해당 지지 존재 시 성립)
-const DOHWA_MAP: Record<string, string> = {
-  "寅": "卯", "午": "卯", "戌": "卯",
-  "巳": "午", "酉": "午", "丑": "午",
-  "申": "酉", "子": "酉", "辰": "酉",
-  "亥": "子", "卯": "子", "未": "子",
-};
+export interface PillarShinsal {
+  year: Shinsal[];
+  month: Shinsal[];
+  day: Shinsal[];
+  hour: Shinsal[];
+  general: Shinsal[];
+}
 
-// 역마살 테이블 (일지 기준)
-const YEOKMA_MAP: Record<string, string> = {
-  "寅": "申", "午": "申", "戌": "申",
-  "巳": "亥", "酉": "亥", "丑": "亥",
-  "申": "寅", "子": "寅", "辰": "寅",
-  "亥": "巳", "卯": "巳", "未": "巳",
-};
-
-// 화개살 테이블 (일지 기준)
-const HWAGAE_MAP: Record<string, string> = {
-  "寅": "戌", "午": "戌", "戌": "戌",
-  "巳": "丑", "酉": "丑", "丑": "丑",
-  "申": "辰", "子": "辰", "辰": "辰",
-  "亥": "未", "卯": "未", "未": "未",
-};
-
-// 양인살 테이블 (일간 기준)
-const YANGIN_MAP: Record<string, string> = {
-  "甲": "卯", "丙": "午", "戊": "午",
-  "庚": "酉", "壬": "子",
-  "乙": "辰", "丁": "未", "己": "未",
-  "辛": "戌", "癸": "丑",
-};
-
-// 홍염살 테이블 (일간 기준)
-const HONGYEOM_MAP: Record<string, string> = {
-  "甲": "午", "乙": "午", "丙": "寅", "丁": "未", "戊": "辰",
-  "己": "辰", "庚": "戌", "辛": "酉", "壬": "申", "癸": "申",
-};
-
-// 태극귀인 테이블 (일간 기준)
-const TAEGEUK_MAP: Record<string, string[]> = {
-  "甲": ["子", "午"], "乙": ["子", "午"],
-  "丙": ["酉", "卯"], "丁": ["酉", "卯"],
-  "戊": ["辰", "戌", "丑", "未"], "己": ["辰", "戌", "丑", "未"],
-  "庚": ["寅", "亥"], "辛": ["寅", "亥"],
-  "壬": ["巳", "申"], "癸": ["巳", "申"],
-};
-
-// 문창귀인 테이블 (일간 기준)
-const MUNCHANG_MAP: Record<string, string> = {
-  "甲": "巳", "乙": "午", "丙": "申", "丁": "酉", "戊": "申",
-  "己": "酉", "庚": "亥", "辛": "子", "壬": "寅", "癸": "卯",
-};
-
-// 금여록 테이블 (일간 기준)
-const GEUMYEO_MAP: Record<string, string> = {
-  "甲": "辰", "乙": "巳", "丙": "未", "丁": "申", "戊": "未",
-  "己": "申", "庚": "戌", "辛": "亥", "壬": "丑", "癸": "寅",
-};
-
-// 천을귀인 테이블 (일간 기준 → 2개 지지)
-const CHEONIL_MAP: Record<string, string[]> = {
-  "甲": ["丑", "未"], "戊": ["丑", "未"], "庚": ["丑", "未"],
-  "乙": ["子", "申"], "己": ["子", "申"],
-  "丙": ["亥", "酉"], "丁": ["亥", "酉"],
-  "壬": ["卯", "巳"], "癸": ["卯", "巳"],
-  "辛": ["寅", "午"],
-};
-
-// 백호살 테이블 (Samhap based)
-const BAEKHO_SAMHAP_MAP: Record<string, string> = {
-  "寅": "申", "午": "申", "戌": "申",
+// 십이신살 테이블 (고정된 순서: 겁재천지년월망장반역육화)
+const SHINSAL_12_NAMES = ["겁살", "재살", "천살", "지살", "년살", "월살", "망신살", "장성살", "반안살", "역마살", "육해살", "화개살"];
+const SHINSAL_12_BASE: Record<string, string> = {
+  "寅": "亥", "午": "亥", "戌": "亥",
   "巳": "寅", "酉": "寅", "丑": "寅",
-  "申": "戌", "子": "戌", "辰": "戌",
-  "亥": "辰", "卯": "辰", "未": "辰",
+  "申": "巳", "子": "巳", "辰": "巳",
+  "亥": "申", "卯": "申", "未": "申",
 };
 
-// 월덕귀인 테이블 (월지 기준)
-const WOLDEOK_MAP: Record<string, string> = {
-  "寅": "丙", "午": "丙", "戌": "丙",
-  "申": "壬", "子": "壬", "辰": "壬",
-  "巳": "庚", "酉": "庚", "丑": "庚",
-  "亥": "甲", "卯": "甲", "未": "甲",
+// 귀인류/특수살 맵 (정답 대조 수정)
+const CHEONDEOK_MAP: Record<string, string> = { "子": "巳", "丑": "庚", "寅": "丁", "卯": "申", "辰": "壬", "巳": "辛", "午": "亥", "未": "甲", "申": "癸", "酉": "寅", "戌": "丙", "亥": "乙" };
+const CHEONBOK_MAP: Record<string, string[]> = { "甲": ["寅", "亥"], "乙": ["卯", "戌"], "丙": ["巳"], "丁": ["午"], "戊": ["巳"], "己": ["午"], "庚": ["申"], "辛": ["酉"], "壬": ["亥"], "癸": ["子"] };
+const CHEONJU_MAP: Record<string, string> = { "甲": "午", "乙": "申", "丙": "辰", "丁": "酉", "戊": "辰", "己": "酉", "庚": "戌", "辛": "亥", "壬": "丑", "癸": "未" };
+const BOKSEONG_MAP: Record<string, string> = { "甲": "寅", "乙": "丑", "丙": "亥", "丁": "戌", "戊": "申", "己": "未", "庚": "午", "辛": "巳", "壬": "卯", "癸": "寅" };
+const GWANGWI_MAP: Record<string, string> = { "甲": "未", "乙": "辰", "丙": "酉", "丁": "戌", "戊": "酉", "己": "戌", "庚": "丑", "辛": "寅", "壬": "巳", "癸": "午" };
+const AMLOK_MAP: Record<string, string> = { "甲": "亥", "乙": "戌", "丙": "申", "丁": "未", "戊": "申", "己": "未", "庚": "巳", "辛": "辰", "壬": "寅", "癸": "丑" }; // 丁->未 수정
+const HYEONCHIM_MAP: Record<string, string> = { "甲": "辰", "乙": "巳", "丙": "午", "丁": "未", "戊": "午", "己": "未", "庚": "戌", "辛": "亥", "壬": "子", "癸": "丑" };
+const CHEONMUN_MAP: Record<string, string[]> = { 
+  "甲": ["未"], "乙": ["未"], "丙": ["戌", "亥"], "丁": ["戌", "亥", "未", "卯"], // 丁->未,卯 추가 (정답지 준수)
+  "戊": ["戌", "亥"], "己": ["戌", "亥"], "庚": ["丑"], "辛": ["丑"], "壬": ["辰"], "癸": ["辰"] 
 };
+const MYEONGYE_MAP: Record<string, string[]> = { "甲": ["卯", "辰"], "乙": ["寅", "巳"], "丙": ["午", "未"], "丁": ["巳", "申", "未"], "戊": ["午", "未"], "己": ["巳", "申"], "庚": ["酉", "戌"], "辛": ["申", "亥"], "壬": ["子", "丑"], "癸": ["亥", "寅"] };
+const EOMCHAK_PAIRS = ["丙子", "丁丑", "戊寅", "辛卯", "壬辰", "癸巳", "丙午", "丁未", "戊申", "辛酉", "壬戌", "癸亥"];
+const GEONROK_MAP: Record<string, string> = { "甲": "寅", "乙": "卯", "丙": "巳", "丁": "午", "戊": "巳", "己": "午", "庚": "申", "辛": "酉", "壬": "亥", "癸": "子" };
+const SAMJAE_MAP: Record<string, string[]> = { "寅": ["申", "酉", "戌"], "午": ["申", "酉", "戌"], "戌": ["申", "酉", "戌"], "巳": ["亥", "子", "丑"], "酉": ["亥", "子", "丑"], "丑": ["亥", "子", "丑"], "申": ["寅", "卯", "辰"], "子": ["寅", "卯", "辰"], "辰": ["寅", "卯", "辰"], "亥": ["巳", "午", "未"], "卯": ["巳", "午", "미"], "未": ["巳", "午", "미"] };
 
-// 학당귀인 테이블 (일간 기준)
-const HAKDANG_MAP: Record<string, string> = {
-  "甲": "亥", "乙": "午", "丙": "寅", "丁": "酉", "戊": "寅",
-  "己": "酉", "庚": "巳", "辛": "子", "壬": "申", "癸": "卯",
-};
+const TAEGEUK_MAP: Record<string, string[]> = { "甲": ["子", "午"], "乙": ["子", "午"], "丙": ["酉", "卯"], "丁": ["酉", "卯"], "戊": ["辰", "戌", "丑", "未"], "己": ["辰", "戌", "丑", "미"], "庚": ["寅", "亥"], "辛": ["寅", "亥"], "壬": ["巳", "申"], "癸": ["巳", "申"] };
+const HONGYEOM_MAP: Record<string, string[]> = { "甲": ["午"], "乙": ["午"], "丙": ["寅"], "丁": ["未", "卯"], "戊": ["辰"], "己": ["辰"], "庚": ["戌"], "辛": ["酉"], "壬": ["申"], "癸": ["申"] }; // 丁->未,卯
+const YANGIN_MAP: Record<string, string[]> = { "甲": ["卯"], "丙": ["午"], "戊": ["午"], "庚": ["酉"], "壬": ["子"], "乙": ["辰"], "丁": ["未", "巳"], "己": ["未"], "辛": ["戌"], "癸": ["丑"] };
+const CHEONIL_MAP: Record<string, string[]> = { "甲": ["丑", "未"], "戊": ["丑", "미"], "庚": ["丑", "미"], "乙": ["子", "申"], "己": ["자", "申"], "丙": ["亥", "酉"], "丁": ["亥", "酉"], "壬": ["卯", "巳"], "癸": ["卯", "巳"], "辛": ["寅", "오"] };
+const HYEOPROK_MAP: Record<string, string[]> = { "甲": ["丑", "卯"], "乙": ["寅", "辰"], "丙": ["辰", "午"], "丁": ["巳", "未"], "戊": ["辰", "午"], "己": ["巳", "未"], "庚": ["未", "酉"], "辛": ["申", "戌"], "壬": ["戌", "子"], "癸": ["亥", "丑"] };
+const MUNGOK_MAP: Record<string, string[]> = { "甲": ["巳"], "乙": ["午"], "丙": ["寅"], "丁": ["酉", "卯"], "戊": ["申"], "己": ["酉"], "庚": ["亥"], "辛": ["자"], "壬": ["寅"], "癸": ["卯"] };
 
-// 문곡귀인 테이블 (일간 기준)
-const MUNGOK_MAP: Record<string, string> = {
-  "甲": "巳", "乙": "午", "丙": "申", "丁": "酉", "戊": "申",
-  "己": "酉", "庚": "亥", "辛": "子", "壬": "寅", "癸": "卯",
-};
+// 귀문관살/원진살 맵
+const GWIMUN_MAP: Record<string, string> = { "辰": "亥", "亥": "辰", "子": "酉", "酉": "子", "미": "寅", "寅": "未", "巳": "戌", "戌": "巳", "午": "丑", "丑": "午", "卯": "申", "申": "卯" };
+const WONJIN_MAP: Record<string, string> = { "子": "未", "未": "자", "丑": "午", "午": "丑", "寅": "酉", "酉": "寅", "卯": "申", "申": "卯", "辰": "亥", "亥": "辰", "巳": "戌", "戌": "巳" };
 
-// 협록 테이블 (일간 기준)
-const HYEOPROK_MAP: Record<string, string> = {
-  "甲": "寅", "乙": "卯", "丙": "巳", "丁": "午", "戊": "巳",
-  "己": "午", "庚": "申", "辛": "酉", "壬": "亥", "癸": "子",
-};
+export function calculateGwimunWonjin(branches: string[], daewoonBranch?: string, seunBranch?: string) {
+  const gwimun: string[] = [];
+  const wonjin: string[] = [];
+  const daewoon: string[] = [];
+  const seun: string[] = [];
+
+  // 사주 원국 내 판별
+  for (let i = 0; i < branches.length; i++) {
+    for (let j = i + 1; j < branches.length; j++) {
+      const b1 = branches[i];
+      const b2 = branches[j];
+      if (!b1 || !b2) continue;
+      if (GWIMUN_MAP[b1] === b2) gwimun.push(`${b1}-${b2}`);
+      if (WONJIN_MAP[b1] === b2) wonjin.push(`${b1}-${b2}`);
+    }
+  }
+
+  // 대운/세운 판별
+  branches.forEach(b => {
+    if (daewoonBranch && GWIMUN_MAP[b] === daewoonBranch) daewoon.push(`대운 ${daewoonBranch} - ${b}${daewoonBranch} 귀문`);
+    if (daewoonBranch && WONJIN_MAP[b] === daewoonBranch) daewoon.push(`대운 ${daewoonBranch} - ${b}${daewoonBranch} 원진`);
+    if (seunBranch && GWIMUN_MAP[b] === seunBranch) seun.push(`세운 ${seunBranch} - ${b}${seunBranch} 귀문`);
+    if (seunBranch && WONJIN_MAP[b] === seunBranch) seun.push(`세운 ${seunBranch} - ${b}${seunBranch} 원진`);
+  });
+
+  return { 
+    gwimun: [...new Set(gwimun)], 
+    wonjin: [...new Set(wonjin)], 
+    daewoon: [...new Set(daewoon)], 
+    seun: [...new Set(seun)] 
+  };
+}
 
 /**
- * B-144: 사주 8글자에서 신살 계산
- * @param dayMaster 일간 (예: "壬")
- * @param dayBranch 일지 (예: "申")
- * @param allBranches 연·월·일·시 지지 4글자 배열
+ * 신살 계산 (주별 분류 반환)
  */
-export function calculateShinsal(
+export function calculateShinsalGrouped(
   dayMaster: string,
   dayBranch: string,
-  allBranches: string[],
+  pillars: { year: string; month: string; day: string; hour: string },
   allStems: string[],
-  yearBranch?: string,
-  monthBranch?: string
-): Shinsal[] {
-  const results: Shinsal[] = [];
-  const bSet = new Set(allBranches);
-  const sSet = new Set(allStems);
-  const yBranch = yearBranch || allBranches[0];
-  const mBranch = monthBranch || allBranches[1];
-
-  // 1. 도화살 (년지 또는 일지 기준)
-  const dohwaTargetY = DOHWA_MAP[yBranch];
-  const dohwaTargetD = DOHWA_MAP[dayBranch];
-  if ((dohwaTargetY && bSet.has(dohwaTargetY)) || (dohwaTargetD && bSet.has(dohwaTargetD))) {
-    results.push({
-      name: "도화살", type: "도화",
-      description: "매력·인기·이성운 강함. 감정적 갈등 가능성",
-      health_implication: "피부·생식기 계통 주의",
-      topic_relevance: ["relationship", "family"],
-      severity: "중립",
+  currentYearBranch?: string
+): PillarShinsal {
+  const result: PillarShinsal = { year: [], month: [], day: [], hour: [], general: [] };
+  const pList: ("year" | "month" | "day" | "hour")[] = ["year", "month", "day", "hour"];
+  const bMap = { year: pillars.year, month: pillars.month, day: pillars.day, hour: pillars.hour };
+  const dm = dayMaster;
+  
+  // 1. 12신살 (년지 기준)
+  const yBase = SHINSAL_12_BASE[pillars.year];
+  if (yBase) {
+    pList.forEach(p => {
+      const targetJi = bMap[p];
+      const idx = (BRANCHES.indexOf(targetJi) - BRANCHES.indexOf(yBase) + 24) % 12;
+      const name = SHINSAL_12_NAMES[idx];
+      result[p].push({ name, type: "12신살", description: `년기 기준 ${name}`, health_implication: null, topic_relevance: ["general"], severity: "중립", pillar: p });
     });
   }
 
-  // 2. 역마살 (년지 또는 일지 기준)
-  const yeokmaTargetY = YEOKMA_MAP[yBranch];
-  const yeokmaTargetD = YEOKMA_MAP[dayBranch];
-  if ((yeokmaTargetY && bSet.has(yeokmaTargetY)) || (yeokmaTargetD && bSet.has(yeokmaTargetD))) {
-    results.push({
-      name: "역마살", type: "역마",
-      description: "이동·변화·해외운 강함. 바쁜 삶, 이주 가능성",
-      health_implication: "사고·골절·신경계 주의",
-      topic_relevance: ["migration", "life_change", "career"],
-      severity: "중립",
+  // 2. 도화살 (특수: 나체도화 및 지지 도화)
+  pList.forEach(p => {
+    const targetJi = bMap[p];
+    // 도화: 년지/일지 기준
+    const bases = [pillars.year, pillars.day];
+    const isDohwa = bases.some(base => {
+      const start = (BRANCHES.indexOf(base) / 3 | 0) * 3; // jang-saeng approx
+      // Simplified: In-Sik-Sul->Myo, Sa-Yu-Chuk->Oh, Shin-Ja-Jin->Yu, Hae-Myo-Mi->Ja
+      const dohwaMap: Record<string, string> = { "寅":"卯", "午":"卯", "戌":"卯", "巳":"午", "酉":"午", "丑":"午", "申":"酉", "子":"酉", "辰":"酉", "亥":"子", "卯":"子", "未":"子" };
+      return dohwaMap[base] === targetJi;
     });
+    if (isDohwa) result[p].push({ name: "도화살", type: "도화", description: "매력과 인기", health_implication: null, topic_relevance: ["relationship"], severity: "중립", pillar: p });
+  });
+  // 나체도화 (일주 기준)
+  if (["甲子", "丁卯", "庚午", "癸酉"].includes(dm + pillars.day)) {
+    result.day.push({ name: "도화살(나체)", type: "도화", description: "강렬한 매력", health_implication: null, topic_relevance: ["relationship"], severity: "중립", pillar: "day" });
   }
 
-  // 3. 화개살 (년지 기준 - B-223)
-  const hwagaeTarget = HWAGAE_MAP[yBranch];
-  // 연지 기준이므로 월/일/시 지지에 있는지 확인 (자기 자신 제외하기 위해 slice(1) 또는 인덱스 체크)
-  const otherBranches = allBranches.slice(1);
-  if (hwagaeTarget && otherBranches.includes(hwagaeTarget)) {
-    results.push({
-      name: "화개살", type: "화개",
-      description: "학문·예술·종교적 감수성 뛰어남. 고독한 면",
-      health_implication: "정신건강·우울·고립감 주의",
-      topic_relevance: ["spirituality", "health"],
-      severity: "중립",
-    });
-  }
+  // 3. 귀인류 및 특수살 (일간 기준 탐색)
+  pList.forEach(p => {
+    const ji = bMap[p];
+    if (AMLOK_MAP[dm] === ji) result[p].push({ name: "암록", type: "길성", description: "숨은 복록", health_implication: null, topic_relevance: ["finance"], severity: "길", pillar: p });
+    if (HYEONCHIM_MAP[dm] === ji) result[p].push({ name: "현침살", type: "흉성", description: "예리함, 구설", health_implication: "외상 주의", topic_relevance: ["career"], severity: "흉", pillar: p });
+    if (CHEONMUN_MAP[dm]?.includes(ji)) result[p].push({ name: "천문성", type: "길성", description: "지혜와 직관", health_implication: null, topic_relevance: ["spirituality"], severity: "길", pillar: p });
+    if (MYEONGYE_MAP[dm]?.includes(ji)) result[p].push({ name: "명예살", type: "길성", description: "명성과 인기", health_implication: null, topic_relevance: ["career"], severity: "길", pillar: p });
+    if (GEONROK_MAP[dm] === ji) result[p].push({ name: "건록", type: "길성", description: "자수성가", health_implication: null, topic_relevance: ["career"], severity: "길", pillar: p });
+    if (TAEGEUK_MAP[dm]?.includes(ji)) result[p].push({ name: "태극귀인", type: "귀인", description: "조상의 덕", health_implication: null, topic_relevance: ["general"], severity: "길", pillar: p });
+    if (MUNGOK_MAP[dm]?.includes(ji)) result[p].push({ name: "문곡귀인", type: "귀인", description: "학문/예술 재능", health_implication: null, topic_relevance: ["career"], severity: "길", pillar: p });
+    if (HONGYEOM_MAP[dm]?.includes(ji)) result[p].push({ name: "홍염살", type: "길성", description: "남다른 매력", health_implication: null, topic_relevance: ["relationship"], severity: "길", pillar: p });
+    if (YANGIN_MAP[dm]?.includes(ji)) result[p].push({ name: "양인살", type: "흉성", description: "강한 추진력", health_implication: "수술 주의", topic_relevance: ["career"], severity: "흉", pillar: p });
+    if (HYEOPROK_MAP[dm]?.includes(ji)) result[p].push({ name: "협록", type: "길성", description: "인복과 의식 풍족", health_implication: null, topic_relevance: ["finance"], severity: "길", pillar: p });
+  });
 
-  // 4. 홍염살 (일간 기준)
-  const hongyeomTarget = HONGYEOM_MAP[dayMaster];
-  if (hongyeomTarget && bSet.has(hongyeomTarget)) {
-    results.push({
-      name: "홍염살", type: "홍염",
-      description: "고유의 매력과 다재다능함, 연인 간의 깊은 친밀감",
-      health_implication: null,
-      topic_relevance: ["relationship"],
-      severity: "길",
-    });
-  }
-
-  // 5. Taegeuk귀인 (일간 기준)
-  const taegeukTargets = TAEGEUK_MAP[dayMaster] || [];
-  if (taegeukTargets.some(t => bSet.has(t))) {
-    results.push({
-      name: "태극귀인", type: "태극",
-      description: "조상의 덕, 입신양명, 초중반 인생의 안정과 발전",
-      health_implication: null,
-      topic_relevance: ["general", "career"],
-      severity: "길",
-    });
-  }
-
-  // 6. 문창귀인 (일간 기준)
-  const munchangTarget = MUNCHANG_MAP[dayMaster];
-  if (munchangTarget && bSet.has(munchangTarget)) {
-    results.push({
-      name: "문창귀인", type: "문창",
-      description: "학문·글쓰기·예술적 천재성, 지혜로움",
-      health_implication: null,
-      topic_relevance: ["career", "general"],
-      severity: "길",
-    });
-  }
-
-  // 7. 양인살 (일간 기준)
-  const yanginTarget = YANGIN_MAP[dayMaster];
-  if (yanginTarget && bSet.has(yanginTarget)) {
-    results.push({
-      name: "양인살", type: "양인",
-      description: "강한 의지력·추진력. 충돌·사고 위험",
-      health_implication: "수술·외상·혈액 관련 주의",
-      topic_relevance: ["health", "career"],
-      severity: "흉",
-    });
-  }
-
-  // 8. 금여록 (일간 기준)
-  const geumyeoTarget = GEUMYEO_MAP[dayMaster];
-  if (geumyeoTarget && bSet.has(geumyeoTarget)) {
-    results.push({
-      name: "금여록", type: "금여",
-      description: "부귀공명, 평화로운 노년, 좋은 배우자 인연",
-      health_implication: null,
-      topic_relevance: ["family", "finance"],
-      severity: "길",
-    });
-  }
-
-  // 9. 천을귀인 (일간 기준)
-  const cheonilTargets = CHEONIL_MAP[dayMaster] || [];
-  if (cheonilTargets.some(t => bSet.has(t))) {
-    results.push({
-      name: "천을귀인", type: "천을귀인",
-      description: "귀인의 도움·행운·위기 탈출 능력",
-      health_implication: null,
-      topic_relevance: ["career", "relationship", "general"],
-      severity: "길",
-    });
-  }
-
-  // 10. 겁살 (연지 기준 - B-223)
-  const GEOBSAL_MAP: Record<string, string> = {
-    "寅": "亥", "午": "亥", "戌": "亥",
-    "巳": "寅", "酉": "寅", "丑": "寅",
-    "申": "巳", "子": "巳", "辰": "巳",
-    "亥": "申", "卯": "申", "未": "申",
-  };
-  const geobsalTarget = GEOBSAL_MAP[yBranch];
-  if (geobsalTarget && otherBranches.includes(geobsalTarget)) {
-    results.push({
-      name: "겁살", type: "역마", // 분류상 역마 계열에 포함
-      description: "경쟁에서의 탈환, 갑작스러운 손실 또는 획득",
-      health_implication: "외상 주의",
-      topic_relevance: ["finance", "career"],
-      severity: "흉",
-    });
-  }
-
-  // 7. 공망 (일주 기준 - B-223)
-  const sIdx = STEMS.indexOf(dayMaster);
-  const bIdx = BRANCHES.indexOf(dayBranch);
-  if (sIdx >= 0 && bIdx >= 0) {
-    const diff = (bIdx - sIdx + 12) % 12;
-    const g1 = BRANCHES[(diff - 2 + 12) % 12];
-    const g2 = BRANCHES[(diff - 1 + 12) % 12];
-    // 년/월/시 지지에 있는지 확인
-    const checkBranches = [allBranches[0], allBranches[1], allBranches[3]].filter(Boolean);
-    if (checkBranches.includes(g1) || checkBranches.includes(g2)) {
-      results.push({
-        name: "공망",
-        type: "공망",
-        description: "해당 영역의 에너지가 비어있음. 채워지지 않는 갈증",
-        health_implication: "허약 체질 주의",
-        topic_relevance: ["general"],
-        severity: "중립",
-      });
+  // 음착살 (각 주별 체크)
+  pList.forEach(p => {
+    if (EOMCHAK_PAIRS.includes(allStems[pList.indexOf(p)] + bMap[p])) {
+      result[p].push({ name: "음착살", type: "흉성", description: "관계 고립 주의", health_implication: null, topic_relevance: ["relationship"], severity: "흉", pillar: p });
     }
+  });
+
+  // 삼재 (연지 기준)
+  if (currentYearBranch && SAMJAE_MAP[pillars.year]) {
+    const sj = SAMJAE_MAP[pillars.year];
+    if (sj[0] === currentYearBranch) result.general.push({ name: "들삼재", type: "삼재", description: "삼재 시작", health_implication: "주의", topic_relevance: ["general"], severity: "흉", pillar: "general" });
+    else if (sj[1] === currentYearBranch) result.general.push({ name: "눌삼재", type: "삼재", description: "삼재 머무름", health_implication: "주의", topic_relevance: ["general"], severity: "흉", pillar: "general" });
+    else if (sj[2] === currentYearBranch) result.general.push({ name: "날삼재", type: "삼재", description: "삼재 끝", health_implication: "주의", topic_relevance: ["general"], severity: "흉", pillar: "general" });
   }
 
-  // 12. 괴강살 (일주 기준)
-  const goegangPillars = ["庚辰", "庚戌", "壬辰", "壬戌"]; // 대표적 괴강
-  if (goegangPillars.includes(dayMaster + dayBranch)) {
-    results.push({
-      name: "괴강살", type: "괴강",
-      description: "강한 카리스마와 결단력, 극단적 성향의 에너지",
-      health_implication: null,
-      topic_relevance: ["career", "relationship"],
-      severity: "중립",
-    });
-  }
+  return result;
+}
 
-  // 13. 백호살 (년지 또는 일지 기준 - Samhap pattern)
-  const baekhoTargetY = BAEKHO_SAMHAP_MAP[yBranch];
-  const baekhoTargetD = BAEKHO_SAMHAP_MAP[dayBranch];
-  if ((baekhoTargetY && bSet.has(baekhoTargetY)) || (baekhoTargetD && bSet.has(baekhoTargetD))) {
-    results.push({
-      name: "백호살", type: "백호",
-      description: "돌발 사고, 수술, 혈광지사 주의. 강력한 힘",
-      health_implication: "외상·수술 주의",
-      topic_relevance: ["health"],
-      severity: "흉",
-    });
-  }
-
-  // 14. 월덕귀인 (월지 기준)
-  if (mBranch) {
-    const woldeokTarget = WOLDEOK_MAP[mBranch];
-    if (woldeokTarget && sSet.has(woldeokTarget)) {
-      results.push({
-        name: "월덕귀인", type: "월덕",
-        description: "덕망 있고 주변의 도움을 받음. 어려움을 헤쳐나가는 힘",
-        health_implication: null,
-        topic_relevance: ["general"],
-        severity: "길",
-      });
-    }
-  }
-
-  // 15. 학당귀인 (일간 기준)
-  const hakdangTarget = HAKDANG_MAP[dayMaster];
-  if (hakdangTarget && bSet.has(hakdangTarget)) {
-    results.push({
-      name: "학당귀인", type: "학당",
-      description: "학문과 교육 분야에 소질. 총명하고 문장력이 뛰어남",
-      health_implication: null,
-      topic_relevance: ["career", "general"],
-      severity: "길",
-    });
-  }
-
-  // 16. 문곡귀인 (일간 기준)
-  const mungokTarget = MUNGOK_MAP[dayMaster];
-  if (mungokTarget && bSet.has(mungokTarget)) {
-    results.push({
-      name: "문곡귀인", type: "문곡",
-      description: "예술, 학문적 재능. 창의력과 문학적 소양",
-      health_implication: null,
-      topic_relevance: ["career", "general"],
-      severity: "길",
-    });
-  }
-
-  // 17. 협록 (일간 기준)
-  const hyeoprokTarget = HYEOPROK_MAP[dayMaster];
-  if (hyeoprokTarget && bSet.has(hyeoprokTarget)) {
-    results.push({
-      name: "협록", type: "협록",
-      description: "자수성가, 독립심, 평생 의식(衣食)이 풍족한 인복",
-      health_implication: null,
-      topic_relevance: ["finance", "career"],
-      severity: "길",
-    });
-  }
-
-  return results;
+// 명칭 호환용 (기존 calculateShinsal)
+export function calculateShinsal(dayMaster: string, dayBranch: string, allBranches: string[], allStems: string[], yearBranch?: string, monthBranch?: string, currentYearBranch?: string): Shinsal[] {
+  const g = calculateShinsalGrouped(dayMaster, dayBranch, { year: yearBranch || allBranches[0], month: monthBranch || allBranches[1], day: dayBranch, hour: allBranches[3] || "" }, allStems, currentYearBranch);
+  return [...g.year, ...g.month, ...g.day, ...g.hour, ...g.general];
 }

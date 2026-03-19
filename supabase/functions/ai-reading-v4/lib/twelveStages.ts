@@ -23,6 +23,11 @@ const JANGSANG_MAP: Record<string, { branch: string, isForward: boolean }> = {
   "癸": { branch: "卯", isForward: false },
 };
 
+export const BRANCH_MAIN_STEM: Record<string, string> = {
+  "子": "癸", "丑": "己", "寅": "甲", "卯": "乙", "辰": "戊", "巳": "丙",
+  "午": "丁", "未": "己", "申": "庚", "酉": "辛", "戌": "戊", "亥": "壬"
+};
+
 /**
  * 특정 일간과 지지에 대해 12운성 명칭 계산
  */
@@ -47,7 +52,7 @@ export function calculateTwelveStage(dayStem: string, branch: string): string {
 }
 
 /**
- * 사주 4개 지지에 대해 12운성을 한번에 계산
+ * 사주 4개 지지에 대해 12운성을 한번에 계산 (봉법)
  */
 export function calculateAllTwelveStages(
   dayStem: string, 
@@ -58,6 +63,29 @@ export function calculateAllTwelveStages(
     month: calculateTwelveStage(dayStem, fourPillars.month),
     day: calculateTwelveStage(dayStem, fourPillars.day),
     hour: calculateTwelveStage(dayStem, fourPillars.hour),
+  };
+}
+
+/**
+ * 거법(居法): 지지의 본기(本氣) 장간 기준으로 해당 지지에서의 12운성 계산
+ */
+export function calculateTwelveStageGeobup(branch: string): string {
+  const mainStem = BRANCH_MAIN_STEM[branch];
+  if (!mainStem) return "알 수 없음";
+  return calculateTwelveStage(mainStem, branch);
+}
+
+/**
+ * 사주 4개 지지에 대해 12운성 거법 계산
+ */
+export function calculateAllTwelveStagesGeobup(
+  fourPillars: { year: string; month: string; day: string; hour: string }
+) {
+  return {
+    year: calculateTwelveStageGeobup(fourPillars.year),
+    month: calculateTwelveStageGeobup(fourPillars.month),
+    day: calculateTwelveStageGeobup(fourPillars.day),
+    hour: calculateTwelveStageGeobup(fourPillars.hour),
   };
 }
 

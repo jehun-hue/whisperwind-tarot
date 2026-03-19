@@ -26,13 +26,23 @@ export interface SajuAnalysisResult {
   giShin: string;                                       // B-258: 기신
   guShin: string;                                       // B-258: 구신
   hanShin: string;                                      // B-258: 한신
+  jijanggan?: any;                                      // B-259: 지장간 상세
+  shinsal_grouped?: any;                                // B-260: 주별 신살
+  gwimun_wonjin?: any;                                  // B-261: 귀문관살·원진살
+  twelve_stages_geobup?: any;                           // B-262: 12운성 거법
+  napeum?: any;                                         // B-263: 납음오행
+  strength_detail?: any;                                // B-264: 강약 세부
+  cross_interactions?: any;                             // B-265: 교차 합충
+  yongsin_detail?: any;                                 // B-266: 용신 상세 (억부, 조후, 통관)
 }
 
 import { getDaewoonInfo, calculateFullDaewoon, type DaewoonResult } from "./lib/daewoon.ts";
 import { STEMS, BRANCHES, FIVE_ELEMENTS_MAP } from "./lib/fiveElements.ts";
-import { calculateInteractions, calculateShinsal, type Interaction, type Shinsal } from "./lib/interactions.ts";
-import { calculateAllTwelveStages, calculateTwelveStage, getTwelveStageEnergy } from "./lib/twelveStages.ts";
+import { calculateInteractions, calculateShinsal, calculateShinsalGrouped, calculateGwimunWonjin, checkStemRelation, checkBranchRelation, type Interaction, type Shinsal } from "./lib/interactions.ts";
+import { calculateAllTwelveStages, calculateTwelveStage, calculateAllTwelveStagesGeobup, calculateTwelveStageGeobup, getTwelveStageEnergy, BRANCH_MAIN_STEM } from "./lib/twelveStages.ts";
 import { determineGyeokguk, type GyeokgukResult } from "./lib/gyeokguk.ts";
+import { getAllPillarJijanggan } from "./lib/jijanggan.ts";
+import { getAllPillarNapeum } from "./lib/napeum.ts";
 
 // ═══════════════════════════════════════
 // 천간(天干) 오행 매핑
@@ -203,6 +213,109 @@ function detectHyung(branches: string[]): string[] {
   return result;
 }
 
+// ── B-266: 조후용신 테이블 ──────────────────────────────────────
+const JOHU_TABLE: Record<string, Record<string, string[]>> = {
+  "甲": {
+    "寅": ["丙", "癸"], "卯": ["丙", "癸"], "辰": ["丙", "癸", "庚"],
+    "巳": ["癸"], "午": ["癸", "丁"], "未": ["癸"],
+    "申": ["丙", "癸"], "酉": ["丁", "丙"], "戌": ["甲", "丙"],
+    "亥": ["丙", "庚"], "子": ["丙", "丁"], "丑": ["丙", "丁"]
+  },
+  "乙": {
+    "寅": ["丙"], "卯": ["丙"], "辰": ["癸", "丙"],
+    "巳": ["癸"], "午": ["癸"], "未": ["癸", "丙"],
+    "申": ["丙", "癸"], "酉": ["丙", "癸"], "戌": ["丙"],
+    "亥": ["丙"], "子": ["丙"], "丑": ["丙"]
+  },
+  "丙": {
+    "寅": ["壬"], "卯": ["壬"], "辰": ["壬", "甲"],
+    "巳": ["壬", "庚"], "午": ["壬", "庚"], "未": ["壬"],
+    "申": ["甲", "壬"], "酉": ["甲", "壬"], "戌": ["甲", "壬"],
+    "亥": ["甲", "壬"], "子": ["甲", "壬"], "丑": ["甲", "壬"]
+  },
+  "丁": {
+    "寅": ["甲", "庚"], "卯": ["甲", "庚"], "辰": ["甲", "庚"],
+    "巳": ["壬", "甲"], "午": ["壬", "甲"], "未": ["壬", "甲"],
+    "申": ["甲", "庚", "丙"], "酉": ["甲", "庚", "丙"], "戌": ["甲", "庚"],
+    "亥": ["甲", "庚"], "子": ["甲", "庚"], "丑": ["甲", "庚"]
+  },
+  "戊": {
+    "寅": ["丙", "癸"], "卯": ["丙", "癸"], "辰": ["甲", "癸"],
+    "巳": ["壬", "甲"], "午": ["壬", "甲"], "未": ["癸", "丙"],
+    "申": ["丙", "癸"], "酉": ["丙", "癸"], "戌": ["甲", "癸"],
+    "亥": ["丙", "甲"], "子": ["丙", "甲"], "丑": ["丙", "甲"]
+  },
+  "己": {
+    "寅": ["丙", "癸"], "卯": ["丙", "癸"], "辰": ["丙", "癸", "甲"],
+    "巳": ["癸"], "午": ["癸"], "未": ["癸", "丙"],
+    "申": ["丙", "癸"], "酉": ["丙", "癸"], "戌": ["丙", "癸"],
+    "亥": ["丙", "癸"], "子": ["丙"], "丑": ["丙"]
+  },
+  "庚": {
+    "寅": ["丙", "丁"], "卯": ["丙", "丁"], "辰": ["甲", "丁", "壬"],
+    "巳": ["壬", "甲"], "午": ["壬", "甲"], "未": ["壬", "丁"],
+    "申": ["丁", "壬"], "酉": ["丁", "壬"], "戌": ["壬", "甲"],
+    "亥": ["丁", "丙", "甲"], "子": ["丁", "丙"], "丑": ["丁", "丙"]
+  },
+  "辛": {
+    "寅": ["壬", "甲"], "卯": ["壬", "甲"], "辰": ["壬"],
+    "巳": ["壬", "己"], "午": ["壬", "己"], "未": ["壬", "甲"],
+    "申": ["壬", "甲"], "酉": ["壬", "甲"], "戌": ["壬", "甲"],
+    "亥": ["丙", "壬"], "子": ["丙", "壬"], "丑": ["丙", "壬"]
+  },
+  "壬": {
+    "寅": ["庚", "丙"], "卯": ["庚", "丙"], "辰": ["甲", "庚"],
+    "巳": ["庚", "辛"], "午": ["庚", "辛"], "未": ["庚", "辛"],
+    "申": ["甲", "丙"], "酉": ["甲", "丙"], "戌": ["甲", "丙"],
+    "亥": ["丙", "甲", "戊"], "子": ["丙", "甲", "戊"], "丑": ["丙", "丁"]
+  },
+  "癸": {
+    "寅": ["庚", "辛"], "卯": ["庚", "辛"], "辰": ["丙", "辛"],
+    "巳": ["庚", "辛", "壬"], "午": ["庚", "辛"], "未": ["庚", "辛"],
+    "申": ["丙"], "酉": ["辛", "丙"], "戌": ["辛", "丙"],
+    "亥": ["丙", "丁"], "子": ["丙", "丁"], "丑": ["丙", "丁"]
+  }
+};
+
+function determineJohuYong(dm: string, monthBranch: string): { yongsin: string, secondary: string | null, reason: string } {
+  const dmChar = dm.charAt(0);
+  const mbChar = monthBranch.charAt(0);
+  const recommendations = JOHU_TABLE[dmChar]?.[mbChar] || [];
+  const y1 = recommendations[0] ? `${recommendations[0]}${STEM_ELEMENT[recommendations[0]]}` : "불명";
+  const y2 = recommendations[1] ? `${recommendations[1]}${STEM_ELEMENT[recommendations[1]]}` : null;
+  return {
+    yongsin: y1,
+    secondary: y2,
+    reason: `${dmChar}일간 ${mbChar}월생 조후 기준`
+  };
+}
+
+function determineTonggwanYong(elements: Record<string, number>): { yongsin: string | null, reason: string } {
+  const pairs = [
+    { a: "목", b: "토", bridge: "화", desc: "木 vs 土 대립" },
+    { a: "화", b: "금", bridge: "토", desc: "火 vs 金 대립" },
+    { a: "토", b: "수", bridge: "금", desc: "土 vs 水 대립" },
+    { a: "금", b: "목", bridge: "수", desc: "金 vs 木 대립" },
+    { a: "수", b: "화", bridge: "목", desc: "수 vs 화 대립" }
+  ];
+
+  for (const p of pairs) {
+    const valA = elements[p.a] || 0;
+    const valB = elements[p.b] || 0;
+    if (valA >= 2.0 && valB >= 2.0) {
+      const sumAB = valA + valB;
+      const otherSum = Object.entries(elements)
+        .filter(([k]) => k !== p.a && k !== p.b)
+        .reduce((sum, [_, v]) => sum + v, 0);
+      
+      if (otherSum < sumAB) {
+        return { yongsin: p.bridge, reason: `${p.desc}, ${p.bridge}가 통관` };
+      }
+    }
+  }
+  return { yongsin: null, reason: "뚜렷한 양대 대립 없음" };
+}
+
 // ═══════════════════════════════════════
 // 메인 분석 함수
 // ═══════════════════════════════════════
@@ -229,6 +342,13 @@ export async function analyzeSajuStructure(
       giShin: "",
       guShin: "",
       hanShin: "",
+      jijanggan: null,
+      shinsal_grouped: null,
+      gwimun_wonjin: null,
+      twelve_stages_geobup: null,
+      napeum: null,
+      strength_detail: null,
+      cross_interactions: null,
     };
   }
 
@@ -293,42 +413,80 @@ export async function analyzeSajuStructure(
     }
   }
 
-  // B-222: 강약 판정 (월령 득령 보정 적용)
-  const strengthMonthBranch = pillars.month?.branch;
-  const monthElement = BRANCH_ELEMENT[strengthMonthBranch] || "";
-  console.log("[MONTH BRANCH DEBUG]", strengthMonthBranch, "→", monthElement);
-  const isDeukyeong = (monthElement === myElement) || 
-    (myElement === "목" && monthElement === "수") ||
-    (myElement === "화" && monthElement === "목") ||
-    (myElement === "토" && monthElement === "화") ||
-    (myElement === "금" && monthElement === "토") ||
-    (myElement === "수" && monthElement === "금");
+  // ── B-264: 강약 세분화 (득령/득지/득세) ──
+  // 1. 득령(得令) / 실령(失令)
+  const strengthMonthBranch = pillars.month?.branch || "";
+  const monthMainStem = BRANCH_MAIN_STEM[strengthMonthBranch] || "";
+  const monthMainElem = STEM_ELEMENT[monthMainStem];
+  const deukryeongResult = (monthMainElem === myElement || getRelation(myElement, monthMainElem) === "인성");
+  const deukryeong = {
+    result: deukryeongResult ? "득령" : "실령",
+    reason: `월지 ${strengthMonthBranch} 본기 ${monthMainStem}(${monthMainElem}), ${myElement}일간 기준 ${monthMainElem === myElement ? "비겁" : (getRelation(myElement, monthMainElem) === "인성" ? "인성" : "실령")}`
+  };
 
-  const supportForce = tenGodCount["비겁"] + tenGodCount["인성"];
-  const resistForce = tenGodCount["식상"] + tenGodCount["재성"] + tenGodCount["관성"];
-  
-  // 보정된 supportForce (월령 득령 시 +1.5 보너스)
-  const adjustedSupportForce = supportForce + (isDeukyeong ? 1.5 : 0);
-  const adjustedTotal = adjustedSupportForce + resistForce;
-  const supportRatio = adjustedTotal > 0 ? adjustedSupportForce / adjustedTotal : 0.5;
+  // 2. 득지(得地) / 실지(失地)
+  const bongbupStages = [
+    calculateTwelveStage(dm, pillars.year?.branch || ""),
+    calculateTwelveStage(dm, pillars.month?.branch || ""),
+    calculateTwelveStage(dm, pillars.day?.branch || ""),
+    calculateTwelveStage(dm, pillars.hour?.branch || ""),
+  ];
+  const strongStages = ["장생", "건록", "제왕", "관대"];
+  const strongCount = bongbupStages.filter(s => strongStages.includes(s)).length;
+  const deukjiResult = strongCount >= 2;
+  const deukji = {
+    result: deukjiResult ? "득지" : "실지",
+    reason: `${strongCount}개 강세지(${strongStages.filter(s => bongbupStages.includes(s)).join(",")}) 보유`
+  };
 
+  // 3. 득세(得勢) / 실세(失勢)
+  const deukseTarget = tenGodCount["비겁"] + tenGodCount["인성"];
+  const deukseResult = deukseTarget >= 4.0;
+  const deukse = {
+    result: deukseResult ? "득세" : "실세",
+    reason: `비겁/인성 합계 ${deukseTarget.toFixed(1)}점 (과반 기준 4.0점)`
+  };
+
+  // 종합 판단 및 보정 규칙
+  const deukCount = [deukryeongResult, deukjiResult, deukseResult].filter(Boolean).length;
   let strengthLevel = "중화";
-  if (supportRatio >= 0.60) strengthLevel = "극신강";
-  else if (supportRatio >= 0.50) strengthLevel = "신강";
-  else if (supportRatio >= 0.42) strengthLevel = "중화";
-  else if (supportRatio >= 0.30) strengthLevel = "신약";
+  if (deukCount === 3) strengthLevel = "극신강";
+  else if (deukCount === 2) strengthLevel = "신강";
+  else if (deukCount === 1) strengthLevel = "신약";
   else strengthLevel = "극신약";
 
-  console.log("[STRENGTH DEBUG]", JSON.stringify({ 
-    dmEl: myElement, 
-    monthBranchEl: monthElement, 
-    isDeukyeong, 
-    supportForce, 
-    resistForce, 
-    adjustedSupportForce, 
-    supportRatio, 
-    strengthLevel 
-  }));
+  // 보정 규칙 1/2: 득세/실세 압도
+  let calibrationNote = "";
+  if (strengthLevel === "신강" && deukseTarget >= 5.6) {
+    strengthLevel = "극신강";
+    calibrationNote = ", 득세 5.6점 이상 압도적으로 극신강 상향";
+  } else if (strengthLevel === "신약" && deukseTarget <= 1.2) {
+    strengthLevel = "극신약";
+    calibrationNote = ", 득세 1.2점 이하 실세압도로 극신약 하향";
+  }
+
+  // 보정 규칙 3: 천간 단일 오행 독점 (전부 비견/겁재/인성 계열인 경우)
+  const stemsAreSame = stems.every(s => STEM_ELEMENT[s || ""] === myElement);
+  if (stemsAreSame && (strengthLevel === "신약" || strengthLevel === "극신약" || strengthLevel === "중화")) {
+    strengthLevel = "신강";
+    calibrationNote += ", 천간 4개 계열 동일 오행으로 신강 보정";
+  } else if (stemsAreSame && strengthLevel === "신강") {
+    strengthLevel = "극신강"; // 천간이 다 같으면 신강은 무조건 극신강으로
+    calibrationNote += ", 천간 전부 비견/겁재 계열로 극신강 보정";
+  }
+
+  const strength_detail = {
+    deukryeong,
+    deukji,
+    deukse,
+    overall: strengthLevel,
+    overall_reason: `${deukCount}개 항목 득(得) 판정${calibrationNote}`
+  };
+
+  console.log("[STRENGTH DETAIL]", JSON.stringify(strength_detail));
+
+  const isDeukyeong = deukryeongResult;
+  const supportRatio = (deukseTarget + 0.1) / (tenGodCount["비겁"] + tenGodCount["인성"] + tenGodCount["식상"] + tenGodCount["재성"] + tenGodCount["관성"] + 0.1);
 
   // ── B-257: 격국(格局) 판별 ──────────────────────────────────────
   const gyeokguk = determineGyeokguk(dm, pillars.month?.branch || "", tenGodCount, { supportRatio, isDeukyeong });
@@ -338,120 +496,80 @@ export async function analyzeSajuStructure(
   const isSpecialFormat = gyeokguk.type === "외격" || gyeokguk.name === "건록격" || gyeokguk.name === "양인격";
   const specialFormatType = gyeokguk.name;
 
-  // ── 3. 용신(用神) 추론 ──
-  const PRODUCE_ELEM: Record<string, string> = { "목":"화", "화":"토", "토":"금", "금":"수", "수":"목" }; // 생하는 오행
-  const SUPPORT_ELEM: Record<string, string> = { "목":"수", "화":"목", "토":"화", "금":"토", "수":"금" }; // 생하는 오행 (=인성)
-  const CONQUER_ELEM: Record<string, string> = { "목":"토", "화":"금", "토":"수", "금":"목", "수":"화" }; // 극하는 오행 (일간 기신)
+  const PRODUCE_ELEM: Record<string, string> = { "목":"화", "화":"토", "토":"금", "금":"수", "수":"목" }; 
+  const SUPPORT_ELEM: Record<string, string> = { "목":"수", "화":"목", "토":"화", "금":"토", "수":"금" }; 
+  const CONQUER_ELEM: Record<string, string> = { "목":"토", "화":"금", "토":"수", "금":"목", "수":"화" }; 
 
-  // 월지 기준 계절 파악
-  const monthBranch = branches[1]; // 월지
-  const SEASON_MAP: Record<string, string> = {
-    "寅": "봄", "卯": "봄", "辰": "봄",
-    "巳": "여름", "午": "여름", "未": "여름",
-    "申": "가을", "酉": "가을", "戌": "가을",
-    "亥": "겨울", "子": "겨울", "丑": "겨울"
-  };
-  const season = SEASON_MAP[monthBranch] || "봄";
+  // ── 3. 용신(用神) 상세 분석 (억부·조후·통관) ──
 
-  // 조후용신 결정 (B-177 fix: 수 과다 일간은 조후 제한)
-  let johuYong: string | null = null;
-  const waterCount = elements["수"] || 0;
-  const fireCount = elements["화"] || 0;
-  const isWaterOverflow = myElement === "수" && waterCount >= 3;
-  if (season === "여름" && waterCount <= 1) johuYong = "수";
-  else if (season === "겨울" && fireCount <= 1 && !isWaterOverflow) johuYong = "화";
-
-  // 억부용신 결정
+  // 1) 억부용신 (Balance)
   let eokbuYong: string;
-  let yongReason = "";
+  let eokbuReason = "";
   if (isSpecialFormat) {
-    // 종격 (B-222): 강한 기운을 따라감
     if (specialFormatType === "종강격") {
-      eokbuYong = myElement; yongReason = "종강격: 일간과 같은 오행 따라감";
+      eokbuYong = myElement; eokbuReason = "종강격: 일간과 같은 오행 따라감";
     } else if (specialFormatType === "종재격") {
-      eokbuYong = getConqueredElement(myElement); yongReason = "종재격: 재성 오행 따라감";
+      eokbuYong = getConqueredElement(myElement); eokbuReason = "종재격: 재성 오행 따라감";
     } else if (specialFormatType === "종관격") {
-      eokbuYong = getConqueringElement(myElement); yongReason = "종관격: 관성 오행 따라감";
+      eokbuYong = getConqueringElement(myElement); eokbuReason = "종관격: 관성 오행 따라감";
     } else { // 종아격
-      eokbuYong = getProducedElement(myElement); yongReason = "종아격: 식상 오행 따라감";
+      eokbuYong = getProducedElement(myElement); eokbuReason = "종아격: 식상 오행 따라감";
     }
-  } else if (strength === "극신강" || strength === "신강") {
-    // B-222 fix: 신강 용신 우선순위 (관성 > 재성 > 식상)
-    const conquerElem = getConqueringElement(myElement); // 관성
-    const drainElem = getConqueredElement(myElement);   // 재성
-    const releaseElem = getProducedElement(myElement);  // 식상
-
+  } else if (strengthLevel === "극신강" || strengthLevel === "신강") {
+    // 신강 용신 우선순위: 관성 > 재성 > 식상
+    const conquerElem = getConqueringElement(myElement); 
+    const drainElem = getConqueredElement(myElement);   
+    const releaseElem = getProducedElement(myElement);  
     const candidates = [
-      { elem: conquerElem, priority: 1 },
-      { elem: drainElem, priority: 2 },
-      { elem: releaseElem, priority: 3 }
+       { elem: conquerElem, priority: 1, name: "관성" },
+       { elem: drainElem, priority: 2, name: "재성" },
+       { elem: releaseElem, priority: 3, name: "식상" }
     ];
-
-    // 점수가 낮은 순서대로 정렬하되, 점수가 같으면 우선순위(priority)가 높은 순서대로
-    const sorted = candidates.sort((a, b) => {
-      const countA = elements[a.elem] || 0;
-      const countB = elements[b.elem] || 0;
-      return countA - countB || a.priority - b.priority;
-    });
-
-    eokbuYong = sorted[0].elem;
-    yongReason = `신강: 관성>재성>식상 우선순위 기준 ${eokbuYong} 선택`;
-
-    console.log("[SINGANG YONG]", { 
-      dayMaster: dm, strength, 
-      conquerElem, drainElem, releaseElem, 
-      selected: eokbuYong, reason: yongReason 
-    });
-  } else if (strength === "중화") {
-    if (isWaterOverflow) {
-      eokbuYong = getConqueringElement(myElement);
-      yongReason = "중화+수과다: 관성 용신";
-    } else {
-      const allElements = ["목", "화", "토", "금", "수"];
-      eokbuYong = allElements.sort((a, b) => (elements[a] || 0) - (elements[b] || 0))[0];
-      yongReason = `중화: 가장 부족한 ${eokbuYong} 선택`;
-    }
+    const sortedCandidates = candidates.sort((a,b) => (elements[a.elem]||0) - (elements[b.elem]||0) || a.priority - b.priority);
+    eokbuYong = sortedCandidates[0].elem;
+    eokbuReason = `신강: ${sortedCandidates[0].name} 우선순위 기준 ${eokbuYong} 선택`;
+  } else if (strengthLevel === "신약" || strengthLevel === "극신약") {
+    // 신약 용신 우선순위: 인성 > 비겁
+    const supportElem = getProducingElement(myElement); 
+    const selfElem = myElement;                         
+    const candidates = [
+      { elem: supportElem, priority: 1, name: "인성" },
+      { elem: selfElem, priority: 2, name: "비겁" }
+    ];
+    const sortedCandidates = candidates.sort((a, b) => (elements[a.elem] || 0) - (elements[b.elem] || 0) || a.priority - b.priority);
+    eokbuYong = sortedCandidates[0].elem;
+    eokbuReason = `신약: ${sortedCandidates[0].name} 우선순위 기준 ${eokbuYong} 선택`;
   } else {
-    // 신약/중신약/극신약 → 억부용신: 비겨1(일간과 같은 오행) 또는 인성(일간을 생하는 오행)
-    // 선택 기준: 이미 2개 이상인 오행은 효과적이지 않음→ 부족한 쪽을 채움
-    const supElement = getProducingElement(myElement); // 인성 오행 (=SUPPORT_ELEM[myElement])
-    const myElemCount = elements[myElement] || 0;
-    const supElemCount = elements[supElement] || 0;
-
-    if (myElemCount >= 3 && supElemCount < 3) {
-      // 비겁이 이미 3개+이면 충분히 돕고 있음 → 인성으로
-      eokbuYong = supElement;
-      yongReason = `신약: 비겨1(${myElement}) 이미 ${myElemCount}개, 인성(${supElement}) 부족 → 인성 용신`;
-    } else if (supElemCount >= 3 && myElemCount < 3) {
-      // 인성이 이미 3개+이면 충분히 돕고 있음 → 비겁으로
-      eokbuYong = myElement;
-      yongReason = `신약: 인성(${supElement}) 이미 ${supElemCount}개, 비겨1(${myElement}) 부족 → 비겨1 용신`;
-    } else {
-      // 둘 다 < 3: 비겁 우선 원칙 — 일간 직접 보강이 가장 효과적
-      eokbuYong = myElement;
-      yongReason = `신약: 둘 다 부족(비겁${myElemCount}, 인성${supElemCount}) → 비겁 우선 원칙`;
-    }
+    eokbuYong = getConqueringElement(myElement);
+    eokbuReason = "중화: 균형을 위한 관성 기운 보충";
   }
 
-  // 최종 용신: 신약일 때는 억부용신 우선 (조후는 보조 참고용)
-  let yongsin: string;
-  const isWeak = strength !== "극신강" && strength !== "신강" && strength !== "중화" && !isSpecialFormat;
-  if (isWeak) {
-    // 신약 계: 억부용신만 사용 (조후는 참고용으로만)
-    yongsin = eokbuYong;
-  } else if (johuYong && johuYong !== eokbuYong) {
-    yongsin = `${johuYong}/${eokbuYong}`; // 신강계 또는 중화: 조후+억부 병기
-  } else {
-    yongsin = eokbuYong;
-  }
+  // 2) 조후용신 (Climate)
+  const mbH = pillars.month?.branch || "寅";
+  const johuDetail = determineJohuYong(dm, mbH);
 
-  const yongShinMethod = "억부용신";
+  // 3) 통관용신 (Mediation)
+  const tonggwanDetail = determineTonggwanYong(elements);
 
-  const mainYongsin = eokbuYong; // /없는 단일 용신 기준
-  const heeShinRaw = SUPPORT_ELEM[mainYongsin] || "";
+  // 최종 용신 종합
+  const finalYong = eokbuYong;
+  const yongsin_detail = {
+    eokbu: { yongsin: eokbuYong, reason: eokbuReason },
+    johu: johuDetail,
+    tonggwan: tonggwanDetail,
+    final: {
+      primary: finalYong,
+      reason: `억부·조후·통관 종합: 억부(${eokbuYong})를 최우선하며 조후(${johuDetail.yongsin})를 참고`
+    }
+  };
+
+  const yongsin = finalYong;
+  const yongShinMethod = "억부·조후·통관 종합";
 
   // ── B-258: 기신(忌神) / 구신(仇神) / 한신(閑神) 정밀 분류 ──
-  // 용신: 최선, 희신: 차선(용신 생조), 기신: 흉(용신 극), 구신: 대흉(기신 생조), 한신: 중립
+  const mainYongsin = yongsin_detail.final.primary;
+  const heeShin = SUPPORT_ELEM[mainYongsin] || "";
+  
   const ELEMENTS_ORDER = ["목", "화", "토", "금", "수"];
   const yongIdx = ELEMENTS_ORDER.indexOf(mainYongsin);
   
@@ -469,25 +587,11 @@ export async function analyzeSajuStructure(
     guShin = ELEMENTS_ORDER[guIdx];
     
     // 나머지 하나 (한신)
-    const used = new Set([mainYongsin, heeShinRaw, giShin, guShin]);
+    const used = new Set([mainYongsin, heeShin, giShin, guShin]);
     hanShin = ELEMENTS_ORDER.find(e => !used.has(e)) || "";
   }
 
-  console.log("[YONGSHIN CALC]", {
-    dayMaster: dm, strength, eokbuYong, johuYong, yongsin,
-    heeShin: heeShinRaw, giShin, guShin, hanShin, reason: yongReason
-  });
-
-  // ── B-253: 희신(喜神) 추론 ── (PRODUCE_MAP, SUPPORT_MAP은 위에서 SUPPORT_ELEM으로 대체됨)
-  const PRODUCE_MAP: Record<string, string> = { "목":"화", "화":"토", "토":"금", "금":"수", "수":"목" };
-  const SUPPORT_MAP: Record<string, string> = { "목":"수", "화":"목", "토":"화", "금":"토", "수":"금" };
-
-  let heeShin = "";
-  const coreYong = yongsin.includes("/") ? yongsin.split("/")[1] || yongsin.split("/")[0] : yongsin;
-  heeShin = SUPPORT_MAP[coreYong] || "";
-  if (heeShin === coreYong) {
-    heeShin = SUPPORT_MAP[heeShin] || "";
-  }
+  console.log("[YONGSHIN DETAIL]", JSON.stringify(yongsin_detail));
 
   // ── 4. Characteristics 생성 ──
   const characteristics: string[] = [];
@@ -746,7 +850,35 @@ export async function analyzeSajuStructure(
   const interactions = calculateInteractions(interactionStems, interactionBranches);
 
   // B-144: 신살 계산
-  const shinsal = calculateShinsal(dm, pillars.day?.branch || "", interactionBranches, interactionStems, pillars.year?.branch, pillars.month?.branch);
+  const targetYearBranch = sajuRaw.target_year_branch || "午";
+  const shinsal = calculateShinsal(
+    dm, 
+    pillars.day?.branch || "", 
+    interactionBranches, 
+    interactionStems, 
+    pillars.year?.branch, 
+    pillars.month?.branch,
+    targetYearBranch
+  );
+
+  const shinsal_grouped = calculateShinsalGrouped(
+    dm,
+    pillars.day?.branch || "",
+    {
+      year: pillars.year?.branch || "",
+      month: pillars.month?.branch || "",
+      day: pillars.day?.branch || "",
+      hour: pillars.hour?.branch || "",
+    },
+    interactionStems,
+    targetYearBranch
+  );
+
+  const gwimun_wonjin = calculateGwimunWonjin(
+    interactionBranches,
+    daewoon?.currentDaewoon?.branch,
+    sajuRaw.seun_branch || targetYearBranch
+  );
 
   // B-144: 건강 위험 태그 추출
   const health_risk_tags: string[] = shinsal
@@ -784,11 +916,69 @@ export async function analyzeSajuStructure(
     hour: pillars.hour?.branch || "",
   });
 
+  const twelveStagesGeobup = calculateAllTwelveStagesGeobup({
+    year: pillars.year?.branch || "",
+    month: pillars.month?.branch || "",
+    day: pillars.day?.branch || "",
+    hour: pillars.hour?.branch || "",
+  });
+
   const twelveStageDetails = {
     year: { stage: twelveStages.year, ...getTwelveStageEnergy(twelveStages.year) },
     month: { stage: twelveStages.month, ...getTwelveStageEnergy(twelveStages.month) },
     day: { stage: twelveStages.day, ...getTwelveStageEnergy(twelveStages.day) },
     hour: { stage: twelveStages.hour, ...getTwelveStageEnergy(twelveStages.hour) }
+  };
+
+  // ── B-265: 교차 합충 분석 ──
+  const daewoonPillarP = daewoon?.currentDaewoon;
+  const KR_TO_HAN_STEM: any = { "갑":"甲", "을":"乙", "병":"丙", "정":"丁", "무":"戊", "기":"己", "경":"庚", "신":"辛", "임":"壬", "계":"癸" };
+  const KR_TO_HAN_BRANCH: any = { "자":"子", "축":"丑", "인":"寅", "묘":"卯", "진":"辰", "사":"巳", "오":"午", "미":"未", "신":"申", "유":"酉", "술":"戌", "해":"亥" };
+
+  const sStemH = KR_TO_HAN_STEM[seunStem] || "丙";
+  const sBranchH = KR_TO_HAN_BRANCH[seunBranch] || "午";
+  const wStemH = KR_TO_HAN_STEM[wolunStem] || "辛";
+  const wBranchH = KR_TO_HAN_BRANCH[wolunBranch] || "卯";
+
+  const getRelationsResult = (s: string, b: string, targets: any[]) => {
+    const stem_rels: any[] = [];
+    const branch_rels: any[] = [];
+    targets.forEach(t => {
+      const sr = checkStemRelation(s, t.stem);
+      if (sr) stem_rels.push({ pair: `${s}-${t.stem}`, ...sr });
+      const br = checkBranchRelation(b, t.branch);
+      if (br) branch_rels.push({ pair: `${b}-${t.branch}`, ...br });
+    });
+    return { stem_rels, branch_rels };
+  };
+
+  const pList = [
+    { name: "년주", stem: pillars.year?.stem, branch: pillars.year?.branch },
+    { name: "월주", stem: pillars.month?.stem, branch: pillars.month?.branch },
+    { name: "일주", stem: pillars.day?.stem, branch: pillars.day?.branch },
+    { name: "시주", stem: pillars.hour?.stem, branch: pillars.hour?.branch }
+  ];
+
+  const daewoonCross = getRelationsResult(daewoonPillarP?.stem || "", daewoonPillarP?.branch || "", pList);
+  const seunCrossWithPillars = getRelationsResult(sStemH, sBranchH, pList);
+  const seunCrossWithDaewoon = getRelationsResult(sStemH, sBranchH, [{ stem: daewoonPillarP?.stem, branch: daewoonPillarP?.branch }]);
+
+  const wolunCrossWithPillars = getRelationsResult(wStemH, wBranchH, pList);
+  const wolunCrossWithDaewoon = getRelationsResult(wStemH, wBranchH, [{ stem: daewoonPillarP?.stem, branch: daewoonPillarP?.branch }]);
+  const wolunCrossWithSeun = getRelationsResult(wStemH, wBranchH, [{ stem: sStemH, branch: sBranchH }]);
+
+  const cross_interactions = {
+    daewoon: daewoonCross,
+    sewoon: {
+      with_original: seunCrossWithPillars,
+      with_daewoon: seunCrossWithDaewoon
+    },
+    wolwoon: {
+      with_original: wolunCrossWithPillars,
+      with_daewoon: wolunCrossWithDaewoon,
+      with_sewoon: wolunCrossWithSeun
+    },
+    summary: `${currentYear}년 ${seunBranch}(${sBranchH})운이 원국과 작용하여 생활 리듬에 변화가 예상됩니다.`
   };
 
   return {
@@ -814,7 +1004,29 @@ export async function analyzeSajuStructure(
       seun: { stage: seunTwelveStage, ...seunTwelveStageEnergy },
       wolun: { stage: wolunTwelveStage, ...wolunTwelveStageEnergy }
     },
-    gyeokguk
+    gyeokguk,
+    twelve_stages_geobup: {
+      pillars: twelveStagesGeobup,
+      seun: calculateTwelveStageGeobup(sajuRaw.seun_branch || sBranchH),
+      wolun: calculateTwelveStageGeobup(sajuRaw.wolun_branch || wBranchH)
+    },
+    jijanggan: getAllPillarJijanggan(dm, {
+      year: pillars.year?.branch || "",
+      month: pillars.month?.branch || "",
+      day: pillars.day?.branch || "",
+      hour: pillars.hour?.branch || "",
+    }),
+    shinsal_grouped,
+    gwimun_wonjin,
+    napeum: getAllPillarNapeum({
+      year: { stem: pillars.year?.stem || "", branch: pillars.year?.branch || "" },
+      month: { stem: pillars.month?.stem || "", branch: pillars.month?.branch || "" },
+      day: { stem: pillars.day?.stem || "", branch: pillars.day?.branch || "" },
+      hour: { stem: pillars.hour?.stem || "", branch: pillars.hour?.branch || "" },
+    }),
+    strength_detail,
+    cross_interactions,
+    yongsin_detail
   };
 }
 
