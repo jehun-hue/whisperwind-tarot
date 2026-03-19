@@ -165,19 +165,27 @@ function getOppositePalaceIdx(palaceIdx: number): number { return (palaceIdx + 6
 function calculateMingGong(lunarMonth: number, birthHourBranch: number): number { return (2 + lunarMonth - 1 - birthHourBranch + 24) % 12; }
 function calculateShenGong(lunarMonth: number, birthHourBranch: number): number { return (2 + lunarMonth - 1 + birthHourBranch) % 12; }
 function determineBureau(mingGongIdx: number, yearGanIdx: number): Bureau {
-  const bureauTable: Bureau[][] = [
-    ["목삼국","목삼국","목삼국","목삼국","화육국","화육국","토오국","토오국","금사국","금사국","수이국","수이국"],
-    ["화육국","화육국","화육국","화육국","토오국","토오국","금사국","금사국","수이국","수이국","목삼국","목삼국"],
-    ["토오국","토오국","토오국","토오국","금사국","금사국","수이국","수이국","목삼국","목삼국","화육국","화육국"],
-    ["금사국","금사국","금사국","금사국","수이국","수이국","목삼국","목삼국","화육국","화육국","토오국","토오국"],
-    ["수이국","수이국","수이국","수이국","목삼국","목삼국","화육국","화육국","토오국","토오국","금사국","금사국"],
-    ["목삼국","목삼국","목삼국","목삼국","화육국","화육국","토오국","토오국","금사국","금사국","수이국","수이국"],
-    ["화육국","화육국","화육국","화육국","토오국","토오국","금사국","금사국","수이국","수이국","목삼국","목삼국"],
-    ["토오국","토오국","토오국","토오국","금사국","금사국","수이국","수이국","목삼국","목삼국","화육국","화육국"],
-    ["금사국","금사국","금사국","금사국","수이국","수이국","목삼국","목삼국","화육국","화육국","토오국","토오국"],
-    ["수이국","수이국","수이국","수이국","목삼국","목삼국","화육국","화육국","토오국","토오국","금사국","금사국"],
+  const yinStartGan = [2, 4, 6, 8, 0];
+  const ohoGroup = yearGanIdx % 5;
+  const dist = (mingGongIdx - 2 + 12) % 12;
+  const mingGanIdx = (yinStartGan[ohoGroup] + dist) % 10;
+
+  if (mingGanIdx % 2 !== mingGongIdx % 2) return "목삼국";
+
+  const NAPEUM: string[] = [
+    "금","금","화","화","목","목","토","토","금","금","화","화",
+    "수","수","토","토","금","금","목","목","수","수","토","토",
+    "화","화","목","목","수","수","금","금","화","화","목","목",
+    "토","토","금","금","화","화","수","수","토","토","금","금",
+    "목","목","수","수","토","토","화","화","목","목","수","수",
   ];
-  return bureauTable[yearGanIdx % 10][mingGongIdx % 12];
+
+  const n = ((6 * mingGanIdx - 5 * mingGongIdx) % 60 + 60) % 60;
+  const bureauMap: Record<string, Bureau> = {
+    "목": "목삼국", "화": "화육국", "토": "토오국", "금": "금사국", "수": "수이국"
+  };
+
+  return bureauMap[NAPEUM[n]] || "목삼국";
 }
 function calculateZiWeiPosition(lunarDay: number, bureau: Bureau): number {
   const bureauNum: Record<Bureau, number> = { 수이국: 2, 목삼국: 3, 금사국: 4, 토오국: 5, 화육국: 6 };
