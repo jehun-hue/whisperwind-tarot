@@ -295,6 +295,64 @@ function formatPosition(longitude: number) {
   };
 }
 
+function calculateSolarReturn(natalSunLon: number, birthMonth: number, birthDay: number, observer: Astronomy.Observer, currentYear: number = 2026) {
+  const searchStart = new Date(Date.UTC(currentYear, birthMonth - 1, birthDay - 5, 0, 0, 0));
+  const startTime = Astronomy.MakeTime(searchStart);
+  
+  const srTime = Astronomy.SearchSunLongitude(natalSunLon, startTime, 10);
+  if (!srTime) return null;
+
+  const srDate = srTime.date;
+  const srPositions = getHighPrecisionPositions(srDate, observer);
+  const houseData = calculateHousesManual(srDate, observer);
+  const cusps = calculateHouseCuspsPlacidus(houseData.asc, houseData.mc);
+  
+  const srPlanets = srPositions.map(p => {
+    const lng = ((p.longitude % 360) + 360) % 360;
+    const signIdx = Math.floor(lng / 30) % 12;
+    const degVal = lng % 30;
+    return {
+      planet: p.planet,
+      longitude: lng,
+      sign: ZODIAC_SIGNS[signIdx],
+      degree: Math.floor(degVal) + "°" + Math.round((degVal % 1) * 60) + "'",
+      house: getHouseForLongitude(lng, cusps)
+    };
+  });
+
+  const aspectInput = srPositions.map(p => ({
+    planet: p.planet,
+    absoluteDegree: p.longitude,
+  }));
+  const aspects = calculateAspects(aspectInput);
+
+  const ascSign = ZODIAC_SIGNS[Math.floor(houseData.asc / 30) % 12];
+  const moon = srPlanets.find(p => p.planet === "달")!;
+  const saturn = srPlanets.find(p => p.planet === "토성")!;
+  
+  const highlights = [];
+  highlights.push(`솔라 리턴 ASC가 ${ascSign}자리 → 올해의 페르소나와 활동 테마`);
+  highlights.push(`솔라 리턴 달이 ${moon.house}하우스 → 올해 정서적 에너지와 관심이 집중되는 영역`);
+  
+  let mcDiff = Math.abs(saturn.longitude - houseData.mc);
+  if (mcDiff > 180) mcDiff = 360 - mcDiff;
+  if (mcDiff < 5) {
+     highlights.push(`솔라 리턴 토성이 MC 부근 → 올해 커리어와 사회적 책임의 구조화/강화`);
+  }
+
+  return {
+    year: currentYear,
+    exactDate: srDate.toISOString(),
+    sun: srPlanets.find(p => p.planet === "태양"),
+    moon,
+    ascendant: { longitude: houseData.asc, sign: ascSign },
+    mc: { longitude: houseData.mc, sign: ZODIAC_SIGNS[Math.floor(houseData.mc / 30) % 12] },
+    planets: srPlanets,
+    aspects: aspects.map(a => a.interpretation),
+    highlights
+  };
+}
+
 // ═══════════════════════════════════════════════
 // Public Interface
 // ═══════════════════════════════════════════════
@@ -368,6 +426,17 @@ export interface ServerAstrologyResult {
     moon: any;
     moon_house: number | null;
     moon_aspects: any[];
+  } | null;
+  solarReturn: {
+    year: number;
+    exactDate: string;
+    sun: any;
+    moon: any;
+    ascendant: any;
+    mc: any;
+    planets: any[];
+    aspects: string[];
+    highlights: string[];
   } | null;
 }
 
@@ -623,6 +692,7 @@ export function calculateServerAstrology(
       moon: formatPosition(progMoon.longitude),
       moon_house: hasTime ? getHouseForLongitude(progMoon.longitude, cusps) : null,
       moon_aspects: moonAspects
-    }
+    },
+    solarReturn: calculateSolarReturn(planets[0].absoluteDegree, month, day, observer, now.getFullYear())
   };
 }
