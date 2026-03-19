@@ -24,6 +24,14 @@ serve(async (req: Request) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  const url = new URL(req.url);
+  if (url.searchParams.get("healthcheck") === "true") {
+    return new Response(JSON.stringify({ status: "ok", timestamp: new Date().toISOString() }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" }
+    });
+  }
+
   try {
     const API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
     if (!API_KEY) throw new Error("API_KEY not configured");
