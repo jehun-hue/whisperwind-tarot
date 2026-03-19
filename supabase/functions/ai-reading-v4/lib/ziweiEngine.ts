@@ -126,33 +126,95 @@ const ZIWEI_POSITION_TABLE: Record<number, Record<number, string>> = {
   6: { 1:"丑", 2:"申", 3:"未", 4:"辰", 5:"丑", 6:"寅", 7:"寅", 8:"卯", 9:"卯", 10:"辰", 11:"辰", 12:"巳", 13:"巳", 14:"午", 15:"午", 16:"未", 17:"未", 18:"申", 19:"申", 20:"酉", 21:"酉", 22:"戌", 23:"戌", 24:"亥", 25:"亥", 26:"子", 27:"子", 28:"丑", 29:"丑", 30:"寅" }
 };
 
-export function placeAssistStars(lunarMonth: number, yearStem: string, birthHourBranch: string) {
-  const mIdx = lunarMonth - 1;
-  const hIdx = BRANCHES.indexOf(birthHourBranch);
-  const stars: Record<string, string> = {
-    "좌보": BRANCHES[(4 + mIdx) % 12], "우필": BRANCHES[(10 - mIdx + 12) % 12],
-    "문창": BRANCHES[(10 - hIdx + 12) % 12], "문곡": BRANCHES[(4 + hIdx) % 12],
-  };
-  const km: Record<string, string[]> = { "甲":["丑","未"], "乙":["子","申"], "丙":["亥","酉"], "丁":["酉","亥"], "戊":["亥","酉"], "己":["酉","亥"], "庚":["未","丑"], "辛":["午","寅"], "壬":["卯","巳"], "癸":["卯","巳"] };
-  const kv = km[yearStem] || ["",""];
-  stars["천괴"] = kv[0]; stars["천월"] = kv[1];
-  return stars;
+export interface AuxiliaryStar {
+  name: string;       // 한글
+  hanja: string;      // 한자
+  palace: string;     // 배치된 궁 (子~亥)
+  category: '길성' | '흉성' | '중성';
+  effect: string;     // 1문장 한국어
 }
 
-export function placeKillStars(yearStem: string, yearBranch: string, birthHourBranch: string) {
-  const hIdx = BRANCHES.indexOf(birthHourBranch);
-  const lm: Record<string, string> = { "甲":"寅", "乙":"卯", "丙":"巳", "丁":"午", "戊":"巳", "己":"午", "庚":"申", "辛":"酉", "壬":"亥", "癸":"子" };
-  const lukzun = lm[yearStem] || "寅";
-  const lIdx = BRANCHES.indexOf(lukzun);
-  const grp = ["寅午戌", "巳酉丑", "申子辰", "亥卯未"].findIndex(g => g.includes(yearBranch));
-  const hs = ["丑", "卯", "寅", "酉"][grp];
-  const ls = ["卯", "戌", "戌", "戌"][grp];
-  return {
-    "록존": lukzun, "경양": BRANCHES[(lIdx + 1) % 12], "타라": BRANCHES[(lIdx - 1 + 12) % 12],
-    "지공": BRANCHES[(11 - hIdx + 12) % 12], "지겁": BRANCHES[(11 + hIdx) % 12],
-    "화성": BRANCHES[(BRANCHES.indexOf(hs) + hIdx) % 12], "영성": BRANCHES[(BRANCHES.indexOf(ls) + hIdx) % 12],
-    "천마": { "寅午戌":"申", "巳酉丑":"亥", "申子辰":"寅", "亥卯未":"巳" }[ ["寅午戌","巳酉丑","申子辰","亥卯未"].find(g => g.includes(yearBranch)) || "" ] || ""
+/**
+ * 4. 보성(輔星) 및 보조성 배치
+ */
+export function placeAuxiliaryStars(
+  yearStem: string,
+  yearBranch: string,
+  monthNumber: number,
+  hourBranch: string
+): AuxiliaryStar[] {
+  const stars: AuxiliaryStar[] = [];
+  const hIdx = BRANCHES.indexOf(hourBranch);
+  const mIdx = monthNumber - 1;
+  const bIdx = BRANCHES.indexOf(yearBranch);
+
+  // 1) 좌보/우필 (월수 기준)
+  const zuofuPos = BRANCHES[(4 + mIdx) % 12];
+  const youbiPos = BRANCHES[(10 - mIdx + 12) % 12];
+  stars.push({ name: "좌보", hanja: "左輔", palace: zuofuPos, category: "길성", effect: "타인의 조력과 지원을 받는 힘이 강합니다." });
+  stars.push({ name: "우필", hanja: "右弼", palace: youbiPos, category: "길성", effect: "실제적인 도움과 조언을 아끼지 않는 인연이 있습니다." });
+
+  // 2) 천괴/천월 (연간 기준)
+  const kuiYueMap: Record<string, [string, string]> = {
+    "甲": ["丑", "未"], "戊": ["丑", "未"], "庚": ["丑", "未"],
+    "乙": ["子", "申"], "己": ["子", "申"],
+    "丙": ["亥", "酉"], "丁": ["亥", "酉"],
+    "壬": ["卯", "巳"], "癸": ["卯", "巳"],
+    "辛": ["午", "寅"]
   };
+  const [kui, yue] = kuiYueMap[yearStem] || ["", ""];
+  if (kui) stars.push({ name: "천괴", hanja: "天魁", palace: kui, category: "길성", effect: "사회적인 신용과 귀인의 발탁을 의미합니다." });
+  if (yue) stars.push({ name: "천월", hanja: "天鉞", palace: yue, category: "길성", effect: "정신적인 지도와 보이지 않는 조력을 의미합니다." });
+
+  // 3) 문창/문곡 (시지 기준)
+  const changPos = BRANCHES[(10 - hIdx + 12) % 12];
+  const quPos = BRANCHES[(4 + hIdx) % 12];
+  stars.push({ name: "문창", hanja: "文昌", palace: changPos, category: "길성", effect: "학문적 성취와 제도권 내의 명예를 상징합니다." });
+  stars.push({ name: "문곡", hanja: "文曲", palace: quPos, category: "길성", effect: "예술적 감각과 구변, 비제도권의 재능을 상징합니다." });
+
+  // 4, 5) 록존/경양/타라 (연간 기준)
+  const luMap: Record<string, string> = {
+    "甲": "寅", "乙": "卯", "丙": "巳", "丁": "午",
+    "戊": "巳", "己": "午", "庚": "申", "辛": "酉",
+    "壬": "亥", "癸": "子"
+  };
+  const luPos = luMap[yearStem] || "寅";
+  const luIdx = BRANCHES.indexOf(luPos);
+  stars.push({ name: "록존", hanja: "祿存", palace: luPos, category: "길성", effect: "타고난 재복과 실속 있는 성과를 의미합니다." });
+  stars.push({ name: "경양", hanja: "擎羊", palace: BRANCHES[(luIdx + 1) % 12], category: "흉성", effect: "강한 추진력과 경쟁심, 때로는 충돌을 야기합니다." });
+  stars.push({ name: "타라", hanja: "陀羅", palace: BRANCHES[(luIdx - 1 + 12) % 12], category: "흉성", effect: "지연과 정체, 끈질긴 마찰과 장애를 의미합니다." });
+
+  // 6) 화성/영성 (연지 + 시지 기준)
+  const grpName = ["寅午戌", "巳酉丑", "申子辰", "亥卯未"].find(g => g.includes(yearBranch)) || "";
+  const huoSartMap: Record<string, string> = { "寅午戌": "丑", "申子辰": "寅", "巳酉丑": "卯", "亥卯未": "酉" };
+  const huoStart = huoSartMap[grpName] || "丑";
+  const huoPos = BRANCHES[(BRANCHES.indexOf(huoStart) + hIdx) % 12];
+  const lingPos = BRANCHES[(BRANCHES.indexOf("戌") + hIdx) % 12];
+  stars.push({ name: "화성", hanja: "火星", palace: huoPos, category: "흉성", effect: "갑작스러운 폭발력과 성급함을 가져옵니다." });
+  stars.push({ name: "영성", hanja: "鈴星", palace: lingPos, category: "흉성", effect: "내면의 고통과 집요한 갈등을 의미합니다." });
+
+  // 7) 천마 (연지 기준)
+  const maMap: Record<string, string> = { "寅午戌": "申", "申子辰": "寅", "巳酉丑": "亥", "亥卯未": "巳" };
+  const maPos = maMap[grpName] || "";
+  if (maPos) stars.push({ name: "천마", hanja: "天馬", palace: maPos, category: "중성", effect: "이동과 변화, 활발한 활동력을 상징합니다." });
+
+  // 8) 홍란/천희 (연지 기준)
+  const hongPos = BRANCHES[(3 - bIdx + 12) % 12];
+  const xiPos = BRANCHES[(BRANCHES.indexOf(hongPos) + 6) % 12];
+  stars.push({ name: "홍란", hanja: "紅鸞", palace: hongPos, category: "길성", effect: "이성의 인연과 기쁨, 혼담을 상징합니다." });
+  stars.push({ name: "천희", hanja: "天喜", palace: xiPos, category: "길성", effect: "집안의 경사와 안정적인 기쁨을 의미합니다." });
+
+  // 9) 천공/지겁 (시지 기준)
+  stars.push({ name: "천공", hanja: "天空", palace: BRANCHES[(hIdx + 1) % 12], category: "흉성", effect: "정신적인 공허함이나 예기치 못한 손실을 의미합니다." });
+  stars.push({ name: "지겁", hanja: "地劫", palace: BRANCHES[(hIdx - 1 + 12) % 12], category: "흉성", effect: "금전적 손재와 현실적인 장애를 의미합니다." });
+
+  // 10) 천형/천요 (월수 기준)
+  const xingPos = BRANCHES[(9 + mIdx) % 12];
+  const yaoPos = BRANCHES[(1 + mIdx) % 12];
+  stars.push({ name: "천형", hanja: "天刑", palace: xingPos, category: "흉성", effect: "엄격한 규율과 시비, 때로는 형벌을 상징합니다." });
+  stars.push({ name: "천요", hanja: "天姚", palace: yaoPos, category: "중성", effect: "풍류와 매력, 이성적인 유혹을 의미합니다." });
+
+  return stars;
 }
 
 const BR_TABLE: Record<string, string[]> = {
@@ -230,8 +292,7 @@ export function calculateZiwei(
     if(!mainStarMap.get(p)!.includes(s.n)) mainStarMap.get(p)!.push(s.n);
   });
 
-  const assist = placeAssistStars(lunarMonth, yearStem, birthHourBranch);
-  const kill = placeKillStars(yearStem, yearBranch, birthHourBranch);
+  const auxiliaryStars = placeAuxiliaryStars(yearStem, yearBranch, lunarMonth, birthHourBranch);
   const birthSihua = calculateSihua(yearStem);
   const dahanList = calculateDahan(ju.number, yearStem, gender, mg);
   
@@ -252,14 +313,12 @@ export function calculateZiwei(
     const bIdx = BRANCHES.indexOf(b);
     const pName = pNames[(mgStart - bIdx + 12) % 12];
     const mainStars = (mainStarMap.get(b) || []).map(s => ({ name: s, brightness: (BR_TABLE[s] || [])[bIdx] }));
-    const aStars = Object.entries(assist).filter(([n, pos]) => pos === b).map(([n]) => n);
-    const kStars = Object.entries(kill).filter(([n, pos]) => pos === b).map(([n]) => n);
+    const palaceAuxStars = auxiliaryStars.filter(s => s.palace === b);
     
     outPalaces[b] = {
       name: pName,
       mainStars,
-      assistStars: aStars,
-      killStars: kStars,
+      auxiliaryStars: palaceAuxStars,
       sanbang: getSanbangSizheng(b),
       meaning: PALACE_MEANINGS[pName] || {}
     };
