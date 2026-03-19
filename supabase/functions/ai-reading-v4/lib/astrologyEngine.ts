@@ -5,7 +5,7 @@
  */
 
 import { Solar, Lunar } from "https://esm.sh/lunar-javascript";
-import * as Astronomy from "https://esm.sh/astronomy-engine";
+import { Body, Equator, Ecliptic, Observer, AstroTime } from 'astronomy-engine';
 
 export interface AstrologyCalculationInput {
   year: number;
@@ -51,8 +51,8 @@ export function calculateAstrologyV9(input: AstrologyCalculationInput) {
   };
 
   // 2. Planet Positions
-  const observer = new Astronomy.Observer(37.5665, 126.9780, 0); 
-  const time = new Astronomy.AstroTime(date);
+  const observer = new Observer(37.5665, 126.9780, 0); 
+  const time = new AstroTime(date);
   
   const planets = [
     "Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"
@@ -60,9 +60,9 @@ export function calculateAstrologyV9(input: AstrologyCalculationInput) {
   
   const planet_positions = planets.map(p => {
     // @ts-ignore
-    const body = Astronomy.Body[p];
-    const equ_vec = Astronomy.Equator(body, time, observer, true, true);
-    const ecl_vec = Astronomy.Ecliptic(equ_vec);
+    const body = Body[p];
+    const equ_vec = Equator(body, time, observer, true, true);
+    const ecl_vec = Ecliptic(equ_vec);
     
     const lon = ecl_vec.elon;
     const signIdx = Math.floor(lon / 30) % 12;
@@ -116,12 +116,12 @@ export function calculateAstrologyV9(input: AstrologyCalculationInput) {
 
   // 4. Transits
   const now = new Date();
-  const timeNow = new Astronomy.AstroTime(now);
+  const timeNow = new AstroTime(now);
   const transits = planets.map(p => {
     // @ts-ignore
-    const body = Astronomy.Body[p];
-    const equ_vec = Astronomy.Equator(body, timeNow, observer, true, true);
-    const ecl_vec = Astronomy.Ecliptic(equ_vec);
+    const body = Body[p];
+    const equ_vec = Equator(body, timeNow, observer, true, true);
+    const ecl_vec = Ecliptic(equ_vec);
     return {
       planet: p,
       lon: ecl_vec.elon,
