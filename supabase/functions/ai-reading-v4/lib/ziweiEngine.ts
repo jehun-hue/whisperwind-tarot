@@ -78,11 +78,29 @@ export function determineMingGong(lunarMonth: number, birthHourBranch: string): 
   const targetIdx = (2 + (lunarMonth - 1) - hIdx + 12) % 12;
   return BRANCHES[targetIdx];
 }
-
-export function determineShenGong(lunarMonth: number, birthHourBranch: string): string {
-  const hIdx = BRANCHES.indexOf(birthHourBranch);
-  const targetIdx = (2 + (lunarMonth - 1) + hIdx) % 12;
-  return BRANCHES[targetIdx];
+/**
+ * 2. 신궁(身宮) 위치 결정
+ * 생시에 따라 12궁 중 특정 궁과 겹치는 위치에 배치 (대만 정통 방식)
+ * - 子/午: 명궁, 丑/未: 복덕궁, 寅/申: 관록궁
+ * - 卯/酉: 천이궁, 辰/戌: 재백궁, 巳/亥: 부처궁
+ * (참고: sajuplus.net에서는 戌(부처궁)로 표시될 수 있음, 학파 차이 가능)
+ */
+export function determineShenGong(birthHourBranch: string, palaceMap: Map<string, string>): string {
+  const mapping: Record<string, string> = {
+    "子": "명궁", "午": "명궁",
+    "丑": "복덕궁", "未": "복덕궁",
+    "寅": "관록궁", "申": "관록궁",
+    "卯": "천이궁", "酉": "천이궁",
+    "辰": "재백궁", "戌": "재백궁",
+    "巳": "부처궁", "亥": "부처궁"
+  };
+  const targetPalaceName = mapping[birthHourBranch];
+  
+  // palaceMap에서 해당 이름을 가진 지지 찾기
+  for (const [branch, name] of palaceMap.entries()) {
+    if (name === targetPalaceName) return branch;
+  }
+  return "";
 }
 
 export function determineWuxingJu(yearStem: string, mingGongBranch: string): { name: string, number: number } {
@@ -176,7 +194,9 @@ const STAR_MEANINGS: Record<string, any> = {
  */
 export interface ZiweiResult {
   mingGong: string;
+  shenGong: string;
   wuxingJu: { name: string, number: number };
+  ziweiPosition: string;
   birthSihua: Record<string, string>;
   dahan: any[];
   liunian: any;
@@ -221,11 +241,16 @@ export function calculateZiwei(
 
   const mgStart = BRANCHES.indexOf(mg);
   const pNames = ["명궁", "형제궁", "부처궁", "자녀궁", "재백궁", "질액궁", "천이궁", "노복궁", "관록궁", "전택궁", "복덕궁", "부모궁"];
+  const palaceMap = new Map<string, string>();
+  pNames.forEach((n, i) => palaceMap.set(BRANCHES[(mgStart - i + 12) % 12], n));
+
+  const sg = determineShenGong(birthHourBranch, palaceMap);
+
   const outPalaces: Record<string, any> = {};
   
   BRANCHES.forEach(b => {
     const bIdx = BRANCHES.indexOf(b);
-    const pName = pNames[(bIdx - mgStart + 12) % 12];
+    const pName = pNames[(mgStart - bIdx + 12) % 12];
     const mainStars = (mainStarMap.get(b) || []).map(s => ({ name: s, brightness: (BR_TABLE[s] || [])[bIdx] }));
     const aStars = Object.entries(assist).filter(([n, pos]) => pos === b).map(([n]) => n);
     const kStars = Object.entries(kill).filter(([n, pos]) => pos === b).map(([n]) => n);
@@ -242,7 +267,9 @@ export function calculateZiwei(
 
   return {
     mingGong: mg,
+    shenGong: sg,
     wuxingJu: ju,
+    ziweiPosition: zwPos,
     birthSihua,
     dahan: dahanList,
     liunian: { year: currentYear, stem: liunianStem, branch: liunianBranch, sihua: liunianSihua },
