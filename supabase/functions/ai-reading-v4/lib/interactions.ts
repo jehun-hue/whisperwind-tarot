@@ -25,6 +25,14 @@ const BRANCH_CONFLICTS: [string, string, string][] = [
   ["巳", "亥", "건강 주의·변화 국면"],
 ];
 
+// 지지방합 테이블
+const BRANCH_DIRECTION_COMBINATIONS: [string[], string, string][] = [
+  [["寅", "卯", "辰"], "목국", "동방 목국 방합: 성장·인연·창의력 활성"],
+  [["巳", "午", "未"], "화국", "남방 화국 방합: 열정·사회적 성취 활성"],
+  [["申", "酉", "戌"], "금국", "서방 금국 방합: 재물·결단·독립심 강화"],
+  [["亥", "子", "丑"], "수국", "북방 수국 방합: 지혜·직관·감수성 활성"],
+];
+
 // 지지삼합 테이블
 const BRANCH_THREE_COMBINATIONS: [string[], string, string][] = [
   [["寅", "午", "戌"], "화국", "열정·사회적 성취 활성"],
@@ -90,7 +98,7 @@ const STEM_CONFLICTS: [string, string, string][] = [
 ];
 
 export interface Interaction {
-  type: "천간합" | "천간극" | "지지충" | "지지삼합" | "지지육합" | "형" | "파" | "해";
+  type: "천간합" | "천간극" | "지지충" | "지지삼합" | "지지방합" | "지지육합" | "형" | "파" | "해";
   elements: string[];
   result: string;
   meaning_keyword: string;
@@ -139,6 +147,11 @@ export function calculateInteractions(
   for (const [s, count] of Object.entries(stemCounts)) {
     if (count >= 2) {
       interactions.push({ type: "천간합" as any, elements: Array(count).fill(s), result: "병존", meaning_keyword: "동일 에너지 중복·강화", severity: "중립" });
+    }
+  }
+  for (const [combo, result, keyword] of BRANCH_DIRECTION_COMBINATIONS) {
+    if (combo.every(b => branches.includes(b))) {
+      interactions.push({ type: "지지방합", elements: combo, result, meaning_keyword: keyword, severity: "길" });
     }
   }
   return interactions;
@@ -247,15 +260,29 @@ const SHINSAL_12_BASE: Record<string, string> = {
 };
 
 // 귀인류/특수살 맵 (정답 대조 수정)
+const CHEONIL_MAP: Record<string, string[]> = { "甲": ["丑", "未"], "戊": ["丑", "未"], "庚": ["丑", "未"], "乙": ["子", "申"], "己": ["子", "申"], "丙": ["亥", "酉"], "丁": ["亥", "酉"], "壬": ["卯", "巳"], "癸": ["卯", "巳"], "辛": ["寅", "午"] };
+const MUNCHANG_MAP: Record<string, string> = { "甲": "巳", "乙": "午", "丙": "申", "丁": "酉", "戊": "申", "己": "酉", "庚": "亥", "辛": "子", "壬": "寅", "癸": "卯" };
+const HAKDANG_MAP: Record<string, string> = { "甲": "亥", "乙": "午", "丙": "寅", "丁": "酉", "戊": "寅", "己": "酉", "庚": "巳", "辛": "子", "壬": "申", "癸": "卯" };
 const CHEONDEOK_MAP: Record<string, string> = { "子": "巳", "丑": "庚", "寅": "丁", "卯": "申", "辰": "壬", "巳": "辛", "午": "亥", "未": "甲", "申": "癸", "酉": "寅", "戌": "丙", "亥": "乙" };
+const WOLDEOK_MAP: Record<string, string> = { 
+  "寅": "丙", "午": "丙", "戌": "丙", 
+  "申": "壬", "子": "壬", "辰": "壬", 
+  "巳": "庚", "酉": "庚", "丑": "庚", 
+  "亥": "甲", "卯": "甲", "未": "甲" 
+};
+const GEUMYEO_MAP: Record<string, string> = { "甲": "辰", "乙": "巳", "丙": "未", "丁": "申", "戊": "未", "己": "申", "庚": "戌", "辛": "亥", "壬": "丑", "癸": "寅" };
+const BAEKHO_LIST = ["甲辰", "乙巳", "丙申", "丁酉", "戊午", "己丑", "庚寅", "辛卯", "壬戌", "癸亥"];
+const GOEGANG_LIST = ["庚辰", "壬辰", "庚戌", "壬戌"];
+
+// 기존 맵 유지 (하위 호환 및 보조)
 const CHEONBOK_MAP: Record<string, string[]> = { "甲": ["寅", "亥"], "乙": ["卯", "戌"], "丙": ["巳"], "丁": ["午"], "戊": ["巳"], "己": ["午"], "庚": ["申"], "辛": ["酉"], "壬": ["亥"], "癸": ["子"] };
 const CHEONJU_MAP: Record<string, string> = { "甲": "午", "乙": "申", "丙": "辰", "丁": "酉", "戊": "辰", "己": "酉", "庚": "戌", "辛": "亥", "壬": "丑", "癸": "未" };
 const BOKSEONG_MAP: Record<string, string> = { "甲": "寅", "乙": "丑", "丙": "亥", "丁": "戌", "戊": "申", "己": "未", "庚": "午", "辛": "巳", "壬": "卯", "癸": "寅" };
 const GWANGWI_MAP: Record<string, string> = { "甲": "未", "乙": "辰", "丙": "酉", "丁": "戌", "戊": "酉", "己": "戌", "庚": "丑", "辛": "寅", "壬": "巳", "癸": "午" };
-const AMLOK_MAP: Record<string, string> = { "甲": "亥", "乙": "戌", "丙": "申", "丁": "未", "戊": "申", "己": "未", "庚": "巳", "辛": "辰", "壬": "寅", "癸": "丑" }; // 丁->未 수정
+const AMLOK_MAP: Record<string, string> = { "甲": "亥", "乙": "戌", "丙": "申", "丁": "未", "戊": "申", "己": "未", "庚": "巳", "辛": "辰", "壬": "寅", "癸": "丑" };
 const HYEONCHIM_MAP: Record<string, string> = { "甲": "辰", "乙": "巳", "丙": "午", "丁": "未", "戊": "午", "己": "未", "庚": "戌", "辛": "亥", "壬": "子", "癸": "丑" };
 const CHEONMUN_MAP: Record<string, string[]> = { 
-  "甲": ["未"], "乙": ["未"], "丙": ["戌", "亥"], "丁": ["戌", "亥", "未", "卯"], // 丁->未,卯 추가 (정답지 준수)
+  "甲": ["未"], "乙": ["未"], "丙": ["戌", "亥"], "丁": ["戌", "亥", "未", "卯"],
   "戊": ["戌", "亥"], "己": ["戌", "亥"], "庚": ["丑"], "辛": ["丑"], "壬": ["辰"], "癸": ["辰"] 
 };
 const MYEONGYE_MAP: Record<string, string[]> = { "甲": ["卯", "辰"], "乙": ["寅", "巳"], "丙": ["午", "未"], "丁": ["巳", "申", "未"], "戊": ["午", "未"], "己": ["巳", "申"], "庚": ["酉", "戌"], "辛": ["申", "亥"], "壬": ["子", "丑"], "癸": ["亥", "寅"] };
@@ -263,12 +290,43 @@ const EOMCHAK_PAIRS = ["丙子", "丁丑", "戊寅", "辛卯", "壬辰", "癸巳
 const GEONROK_MAP: Record<string, string> = { "甲": "寅", "乙": "卯", "丙": "巳", "丁": "午", "戊": "巳", "己": "午", "庚": "申", "辛": "酉", "壬": "亥", "癸": "子" };
 const SAMJAE_MAP: Record<string, string[]> = { "寅": ["申", "酉", "戌"], "午": ["申", "酉", "戌"], "戌": ["申", "酉", "戌"], "巳": ["亥", "子", "丑"], "酉": ["亥", "子", "丑"], "丑": ["亥", "子", "丑"], "申": ["寅", "卯", "辰"], "子": ["寅", "卯", "辰"], "辰": ["寅", "卯", "辰"], "亥": ["巳", "午", "未"], "卯": ["巳", "午", "미"], "未": ["巳", "午", "미"] };
 
-const TAEGEUK_MAP: Record<string, string[]> = { "甲": ["子", "午"], "乙": ["子", "午"], "丙": ["酉", "卯"], "丁": ["酉", "卯"], "戊": ["辰", "戌", "丑", "未"], "己": ["辰", "戌", "丑", "미"], "庚": ["寅", "亥"], "辛": ["寅", "亥"], "壬": ["巳", "申"], "癸": ["巳", "申"] };
-const HONGYEOM_MAP: Record<string, string[]> = { "甲": ["午"], "乙": ["午"], "丙": ["寅"], "丁": ["未", "卯"], "戊": ["辰"], "己": ["辰"], "庚": ["戌"], "辛": ["酉"], "壬": ["申"], "癸": ["申"] }; // 丁->未,卯
-const YANGIN_MAP: Record<string, string[]> = { "甲": ["卯"], "丙": ["午"], "戊": ["午"], "庚": ["酉"], "壬": ["子"], "乙": ["辰"], "丁": ["未", "巳"], "己": ["未"], "辛": ["戌"], "癸": ["丑"] };
-const CHEONIL_MAP: Record<string, string[]> = { "甲": ["丑", "未"], "戊": ["丑", "미"], "庚": ["丑", "미"], "乙": ["子", "申"], "己": ["자", "申"], "丙": ["亥", "酉"], "丁": ["亥", "酉"], "壬": ["卯", "巳"], "癸": ["卯", "巳"], "辛": ["寅", "오"] };
+const TAEGEUK_MAP: Record<string, string[]> = { "甲": ["子", "午"], "乙": ["子", "午"], "丙": ["酉", "卯"], "丁": ["酉", "卯"], "戊": ["辰", "戌", "丑", "未"], "己": ["辰", "戌", "丑", "未"], "庚": ["寅", "亥"], "辛": ["寅", "亥"], "壬": ["巳", "申"], "癸": ["巳", "申"] };
+const HONGYEOM_MAP: Record<string, string[]> = { "甲": ["午"], "乙": ["午"], "丙": ["寅"], "丁": ["未", "卯"], "戊": ["辰"], "己": ["辰"], "庚": ["戌"], "辛": ["酉"], "壬": ["申"], "癸": ["申"] };
+const YANGIN_MAP: Record<string, string> = { "甲": "卯", "丙": "午", "戊": "午", "庚": "酉", "壬": "子" };
 const HYEOPROK_MAP: Record<string, string[]> = { "甲": ["丑", "卯"], "乙": ["寅", "辰"], "丙": ["辰", "午"], "丁": ["巳", "未"], "戊": ["辰", "午"], "己": ["巳", "未"], "庚": ["未", "酉"], "辛": ["申", "戌"], "壬": ["戌", "子"], "癸": ["亥", "丑"] };
-const MUNGOK_MAP: Record<string, string[]> = { "甲": ["巳"], "乙": ["午"], "丙": ["寅"], "丁": ["酉", "卯"], "戊": ["申"], "己": ["酉"], "庚": ["亥"], "辛": ["자"], "壬": ["寅"], "癸": ["卯"] };
+const MUNGOK_MAP: Record<string, string[]> = { "甲": ["巳"], "乙": ["午"], "丙": ["寅"], "丁": ["酉", "卯"], "戊": ["申"], "己": ["酉"], "庚": ["亥"], "辛": ["子"], "壬": ["寅"], "癸": ["卯"] };
+
+/**
+ * B-223: 공망(空亡) 계산
+ * 일주 기준으로 해당 旬을 찾고 공망 2개 지지 반환
+ */
+export function calculateGongmang(dayStem: string, dayBranch: string, pillars: { year: string; month: string; day: string; hour: string }) {
+  const stemIdx = STEMS.indexOf(dayStem);
+  const branchIdx = BRANCHES.indexOf(dayBranch);
+  if (stemIdx < 0 || branchIdx < 0) return { emptied: [], affectedPillars: [] };
+
+  const sunStartBranchIdx = (branchIdx - stemIdx + 12) % 12;
+  const sunStartBranch = BRANCHES[sunStartBranchIdx];
+
+  const GONGMANG_MAP: Record<string, string[]> = {
+    "子": ["戌", "亥"], 
+    "戌": ["申", "酉"], 
+    "申": ["午", "未"], 
+    "午": ["辰", "巳"], 
+    "辰": ["寅", "卯"], 
+    "寅": ["子", "丑"], 
+  };
+
+  const emptied = GONGMANG_MAP[sunStartBranch] || [];
+  const affectedPillars: string[] = [];
+
+  if (emptied.includes(pillars.year)) affectedPillars.push("년주");
+  if (emptied.includes(pillars.month)) affectedPillars.push("월주");
+  if (emptied.includes(pillars.day)) affectedPillars.push("일주");
+  if (emptied.includes(pillars.hour)) affectedPillars.push("시주");
+
+  return { emptied, affectedPillars };
+}
 
 // 귀문관살/원진살 맵
 const GWIMUN_MAP: Record<string, string> = { "辰": "亥", "亥": "辰", "子": "酉", "酉": "子", "미": "寅", "寅": "未", "巳": "戌", "戌": "巳", "午": "丑", "丑": "午", "卯": "申", "申": "卯" };
@@ -384,6 +442,75 @@ export function calculateShinsalGrouped(
     if (sj[0] === currentYearBranch) result.general.push({ name: "들삼재", type: "삼재", description: "삼재 시작", health_implication: "주의", topic_relevance: ["general"], severity: "흉", pillar: "general" });
     else if (sj[1] === currentYearBranch) result.general.push({ name: "눌삼재", type: "삼재", description: "삼재 머무름", health_implication: "주의", topic_relevance: ["general"], severity: "흉", pillar: "general" });
     else if (sj[2] === currentYearBranch) result.general.push({ name: "날삼재", type: "삼재", description: "삼재 끝", health_implication: "주의", topic_relevance: ["general"], severity: "흉", pillar: "general" });
+  }
+
+  // 4. 신규 추가 10종 신살 (일간/월지/일주 기준 상세 탐색)
+  const monthJi = pillars.month;
+  const monthStem = allStems[1];
+  const dayPillarStr = dm + pillars.day;
+
+  pList.forEach(p => {
+    const ji = bMap[p];
+    const stem = allStems[pList.indexOf(p)];
+
+    // 1) 천을귀인 (天乙貴人)
+    if (CHEONIL_MAP[dm]?.includes(ji)) {
+      result[p].push({ name: "천을귀인", type: "길성", description: "최고의 길신, 위기 극복과 귀인의 도움 (天乙貴人)", health_implication: null, topic_relevance: ["general", "career"], severity: "길", pillar: p });
+    }
+    // 2) 문창귀인 (文昌貴人)
+    if (MUNCHANG_MAP[dm] === ji) {
+      result[p].push({ name: "문창귀인", type: "길성", description: "지혜와 학문적 재능, 창의력 발달 (文昌貴人)", health_implication: null, topic_relevance: ["career"], severity: "길", pillar: p });
+    }
+    // 3) 학당귀인 (學堂貴人)
+    if (HAKDANG_MAP[dm] === ji) {
+      result[p].push({ name: "학당귀인", type: "길성", description: "학문 탐구와 교육적 소양 (學堂貴人)", health_implication: null, topic_relevance: ["career"], severity: "길", pillar: p });
+    }
+    // 4) 금여록 (金輿祿)
+    if (GEUMYEO_MAP[dm] === ji) {
+      result[p].push({ name: "금여록", type: "길성", description: "의식의 풍족함과 안정적인 지위 (金輿祿)", health_implication: null, topic_relevance: ["finance"], severity: "길", pillar: p });
+    }
+    // 6) 양인살 (羊刃殺)
+    if (YANGIN_MAP[dm] === ji) {
+      result[p].push({ name: "양인살", type: "흉성", description: "강렬한 추진력과 고집, 유혈의 기운 (羊刃殺)", health_implication: "수술 및 외상 주의", topic_relevance: ["career"], severity: "흉", pillar: p });
+    }
+  });
+
+  // 4) 천덕귀인 (天德貴人) - 월지 기준 천간 탐색
+  const cheondeokTarget = CHEONDEOK_MAP[monthJi];
+  pList.forEach((p, idx) => {
+    if (allStems[idx] === cheondeokTarget) {
+      result[p].push({ name: "천덕귀인", type: "길성", description: "조상의 덕과 하늘의 보호 (天德貴人)", health_implication: null, topic_relevance: ["general"], severity: "길", pillar: p });
+    }
+  });
+
+  // 5) 월덕귀인 (月德貴人) - 월지 기준 천간 탐색
+  const woldeokTarget = WOLDEOK_MAP[monthJi];
+  pList.forEach((p, idx) => {
+    if (allStems[idx] === woldeokTarget) {
+      result[p].push({ name: "월덕귀인", type: "길성", description: "재난을 피하고 덕을 쌓음 (月德貴人)", health_implication: null, topic_relevance: ["general"], severity: "길", pillar: p });
+    }
+  });
+
+  // 7) 백호살 (白虎殺) - 일지 기준이 아니라 "간지" 기준 (보통 기둥 자체)
+  pList.forEach(p => {
+    const fullPillar = allStems[pList.indexOf(p)] + bMap[p];
+    if (BAEKHO_LIST.includes(fullPillar)) {
+      result[p].push({ name: "백호살", type: "흉성", description: "갑작스러운 사고나 강한 변화의 기운 (白虎殺)", health_implication: "사고 주의", topic_relevance: ["general"], severity: "흉", pillar: p });
+    }
+  });
+
+  // 8) 괴강살 (魁罡殺) - 일주 기준
+  if (GOEGANG_LIST.includes(dayPillarStr)) {
+    result.day.push({ name: "괴강살", type: "흉성", description: "총명함 뒤의 고립, 강력한 추진력과 기세 (魁罡殺)", health_implication: null, topic_relevance: ["career"], severity: "흉", pillar: "day" });
+  }
+
+  // 9) 천라지망 (天羅地網)
+  const branchSet = new Set([pillars.year, pillars.month, pillars.day, pillars.hour]);
+  if (branchSet.has("戌") && branchSet.has("亥")) {
+    result.general.push({ name: "천라", type: "흉성", description: "정신적 구속과 정체 (天羅)", health_implication: "피로 주의", topic_relevance: ["spirituality"], severity: "흉", pillar: "general" });
+  }
+  if (branchSet.has("辰") && branchSet.has("巳")) {
+    result.general.push({ name: "지망", type: "흉성", description: "물리적 제약과 활동 방해 (地網)", health_implication: null, topic_relevance: ["general"], severity: "흉", pillar: "general" });
   }
 
   return result;

@@ -36,6 +36,8 @@ export interface SajuAnalysisResult {
   yongsin_detail?: any;                                 // B-266: 용신 상세 (억부, 조후, 통관)
   tenGodDistribution?: any;                             // B-267: 십신 에너지 분포
   elements_simple?: Record<string, number>;            // v2: 단순 오행 카운트
+  elements_weighted?: Record<string, number>;          // v2: 가중 오행 (합충 반영)
+  gongmang?: any;                                      // v2: 공망 정보
   element_adjustments?: any[];                         // v2: 합화 오행 변화
   daewoon_transition?: any;                            // v2: 대운 전환기 경고
   daily_pillar?: any;                                  // v2: 일진 분석
@@ -43,7 +45,7 @@ export interface SajuAnalysisResult {
 
 import { getDaewoonInfo, calculateFullDaewoon, type DaewoonResult } from "./lib/daewoon.ts";
 import { STEMS, BRANCHES, FIVE_ELEMENTS_MAP } from "./lib/fiveElements.ts";
-import { calculateInteractions, calculateShinsal, calculateShinsalGrouped, calculateGwimunWonjin, checkStemRelation, checkBranchRelation, type Interaction, type Shinsal } from "./lib/interactions.ts";
+import { calculateInteractions, calculateShinsal, calculateShinsalGrouped, calculateGwimunWonjin, calculateGongmang, checkStemRelation, checkBranchRelation, type Interaction, type Shinsal } from "./lib/interactions.ts";
 import { calculateAllTwelveStages, calculateTwelveStage, calculateAllTwelveStagesGeobup, calculateTwelveStageGeobup, getTwelveStageEnergy, BRANCH_MAIN_STEM } from "./lib/twelveStages.ts";
 import { determineGyeokguk, type GyeokgukResult } from "./lib/gyeokguk.ts";
 import { getAllPillarJijanggan } from "./lib/jijanggan.ts";
@@ -881,19 +883,65 @@ export async function analyzeSajuStructure(
   ].filter((b): b is string => !!b);
   const interactions = calculateInteractions(interactionStems, interactionBranches);
 
-  // v2: 합충 결과의 오행 변화 (element_adjustments)
+  // ── B-223: 공망(空亡) 계산 ──
+  const gongmang = calculateGongmang(dm, pillars.day?.branch || "", {
+    year: pillars.year?.branch || "",
+    month: pillars.month?.branch || "",
+    day: pillars.day?.branch || "",
+    hour: pillars.hour?.branch || "",
+  });
+  if (gongmang.emptied.length > 0) {
+    const emptiedStr = gongmang.emptied.join(",");
+    characteristics.push(`공망: ${emptiedStr} (${gongmang.affectedPillars.join(",")} 적용)`);
+  }
+
+  // v2: 합충 결과의 오행 변화 (element_adjustments) 및 점수 반영
   const element_adjustments: any[] = [];
+  const elements_weighted = { ...elements }; // 가중치 적용할 복사본
   const SAMHAP_ELEMENTS: Record<string, string> = { "수국 삼합": "수", "화국 삼합": "화", "금국 삼합": "금", "목국 삼합": "목" };
-  
+  const BANGHAP_ELEMENTS: Record<string, string> = { "동방 목국 방합": "목", "남방 화국 방합": "화", "서방 금국 방합": "금", "북방 수국 방합": "수" };
+
   interactions.forEach(inter => {
     if (inter.type === "지지삼합") {
       const isFull = !inter.result.includes("반합");
       const baseName = inter.meaning_keyword.split(" ")[0];
-      const targetElem = SAMHAP_ELEMENTS[baseName] || "목";
+      const targetElem = SAMHAP_ELEMENTS[baseName];
+      if (targetElem) {
+        const score = isFull ? 1.0 : 0.3;
+        elements_weighted[targetElem] = (elements_weighted[targetElem] || 0) + score;
+        element_adjustments.push({
+          type: isFull ? "삼합성립" : "반합경향",
+          element: targetElem,
+          score,
+          combination: inter.elements.join("") + " " + inter.result,
+          effect: isFull ? `${targetElem} 에너지 +1.0 (삼합)` : `${targetElem} 에너지 +0.3 (반합)`
+        });
+      }
+    } else if (inter.type === "지지방합") {
+      const targetElem = BANGHAP_ELEMENTS[inter.result];
+      if (targetElem) {
+        const score = 0.8;
+        elements_weighted[targetElem] = (elements_weighted[targetElem] || 0) + score;
+        element_adjustments.push({
+          type: "방합성립",
+          element: targetElem,
+          score,
+          combination: inter.elements.join(" ") + " " + inter.result,
+          effect: `${targetElem} 에너지 +0.8 (방합)`
+        });
+      }
+    } else if (inter.type === "지지충") {
+      const losers = inter.elements.map(e => BRANCH_ELEMENT[e]);
+      losers.forEach(le => {
+        if (le) {
+          elements_weighted[le] = Math.max(0, (elements_weighted[le] || 0) - 0.25); // 개별 -0.25 (합 -0.5)
+        }
+      });
       element_adjustments.push({
-        type: isFull ? "삼합성립" : "반합경향",
-        combination: inter.elements.join("") + " " + inter.result,
-        effect: isFull ? `${targetElem} 에너지 +1.5, 관련 지지 오행 약화` : `${targetElem} 에너지 강화 경향, 완전 합화 미성립`
+        type: "격돌",
+        score: -0.5,
+        combination: inter.elements.join(" vs "),
+        effect: `충돌 오행 각각 약화 (-0.5)`
       });
     }
   });
@@ -1088,7 +1136,8 @@ export async function analyzeSajuStructure(
     excess,
     deficient,
     analysis: `${excess.length > 0 ? excess.join("/") + " 과잉" : "에너지 균형"}이며, ` +
-               `${deficient.length > 0 ? deficient.join("/") + " 결핍" : "뚜렷한 결핍 없음"} 상태입니다.`
+               `${deficient.length > 0 ? deficient.join("/") + " 결핍" : "뚜렷한 결핍 없음"} 상태입니다.`,
+    elements_weighted // 보정된 오행 점수 포함
   };
 
   // v2: 일진 분석 (Daily Pillar)
@@ -1173,7 +1222,8 @@ export async function analyzeSajuStructure(
     cross_interactions,
     yongsin_detail,
     tenGodDistribution,
-    elements_simple,
+    elements_weighted,
+    gongmang,
     element_adjustments,
     daewoon_transition,
     daily_pillar
