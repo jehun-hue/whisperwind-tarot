@@ -10,9 +10,9 @@ import { processChat } from "./interactivityLayer.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
 const READING_VERSION = "v9.1_symbolic_prediction_engine";
@@ -28,7 +28,7 @@ serve(async (req: Request) => {
   if (url.searchParams.get("healthcheck") === "true") {
     return new Response(JSON.stringify({ status: "ok", timestamp: new Date().toISOString() }), {
       status: 200,
-      headers: { "Content-Type": "application/json" }
+      headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
   }
 
