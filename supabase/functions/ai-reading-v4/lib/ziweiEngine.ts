@@ -4,6 +4,7 @@
  */
 
 import { getNapeum } from "./napeum.ts";
+import { getKoreanTimezoneOffset } from "./timeUtils.ts";
 
 const BRANCHES = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
 const STEMS = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"];
@@ -99,8 +100,12 @@ export function calculateZiwei(
     if (part.type === 'day') lunarDay = parseInt(part.value.replace(/\D/g, '')) || 1;
   }
 
+  // DST Correction for hour
+  const offset = getKoreanTimezoneOffset(year, month, day);
+  const standardHour = hour - (offset - 9); // standard time (GMT+9)
+
   const yearStem = STEMS[(year - 4) % 10];
-  const hourIdx = Math.floor(((hour + 1) % 24) / 2);
+  const hourIdx = Math.floor(((standardHour + 1) % 24) / 2);
   const birthHourBranch = BRANCHES[hourIdx];
 
   const lifePalace = determineMingGong(lunarMonth, birthHourBranch);
