@@ -50,6 +50,8 @@ const PLANET_MEANINGS: Record<string, { domain: string; keyword: string }> = {
   명왕성: { domain: "변혁, 죽음과부활, 권력", keyword: "변혁" },
   "North Node": { domain: "운명적 방향, 성장, 카르마의 목적", keyword: "미래" },
   "South Node": { domain: "과거의 습관, 숙달된 재능, 카르마적 부채", keyword: "과거" },
+  "Chiron": { domain: "트라우마, 치유, 교육, 대안 의학", keyword: "치유" },
+  "Lilith": { domain: "무의식, 성적 에너지, 금기, 독립", keyword: "본능" },
 };
 
 const SIGN_MEANINGS: Record<string, string> = {
@@ -132,7 +134,7 @@ function getPlanetOrbCorrection(planet: string): number {
   if (planet === "태양" || planet === "달") return 2;
   if (planet === "목성" || planet === "토성") return -1;
   if (planet === "천왕성" || planet === "해왕성" || planet === "명왕성") return -2;
-  if (planet === "North Node" || planet === "South Node") return -1;
+  if (planet === "North Node" || planet === "South Node" || planet === "Chiron" || planet === "Lilith") return -1;
   return 0;
 }
 
@@ -178,6 +180,41 @@ function calculateMeanNode(date: Date): number {
   return ((node % 360) + 360) % 360;
 }
 
+function calculateChironLongitude(time: Astronomy.AstroTime): number {
+  const D = time.tt - 2451545.0;
+  const a = 13.648, e = 0.3786;
+  const iRad = 6.926 * Math.PI / 180;
+  const nodeRad = 209.39 * Math.PI / 180;
+  const argPRad = 339.24 * Math.PI / 180;
+  const M0Rad = 69.45 * Math.PI / 180;
+  const nRad = 0.01942 * Math.PI / 180;
+
+  let M = (M0Rad + nRad * D) % (2 * Math.PI);
+  let E = M;
+  for (let j = 0; j < 5; j++) E = M + e * Math.sin(E);
+
+  const x_orb = a * (Math.cos(E) - e);
+  const y_orb = a * Math.sqrt(1 - e * e) * Math.sin(E);
+  const r = Math.sqrt(x_orb * x_orb + y_orb * y_orb);
+  const v = Math.atan2(y_orb, x_orb);
+  const phi = v + argPRad;
+
+  const x_h = r * (Math.cos(nodeRad) * Math.cos(phi) - Math.sin(nodeRad) * Math.sin(phi) * Math.cos(iRad));
+  const y_h = r * (Math.sin(nodeRad) * Math.cos(phi) + Math.cos(nodeRad) * Math.sin(phi) * Math.cos(iRad));
+  const z_h = r * Math.sin(phi) * Math.sin(iRad);
+
+  const sunGeo = Astronomy.GeoVector(Astronomy.Body.Sun, time, true);
+  const chironGeo = { x: x_h + sunGeo.x, y: y_h + sunGeo.y, z: z_h + sunGeo.z };
+  const ecl = Astronomy.Ecliptic(new Astronomy.Vector(chironGeo.x, chironGeo.y, chironGeo.z, time.tt));
+  return ecl.elon;
+}
+
+function calculateLilithLongitude(time: Astronomy.AstroTime): number {
+  const D = time.tt - 2451545.0;
+  const lon = 83.353 + 0.11140353 * D;
+  return ((lon % 360) + 360) % 360;
+}
+
 function getHighPrecisionPositions(date: Date, observer: Astronomy.Observer) {
   const time = Astronomy.MakeTime(date);
   const planetPositions = PLANET_NAMES.map(name => {
@@ -195,6 +232,9 @@ function getHighPrecisionPositions(date: Date, observer: Astronomy.Observer) {
   const nodeLng = calculateMeanNode(date);
   planetPositions.push({ planet: "North Node", longitude: nodeLng });
   planetPositions.push({ planet: "South Node", longitude: (nodeLng + 180) % 360 });
+
+  planetPositions.push({ planet: "Chiron", longitude: calculateChironLongitude(time) });
+  planetPositions.push({ planet: "Lilith", longitude: calculateLilithLongitude(time) });
 
   return planetPositions;
 }
@@ -489,8 +529,14 @@ export function calculateServerAstrology(
 
     // B-71new: 역행 판별 — 현재 속도 음수 여부 (astronomy-engine GeoVector 기반)
     let is_retrograde = false;
-    if (p.planet === "North Node" || p.planet === "South Node") {
-      is_retrograde = true;
+    if (p.planet === "North Node" || p.planet === "South Node" || p.planet === "Lilith") {
+      is_retrograde = p.planet === "Lilith" ? false : true;
+    } else if (p.planet === "Chiron") {
+      try {
+        const t1 = Astronomy.MakeTime(natalDate);
+        const t2 = Astronomy.MakeTime(new Date(natalDate.getTime() + 86400000));
+        is_retrograde = calculateChironLongitude(t2) < calculateChironLongitude(t1);
+      } catch (_) {}
     } else {
       try {
         const time = Astronomy.MakeTime(natalDate);
