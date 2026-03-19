@@ -1,67 +1,90 @@
 /**
  * numerologyEngine.ts
- * - Life Path Number calculation
- * - Destiny Number calculation
- * - Personal Year calculation
+ * - Comprehensive Numerology Engine
+ * - Life Path, Expression, Soul Urge, Personality, Birthday, Maturity
+ * - Personal Year, Month, Day
+ * - Pinnacles & Challenges
  */
 
 export interface NumerologyResult {
   life_path_number: number;
-  destiny_number: number | null;
+  destiny_number: number | null; // Hangul fallback
+  expressionNumber: number | null; // English
+  soulUrgeNumber: number | null;
+  personalityNumber: number | null;
+  birthdayNumber: number;
+  maturityNumber: number | null;
   personal_year: number;
-  vibrations: string[];
+  personalMonth: number;
+  personalDay: number;
+  pinnacles: any[];
+  challenges: any[];
   is_master_number: boolean;
   master_number_type: string | null;
-  soul_number?: number | null;
-  compound_number?: number | null;
+  compound_number: number;
+  numberMeanings: any;
+  vibrations: string[];
 }
 
-/**
- * 한글 자음 획수 기반 숫자 변환 (Pythagorean 방식 보조)
- * ㄱ:1, ㄴ:1, ㄷ:2, ㄹ:3, ㅁ:3, ㅂ:4, ㅅ:2, ㅇ:1, ㅈ:3, ㅊ:4, ㅋ:2, ㅌ:3, ㅍ:4, ㅎ:3
- * ㄲ, ㄸ, ㅃ, ㅆ, ㅉ 등은 동일 자음 합산 혹은 단일 처리 가능하지만 획수 기반이므로 합쳐서 계산
- */
+const PYTHAGOREAN_MAP: Record<string, number> = {
+  A: 1, J: 1, S: 1,
+  B: 2, K: 2, T: 2,
+  C: 3, L: 3, U: 3,
+  D: 4, M: 4, V: 4,
+  E: 5, N: 5, W: 5,
+  F: 6, O: 6, X: 6,
+  G: 7, P: 7, Y: 7,
+  H: 8, Q: 8, Z: 8,
+  I: 9, R: 9
+};
+
+const VOWELS = ['A', 'E', 'I', 'O', 'U'];
+
+const NUMBER_MEANINGS: Record<number, any> = {
+  1: { keyword: "리더십", description: "독립, 개척, 자기 주도", energy: "시작" },
+  2: { keyword: "협력", description: "조화, 인내, 파트너십", energy: "수용" },
+  3: { keyword: "창조", description: "표현, 소통, 낙관", energy: "확장" },
+  4: { keyword: "안정", description: "구조, 근면, 실용", energy: "기반" },
+  5: { keyword: "변화", description: "자유, 모험, 다양성", energy: "유동" },
+  6: { keyword: "책임", description: "가정, 헌신, 봉사", energy: "조화" },
+  7: { keyword: "탐구", description: "분석, 영성, 내면", energy: "성찰" },
+  8: { keyword: "성취", description: "권력, 물질, 경영", energy: "수확" },
+  9: { keyword: "완성", description: "인도주의, 지혜, 해방", energy: "마무리" },
+  11: { keyword: "영감", description: "직관, 영적 각성, 카리스마", energy: "조명", master: true },
+  22: { keyword: "건축가", description: "대규모 실현, 비전, 글로벌", energy: "구현", master: true },
+  33: { keyword: "치유자", description: "무조건적 사랑, 희생, 교육", energy: "봉사", master: true }
+};
+
+function reduceToSingle(n: number): number {
+  // B-43R: 마스터 넘버(11, 22, 33) 예외 처리
+  while (n > 9 && n !== 11 && n !== 22 && n !== 33) {
+    n = n.toString().split('').reduce((acc, d) => acc + parseInt(d), 0);
+  }
+  return n;
+}
+
 function calculateDestinyNumber(name: string): number | null {
   if (!name || name.trim() === "" || name === "이름없음") return null;
-
   const STROKE_MAP: Record<string, number> = {
     'ㄱ': 1, 'ㄲ': 2, 'ㄴ': 1, 'ㄷ': 2, 'ㄸ': 4, 'ㄹ': 3, 'ㅁ': 3, 'ㅂ': 4, 'ㅃ': 8, 'ㅅ': 2, 'ㅆ': 4, 'ㅇ': 1, 'ㅈ': 3, 'ㅉ': 6, 'ㅊ': 4, 'ㅋ': 2, 'ㅌ': 3, 'ㅍ': 4, 'ㅎ': 3,
     'ㄳ': 3, 'ㄵ': 4, 'ㄶ': 4, 'ㄺ': 4, 'ㄻ': 6, 'ㄼ': 7, 'ㄽ': 5, 'ㄾ': 5, 'ㄿ': 5, 'ㅀ': 6, 'ㅄ': 6
   };
-
   const CHOSEONG_LIST = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
   const JONGSEONG_LIST = ['', 'ㄱ', 'ㄲ', 'ㄳ', 'ㄴ', 'ㄵ', 'ㄶ', 'ㄷ', 'ㄹ', 'ㄺ', 'ㄻ', 'ㄼ', 'ㄽ', 'ㄾ', 'ㄿ', 'ㅀ', 'ㅁ', 'ㅂ', 'ㅄ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
-
   let totalStrokes = 0;
   let hasHangul = false;
-
   for (const char of name) {
     const code = char.charCodeAt(0) - 0xAC00;
     if (code >= 0 && code <= 11171) {
       hasHangul = true;
       const choseongIndex = Math.floor(code / (21 * 28));
       const jongseongIndex = code % 28;
-
       totalStrokes += STROKE_MAP[CHOSEONG_LIST[choseongIndex]] || 0;
-      if (jongseongIndex > 0) {
-        totalStrokes += STROKE_MAP[JONGSEONG_LIST[jongseongIndex]] || 0;
-      }
-    } else {
-      // 한글이 아닌 경우 (공백 등) 무시하거나 필요시 영어 변환 추가 가능
+      if (jongseongIndex > 0) totalStrokes += STROKE_MAP[JONGSEONG_LIST[jongseongIndex]] || 0;
     }
   }
-
   if (!hasHangul) return null;
-
-  // B-43R: 마스터 넘버(11, 22, 33) 예외 처리 포함 환원
-  const reduceMaster = (n: number): number => {
-    while (n > 9 && n !== 11 && n !== 22 && n !== 33) {
-      n = n.toString().split('').reduce((acc, d) => acc + parseInt(d), 0);
-    }
-    return n;
-  };
-
-  return reduceMaster(totalStrokes);
+  return reduceToSingle(totalStrokes);
 }
 
 export function calculateNumerology(
@@ -69,17 +92,14 @@ export function calculateNumerology(
   currentYear: number = new Date().getFullYear(),
   name?: string
 ): NumerologyResult {
-  const dateParts = birthDate.split("-"); // YYYY-MM-DD
+  const dateParts = birthDate.split("-");
   const yearStr = dateParts[0];
   const monthStr = dateParts[1];
   const dayStr = dateParts[2];
-
-  const reduceNumber = (num: number): number => {
-    while (num > 9 && num !== 11 && num !== 22 && num !== 33) {
-      num = num.toString().split("").reduce((acc, digit) => acc + parseInt(digit), 0);
-    }
-    return num;
-  };
+  
+  const year = parseInt(yearStr);
+  const month = parseInt(monthStr);
+  const day = parseInt(dayStr);
 
   const sumDigits = (str: string): number => {
     return str.split("").reduce((acc, digit) => acc + (parseInt(digit) || 0), 0);
@@ -87,71 +107,112 @@ export function calculateNumerology(
 
   // 1. Life Path: Sum of MM + DD + YYYY
   const lpSum = sumDigits(monthStr) + sumDigits(dayStr) + sumDigits(yearStr);
-  const lifePath = reduceNumber(lpSum);
+  const lifePath = reduceToSingle(lpSum);
 
-  // 2. Personal Year: MM + DD + CurrentYear
-  const pySum = sumDigits(monthStr) + sumDigits(dayStr) + sumDigits(currentYear.toString());
-  const personalYear = reduceNumber(pySum);
+  // 2. Name based numbers (English)
+  let expression: number | null = null;
+  let soulUrge: number | null = null;
+  let personality: number | null = null;
 
-  // 3. Destiny Number: Based on Name
-  const destiny = calculateDestinyNumber(name || ""); 
+  if (name) {
+    const cleanName = name.toUpperCase().replace(/[^A-Z]/g, '');
+    if (cleanName.length > 0) {
+      let eSum = 0, sSum = 0, pSum = 0;
+      for (const char of cleanName) {
+        const val = PYTHAGOREAN_MAP[char] || 0;
+        eSum += val;
+        if (VOWELS.includes(char)) sSum += val;
+        else pSum += val;
+      }
+      expression = reduceToSingle(eSum);
+      soulUrge = reduceToSingle(sSum);
+      personality = reduceToSingle(pSum);
+    }
+  }
 
-  const LIFE_PATH_MEANINGS: Record<number, { keyword: string; career: string; relationship: string; change: string }> = {
-    1:  { keyword: "독립·개척", career: "리더십·창업·독립 사업에 강점", relationship: "주도적 관계, 의존성 낮음", change: "새로운 시작·혁신 에너지" },
-    2:  { keyword: "협력·조화", career: "조율·외교·상담·파트너십 업무 적합", relationship: "깊은 유대감, 섬세한 감정 교류", change: "점진적 변화, 협력으로 전환" },
-    3:  { keyword: "창의·표현", career: "예술·미디어·교육·커뮤니케이션 적합", relationship: "밝고 사교적, 다양한 인연", change: "창의적 돌파구, 표현으로 변화" },
-    4:  { keyword: "안정·구축", career: "건설·금융·관리·실무형 직업 강점", relationship: "신뢰 기반, 장기적 헌신", change: "체계적 재구성, 기반 다지기" },
-    5:  { keyword: "자유·변화", career: "영업·여행·미디어·다양한 경험 직군", relationship: "자유로운 연애, 변화 많은 인연", change: "급격한 전환, 새 환경 적응" },
-    6:  { keyword: "책임·사랑", career: "의료·교육·상담·가족 관련 직업 적합", relationship: "헌신적 사랑, 가족 중심", change: "관계·가정 중심 변화" },
-    7:  { keyword: "탐구·직관", career: "연구·분석·철학·IT·영성 관련 직업", relationship: "깊이 있는 소수 관계 선호", change: "내면 성장, 영적 전환" },
-    8:  { keyword: "성취·권력", career: "금융·경영·부동산·리더십 직군 강점", relationship: "대등한 파트너십, 성취 공유", change: "물질적 도약, 사회적 지위 변화" },
-    9:  { keyword: "완성·봉사", career: "사회복지·예술·국제 업무·완성 단계 프로젝트", relationship: "넓은 사랑, 인류애적 유대", change: "마무리와 새 시작, 카르마 해소" },
-    11: { keyword: "직관·영감", career: "영성·예술·상담·사회적 영향력 직군", relationship: "깊은 영적 연결, 이상적 파트너 추구", change: "영적 각성, 사명감 전환" },
-    22: { keyword: "마스터·건설", career: "대규모 프로젝트·건축·사회 변혁 리더", relationship: "헌신적이고 실용적인 파트너십", change: "비전 실현, 대형 전환점" },
-    33: { keyword: "마스터·치유", career: "치유·교육·영적 지도자·봉사 직군", relationship: "무조건적 사랑, 헌신", change: "고차원적 사명, 영적 변화" },
+  // 3. Birthday Number
+  const birthdayNumber = reduceToSingle(day);
+
+  // 4. Maturity Number
+  const maturityNumber = expression ? reduceToSingle(lifePath + expression) : null;
+
+  // 5. Personal Year, Month, Day (based on current date)
+  const now = new Date();
+  const personalYear = reduceToSingle(sumDigits(monthStr) + sumDigits(dayStr) + sumDigits(currentYear.toString()));
+  const personalMonth = reduceToSingle(personalYear + (now.getMonth() + 1));
+  const personalDay = reduceToSingle(personalMonth + now.getDate());
+
+  // 6. Destiny (Hangul fallback)
+  const destiny = calculateDestinyNumber(name || "");
+
+  // 7. Pinnacles & Challenges
+  const rMonth = reduceToSingle(month);
+  const rDay = reduceToSingle(day);
+  const rYear = reduceToSingle(year);
+
+  const p1 = reduceToSingle(rMonth + rDay);
+  const p2 = reduceToSingle(rDay + rYear);
+  const p3 = reduceToSingle(p1 + p2);
+  const p4 = reduceToSingle(rMonth + rYear);
+
+  const c1 = reduceToSingle(Math.abs(rMonth - rDay));
+  const c2 = reduceToSingle(Math.abs(rDay - rYear));
+  const c3 = reduceToSingle(Math.abs(c1 - c2));
+  const c4 = reduceToSingle(Math.abs(rMonth - rYear));
+
+  const endAge1 = 36 - lifePath;
+  const pinnacles = [
+    { period: `출생 ~ ${endAge1}세`, number: p1, meaning: (NUMBER_MEANINGS[p1]?.energy || "변화") + "의 시기" },
+    { period: `${endAge1 + 1} ~ ${endAge1 + 9}세`, number: p2, meaning: (NUMBER_MEANINGS[p2]?.energy || "변화") + "의 시기" },
+    { period: `${endAge1 + 10} ~ ${endAge1 + 18}세`, number: p3, meaning: (NUMBER_MEANINGS[p3]?.energy || "변화") + "의 시기" },
+    { period: `${endAge1 + 19}세 ~ 종료`, number: p4, meaning: (NUMBER_MEANINGS[p4]?.energy || "마무리") + "의 시기" }
+  ];
+  const challenges = [
+    { period: `출생 ~ ${endAge1}세`, number: c1, meaning: "도전 과제: " + (NUMBER_MEANINGS[c1]?.keyword || "환경") },
+    { period: `${endAge1 + 1} ~ ${endAge1 + 9}세`, number: c2, meaning: "도전 과제: " + (NUMBER_MEANINGS[c2]?.keyword || "환경") },
+    { period: `${endAge1 + 10} ~ ${endAge1 + 18}세`, number: c3, meaning: "도전 과제: " + (NUMBER_MEANINGS[c3]?.keyword || "환경") },
+    { period: `${endAge1 + 19}세 ~ 종료`, number: c4, meaning: "도전 과제: " + (NUMBER_MEANINGS[c4]?.keyword || "환경") }
+  ];
+
+  // 8. Synthesis & Vibrations
+  const numberMeanings: any = {
+    lifePath: { number: lifePath, ...NUMBER_MEANINGS[lifePath] },
+    personalYear: { number: personalYear, ...NUMBER_MEANINGS[personalYear] }
   };
-
-  const lpMeaning = LIFE_PATH_MEANINGS[lifePath];
-  const pyMeaning = LIFE_PATH_MEANINGS[personalYear];
+  if (expression) numberMeanings.expression = { number: expression, ...NUMBER_MEANINGS[expression] };
+  if (soulUrge) numberMeanings.soulUrge = { number: soulUrge, ...NUMBER_MEANINGS[soulUrge] };
+  if (personality) numberMeanings.personality = { number: personality, ...NUMBER_MEANINGS[personality] };
 
   const vibrations: string[] = [];
-  if (lpMeaning) {
-    vibrations.push(`생명수 ${lifePath}(${lpMeaning.keyword}) → 직업: ${lpMeaning.career}`);
-    vibrations.push(`생명수 ${lifePath} 관계: ${lpMeaning.relationship}`);
-    vibrations.push(`생명수 ${lifePath} 변화: ${lpMeaning.change}`);
-  } else {
-    vibrations.push(`Life Path ${lifePath}`);
-  }
-  if (pyMeaning) {
-    vibrations.push(`개인년 ${personalYear}(${pyMeaning.keyword}) → ${pyMeaning.change}`);
-  } else {
-    vibrations.push(`Personal Year ${personalYear}`);
-  }
-  if (destiny) vibrations.push(`운명수 ${destiny}${LIFE_PATH_MEANINGS[destiny] ? `(${LIFE_PATH_MEANINGS[destiny].keyword})` : ""}`);
+  vibrations.push(`생명수 ${lifePath}(${NUMBER_MEANINGS[lifePath]?.keyword}): ${NUMBER_MEANINGS[lifePath]?.description}`);
+  vibrations.push(`개인년 ${personalYear}(${NUMBER_MEANINGS[personalYear]?.keyword}): ${NUMBER_MEANINGS[personalYear]?.energy} 에너지가 강한 해`);
+  if (expression) vibrations.push(`표현수 ${expression}: 대외적인 이미지와 삶의 목적`);
 
-  // B-43R: 마스터 넘버 플래그
   const masterNumbers = [11, 22, 33];
-  const isMasterNumber = masterNumbers.includes(lifePath) || masterNumbers.includes(personalYear) || (destiny !== null && masterNumbers.includes(destiny));
-  const masterNumberType = masterNumbers.includes(lifePath)
-    ? `생명수 ${lifePath}`
-    : masterNumbers.includes(personalYear)
-    ? `개인년 ${personalYear}`
-    : (destiny !== null && masterNumbers.includes(destiny))
-    ? `운명수 ${destiny}`
-    : null;
-
-  // B-77new: Soul Number (모음 획수 기반 간략 계산 — 이름 없으면 null)
-  // B-78new: Compound Number (환원 전 원본 합계)
-  const compoundNumber = lpSum; // 환원 전 생명수 원본 합계
+  const isMasterNumber = masterNumbers.includes(lifePath) || masterNumbers.includes(personalYear) || (expression !== null && masterNumbers.includes(expression!));
+  
+  let masterNumberType = null;
+  if (masterNumbers.includes(lifePath)) masterNumberType = `생명수 ${lifePath}`;
+  else if (expression && masterNumbers.includes(expression)) masterNumberType = `표현수 ${expression}`;
+  else if (masterNumbers.includes(personalYear)) masterNumberType = `개인년 ${personalYear}`;
 
   return {
     life_path_number: lifePath,
     destiny_number: destiny,
+    expressionNumber: expression,
+    soulUrgeNumber: soulUrge,
+    personalityNumber: personality,
+    birthdayNumber,
+    maturityNumber,
     personal_year: personalYear,
-    vibrations,
+    personalMonth,
+    personalDay,
+    pinnacles,
+    challenges,
     is_master_number: isMasterNumber,
     master_number_type: masterNumberType,
-    soul_number: null,   // B-77new: 추후 모음 획수 기반 구현
-    compound_number: compoundNumber,
+    compound_number: lpSum,
+    numberMeanings,
+    vibrations
   };
 }
