@@ -254,9 +254,16 @@ ${selectedPalaces}
     .map((asp: any) => asp.interpretation || `${asp.planet1} ${asp.type} ${asp.planet2}`)
     .join('\n');
 
-  // 트랜짓 TOP 3 (가장 가까운 정점)
-  const transitFiltered = transits.filter((t: string) => t.includes('정점') && !t.includes('통과'));
-  const topTransits = transitFiltered.slice(0, 3).join('\n') || '주요 트랜짓 없음';
+  // 트랜짓 TOP 8 (가장 가까운 정점, 날짜순 정렬)
+  const topTransits = transits
+    .filter((t: string) => t.includes('정점') && !t.includes('통과'))
+    .sort((a: string, b: string) => {
+      const dateA = a.match(/\d{4}-\d{2}-\d{2}/)?.[0] || '';
+      const dateB = b.match(/\d{4}-\d{2}-\d{2}/)?.[0] || '';
+      return dateA.localeCompare(dateB);
+    })
+    .slice(0, 8)
+    .join('\n') || '주요 트랜짓 없음';
 
   // 솔라리턴 핵심
   const sr = aRaw.solarReturn || {} as any;
