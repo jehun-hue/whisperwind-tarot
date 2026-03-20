@@ -1691,10 +1691,17 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                 )}
               </div>
 
-
-
-
-
+              {/* 1-3. E5L5 (균형 50%) */}
+              <div className="p-6 border-b border-border/10 bg-purple-500/5">
+                <div className="mb-3 text-xs font-bold text-purple-400 tracking-widest uppercase">⚖️ 균형 50% 통합 리딩</div>
+                {reading?.tarot_reading?.e5l5?.story ? (
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap text-foreground/90">
+                    {renderSafe(reading.tarot_reading.e5l5.story)}
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground italic">균형 리딩 데이터가 없습니다.</p>
+                )}
+              </div>
               {/* 3. Cross-System Consensus */}
               {reading.engine && (
                 <div className="p-6 border-b border-border/10 bg-secondary/10">
