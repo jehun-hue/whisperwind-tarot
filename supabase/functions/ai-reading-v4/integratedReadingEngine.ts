@@ -1433,41 +1433,56 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     parsed = buildFallbackReading("데이터 분석 전용 모드입니다.", grade, scores, tarotCards, input.question, style);
   } else {
     try {
-      const geminiStart = Date.now();
-      console.log("[MODEL]", { task: "통합 리딩 생성", model: "gemini-2.5-flash" });
-      
-      const rawNarrative = await fetchGemini(apiKey, "gemini-2.5-flash", finalPrompt, "당신은 위스퍼윈드입니다. 마크다운 문법(**, ##, ---, *, ```)을 절대 사용하지 말라. 굵은 글씨, 제목 기호, 구분선 없이 순수 텍스트로만 작성하라. 강조가 필요하면 따옴표나 괄호를 사용하라. 반드시 아래 3개 구분자를 사용하여 3가지 스타일로 나눠서 작성하라:\n\n===CHOIHANNA===\n감성 해석 (2000-3000자). 감정과 상황 중심으로 풀어라. 데이터를 직접 나열하지 말고 해석 문장 안에 자연스럽게 녹여라. 상담받는 느낌이 들도록 위로와 이해를 포함하라. 부정적 결론만으로 끝내지 말고 반드시 완충 문장을 포함하라.\n\n===MONAD===\n분석 리딩 (2000-3000자). 결론을 먼저 제시하고 핵심 근거 2-3개를 명시하라. 각 근거는 '데이터 → 해석' 구조로 작성하라. 리스크를 명확히 드러내라. 문장은 단정형으로 모호한 표현을 피하라.\n\n===HYBRID===\n결정 요약 (3-5문장). 1문장: 핵심 결론. 2-3문장: 핵심 근거(최대 2개). 마지막 1문장: 실행 방향.", 0.2);
-      geminiLatency = Date.now() - geminiStart;
-
-      if (!rawNarrative) {
-        throw new Error("Empty narrative from Gemini");
-      }
-
-      parsed = buildFallbackReading("", grade, scores, tarotCards, input.question, style);
-      parsed.integrated_summary = rawNarrative;
-      parsed.final_message.summary = rawNarrative;
-      
-      // === E1-B v4: 구분자 기반 3스타일 분리 ===
-      const sections = {
-        choihanna: '',
-        monad: '',
-        hybrid: ''
+      // === E1-B v5: 스타일별 개별 호출 (3회) ===
+      const STYLE_CONFIGS = {
+        choihanna: {
+          instruction: "당신은 따뜻하고 공감 능력이 뛰어난 상담사입니다. 감정과 상황 중심으로 풀어라. 데이터를 직접 나열하지 말고 해석 문장 안에 자연스럽게 녹여라. 상담받는 느낌이 들도록 위로와 이해를 포함하라. 부정적 결론만으로 끝내지 말고 반드시 완충 문장을 포함하라. 마크다운 문법(**, ##, ---, *, ```)을 절대 사용하지 말라. 순수 텍스트로만 2000-3000자 작성하라.",
+          temperature: 0.3
+        },
+        monad: {
+          instruction: "당신은 냉철하고 정확한 데이터 분석가입니다. 결론을 먼저 제시하고 핵심 근거 2-3개를 명시하라. 각 근거는 '데이터 → 해석' 구조로 작성하라. 리스크를 명확히 드러내라. 문장은 단정형으로 모호한 표현을 피하라. 마크다운 문법(**, ##, ---, *, ```)을 절대 사용하지 말라. 순수 텍스트로만 2000-3000자 작성하라.",
+          temperature: 0.1
+        },
+        hybrid: {
+          instruction: "당신은 핵심만 전달하는 결정 요약 전문가입니다. 반드시 3-5문장만 작성하라. 절대 초과 금지. 1문장: 핵심 결론. 2-3문장: 핵심 근거(최대 2개). 마지막 1문장: 실행 방향. 마크다운 문법(**, ##, ---, *, ```)을 절대 사용하지 말라. 순수 텍스트로만 작성하라.",
+          temperature: 0.15
+        }
       };
 
-      if (rawNarrative.includes('===CHOIHANNA===') && rawNarrative.includes('===MONAD===') && rawNarrative.includes('===HYBRID===')) {
-        const parts = rawNarrative.split(/===(?:CHOIHANNA|MONAD|HYBRID)===/);
-        sections.choihanna = (parts[1] || '').trim();
-        sections.monad = (parts[2] || '').trim();
-        sections.hybrid = (parts[3] || '').trim();
-      } else {
-        // fallback: 구분자 없으면 전체 텍스트 복사
-        sections.choihanna = rawNarrative;
-        sections.monad = rawNarrative;
-        sections.hybrid = rawNarrative;
-      }
-
-      // 마크다운 후처리
       const strip = (t: string) => t.replace(/\*{1,3}/g, '').replace(/^#{1,6}\s+/gm, '').replace(/^-{3,}/gm, '').replace(/`{1,3}/g, '').trim();
+
+      const styleResults: Record<string, string> = {};
+      const geminiStart = Date.now();
+      console.log("[MODEL]", { task: "E1-B v5: 스타일별 3회 개별 호출" });
+
+      // 3회 병렬 호출
+      const styleEntries = Object.entries(STYLE_CONFIGS);
+      const stylePromises = styleEntries.map(([key, config]) => {
+        const styledPrompt = config.instruction + "\n\n" + finalPrompt;
+        return fetchGemini(apiKey, "gemini-2.5-flash", styledPrompt, "", config.temperature)
+          .then(result => ({ key, result: strip(result) }))
+          .catch(err => {
+            console.error(`[Style:${key}] Gemini failed:`, err.message);
+            return { key, result: '' };
+          });
+      });
+
+      const styleResponses = await Promise.all(stylePromises);
+      geminiLatency = Date.now() - geminiStart;
+
+      // fallback: 실패한 스타일은 성공한 첫 번째 결과로 대체
+      let fallbackText = '';
+      for (const resp of styleResponses) {
+        if (resp.result) {
+          styleResults[resp.key] = resp.result;
+          if (!fallbackText) fallbackText = resp.result;
+        }
+      }
+      for (const resp of styleResponses) {
+        if (!resp.result) {
+          styleResults[resp.key] = fallbackText;
+        }
+      }
 
       const cardData = {
         cards: normalizedCards,
@@ -1475,16 +1490,21 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
       };
 
       parsed.tarot_reading = {
-        choihanna: { ...cardData, story: strip(sections.choihanna), key_message: strip(sections.choihanna).slice(0, 200) },
-        monad: { ...cardData, story: strip(sections.monad), key_message: strip(sections.monad).slice(0, 200) },
-        hybrid: { ...cardData, story: strip(sections.hybrid), key_message: strip(sections.hybrid).slice(0, 200) },
+        choihanna: { ...cardData, story: styleResults.choihanna || fallbackText, key_message: (styleResults.choihanna || fallbackText).slice(0, 200) },
+        monad: { ...cardData, story: styleResults.monad || fallbackText, key_message: (styleResults.monad || fallbackText).slice(0, 200) },
+        hybrid: { ...cardData, story: styleResults.hybrid || fallbackText, key_message: (styleResults.hybrid || fallbackText).slice(0, 200) },
         // legacy keys
-        e7l3: { ...cardData, story: strip(sections.choihanna), key_message: strip(sections.choihanna).slice(0, 200) },
-        e5l5: { ...cardData, story: strip(sections.hybrid), key_message: strip(sections.hybrid).slice(0, 200) },
-        l7e3: { ...cardData, story: strip(sections.monad), key_message: strip(sections.monad).slice(0, 200) }
+        e7l3: { ...cardData, story: styleResults.choihanna || fallbackText, key_message: (styleResults.choihanna || fallbackText).slice(0, 200) },
+        e5l5: { ...cardData, story: styleResults.hybrid || fallbackText, key_message: (styleResults.hybrid || fallbackText).slice(0, 200) },
+        l7e3: { ...cardData, story: styleResults.monad || fallbackText, key_message: (styleResults.monad || fallbackText).slice(0, 200) }
       };
+
+      // 텍스트 필드 호환성
+      parsed.integrated_summary = styleResults.hybrid || fallbackText;
+      parsed.final_message.summary = styleResults.hybrid || fallbackText;
+
     } catch (e: any) {
-      console.error("Gemini Whisperwind Error:", e);
+      console.error("Gemini E1-B v5 Parallel Error:", e);
       responseType = "timeout";
       parsed = buildFallbackReading("시간 내에 운세 결과를 생성하지 못했습니다. 잠시 후 서비스 안정화 후 다시 시도해주세요.", grade, scores, tarotCards, input.question, style);
     }
