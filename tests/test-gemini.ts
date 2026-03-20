@@ -8,10 +8,16 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// .env.local에서 API 키 로드
-const envPath = path.resolve(__dirname, '..', '.env.local');
-const envContent = fs.readFileSync(envPath, 'utf-8');
-const apiKey = envContent.match(/GOOGLE_GEMINI_API_KEY=(.+)/)?.[1]?.trim();
+// API 키 로드 (환경 변수 우선, 없으면 .env.local)
+let apiKey = process.env.GOOGLE_GEMINI_API_KEY;
+
+if (!apiKey) {
+  const envPath = path.resolve(__dirname, '..', '.env.local');
+  if (fs.existsSync(envPath)) {
+    const envContent = fs.readFileSync(envPath, 'utf-8');
+    apiKey = envContent.match(/GOOGLE_GEMINI_API_KEY=(.+)/)?.[1]?.trim();
+  }
+}
 
 if (!apiKey) {
   console.error('❌ API 키를 찾을 수 없습니다. .env.local 파일을 확인하세요.');
