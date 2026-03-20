@@ -1481,8 +1481,8 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
       const finalMonad = secondNarrative;
 
       parsed = buildFallbackReading("", grade, scores, tarotCards, input.question, style);
-      parsed.integrated_summary = finalChoihanna;
-      parsed.final_message.summary = finalChoihanna;
+      parsed.integrated_summary = thirdNarrative || finalChoihanna;
+      parsed.final_message.summary = thirdNarrative || finalChoihanna;
       
       const cardData = {
         cards: tarotCards.map((c: any) => ({ name: c.name, position: c.position, reversed: !!c.isReversed }))
