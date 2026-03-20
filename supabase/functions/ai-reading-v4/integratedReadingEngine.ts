@@ -1433,8 +1433,8 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     parsed = buildFallbackReading("데이터 분석 전용 모드입니다.", grade, scores, tarotCards, input.question, style);
   } else {
     try {
-      // === E1-B v5: 스타일별 개별 호출 (3회) ===
-      const STYLE_CONFIGS = {
+      // === E1-B v5b: 순차 호출 + 시간 제한 ===
+      const STYLE_CONFIGS: Record<string, { instruction: string; temperature: number }> = {
         choihanna: {
           instruction: "당신은 따뜻하고 공감 능력이 뛰어난 상담사입니다. 감정과 상황 중심으로 풀어라. 데이터를 직접 나열하지 말고 해석 문장 안에 자연스럽게 녹여라. 상담받는 느낌이 들도록 위로와 이해를 포함하라. 부정적 결론만으로 끝내지 말고 반드시 완충 문장을 포함하라. 마크다운 문법(**, ##, ---, *, ```)을 절대 사용하지 말라. 순수 텍스트로만 2000-3000자 작성하라.",
           temperature: 0.3
@@ -1451,38 +1451,35 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
 
       const strip = (t: string) => t.replace(/\*{1,3}/g, '').replace(/^#{1,6}\s+/gm, '').replace(/^-{3,}/gm, '').replace(/`{1,3}/g, '').trim();
 
-      const styleResults: Record<string, string> = {};
-      const geminiStart = Date.now();
-      console.log("[MODEL]", { task: "E1-B v5: 스타일별 3회 개별 호출" });
+      const styleResults: Record<string, string> = { choihanna: '', monad: '', hybrid: '' };
+      const startTime = Date.now();
+      const TIME_LIMIT = 45000; // 45초 안전 마진
 
-      // 3회 병렬 호출
-      const styleEntries = Object.entries(STYLE_CONFIGS);
-      const stylePromises = styleEntries.map(([key, config]) => {
-        const styledPrompt = config.instruction + "\n\n" + finalPrompt;
-        return fetchGemini(apiKey, "gemini-2.5-flash", styledPrompt, "", config.temperature)
-          .then(result => ({ key, result: strip(result) }))
-          .catch(err => {
-            console.error(`[Style:${key}] Gemini failed:`, err.message);
-            return { key, result: '' };
-          });
-      });
+      console.log("[MODEL]", { task: "E1-B v5b: 순차 호출 (45s 제한)" });
 
-      const styleResponses = await Promise.all(stylePromises);
-      geminiLatency = Date.now() - geminiStart;
-
-      // fallback: 실패한 스타일은 성공한 첫 번째 결과로 대체
-      let fallbackText = '';
-      for (const resp of styleResponses) {
-        if (resp.result) {
-          styleResults[resp.key] = resp.result;
-          if (!fallbackText) fallbackText = resp.result;
+      // 순차 호출: choihanna 먼저, 시간 남으면 monad, hybrid
+      for (const [key, config] of Object.entries(STYLE_CONFIGS)) {
+        if (Date.now() - startTime > TIME_LIMIT) {
+          console.log(`[Style:${key}] 시간 초과 - 스킵`);
+          break;
+        }
+        try {
+          const styledPrompt = config.instruction + "\n\n" + finalPrompt;
+          const result = await fetchGemini(apiKey, "gemini-2.5-flash", styledPrompt, "", config.temperature);
+          styleResults[key] = strip(result);
+          console.log(`[Style:${key}] 성공 (${((Date.now() - startTime) / 1000).toFixed(1)}s)`);
+        } catch (err: any) {
+          console.error(`[Style:${key}] 실패:`, err.message);
         }
       }
-      for (const resp of styleResponses) {
-        if (!resp.result) {
-          styleResults[resp.key] = fallbackText;
-        }
-      }
+
+      geminiLatency = Date.now() - startTime;
+
+      // fallback: 빈 스타일은 성공한 첫 번째 결과로 대체
+      const firstSuccess = styleResults.choihanna || styleResults.monad || styleResults.hybrid || '';
+      if (!styleResults.choihanna) styleResults.choihanna = firstSuccess;
+      if (!styleResults.monad) styleResults.monad = firstSuccess;
+      if (!styleResults.hybrid) styleResults.hybrid = firstSuccess;
 
       const cardData = {
         cards: normalizedCards,
@@ -1490,21 +1487,21 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
       };
 
       parsed.tarot_reading = {
-        choihanna: { ...cardData, story: styleResults.choihanna || fallbackText, key_message: (styleResults.choihanna || fallbackText).slice(0, 200) },
-        monad: { ...cardData, story: styleResults.monad || fallbackText, key_message: (styleResults.monad || fallbackText).slice(0, 200) },
-        hybrid: { ...cardData, story: styleResults.hybrid || fallbackText, key_message: (styleResults.hybrid || fallbackText).slice(0, 200) },
+        choihanna: { ...cardData, story: styleResults.choihanna, key_message: styleResults.choihanna.slice(0, 200) },
+        monad: { ...cardData, story: styleResults.monad, key_message: styleResults.monad.slice(0, 200) },
+        hybrid: { ...cardData, story: styleResults.hybrid, key_message: styleResults.hybrid.slice(0, 200) },
         // legacy keys
-        e7l3: { ...cardData, story: styleResults.choihanna || fallbackText, key_message: (styleResults.choihanna || fallbackText).slice(0, 200) },
-        e5l5: { ...cardData, story: styleResults.hybrid || fallbackText, key_message: (styleResults.hybrid || fallbackText).slice(0, 200) },
-        l7e3: { ...cardData, story: styleResults.monad || fallbackText, key_message: (styleResults.monad || fallbackText).slice(0, 200) }
+        e7l3: { ...cardData, story: styleResults.choihanna, key_message: styleResults.choihanna.slice(0, 200) },
+        e5l5: { ...cardData, story: styleResults.hybrid, key_message: styleResults.hybrid.slice(0, 200) },
+        l7e3: { ...cardData, story: styleResults.monad, key_message: styleResults.monad.slice(0, 200) }
       };
 
       // 텍스트 필드 호환성
-      parsed.integrated_summary = styleResults.hybrid || fallbackText;
-      parsed.final_message.summary = styleResults.hybrid || fallbackText;
+      parsed.integrated_summary = styleResults.hybrid || firstSuccess;
+      parsed.final_message.summary = styleResults.hybrid || firstSuccess;
 
     } catch (e: any) {
-      console.error("Gemini E1-B v5 Parallel Error:", e);
+      console.error("Gemini E1-B v5b Sequential Error:", e);
       responseType = "timeout";
       parsed = buildFallbackReading("시간 내에 운세 결과를 생성하지 못했습니다. 잠시 후 서비스 안정화 후 다시 시도해주세요.", grade, scores, tarotCards, input.question, style);
     }
