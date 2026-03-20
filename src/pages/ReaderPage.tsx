@@ -657,11 +657,24 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       const supabaseKey = (supabase as any).supabaseKey || import.meta.env.VITE_SUPABASE_ANON_KEY;
 
       // 스트리밍(UI용)과 full 분석(DB 저장용)을 병렬 실행
-      const [{ data: aiData, error: fnError }] = await Promise.all([
-        // full 모드: 실제 AI 내러티브 생성 및 DB 저장용
-        supabase.functions.invoke("ai-reading-v4", {
-          body: fnBody,
-        }),
+      const [aiResult] = await Promise.all([
+        (async () => {
+          let lastData: any = null;
+          let lastError: any = null;
+          for (let attempt = 0; attempt < 2; attempt++) {
+            const result = await supabase.functions.invoke("ai-reading-v4", {
+              body: fnBody,
+            });
+            lastData = result.data;
+            lastError = result.error;
+            if (!lastError || !lastError.message?.includes("503")) break;
+            if (attempt === 0) {
+              console.log("[ReaderPage] 503 BOOT_ERROR 감지, 3초 후 재시도...");
+              await new Promise(r => setTimeout(r, 3000));
+            }
+          }
+          return { data: lastData, error: lastError };
+        })(),
         // 스트리밍: UI에 실시간 텍스트 표시용
         fetch(
           `${supabaseUrl}/functions/v1/ai-reading-v4`,
@@ -688,6 +701,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
           setIsStreaming(false);
         }).catch(() => { setIsStreaming(false); }),
       ]);
+      const { data: aiData, error: fnError } = aiResult;
 
       console.log(`[runAIAnalysisV2] Edge function response received for ${style}`);
 
@@ -935,9 +949,20 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
         userName: currentSession.user_name,
       };
  
-      const { data: aiData, error: fnError } = await supabase.functions.invoke("ai-reading-v4", {
-        body: fnBody,
-      });
+      let aiData: any = null;
+      let fnError: any = null;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const result = await supabase.functions.invoke("ai-reading-v4", {
+          body: fnBody,
+        });
+        aiData = result.data;
+        fnError = result.error;
+        if (!fnError || !fnError.message?.includes("503")) break;
+        if (attempt === 0) {
+          console.log("[ReaderPage] 503 BOOT_ERROR 감지, 3초 후 재시도...");
+          await new Promise(r => setTimeout(r, 3000));
+        }
+      }
 
       if (fnError) throw new Error(`Edge function error: ${fnError.message}`);
 
