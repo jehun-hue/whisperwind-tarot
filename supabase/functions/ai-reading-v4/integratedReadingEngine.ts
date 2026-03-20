@@ -2202,14 +2202,14 @@ function buildFallbackReading(text: string, grade: string, scores: any, cards: a
 async function fetchGemini(apiKey: string, model: string, system: string, _user: string, temperature: number = 0.2): Promise<string> {
   const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`;
 
-  const requestBody = JSON.stringify({
-    system_instruction: _user ? { parts: [{ text: _user }] } : undefined,
+  const bodyObj: any = {
     contents: [{ role: "user", parts: [{ text: system }] }],
-    generationConfig: {
-      maxOutputTokens: 16384,
-      temperature: temperature
-    }
-  });
+    generationConfig: { maxOutputTokens: 16384, temperature }
+  };
+  if (_user && _user.trim()) {
+    bodyObj.system_instruction = { parts: [{ text: _user }] };
+  }
+  const requestBody = JSON.stringify(bodyObj);
 
   // B-204 + 503 Retry logic
   const doFetch = async (attempt: number = 0): Promise<string> => {
