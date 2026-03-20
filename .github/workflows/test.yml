@@ -26,4 +26,4 @@ jobs:
       - name: Gemini API 테스트
         env:
           GOOGLE_GEMINI_API_KEY: ${{ secrets.GOOGLE_GEMINI_API_KEY }}
-        run: npx ts-node tests/test-gemini.ts
+        run: npx tsx tests/test-gemini.ts
