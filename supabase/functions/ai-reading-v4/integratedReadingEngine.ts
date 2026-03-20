@@ -1450,15 +1450,36 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
         }
       }
       
+      // === E1-B: hybrid 경량 호출 ===
       let thirdNarrative = '';
       const timeElapsed2 = Date.now() - geminiStart;
-      if (timeElapsed2 < 40000) {
+      if (timeElapsed2 < 45000) {
         try {
-          thirdNarrative = await fetchGemini(apiKey, "gemini-2.5-flash", finalPrompt, "당신은 핵심만 전달하는 결정 요약 전문가입니다. 반드시 3-5문장만 작성하라. 절대 초과 금지. 1문장: 핵심 결론. 2-3문장: 핵심 근거 최대 2개. 마지막 1문장: 실행 방향. 마크다운 금지. 순수 텍스트로만 작성하라.", 0.15);
-          console.log("[E1-B] 3rd call 성공:", ((Date.now() - geminiStart) / 1000).toFixed(1) + "s");
+          const hybridPrompt = `당신은 핵심만 전달하는 결정 요약 전문가입니다. 반드시 3-5문장만 작성하라. 절대 초과 금지.
+1문장: 핵심 결론. 2-3문장: 핵심 근거(최대 2개). 마지막 1문장: 실행 방향.
+마크다운 금지. 순수 텍스트로만 작성하라.
+
+[핵심 데이터]
+- 사주: ${sajuAnalysis?.dayMaster || ''}일간, ${sajuAnalysis?.strength || ''}, 용신 ${sajuAnalysis?.yongShin || ''}, 세운 ${sajuAnalysis?.sewoon?.full || '丙午'}
+- 수비학: 생명수 ${numerologyResult?.life_path_number || ''}, 개인년 ${numerologyResult?.personal_year || ''}
+- 합의점수: ${(consensusResult?.consensus_score * 100).toFixed(0)}%
+- 지배벡터: 성장 ${consensusResult?.dominant_vector?.growth?.toFixed(2) || ''}, 리스크 ${consensusResult?.dominant_vector?.risk?.toFixed(2) || ''}, 전환 ${consensusResult?.dominant_vector?.life_transition?.toFixed(2) || ''}
+- 충돌: ${consensusResult?.conflict_summary || '없음'}
+
+위 데이터를 바탕으로 3-5문장 결정 요약을 작성하라.`;
+          thirdNarrative = await fetchGemini(apiKey, "gemini-2.5-flash", hybridPrompt, "", 0.15);
+          console.log("[E1-B] hybrid 성공:", ((Date.now() - geminiStart) / 1000).toFixed(1) + "s");
         } catch (e3: any) {
-          console.log("[E1-B] 3rd call 실패:", e3.message);
+          console.log("[E1-B] hybrid 실패:", e3.message);
         }
+      }
+
+      // hybrid fallback: consensus 기반 코드 생성
+      if (!thirdNarrative) {
+        const cv = consensusResult?.dominant_vector;
+        const growthDir = (cv?.growth > 0.5) ? '성장과 확장' : '안정과 유지';
+        const riskLevel = (cv?.risk > 0.5) ? '높은 리스크 관리 필요' : '비교적 안정적';
+        thirdNarrative = `2026년은 ${growthDir}의 흐름이 지배적이며, ${riskLevel}한 시기입니다. 사주 용신(${sajuAnalysis?.yongShin || '수'}) 기운을 의식적으로 보충하고, 내면 성찰과 외부 실행의 균형을 잡는 것이 핵심입니다. 4-6월 주요 전환기에 중요한 결정을 미루지 말고 신중하게 실행하세요.`;
       }
       
       geminiLatency = Date.now() - geminiStart;
@@ -1479,7 +1500,7 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
         choihanna: { ...cardData, story: rawNarrative, key_message: "통합 분석에 기반한 위스퍼윈드의 제언입니다." },
         monad: { ...cardData, story: secondNarrative || rawNarrative, key_message: "통합 분석에 기반한 위스퍼윈드의 제언입니다." },
         e7l3: { ...cardData, story: rawNarrative, key_message: "통합 분석에 기반한 위스퍼윈드의 제언입니다." },
-        e5l5: { ...cardData, story: thirdNarrative || secondNarrative || rawNarrative, key_message: "통합 분석에 기반한 위스퍼윈드의 제언입니다." },
+        e5l5: { ...cardData, story: thirdNarrative, key_message: "통합 분석에 기반한 위스퍼윈드의 제언입니다." },
         l7e3: { ...cardData, story: secondNarrative || rawNarrative, key_message: "통합 분석에 기반한 위스퍼윈드의 제언입니다." }
       };
     } catch (e: any) {
