@@ -721,6 +721,7 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
   const pipelineStart = Date.now();
   const sessionId = input.sessionId;
   const style = input.style || "hanna";
+  console.log(`[PlatformV9] Analysis Started. Mode: ${input.mode || 'standard'}`);
   const tarotCards = input.cards || [];
   const combinationClues = tarotCards
     .map((c: any) => `- ${c.korean}: ${c.cardCombination || "정보 없음"}`)
@@ -1619,14 +1620,15 @@ ${parsed.action_guide?.do_list?.map((item: string) => `- ${item}`).join('\n') ||
         return {
           signals: [
             careerP ? `관록궁: ${careerP.main_stars?.join("·")}` : null,
-            (ziweiAnalysis as any).major_period?.interpretation ? `대한: ${(ziweiAnalysis as any).major_period.interpretation}` : null,
+            (ziweiAnalysis as any).currentMajorPeriod?.interpretation ? `대한: ${(ziweiAnalysis as any).currentMajorPeriod.interpretation}` : null,
             (ziweiAnalysis as any).currentMinorPeriod?.interpretation ? `소한: ${(ziweiAnalysis as any).currentMinorPeriod.interpretation}` : null,
-            (ziweiAnalysis as any).annual_transformations?.length > 0
-              ? `${(ziweiAnalysis as any).annual_year}년 유년사화: ${(ziweiAnalysis as any).annual_transformations.map((t: any) => t.description).join(", ")}`
+            (ziweiAnalysis as any).annualTransformations?.length > 0
+              ? `${(ziweiAnalysis as any).annualYear}년 유년사화: ${(ziweiAnalysis as any).annualTransformations.map((t: any) => t.description).join(", ")}`
               : null,
-            (ziweiAnalysis as any).natal_transformations?.length > 0
-              ? `선천사화: ${(ziweiAnalysis as any).natal_transformations.slice(0, 3).map((t: any) => `${t.type}(${t.star}→${t.palace})`).join(", ")}`
+            (ziweiAnalysis as any).natalTransformations?.length > 0
+              ? `선천사화: ${(ziweiAnalysis as any).natalTransformations.slice(0, 3).map((t: any) => `${t.type}(${t.star}→${t.palace})`).join(", ")}`
               : null,
+            (ziweiAnalysis as any).is_daewoon_changing_year ? "대한 교체기(교운기) 주의" : null,
           ].filter(Boolean),
           key_palaces: (ziweiAnalysis as any).palaces?.map((p: any) => p.name) || [],
           topic_alignment: "medium"
