@@ -1433,74 +1433,31 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     parsed = buildFallbackReading("데이터 분석 전용 모드입니다.", grade, scores, tarotCards, input.question, style);
   } else {
     try {
-      // === E1-B v5b: 순차 호출 + 시간 제한 ===
-      const STYLE_CONFIGS: Record<string, { instruction: string; temperature: number }> = {
-        choihanna: {
-          instruction: "당신은 따뜻하고 공감 능력이 뛰어난 상담사입니다. 감정과 상황 중심으로 풀어라. 데이터를 직접 나열하지 말고 해석 문장 안에 자연스럽게 녹여라. 상담받는 느낌이 들도록 위로와 이해를 포함하라. 부정적 결론만으로 끝내지 말고 반드시 완충 문장을 포함하라. 마크다운 문법(**, ##, ---, *, ```)을 절대 사용하지 말라. 순수 텍스트로만 2000-3000자 작성하라.",
-          temperature: 0.3
-        },
-        monad: {
-          instruction: "당신은 냉철하고 정확한 데이터 분석가입니다. 결론을 먼저 제시하고 핵심 근거 2-3개를 명시하라. 각 근거는 '데이터 → 해석' 구조로 작성하라. 리스크를 명확히 드러내라. 문장은 단정형으로 모호한 표현을 피하라. 마크다운 문법(**, ##, ---, *, ```)을 절대 사용하지 말라. 순수 텍스트로만 2000-3000자 작성하라.",
-          temperature: 0.1
-        },
-        hybrid: {
-          instruction: "당신은 핵심만 전달하는 결정 요약 전문가입니다. 반드시 3-5문장만 작성하라. 절대 초과 금지. 1문장: 핵심 결론. 2-3문장: 핵심 근거(최대 2개). 마지막 1문장: 실행 방향. 마크다운 문법(**, ##, ---, *, ```)을 절대 사용하지 말라. 순수 텍스트로만 작성하라.",
-          temperature: 0.15
-        }
-      };
+      const geminiStart = Date.now();
+      console.log("[MODEL]", { task: "통합 리딩 생성", model: "gemini-2.5-flash" });
+      
+      const rawNarrative = await fetchGemini(apiKey, "gemini-2.5-flash", finalPrompt, "당신은 위스퍼윈드입니다. 반드시 JSON 형식이 아닌 친절하고 심도 있는 텍스트 리딩으로 응답하세요. 마크다운 문법(**, ##, ---, *, ```)을 절대 사용하지 말라. 굵은 글씨, 제목 기호, 구분선 없이 순수 텍스트로만 작성하라. 강조가 필요하면 따옴표나 괄호를 사용하라.", 0.2);
+      geminiLatency = Date.now() - geminiStart;
 
-      const strip = (t: string) => t.replace(/\*{1,3}/g, '').replace(/^#{1,6}\s+/gm, '').replace(/^-{3,}/gm, '').replace(/`{1,3}/g, '').trim();
-
-      const styleResults: Record<string, string> = { choihanna: '', monad: '', hybrid: '' };
-      const startTime = Date.now();
-      const TIME_LIMIT = 45000; // 45초 안전 마진
-
-      console.log("[MODEL]", { task: "E1-B v5b: 순차 호출 (45s 제한)" });
-
-      // 순차 호출: choihanna 먼저, 시간 남으면 monad, hybrid
-      for (const [key, config] of Object.entries(STYLE_CONFIGS)) {
-        if (Date.now() - startTime > TIME_LIMIT) {
-          console.log(`[Style:${key}] 시간 초과 - 스킵`);
-          break;
-        }
-        try {
-          const result = await fetchGemini(apiKey, "gemini-2.5-flash", finalPrompt, config.instruction, config.temperature);
-          styleResults[key] = strip(result);
-          console.log(`[Style:${key}] 성공 (${((Date.now() - startTime) / 1000).toFixed(1)}s)`);
-        } catch (err: any) {
-          console.error(`[Style:${key}] 실패:`, err.message);
-        }
+      if (!rawNarrative) {
+        throw new Error("Empty narrative from Gemini");
       }
 
-      geminiLatency = Date.now() - startTime;
-
-      // fallback: 빈 스타일은 성공한 첫 번째 결과로 대체
-      const firstSuccess = styleResults.choihanna || styleResults.monad || styleResults.hybrid || '';
-      if (!styleResults.choihanna) styleResults.choihanna = firstSuccess;
-      if (!styleResults.monad) styleResults.monad = firstSuccess;
-      if (!styleResults.hybrid) styleResults.hybrid = firstSuccess;
-
-      const cardData = {
-        cards: normalizedCards,
-        card_interpretations: cardInsights
-      };
-
-      parsed.tarot_reading = {
-        choihanna: { ...cardData, story: styleResults.choihanna, key_message: styleResults.choihanna.slice(0, 200) },
-        monad: { ...cardData, story: styleResults.monad, key_message: styleResults.monad.slice(0, 200) },
-        hybrid: { ...cardData, story: styleResults.hybrid, key_message: styleResults.hybrid.slice(0, 200) },
-        // legacy keys
-        e7l3: { ...cardData, story: styleResults.choihanna, key_message: styleResults.choihanna.slice(0, 200) },
-        e5l5: { ...cardData, story: styleResults.hybrid, key_message: styleResults.hybrid.slice(0, 200) },
-        l7e3: { ...cardData, story: styleResults.monad, key_message: styleResults.monad.slice(0, 200) }
-      };
-
-      // 텍스트 필드 호환성
-      parsed.integrated_summary = styleResults.hybrid || firstSuccess;
-      parsed.final_message.summary = styleResults.hybrid || firstSuccess;
-
+      parsed = buildFallbackReading("", grade, scores, tarotCards, input.question, style);
+      parsed.integrated_summary = rawNarrative;
+      parsed.final_message.summary = rawNarrative;
+      
+      const styleKeys = ['choihanna', 'monad', 'e7l3', 'e5l5', 'l7e3'];
+      parsed.tarot_reading = {};
+      styleKeys.forEach(key => {
+        parsed.tarot_reading[key] = {
+          cards: tarotCards.map((c: any) => ({ name: c.name, position: c.position, reversed: !!c.isReversed })),
+          story: rawNarrative,
+          key_message: "통합 분석에 기반한 위스퍼윈드의 제언입니다."
+        };
+      });
     } catch (e: any) {
-      console.error("Gemini E1-B v5b Sequential Error:", e);
+      console.error("Gemini Whisperwind Error:", e);
       responseType = "timeout";
       parsed = buildFallbackReading("시간 내에 운세 결과를 생성하지 못했습니다. 잠시 후 서비스 안정화 후 다시 시도해주세요.", grade, scores, tarotCards, input.question, style);
     }
@@ -2199,7 +2156,7 @@ async function fetchGemini(apiKey: string, model: string, system: string, _user:
   const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`;
 
   const requestBody = JSON.stringify({
-    contents: [{ parts: [{ text: _user ? (_user + "\n\n" + system) : system }] }],
+    contents: [{ parts: [{ text: system }] }],
     generationConfig: {
       maxOutputTokens: 16384,
       temperature: temperature
