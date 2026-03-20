@@ -2043,8 +2043,8 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
               {/* Individual Systems */}
               {[
                 { key: "tarot", icon: "🃏", label: "웨이트 타로" },
-                { key: "choi_hanna_tarot", icon: "💫", label: "최한나 카드별 해석" },
-                { key: "monad_tarot", icon: "🔷", label: "모나드 카드별 해석" },
+                { key: "choi_hanna_tarot", icon: "💫", label: "최한나 통합 리딩" },
+                { key: "monad_tarot", icon: "🔷", label: "모나드 통합 리딩" },
                 { key: "saju", icon: "🔮", label: "사주팔자" },
                 { key: "astrology", icon: "⭐", label: "서양 점성술" },
                 { key: "ziwei", icon: "🏯", label: "자미두수" },
@@ -2084,7 +2084,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
 
               {/* Tarot Deep Details (Hanna/Monad) in Legacy UI */}
               <div className="space-y-2">
-                <div className="text-xs font-bold text-purple-400 tracking-wider uppercase">💫 최한나 카드별 해석</div>
+                <div className="text-xs font-bold text-purple-400 tracking-wider uppercase">💫 최한나 통합 리딩</div>
                 <div className="rounded-lg border border-border bg-purple-500/5 p-4 text-foreground">
                   {reading.tarot_reading?.choihanna ? (
                     <>
@@ -2113,7 +2113,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
               </div>
 
               <div className="space-y-2">
-                <div className="text-xs font-bold text-blue-400 tracking-wider uppercase">🔷 모나드 카드별 해석</div>
+                <div className="text-xs font-bold text-blue-400 tracking-wider uppercase">🔷 모나드 통합 리딩</div>
                 <div className="rounded-lg border border-border bg-blue-500/5 p-4 text-foreground">
                   {reading.tarot_reading?.monad ? (
                     <>
