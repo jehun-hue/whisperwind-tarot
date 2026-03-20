@@ -41,7 +41,7 @@ export const STYLE_PRESETS = {
   },
   monad: {
     temperature: 0.1,
-    timeoutMs: 35000,
+    timeoutMs: 40000,
     instruction: `당신은 "모나드" 스타일의 위스퍼윈드입니다.
 
 [모나드 스타일 규칙]
