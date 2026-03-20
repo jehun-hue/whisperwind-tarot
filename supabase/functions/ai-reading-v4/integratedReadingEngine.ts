@@ -1432,95 +1432,32 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     responseType = "skipped";
     parsed = buildFallbackReading("데이터 분석 전용 모드입니다.", grade, scores, tarotCards, input.question, style);
   } else {
-    // ═══ E1-B v3: 1회 호출 + 3스타일 JSON 분리 ═══
-    parsed.tarot_reading = {} as any;
-
     try {
       const geminiStart = Date.now();
-      console.log("[MODEL]", { task: "E1-B v3: 1회 호출 3스타일 분리" });
-
-      const multiStylePrompt = `${finalPrompt}
-
-═══ [OUTPUT FORMAT] ═══
-아래 3가지 스타일로 각각 해석을 작성하라. 반드시 아래 JSON 형식으로만 응답하라. JSON 외의 텍스트를 절대 포함하지 말라.
-
-{
-  "choihanna": "최한나 스타일 해석 (감정과 상황 중심, 위로와 이해 포함, 데이터를 문장 안에 녹여라, 부정적 결론만으로 끝내지 말고 완충 문장 포함, 2000~3000자)",
-  "monad": "모나드 스타일 해석 (결론 먼저, 핵심 근거 2~3개를 데이터→해석 구조로 명시, 리스크 명확히, 단정형 문장, 2000~3000자)",
-  "hybrid": "하이브리드 스타일 해석 (최대 3~5문장만, 1문장 결론 + 2~3문장 근거 + 1문장 실행방향, 절대 초과 금지)"
-}
-
-규칙:
-- 3개의 값은 반드시 서로 다른 톤과 구조여야 한다.
-- 마크다운 문법(**, ##, ---, *)을 절대 사용하지 말라. 순수 텍스트만.
-- 강조가 필요하면 따옴표나 괄호를 사용하라.
-- JSON 키는 정확히 "choihanna", "monad", "hybrid"를 사용하라.`;
-
-      const rawResponse = await fetchGemini(
-        apiKey,
-        "gemini-2.5-flash",
-        multiStylePrompt,
-        "당신은 통합 점술 시스템의 AI입니다. 반드시 유효한 JSON 형식으로만 응답하라. JSON 외의 텍스트를 포함하지 말라. 마크다운 기호 사용 금지.",
-        0.2
-      );
+      console.log("[MODEL]", { task: "통합 리딩 생성", model: "gemini-2.5-flash" });
       
+      const rawNarrative = await fetchGemini(apiKey, "gemini-2.5-flash", finalPrompt, "당신은 위스퍼윈드입니다. 반드시 JSON 형식이 아닌 친절하고 심도 있는 텍스트 리딩으로 응답하세요. 마크다운 문법(**, ##, ---, *, ```)을 절대 사용하지 말라. 굵은 글씨, 제목 기호, 구분선 없이 순수 텍스트로만 작성하라. 강조가 필요하면 따옴표나 괄호를 사용하라.", 0.2);
       geminiLatency = Date.now() - geminiStart;
 
-      // JSON 파싱
-      let styleTexts: Record<string, string> = { choihanna: '', monad: '', hybrid: '' };
-      try {
-        let cleaned = (rawResponse || "").trim();
-        if (cleaned.startsWith('```')) {
-          cleaned = cleaned.replace(/^```json?\s*/i, '').replace(/```\s*$/, '').trim();
-        }
-        
-        const parsed3 = JSON.parse(cleaned);
-        if (parsed3.choihanna) styleTexts.choihanna = parsed3.choihanna;
-        if (parsed3.monad) styleTexts.monad = parsed3.monad;
-        if (parsed3.hybrid) styleTexts.hybrid = parsed3.hybrid;
-      } catch (parseErr: any) {
-        console.error("[MODEL] JSON 파싱 실패, 전체 텍스트를 hybrid로 사용:", parseErr?.message);
-        styleTexts.choihanna = rawResponse;
-        styleTexts.monad = rawResponse;
-        styleTexts.hybrid = rawResponse;
+      if (!rawNarrative) {
+        throw new Error("Empty narrative from Gemini");
       }
 
-      // 카드 데이터
-      const cardData = tarotCards.map((c: any) => ({
-        name: c.name || '',
-        position: c.position || '',
-        reversed: !!c.isReversed,
-        image: c.image || '',
-      }));
-
-      // 결과 매핑
-      parsed.tarot_reading.choihanna = {
-        cards: cardData,
-        story: styleTexts.choihanna || styleTexts.hybrid || '해석 생성에 실패했습니다.',
-        key_message: '최한나의 따뜻한 해석입니다.'
-      };
-      parsed.tarot_reading.monad = {
-        cards: cardData,
-        story: styleTexts.monad || styleTexts.hybrid || '해석 생성에 실패했습니다.',
-        key_message: '모나드의 냉철한 분석입니다.'
-      };
-      parsed.tarot_reading.hybrid = {
-        cards: cardData,
-        story: styleTexts.hybrid || styleTexts.choihanna || '해석 생성에 실패했습니다.',
-        key_message: '핵심 결론 요약입니다.'
-      };
-
-      // 텍스트 필드 호환성
-      parsed.integrated_summary = styleTexts.hybrid || styleTexts.choihanna;
-      parsed.final_message.summary = styleTexts.hybrid || styleTexts.choihanna;
-
-      // 기존 5키 호환성 유지 (프론트엔드 전환 전까지)
-      parsed.tarot_reading.e7l3 = parsed.tarot_reading.choihanna;
-      parsed.tarot_reading.e5l5 = parsed.tarot_reading.hybrid;
-      parsed.tarot_reading.l7e3 = parsed.tarot_reading.monad;
+      parsed = buildFallbackReading("", grade, scores, tarotCards, input.question, style);
+      parsed.integrated_summary = rawNarrative;
+      parsed.final_message.summary = rawNarrative;
       
+      const styleKeys = ['choihanna', 'monad', 'e7l3', 'e5l5', 'l7e3'];
+      parsed.tarot_reading = {};
+      styleKeys.forEach(key => {
+        parsed.tarot_reading[key] = {
+          cards: tarotCards.map((c: any) => ({ name: c.name, position: c.position, reversed: !!c.isReversed })),
+          story: rawNarrative,
+          key_message: "통합 분석에 기반한 위스퍼윈드의 제언입니다."
+        };
+      });
     } catch (e: any) {
-      console.error("Gemini Multi-Style JSON Error:", e);
+      console.error("Gemini Whisperwind Error:", e);
       responseType = "timeout";
       parsed = buildFallbackReading("시간 내에 운세 결과를 생성하지 못했습니다. 잠시 후 서비스 안정화 후 다시 시도해주세요.", grade, scores, tarotCards, input.question, style);
     }
