@@ -14,7 +14,7 @@ import { runLifeTimelineEngine, type LifeTimelineResult } from "./lifeTimelineEn
 import { analyzeSpreadCCM, lookupCCM, type CCMResult } from "./cardContextMatrix.ts";
 import { predictTemporalV8 } from "./temporalPredictionEngine.ts";
 import { validateEngineOutput } from "./validationLayer.ts";
-import { getLocalizedStyle } from "./interactivityLayer.ts";
+// import { getLocalizedStyle } from "./interactivityLayer.ts";
 import { calculateNumerology } from "./numerologyEngine.ts";
 import { validateV3Schema, patchMissingFields, logMonitoringEvent } from "./monitoringLayer.ts";
 import { safeParseGeminiJSON } from "./jsonUtils.ts";
@@ -1432,32 +1432,97 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     responseType = "skipped";
     parsed = buildFallbackReading("데이터 분석 전용 모드입니다.", grade, scores, tarotCards, input.question, style);
   } else {
+    // ═══ E1-B: 3스타일 개별 Gemini 호출 ═══
+    const STYLE_PROMPTS: Record<string, string> = {
+      choihanna: `당신은 '최한나'입니다. 따뜻하고 공감 능력이 뛰어난 상담사입니다.
+규칙:
+- 감정과 상황 중심으로 풀어라.
+- 데이터를 직접 나열하지 말고, 해석 문장 안에 자연스럽게 녹여라.
+- 상담받는 느낌이 들도록 위로와 이해를 포함하라.
+- 부정적 결론만으로 끝내지 말고, 반드시 완충 문장을 포함하라.
+- 마크다운 문법(**, ##, ---, *, \`\`\`)을 절대 사용하지 말라. 순수 텍스트로만 작성하라.
+- 강조가 필요하면 따옴표나 괄호를 사용하라.`,
+
+      monad: `당신은 '모나드'입니다. 냉철하고 정밀한 분석가입니다.
+규칙:
+- 결론을 먼저 제시하고, 핵심 근거 2~3개를 명시하라.
+- 각 근거는 "데이터 → 해석" 구조로 작성하라. (예: "午-卯 파 작용 → 가까운 관계에서 마찰 가능성")
+- 리스크를 명확히 드러내라.
+- 문장은 단정형으로, 모호한 표현을 피하라.
+- 마크다운 문법(**, ##, ---, *, \`\`\`)을 절대 사용하지 말라. 순수 텍스트로만 작성하라.
+- 강조가 필요하면 따옴표나 괄호를 사용하라.`,
+
+      hybrid: `당신은 '위스퍼윈드'입니다. 핵심만 전달하는 전략 요약가입니다.
+규칙:
+- 최대 3~5문장만 작성하라. 절대 초과 금지.
+- 반드시 아래 구조를 유지하라:
+  1문장: 최종 결론
+  2~3문장: 핵심 근거 (최대 2개, "데이터 → 해석" 구조)
+  마지막 1문장: 실행 방향
+- 마크다운 문법(**, ##, ---, *, \`\`\`)을 절대 사용하지 말라. 순수 텍스트로만 작성하라.`
+    };
+
+    const styleKeys = ['choihanna', 'monad', 'hybrid'] as const;
+    parsed.tarot_reading = {} as any;
+
     try {
       const geminiStart = Date.now();
-      console.log("[MODEL]", { task: "통합 리딩 생성", model: "gemini-2.5-flash" });
-      
-      const rawNarrative = await fetchGemini(apiKey, "gemini-2.5-flash", finalPrompt, "당신은 위스퍼윈드입니다. 반드시 JSON 형식이 아닌 친절하고 심도 있는 텍스트 리딩으로 응답하세요. 마크다운 문법(**, ##, ---, *, ```)을 절대 사용하지 말라. 굵은 글씨, 제목 기호, 구분선 없이 순수 텍스트로만 작성하라. 강조가 필요하면 따옴표나 괄호를 사용하라.", 0.2);
+      console.log("[MODEL]", { task: "E1-B 3스타일 통합 리딩 생성", count: styleKeys.length });
+
+      // 3개 스타일 병렬 호출
+      const styleResults = await Promise.allSettled(
+        styleKeys.map(async (key) => {
+          const narrative = await fetchGemini(
+            apiKey,
+            "gemini-2.5-flash",
+            finalPrompt,
+            STYLE_PROMPTS[key],
+            key === 'monad' ? 0.1 : key === 'hybrid' ? 0.15 : 0.3
+          );
+          return { key, narrative };
+        })
+      );
+
       geminiLatency = Date.now() - geminiStart;
 
-      if (!rawNarrative) {
-        throw new Error("Empty narrative from Gemini");
+      // 결과 매핑
+      for (const result of styleResults) {
+        if (result.status === 'fulfilled') {
+          const { key, narrative } = result.value;
+          parsed.tarot_reading[key] = {
+            cards: normalizedCards.map((c: any) => ({
+              name: c.name || '',
+              position: c.position || '',
+              reversed: !!c.isReversed,
+              image: c.image || '',
+            })),
+            story: narrative || '해석 생성에 실패했습니다.',
+            key_message: key === 'choihanna' ? '최한나의 따뜻한 해석입니다.'
+              : key === 'monad' ? '모나드의 냉철한 분석입니다.'
+              : '핵심 결론 요약입니다.'
+          };
+        } else {
+          const styleKey = styleKeys[styleResults.indexOf(result)];
+          parsed.tarot_reading[styleKey] = {
+            cards: [],
+            story: '해석 생성 중 오류가 발생했습니다.',
+            key_message: ''
+          };
+        }
       }
 
-      parsed = buildFallbackReading("", grade, scores, tarotCards, input.question, style);
-      parsed.integrated_summary = rawNarrative;
-      parsed.final_message.summary = rawNarrative;
+      // 텍스트 필드 호환성 (마지막 결과 기반)
+      const lastNarrative = (styleResults[0] as any)?.value?.narrative || "";
+      parsed.integrated_summary = lastNarrative;
+      parsed.final_message.summary = lastNarrative;
+
+      // 기존 5키 호환성 유지 (프론트엔드 전환 전까지)
+      parsed.tarot_reading.e7l3 = parsed.tarot_reading.choihanna;
+      parsed.tarot_reading.e5l5 = parsed.tarot_reading.hybrid;
+      parsed.tarot_reading.l7e3 = parsed.tarot_reading.monad;
       
-      const styleKeys = ['choihanna', 'monad', 'e7l3', 'e5l5', 'l7e3'];
-      parsed.tarot_reading = {};
-      styleKeys.forEach(key => {
-        parsed.tarot_reading[key] = {
-          cards: tarotCards.map((c: any) => ({ name: c.name, position: c.position, reversed: !!c.isReversed })),
-          story: rawNarrative,
-          key_message: "통합 분석에 기반한 위스퍼윈드의 제언입니다."
-        };
-      });
     } catch (e: any) {
-      console.error("Gemini Whisperwind Error:", e);
+      console.error("Gemini 3-Style Error:", e);
       responseType = "timeout";
       parsed = buildFallbackReading("시간 내에 운세 결과를 생성하지 못했습니다. 잠시 후 서비스 안정화 후 다시 시도해주세요.", grade, scores, tarotCards, input.question, style);
     }
