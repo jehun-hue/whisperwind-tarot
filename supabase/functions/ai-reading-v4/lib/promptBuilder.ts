@@ -205,8 +205,9 @@ ${crossPatterns.join('\n')}
   const targetPalaceNames = ZIWEI_PALACE_MAP[qType] || ZIWEI_PALACE_MAP.default;
   const selectedPalaces = targetPalaceNames.map((pName: string) => {
     const p = palaces.find((pp: any) => pp.name === pName);
-    if (!p) return `${pName}: 데이터 없음`;
-    const stars = p.main_stars?.join(', ') || p.stars?.map((s: any) => `${s.star}(${s.brightness})`).join(', ') || '빈궁';
+    if (!p) return `${pName}: 데이터 없음 (출생 시간 미확인)`;
+    const stars = p.main_stars?.join(', ') || p.stars?.map((s: any) => `${s.star}(${s.brightness})`).join(', ');
+    if (!stars) return `${pName}(${p.branch}): 빈궁 (주성 없음 - 대궁의 영향을 받으므로 대궁 주성을 참고하여 해석할 것)`;
     return `${pName}(${p.branch}): ${stars}`;
   }).join('\n');
 
@@ -229,7 +230,8 @@ ${crossPatterns.join('\n')}
 • 질문 관련 핵심 궁:
 ${selectedPalaces}
 
-★ 궁 선택 규칙: 연애→부처궁+복덕궁, 재물→재백궁+전택궁, 직업→관록궁+천이궁, 건강→질액궁+복덕궁, 종합→명궁+관록궁+재백궁+부처궁
+★ 궁 선택 규칙: 질문="${userInfo.question || '종합운'}" → ${targetPalaceNames.join(', ')} 궁 중심 해석
+★ 자미두수 해석 지침: 빈궁이 있으면 대궁(반대편 궁)의 주성 영향으로 해석하라. 데이터가 전체적으로 부족하면 "자미두수 관점에서는 출생 시간 확인이 필요하지만, 사주와 점성술 기준으로..."라고 전환하라. 자미두수 데이터가 있는 궁은 반드시 해석에 포함할 것.
 `;
 
   // ═══════════════════════════════════════════
