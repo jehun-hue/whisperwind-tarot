@@ -2203,7 +2203,8 @@ async function fetchGemini(apiKey: string, model: string, system: string, _user:
   const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`;
 
   const requestBody = JSON.stringify({
-    contents: [{ parts: [{ text: system }] }],
+    system_instruction: _user ? { parts: [{ text: _user }] } : undefined,
+    contents: [{ role: "user", parts: [{ text: system }] }],
     generationConfig: {
       maxOutputTokens: 16384,
       temperature: temperature
