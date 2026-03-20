@@ -74,6 +74,7 @@ export async function callGemini(req: GeminiRequest): Promise<GeminiResponse> {
   const retryOn503 = req.retryOn503 !== false; // default true
   
   const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${req.apiKey}`;
+  console.log(`[INFO][GeminiClient:start] model=${model}, temp=${temperature}, timeoutMs=${timeoutMs}, userPrompt=${req.userPrompt ? 'YES' : 'NO'}`);
 
   // STEP 3: systemPrompt + userPrompt 명확히 분리 후 합성
   const combinedText = req.userPrompt && req.userPrompt.trim()
@@ -113,6 +114,7 @@ export async function callGemini(req: GeminiRequest): Promise<GeminiResponse> {
 
       if (!res.ok) {
         const errText = await res.text().catch(() => '');
+        console.log(`[ERROR][GeminiClient] HTTP ${res.status}: ${errText.slice(0, 100)}`);
         return {
           success: false,
           text: '',
@@ -126,6 +128,7 @@ export async function callGemini(req: GeminiRequest): Promise<GeminiResponse> {
       const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
       if (!text) {
+        console.log(`[ERROR][GeminiClient] Empty response from Gemini (${Date.now() - start}ms)`);
         return {
           success: false,
           text: '',
@@ -143,7 +146,8 @@ export async function callGemini(req: GeminiRequest): Promise<GeminiResponse> {
         .replace(/`{1,3}/g, '')
         .replace(/^\s*[\*\-]\s+/gm, '')
         .trim();
-
+        
+      console.log(`[INFO][GeminiClient:success] ${cleaned.slice(0, 80)}... (${cleaned.length}chars, ${Date.now() - start}ms, retried=${retried})`);
       return {
         success: true,
         text: cleaned,
@@ -155,6 +159,7 @@ export async function callGemini(req: GeminiRequest): Promise<GeminiResponse> {
       clearTimeout(timer);
       
       if (err.name === 'AbortError') {
+        console.log(`[ERROR][GeminiClient] Timeout after ${timeoutMs}ms`);
         return {
           success: false,
           text: '',
@@ -164,6 +169,7 @@ export async function callGemini(req: GeminiRequest): Promise<GeminiResponse> {
         };
       }
 
+      console.log(`[ERROR][GeminiClient] ${err.message} (${Date.now() - start}ms)`);
       return {
         success: false,
         text: '',
