@@ -1436,8 +1436,8 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
       const geminiStart = Date.now();
       console.log("[MODEL]", { task: "통합 리딩 생성", model: "gemini-2.5-flash" });
       
-      // === E1-B Step1: 2회 호출 테스트 ===
-      const rawNarrative = await fetchGemini(apiKey, "gemini-2.5-flash", finalPrompt, `당신은 "최한나" 스타일의 위스퍼윈드입니다.
+      // === E1-B: 최한나 + 모나드 병렬 호출 ===
+      const choihannaPromise = fetchGemini(apiKey, "gemini-2.5-flash", finalPrompt, `당신은 "최한나" 스타일의 위스퍼윈드입니다.
 
 [최한나 스타일 규칙]
 - 따뜻한 언니/누나가 카페에서 1:1 상담하는 톤. 격식체가 아닌 부드러운 존댓말.
@@ -1448,12 +1448,8 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
 - 데이터는 "사주를 보면요," "별자리 차트에서도 비슷한 이야기가 나오는데요," 처럼 대화체로 인용.
 - 절대 리스트/번호 매기기 하지 말 것. 자연스러운 문단 흐름으로만 작성.
 - 마크다운 금지. 순수 텍스트만.`, 0.35);
-      
-      let secondNarrative = '';
-      const timeElapsed = Date.now() - geminiStart;
-      if (timeElapsed < 40000) {
-        try {
-          secondNarrative = await fetchGemini(apiKey, "gemini-2.5-flash", finalPrompt, `당신은 "모나드" 스타일의 위스퍼윈드입니다.
+
+      const monadPromise = fetchGemini(apiKey, "gemini-2.5-flash", finalPrompt, `당신은 "모나드" 스타일의 위스퍼윈드입니다.
 
 [모나드 스타일 규칙]
 - 10년차 데이터 분석가가 브리핑하는 톤. 냉철하고 정확하며 군더더기 없음.
@@ -1464,11 +1460,17 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
 - 시기별 조언은 "1분기/2분기" 또는 "상반기/하반기"로 명확히 구분.
 - 감정적 위로 표현 금지. 팩트와 방향성만 전달.
 - 마크다운 금지. 순수 텍스트만.`, 0.1);
-          console.log("[E1-B] 2nd call 성공:", ((Date.now() - geminiStart) / 1000).toFixed(1) + "s");
-        } catch (e2: any) {
-          console.log("[E1-B] 2nd call 실패:", e2.message);
-        }
-      }
+
+      const [choihannaResult, monadResult] = await Promise.allSettled([choihannaPromise, monadPromise]);
+      
+      const rawNarrative = choihannaResult.status === 'fulfilled' ? choihannaResult.value : '';
+      const secondNarrative = monadResult.status === 'fulfilled' ? monadResult.value : '';
+      
+      console.log(`[E1-B] 병렬 호출 완료: 최한나=${choihannaResult.status}, 모나드=${monadResult.status} (${((Date.now() - geminiStart) / 1000).toFixed(1)}s)`);
+
+      // fallback: 둘 중 하나만 성공하면 실패한 쪽에 복사
+      const finalChoihanna = rawNarrative || secondNarrative || '해석을 생성하지 못했습니다.';
+      const finalMonad = secondNarrative || rawNarrative || '해석을 생성하지 못했습니다.';
       
       // === E1-B: hybrid 경량 호출 ===
       let thirdNarrative = '';
@@ -1488,9 +1490,9 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
 
 위 데이터를 바탕으로 3-5문장 결정 요약을 작성하라.`;
           thirdNarrative = await fetchGemini(apiKey, "gemini-2.5-flash", hybridPrompt, "", 0.15);
-          console.log("[E1-B] hybrid 성공:", ((Date.now() - geminiStart) / 1000).toFixed(1) + "s");
+          console.log("[E1-B] hybrid 호출 성공:", ((Date.now() - geminiStart) / 1000).toFixed(1) + "s");
         } catch (e3: any) {
-          console.log("[E1-B] hybrid 실패:", e3.message);
+          console.log("[E1-B] hybrid 호출 실패:", e3.message);
         }
       }
 
@@ -1509,19 +1511,19 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
       }
 
       parsed = buildFallbackReading("", grade, scores, tarotCards, input.question, style);
-      parsed.integrated_summary = rawNarrative;
-      parsed.final_message.summary = rawNarrative;
+      parsed.integrated_summary = finalChoihanna;
+      parsed.final_message.summary = finalChoihanna;
       
       const cardData = {
         cards: tarotCards.map((c: any) => ({ name: c.name, position: c.position, reversed: !!c.isReversed }))
       };
       
       parsed.tarot_reading = {
-        choihanna: { ...cardData, story: rawNarrative, key_message: "통합 분석에 기반한 위스퍼윈드의 제언입니다." },
-        monad: { ...cardData, story: secondNarrative || rawNarrative, key_message: "통합 분석에 기반한 위스퍼윈드의 제언입니다." },
-        e7l3: { ...cardData, story: rawNarrative, key_message: "통합 분석에 기반한 위스퍼윈드의 제언입니다." },
+        choihanna: { ...cardData, story: finalChoihanna, key_message: "통합 분석에 기반한 위스퍼윈드의 제언입니다." },
+        monad: { ...cardData, story: finalMonad, key_message: "통합 분석에 기반한 위스퍼윈드의 제언입니다." },
+        e7l3: { ...cardData, story: finalChoihanna, key_message: "통합 분석에 기반한 위스퍼윈드의 제언입니다." },
         e5l5: { ...cardData, story: thirdNarrative, key_message: "통합 분석에 기반한 위스퍼윈드의 제언입니다." },
-        l7e3: { ...cardData, story: secondNarrative || rawNarrative, key_message: "통합 분석에 기반한 위스퍼윈드의 제언입니다." }
+        l7e3: { ...cardData, story: finalMonad, key_message: "통합 분석에 기반한 위스퍼윈드의 제언입니다." }
       };
     } catch (e: any) {
       console.error("Gemini Whisperwind Error:", e);
