@@ -222,8 +222,9 @@ export function calculateFullDaewoon(
   const transitionInfo = calculateTransitionInfo(currentAge, pillars);
 
   const koreanAgeForChanging = currentAge + 1;
+  // 교운기 기준: 대운 시작 및 종료 전후 1년
   const isDaewoonChangingYear = currentDaewoon
-    ? (koreanAgeForChanging - currentDaewoon.startAge <= 1) || (currentDaewoon.endAge - koreanAgeForChanging <= 1)
+    ? (Math.abs(koreanAgeForChanging - currentDaewoon.startAge) <= 1) || (Math.abs(koreanAgeForChanging - (currentDaewoon.endAge + 1)) <= 1)
     : false;
 
   const CURRENT_YEAR = new Date().getFullYear();

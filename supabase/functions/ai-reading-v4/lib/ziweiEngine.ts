@@ -41,6 +41,7 @@ interface PalaceInfo {
   name: PalaceName;
   branch: string;
   stars: StarPlacement[];
+  main_stars: string[];
   transformations: Transformation[];
   interpretation: string;
 }
@@ -93,6 +94,7 @@ export interface ServerZiWeiResult {
     life_palace: CorePalaceInfo;
     body_palace: CorePalaceInfo;
   };
+  is_daewoon_changing_year: boolean;
   // Compatibility
   lifePalace: string;
   bodyPalace: string;
@@ -270,12 +272,28 @@ export function calculateServerZiWei(
   for (const [pos, stars] of auxMap.entries()) { if (!starMap.has(pos)) starMap.set(pos, []); for (const s of stars) (starMap.get(pos) as any[]).push(s); }
   const natalTransformations = calculateNatalTransformations(yearGanIdx, starMap, mingGongIdx);
   const palaces: PalaceInfo[] = PALACES.map((name, idx) => {
-    const palaceIdx = (mingGongIdx + idx) % 12; const stars = starMap.get(palaceIdx) || [];
-    return { name, branch: BRANCHES[palaceIdx], stars: stars.map(s => ({ star: s as any, palace: name, brightness: getStarBrightness(s as any, palaceIdx), description: s })), transformations: [], interpretation: `${name}: ${stars.join(", ")}` };
+    const palaceIdx = (mingGongIdx + idx) % 12; 
+    const stars = starMap.get(palaceIdx) || [];
+    const main_stars = stars.filter(s => (MAJOR_STARS as readonly string[]).includes(s as any)).map(s => s as string);
+    return { 
+      name, 
+      branch: BRANCHES[palaceIdx], 
+      stars: stars.map(s => ({ star: s as any, palace: name, brightness: getStarBrightness(s as any, palaceIdx), description: s })), 
+      main_stars,
+      transformations: [], 
+      interpretation: `${name}: ${stars.join(", ")}` 
+    };
   });
   const majorPeriods = calculateMajorPeriods(bureau, mingGongIdx, gender, yearGanIdx, starMap);
   const currentYear = new Date().getFullYear();
-  const currentMajorPeriod = majorPeriods.find(p => (currentYear - birthYear + 1) >= p.startAge && (currentYear - birthYear + 1) <= p.endAge) || null;
+  const currentAge = currentYear - birthYear + 1;
+  const currentDaewoon = majorPeriods.find(p => currentAge >= p.startAge && currentAge <= p.endAge) || null;
+  const koreanAgeForChanging = currentAge + 1;
+  // 교운기 기준: 대운 시작 전후 1년 (총 2~3년 구간)
+  const isDaewoonChangingYear = currentDaewoon
+    ? (Math.abs(koreanAgeForChanging - currentDaewoon.startAge) <= 1) || (Math.abs(koreanAgeForChanging - (currentDaewoon.endAge + 1)) <= 1)
+    : false;
+  const currentMajorPeriod = currentDaewoon;
   const currentMinorPeriod = calculateMinorPeriod(birthYear, currentYear, mingGongIdx, gender, yearGanIdx);
 
   function buildCorePalaceInfo(palaceIdx: number): CorePalaceInfo {
@@ -286,13 +304,30 @@ export function calculateServerZiWei(
   }
 
   // Compatibility fields
-  const majorStarsForVerify = [];
+  const majorStarsForVerify: { name: string; palace: string; brightness: string }[] = [];
   for (const [pos, stars] of starMap.entries()) { stars.forEach(s => majorStarsForVerify.push({ name: s, palace: BRANCHES[pos], brightness: getStarBrightness(s as any, pos) })); }
   const stem = STEMS[yearGanIdx]; const t = TRANSFORMATION_TABLE[stem] || {};
   const siHua = { "화록": t["화록"], "화권": t["화권"], "화과": t["화과"], "화기": t["화기"] };
 
+  const annualTransformationList = calculateNatalTransformations((currentYear - 4) % 10, starMap, mingGongIdx);
+
   return {
-    mingGong: BRANCHES[mingGongIdx], shenGong: BRANCHES[shenGongIdx], bureau, palaces, lifeStructure: "", keyInsights: [], natalTransformations, majorPeriods, currentMajorPeriod, currentMinorPeriod, periodAnalysis: "", annualTransformations: [], annualYear: currentYear, annualGan: STEMS[(currentYear-4)%10], core_palaces: { life_palace: buildCorePalaceInfo(mingGongIdx), body_palace: buildCorePalaceInfo(shenGongIdx) },
+    mingGong: BRANCHES[mingGongIdx], 
+    shenGong: BRANCHES[shenGongIdx], 
+    bureau, 
+    palaces, 
+    lifeStructure: "", 
+    keyInsights: [], 
+    natalTransformations, 
+    majorPeriods, 
+    currentMajorPeriod, 
+    currentMinorPeriod, 
+    periodAnalysis: "", 
+    annualTransformations: annualTransformationList, 
+    annualYear: currentYear, 
+    annualGan: STEMS[((currentYear-4)%10+10)%10], 
+    core_palaces: { life_palace: buildCorePalaceInfo(mingGongIdx), body_palace: buildCorePalaceInfo(shenGongIdx) },
+    is_daewoon_changing_year: isDaewoonChangingYear,
     lifePalace: BRANCHES[mingGongIdx], bodyPalace: BRANCHES[shenGongIdx], fiveElementFrame: bureau, lunarMonth, lunarDay, hourBranch: BRANCHES[birthHourBranch], majorStars: majorStarsForVerify, siHua
   };
 }
