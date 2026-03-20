@@ -1450,6 +1450,17 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
         }
       }
       
+      let thirdNarrative = '';
+      const timeElapsed2 = Date.now() - geminiStart;
+      if (timeElapsed2 < 40000) {
+        try {
+          thirdNarrative = await fetchGemini(apiKey, "gemini-2.5-flash", finalPrompt, "당신은 핵심만 전달하는 결정 요약 전문가입니다. 반드시 3-5문장만 작성하라. 절대 초과 금지. 1문장: 핵심 결론. 2-3문장: 핵심 근거 최대 2개. 마지막 1문장: 실행 방향. 마크다운 금지. 순수 텍스트로만 작성하라.", 0.15);
+          console.log("[E1-B] 3rd call 성공:", ((Date.now() - geminiStart) / 1000).toFixed(1) + "s");
+        } catch (e3: any) {
+          console.log("[E1-B] 3rd call 실패:", e3.message);
+        }
+      }
+      
       geminiLatency = Date.now() - geminiStart;
 
       if (!rawNarrative) {
@@ -1468,7 +1479,7 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
         choihanna: { ...cardData, story: rawNarrative, key_message: "통합 분석에 기반한 위스퍼윈드의 제언입니다." },
         monad: { ...cardData, story: secondNarrative || rawNarrative, key_message: "통합 분석에 기반한 위스퍼윈드의 제언입니다." },
         e7l3: { ...cardData, story: rawNarrative, key_message: "통합 분석에 기반한 위스퍼윈드의 제언입니다." },
-        e5l5: { ...cardData, story: secondNarrative || rawNarrative, key_message: "통합 분석에 기반한 위스퍼윈드의 제언입니다." },
+        e5l5: { ...cardData, story: thirdNarrative || secondNarrative || rawNarrative, key_message: "통합 분석에 기반한 위스퍼윈드의 제언입니다." },
         l7e3: { ...cardData, story: secondNarrative || rawNarrative, key_message: "통합 분석에 기반한 위스퍼윈드의 제언입니다." }
       };
     } catch (e: any) {
