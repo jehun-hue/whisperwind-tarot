@@ -6,7 +6,7 @@ console.log("[BOOT] Edge function starting...");
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { runFullProductionEngineV8, fetchGeminiStream } from "./integratedReadingEngine.ts";
-// import { processChat } from "./interactivityLayer.ts";
+import { processChat } from "./interactivityLayer.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -93,14 +93,12 @@ serve(async (req: Request) => {
       });
     }
 
-    /* Legacy Chat Mode Removed
     if (mode === "chat") {
       const chatResponse = await processChat(API_KEY, question, payload.context);
       return new Response(JSON.stringify({ response: chatResponse }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    */
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
