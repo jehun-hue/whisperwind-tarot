@@ -1482,7 +1482,7 @@ ${userInfo.question ? `[질문: ${userInfo.question}]` : ''}
       const finalChoihanna = rawNarrative;
       const finalMonad = secondNarrative;
 
-      parsed = buildFallbackReading("", grade, scores, tarotCards, input.question, style);
+      parsed = buildFallbackReading(thirdNarrative || finalChoihanna || "통합 분석 결과를 준비 중입니다.", grade, scores, tarotCards, input.question, style);
       parsed.integrated_summary = thirdNarrative || finalChoihanna;
       parsed.final_message.summary = thirdNarrative || finalChoihanna;
       
