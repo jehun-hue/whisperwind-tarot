@@ -1464,8 +1464,7 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
           break;
         }
         try {
-          const styledPrompt = config.instruction + "\n\n" + finalPrompt;
-          const result = await fetchGemini(apiKey, "gemini-2.5-flash", styledPrompt, "", config.temperature);
+          const result = await fetchGemini(apiKey, "gemini-2.5-flash", finalPrompt, config.instruction, config.temperature);
           styleResults[key] = strip(result);
           console.log(`[Style:${key}] 성공 (${((Date.now() - startTime) / 1000).toFixed(1)}s)`);
         } catch (err: any) {
@@ -2200,7 +2199,7 @@ async function fetchGemini(apiKey: string, model: string, system: string, _user:
   const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`;
 
   const requestBody = JSON.stringify({
-    contents: [{ parts: [{ text: system }] }],
+    contents: [{ parts: [{ text: _user ? (_user + "\n\n" + system) : system }] }],
     generationConfig: {
       maxOutputTokens: 16384,
       temperature: temperature
