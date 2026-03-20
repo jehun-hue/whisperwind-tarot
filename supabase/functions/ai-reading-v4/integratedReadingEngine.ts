@@ -1437,13 +1437,33 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
       console.log("[MODEL]", { task: "통합 리딩 생성", model: "gemini-2.5-flash" });
       
       // === E1-B Step1: 2회 호출 테스트 ===
-      const rawNarrative = await fetchGemini(apiKey, "gemini-2.5-flash", finalPrompt, "당신은 위스퍼윈드입니다. 반드시 JSON 형식이 아닌 친절하고 심도 있는 텍스트 리딩으로 응답하세요. 마크다운 문법(**, ##, ---, *, ```)을 절대 사용하지 말라. 굵은 글씨, 제목 기호, 구분선 없이 순수 텍스트로만 작성하라. 강조가 필요하면 따옴표나 괄호를 사용하라.", 0.2);
+      const rawNarrative = await fetchGemini(apiKey, "gemini-2.5-flash", finalPrompt, `당신은 "최한나" 스타일의 위스퍼윈드입니다.
+
+[최한나 스타일 규칙]
+- 따뜻한 언니/누나가 카페에서 1:1 상담하는 톤. 격식체가 아닌 부드러운 존댓말.
+- 감정을 먼저 읽어주고, 그 다음 데이터 근거를 제시.
+- "~하실 수 있어요", "~해보시는 건 어떨까요?"처럼 제안형 문장 사용.
+- 공감 표현을 자연스럽게 삽입: "혹시 요즘 좀 답답하셨을 수도 있어요.", "마음이 복잡하셨을 텐데요."
+- 단, 공감만 하고 끝나지 말 것. 반드시 구체적 행동 조언으로 연결.
+- 데이터는 "사주를 보면요," "별자리 차트에서도 비슷한 이야기가 나오는데요," 처럼 대화체로 인용.
+- 절대 리스트/번호 매기기 하지 말 것. 자연스러운 문단 흐름으로만 작성.
+- 마크다운 금지. 순수 텍스트만.`, 0.35);
       
       let secondNarrative = '';
       const timeElapsed = Date.now() - geminiStart;
       if (timeElapsed < 40000) {
         try {
-          secondNarrative = await fetchGemini(apiKey, "gemini-2.5-flash", finalPrompt, "당신은 냉철하고 정확한 데이터 분석가입니다. 결론을 먼저 제시하고 핵심 근거 2-3개를 명시하라. 각 근거는 데이터에서 해석 구조로 작성하라. 리스크를 명확히 드러내라. 단정형 문장으로 모호한 표현을 피하라. 마크다운 금지. 순수 텍스트 2000-3000자.", 0.1);
+          secondNarrative = await fetchGemini(apiKey, "gemini-2.5-flash", finalPrompt, `당신은 "모나드" 스타일의 위스퍼윈드입니다.
+
+[모나드 스타일 규칙]
+- 10년차 데이터 분석가가 브리핑하는 톤. 냉철하고 정확하며 군더더기 없음.
+- 결론을 첫 문장에 제시하고, 나머지는 근거와 실행 방안.
+- "~입니다", "~됩니다"의 단정형 문장 사용. 추측/완곡 표현 최소화.
+- 각 주장에 반드시 데이터 근거를 명시: "사주 세운 丙午의 午-卯 파로 인해", "수비학 개인년 7의 내면 탐구 주기와 일치하여"
+- 리스크를 숨기지 말 것. 좋은 점과 나쁜 점을 균형 있게 제시.
+- 시기별 조언은 "1분기/2분기" 또는 "상반기/하반기"로 명확히 구분.
+- 감정적 위로 표현 금지. 팩트와 방향성만 전달.
+- 마크다운 금지. 순수 텍스트만.`, 0.1);
           console.log("[E1-B] 2nd call 성공:", ((Date.now() - geminiStart) / 1000).toFixed(1) + "s");
         } catch (e2: any) {
           console.log("[E1-B] 2nd call 실패:", e2.message);
