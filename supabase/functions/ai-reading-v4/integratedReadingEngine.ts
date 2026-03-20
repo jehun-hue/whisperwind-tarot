@@ -13,6 +13,7 @@ import { calculateConsensusV8, calculateConsensusWithTopic, getTopicWeights, typ
 import { runLifeTimelineEngine, type LifeTimelineResult } from "./lifeTimelineEngine.ts";
 import { analyzeSpreadCCM, lookupCCM, type CCMResult } from "./cardContextMatrix.ts";
 import { predictTemporalV8 } from "./temporalPredictionEngine.ts";
+import { callGeminiWithStyle, callGemini } from "./lib/geminiClient.ts";
 import { validateEngineOutput } from "./validationLayer.ts";
 import { getLocalizedStyle } from "./interactivityLayer.ts";
 import { calculateNumerology } from "./numerologyEngine.ts";
@@ -1437,78 +1438,47 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
       console.log("[MODEL]", { task: "통합 리딩 생성", model: "gemini-2.5-flash" });
       
       // === E1-B: 최한나 + 모나드 병렬 호출 ===
-      const choihannaPromise = fetchGemini(apiKey, "gemini-2.5-flash", finalPrompt, `당신은 "최한나" 스타일의 위스퍼윈드입니다.
+      // === E1-B v6: geminiClient 기반 병렬 호출 ===
+      const [choihannaRes, monadRes] = await Promise.all([
+        callGeminiWithStyle(apiKey, 'choihanna', finalPrompt),
+        callGeminiWithStyle(apiKey, 'monad', finalPrompt)
+      ]);
 
-[최한나 스타일 규칙]
-- 따뜻한 언니/누나가 카페에서 1:1 상담하는 톤. 격식체가 아닌 부드러운 존댓말.
-- 감정을 먼저 읽어주고, 그 다음 데이터 근거를 제시.
-- "~하실 수 있어요", "~해보시는 건 어떨까요?"처럼 제안형 문장 사용.
-- 공감 표현을 자연스럽게 삽입: "혹시 요즘 좀 답답하셨을 수도 있어요.", "마음이 복잡하셨을 텐데요."
-- 단, 공감만 하고 끝나지 말 것. 반드시 구체적 행동 조언으로 연결.
-- 데이터는 "사주를 보면요," "별자리 차트에서도 비슷한 이야기가 나오는데요," 처럼 대화체로 인용.
-- 절대 리스트/번호 매기기 하지 말 것. 자연스러운 문단 흐름으로만 작성.
-- 마크다운 금지. 순수 텍스트만.`, 0.35);
+      console.log(`[E1-B] 병렬 완료: 최한나=${choihannaRes.success}(${choihannaRes.elapsedMs}ms${choihannaRes.retried ? ',retried' : ''}), 모나드=${monadRes.success}(${monadRes.elapsedMs}ms${monadRes.retried ? ',retried' : ''})`);
 
-      const monadPromise = fetchGemini(apiKey, "gemini-2.5-flash", finalPrompt, `당신은 "모나드" 스타일의 위스퍼윈드입니다.
+      const rawNarrative = choihannaRes.text || monadRes.text || '해석을 생성하지 못했습니다.';
+      const secondNarrative = monadRes.text || choihannaRes.text || '해석을 생성하지 못했습니다.';
 
-[모나드 스타일 규칙]
-- 10년차 데이터 분석가가 브리핑하는 톤. 냉철하고 정확하며 군더더기 없음.
-- 결론을 첫 문장에 제시하고, 나머지는 근거와 실행 방안.
-- "~입니다", "~됩니다"의 단정형 문장 사용. 추측/완곡 표현 최소화.
-- 각 주장에 반드시 데이터 근거를 명시: "사주 세운 丙午의 午-卯 파로 인해", "수비학 개인년 7의 내면 탐구 주기와 일치하여"
-- 리스크를 숨기지 말 것. 좋은 점과 나쁜 점을 균형 있게 제시.
-- 시기별 조언은 "1분기/2분기" 또는 "상반기/하반기"로 명확히 구분.
-- 감정적 위로 표현 금지. 팩트와 방향성만 전달.
-- 마크다운 금지. 순수 텍스트만.`, 0.1);
-
-      const [choihannaResult, monadResult] = await Promise.allSettled([choihannaPromise, monadPromise]);
-      
-      const rawNarrative = choihannaResult.status === 'fulfilled' ? choihannaResult.value : '';
-      const secondNarrative = monadResult.status === 'fulfilled' ? monadResult.value : '';
-      
-      console.log(`[E1-B] 병렬 호출 완료: 최한나=${choihannaResult.status}, 모나드=${monadResult.status} (${((Date.now() - geminiStart) / 1000).toFixed(1)}s)`);
-
-      // fallback: 둘 중 하나만 성공하면 실패한 쪽에 복사
-      const finalChoihanna = rawNarrative || secondNarrative || '해석을 생성하지 못했습니다.';
-      const finalMonad = secondNarrative || rawNarrative || '해석을 생성하지 못했습니다.';
-      
-      // === E1-B: hybrid 경량 호출 ===
+      // === hybrid 경량 호출 ===
       let thirdNarrative = '';
-      const timeElapsed2 = Date.now() - geminiStart;
-      if (timeElapsed2 < 45000) {
-        try {
-          const hybridPrompt = `당신은 핵심만 전달하는 결정 요약 전문가입니다. 반드시 3-5문장만 작성하라. 절대 초과 금지.
-1문장: 핵심 결론. 2-3문장: 핵심 근거(최대 2개). 마지막 1문장: 실행 방향.
-마크다운 금지. 순수 텍스트로만 작성하라.
-
-[핵심 데이터]
+      const hybridPrompt = `[핵심 데이터]
 - 사주: ${sajuAnalysis?.dayMaster || ''}일간, ${sajuAnalysis?.strength || ''}, 용신 ${sajuAnalysis?.yongShin || ''}, 세운 ${sajuAnalysis?.sewoon?.full || '丙午'}
 - 수비학: 생명수 ${numerologyResult?.life_path_number || ''}, 개인년 ${numerologyResult?.personal_year || ''}
-- 합의점수: ${(consensusResult?.consensus_score * 100).toFixed(0)}%
+- 합의점수: ${((consensusResult?.consensus_score || 0) * 100).toFixed(0)}%
 - 지배벡터: 성장 ${consensusResult?.dominant_vector?.growth?.toFixed(2) || ''}, 리스크 ${consensusResult?.dominant_vector?.risk?.toFixed(2) || ''}, 전환 ${consensusResult?.dominant_vector?.life_transition?.toFixed(2) || ''}
 - 충돌: ${consensusResult?.conflict_summary || '없음'}
 
 위 데이터를 바탕으로 3-5문장 결정 요약을 작성하라.`;
-          thirdNarrative = await fetchGemini(apiKey, "gemini-2.5-flash", hybridPrompt, "", 0.15);
-          console.log("[E1-B] hybrid 호출 성공:", ((Date.now() - geminiStart) / 1000).toFixed(1) + "s");
-        } catch (e3: any) {
-          console.log("[E1-B] hybrid 호출 실패:", e3.message);
-        }
+
+      const hybridRes = await callGeminiWithStyle(apiKey, 'hybrid', hybridPrompt);
+      if (hybridRes.success) {
+        thirdNarrative = hybridRes.text;
+        console.log(`[E1-B] hybrid 성공: ${hybridRes.elapsedMs}ms`);
+      } else {
+        console.log(`[E1-B] hybrid 실패: ${hybridRes.error}`);
+        const dv = consensusResult?.dominant_vector || {};
+        const growthDir = (dv.growth || 0) > 0.5 ? '성장과 확장' : '안정과 유지';
+        const riskLevel = (dv.risk || 0) > 0.5 ? '높은 리스크 관리 필요' : '비교적 안정적';
+        thirdNarrative = `2026년은 ${growthDir}의 흐름이 지배적이며, ${riskLevel}한 시기입니다. ` +
+          `사주 용신 ${sajuAnalysis?.yongShin || ''}의 에너지를 활용하고, ` +
+          `내면의 성찰과 외부 실행의 균형을 맞추는 것이 핵심입니다. ` +
+          `특히 4-6월 전환기에 중요한 결정을 미루지 말고 신중하게 실행하세요.`;
       }
 
-      // hybrid fallback: consensus 기반 코드 생성
-      if (!thirdNarrative) {
-        const cv = consensusResult?.dominant_vector;
-        const growthDir = (cv?.growth > 0.5) ? '성장과 확장' : '안정과 유지';
-        const riskLevel = (cv?.risk > 0.5) ? '높은 리스크 관리 필요' : '비교적 안정적';
-        thirdNarrative = '2026년은 ' + growthDir + '의 흐름이 지배적이며, ' + riskLevel + '한 시기입니다. 사주 용신(' + (sajuAnalysis?.yongShin || '수') + ') 기운을 의식적으로 보충하고, 내면 성찰과 외부 실행의 균형을 잡는 것이 핵심입니다. 4-6월 주요 전환기에 중요한 결정을 미루지 말고 신중하게 실행하세요.';
-      }
-      
       geminiLatency = Date.now() - geminiStart;
 
-      if (!rawNarrative) {
-        throw new Error("Empty narrative from Gemini");
-      }
+      const finalChoihanna = rawNarrative;
+      const finalMonad = secondNarrative;
 
       parsed = buildFallbackReading("", grade, scores, tarotCards, input.question, style);
       parsed.integrated_summary = finalChoihanna;
