@@ -1432,7 +1432,7 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     responseType = "skipped";
     parsed = buildFallbackReading("데이터 분석 전용 모드입니다.", grade, scores, tarotCards, input.question, style);
   } else {
-    // ═══ E1-B: 3스타일 개별 Gemini 호출 ═══
+    // ═══ E1-B v2: hybrid 즉시 생성 + 나머지 지연 ═══
     const STYLE_PROMPTS: Record<string, string> = {
       choihanna: `당신은 '최한나'입니다. 따뜻하고 공감 능력이 뛰어난 상담사입니다.
 규칙:
@@ -1462,59 +1462,79 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
 - 마크다운 문법(**, ##, ---, *, \`\`\`)을 절대 사용하지 말라. 순수 텍스트로만 작성하라.`
     };
 
-    const styleKeys = ['choihanna', 'monad', 'hybrid'] as const;
     parsed.tarot_reading = {} as any;
 
-    try {
-      const geminiStart = Date.now();
-      console.log("[MODEL]", { task: "E1-B 3스타일 통합 리딩 생성", count: styleKeys.length });
+    let hybridNarrative = '';
+    let choihannaNarrative = '';
+    let monadNarrative = '';
 
-      // 3개 스타일 병렬 호출
-      const styleResults = await Promise.allSettled(
-        styleKeys.map(async (key) => {
-          const narrative = await fetchGemini(
-            apiKey,
-            "gemini-2.5-flash",
-            finalPrompt,
-            STYLE_PROMPTS[key],
-            key === 'monad' ? 0.1 : key === 'hybrid' ? 0.15 : 0.3
-          );
-          return { key, narrative };
-        })
-      );
+    try {
+      // Step 1: hybrid만 즉시 생성 (타임아웃 방지)
+      const geminiStart = Date.now();
+      console.log("[MODEL]", { task: "E1-B hybrid 즉시 생성" });
+
+      try {
+        hybridNarrative = await fetchGemini(
+          apiKey,
+          "gemini-2.5-flash",
+          finalPrompt,
+          STYLE_PROMPTS.hybrid,
+          0.15
+        );
+      } catch (e: any) {
+        console.error("[MODEL] hybrid 생성 실패:", e?.message);
+        hybridNarrative = '해석 생성에 실패했습니다. 잠시 후 다시 시도해주세요.';
+      }
 
       geminiLatency = Date.now() - geminiStart;
 
-      // 결과 매핑
-      for (const result of styleResults) {
-        if (result.status === 'fulfilled') {
-          const { key, narrative } = result.value;
-          parsed.tarot_reading[key] = {
-            cards: normalizedCards.map((c: any) => ({
-              name: c.name || '',
-              position: c.position || '',
-              reversed: !!c.isReversed,
-              image: c.image || '',
-            })),
-            story: narrative || '해석 생성에 실패했습니다.',
-            key_message: key === 'choihanna' ? '최한나의 따뜻한 해석입니다.'
-              : key === 'monad' ? '모나드의 냉철한 분석입니다.'
-              : '핵심 결론 요약입니다.'
-          };
-        } else {
-          const styleKey = styleKeys[styleResults.indexOf(result)];
-          parsed.tarot_reading[styleKey] = {
-            cards: [],
-            story: '해석 생성 중 오류가 발생했습니다.',
-            key_message: ''
-          };
+      // Step 2: choihanna와 monad 병렬 시도 (남은 시간 내)
+      try {
+        const remainingResults = await Promise.allSettled([
+          fetchGemini(apiKey, "gemini-2.5-flash", finalPrompt, STYLE_PROMPTS.choihanna, 0.3),
+          fetchGemini(apiKey, "gemini-2.5-flash", finalPrompt, STYLE_PROMPTS.monad, 0.1),
+        ]);
+
+        if (remainingResults[0].status === 'fulfilled') {
+          choihannaNarrative = remainingResults[0].value || '';
         }
+        if (remainingResults[1].status === 'fulfilled') {
+          monadNarrative = remainingResults[1].value || '';
+        }
+      } catch (e: any) {
+        console.error("[MODEL] choihanna/monad 생성 실패:", e?.message);
       }
 
+      // 카드 데이터 공통 구조
+      const cardData = normalizedCards.map((c: any) => ({
+        name: c.name || '',
+        position: c.position || '',
+        reversed: !!c.isReversed,
+        image: c.image || '',
+      }));
+
+      // 결과 매핑
+      parsed.tarot_reading.hybrid = {
+        cards: cardData,
+        story: hybridNarrative || '해석 생성에 실패했습니다.',
+        key_message: '핵심 결론 요약입니다.'
+      };
+
+      parsed.tarot_reading.choihanna = {
+        cards: cardData,
+        story: choihannaNarrative || hybridNarrative || '최한나 스타일 해석을 생성하지 못했습니다. 하이브리드 결과를 참고해주세요.',
+        key_message: '최한나의 따뜻한 해석입니다.'
+      };
+
+      parsed.tarot_reading.monad = {
+        cards: cardData,
+        story: monadNarrative || hybridNarrative || '모나드 스타일 해석을 생성하지 못했습니다. 하이브리드 결과를 참고해주세요.',
+        key_message: '모나드의 냉철한 분석입니다.'
+      };
+
       // 텍스트 필드 호환성 (마지막 결과 기반)
-      const lastNarrative = (styleResults[0] as any)?.value?.narrative || "";
-      parsed.integrated_summary = lastNarrative;
-      parsed.final_message.summary = lastNarrative;
+      parsed.integrated_summary = hybridNarrative;
+      parsed.final_message.summary = hybridNarrative;
 
       // 기존 5키 호환성 유지 (프론트엔드 전환 전까지)
       parsed.tarot_reading.e7l3 = parsed.tarot_reading.choihanna;
@@ -1522,7 +1542,7 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
       parsed.tarot_reading.l7e3 = parsed.tarot_reading.monad;
       
     } catch (e: any) {
-      console.error("Gemini 3-Style Error:", e);
+      console.error("Gemini Hybrid-First Error:", e);
       responseType = "timeout";
       parsed = buildFallbackReading("시간 내에 운세 결과를 생성하지 못했습니다. 잠시 후 서비스 안정화 후 다시 시도해주세요.", grade, scores, tarotCards, input.question, style);
     }
