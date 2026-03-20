@@ -1691,56 +1691,8 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                 )}
               </div>
 
-              {/* 1-3. E7L3 Persona */}
-              <div className="p-6 border-b border-border/10 bg-pink-500/5">
-                <div className="mb-3 text-xs font-bold text-pink-400 tracking-widest uppercase">🌸 감성 70% 통합 리딩</div>
-                {reading.tarot_reading?.e7l3 ? (
-                  <>
-                    <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap mb-3">{renderSafe(reading.tarot_reading.e7l3.story)}</p>
-                    {reading.tarot_reading.e7l3.key_message && (
-                      <p className="text-xs text-gold font-medium italic">💎 {renderSafe(reading.tarot_reading.e7l3.key_message)}</p>
-                    )}
-                  </>
-                ) : (
-                  <p className="text-xs text-muted-foreground italic">
-                    상단 AI 분석 실행 버튼을 눌러주세요. 자동으로 생성됩니다.
-                  </p>
-                )}
-              </div>
 
-              {/* 1-4. E5L5 Persona */}
-              <div className="p-6 border-b border-border/10 bg-purple-500/5">
-                <div className="mb-3 text-xs font-bold text-purple-400 tracking-widest uppercase">⚖️ 균형 50% 통합 리딩</div>
-                {reading.tarot_reading?.e5l5 ? (
-                  <>
-                    <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap mb-3">{renderSafe(reading.tarot_reading.e5l5.story)}</p>
-                    {reading.tarot_reading.e5l5.key_message && (
-                      <p className="text-xs text-gold font-medium italic">💎 {renderSafe(reading.tarot_reading.e5l5.key_message)}</p>
-                    )}
-                  </>
-                ) : (
-                  <p className="text-xs text-muted-foreground italic">
-                    상단 AI 분석 실행 버튼을 눌러주세요. 자동으로 생성됩니다.
-                  </p>
-                )}
-              </div>
 
-              {/* 1-5. L7E3 Persona */}
-              <div className="p-6 border-b border-border/10 bg-blue-500/5">
-                <div className="mb-3 text-xs font-bold text-blue-400 tracking-widest uppercase">🧊 이성 70% 통합 리딩</div>
-                {reading.tarot_reading?.l7e3 ? (
-                  <>
-                    <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap mb-3">{renderSafe(reading.tarot_reading.l7e3.story)}</p>
-                    {reading.tarot_reading.l7e3.key_message && (
-                      <p className="text-xs text-gold font-medium italic">💎 {renderSafe(reading.tarot_reading.l7e3.key_message)}</p>
-                    )}
-                  </>
-                ) : (
-                  <p className="text-xs text-muted-foreground italic">
-                    상단 AI 분석 실행 버튼을 눌러주세요. 자동으로 생성됩니다.
-                  </p>
-                )}
-              </div>
 
 
               {/* 3. Cross-System Consensus */}
