@@ -1451,7 +1451,9 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
 
       // === hybrid 경량 호출 ===
       let thirdNarrative = '';
-      const hybridPrompt = `[핵심 데이터]
+      const hybridPrompt = `[내담자: ${userInfo.name || '내담자'}님]
+${userInfo.question ? `[질문: ${userInfo.question}]` : ''}
+[핵심 데이터]
 - 사주: ${sajuAnalysis?.dayMaster || ''}일간, ${sajuAnalysis?.strength || ''}, 용신 ${sajuAnalysis?.yongShin || ''}, 세운 ${sajuAnalysis?.sewoon?.full || '丙午'}
 - 수비학: 생명수 ${numerologyResult?.life_path_number || ''}, 개인년 ${numerologyResult?.personal_year || ''}
 - 합의점수: ${((consensusResult?.consensus_score || 0) * 100).toFixed(0)}%
