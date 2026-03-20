@@ -1,7 +1,7 @@
 // lib/promptBuilder.ts — E1-A Master Prompt v2 (2026-03-20)
 // 결론 강제 + 선별 데이터 주입 + 질문별 궁 선택
 
-interface UserInfo {
+export interface UserInfo {
   name?: string;
   birthDate: string;
   birthTime?: string;

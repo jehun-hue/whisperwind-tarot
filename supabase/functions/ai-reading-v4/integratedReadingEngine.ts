@@ -1436,7 +1436,7 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
       const geminiStart = Date.now();
       console.log("[MODEL]", { task: "통합 리딩 생성", model: "gemini-2.5-flash" });
       
-      const rawNarrative = await fetchGemini(apiKey, "gemini-2.5-flash", finalPrompt, "당신은 위스퍼윈드입니다. 반드시 JSON 형식이 아닌 친절하고 심도 있는 텍스트 리딩으로 응답하세요.", 0.2);
+      const rawNarrative = await fetchGemini(apiKey, "gemini-2.5-flash", finalPrompt, "당신은 위스퍼윈드입니다. 반드시 JSON 형식이 아닌 친절하고 심도 있는 텍스트 리딩으로 응답하세요. 마크다운 문법(**, ##, ---, *, ```)을 절대 사용하지 말라. 굵은 글씨, 제목 기호, 구분선 없이 순수 텍스트로만 작성하라. 강조가 필요하면 따옴표나 괄호를 사용하라.", 0.2);
       geminiLatency = Date.now() - geminiStart;
 
       if (!rawNarrative) {
