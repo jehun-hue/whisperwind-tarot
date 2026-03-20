@@ -43,6 +43,31 @@ export function buildReadingPrompt(
   const name = userInfo.name || '내담자';
   const qType = userInfo.questionType || 'general_future';
 
+  // ── 데이터 추출 및 정규화 (전역 사용을 위해 상단 배치) ──
+  const s = saju || {} as any;
+  const dw = s.daewoon || {} as any;
+  const currentDw = dw.currentDaewoon || {};
+  const currentSeun = dw.current_seun || {};
+  const crossInt = s.cross_interactions || {} as any;
+  const sewoonRels = [
+    ...(crossInt.sewoon?.with_original?.branch_rels || []),
+    ...(crossInt.sewoon?.with_original?.stem_rels || []),
+  ];
+  const seunTwelveStage = s.twelve_stages?.seun || {} as any;
+  const dwTwelveStage = currentDw.twelveStageEnergy || {} as any;
+
+  const z = ziwei || {} as any;
+  const zRaw = z.rawData || z;
+  const palaces = zRaw.palaces || [];
+
+  const a = astrology || {} as any;
+  const aRaw = a.rawData || a;
+  const planets = aRaw.planets || a.planets || [];
+  const aspects = aRaw.aspects || [];
+  const transits = aRaw.transits || a.transits || [];
+
+  const n = numerology || {} as any;
+
   // ═══════════════════════════════════════════
   // SECTION 0: CORE CONSENSUS (결론 먼저)
   // ═══════════════════════════════════════════
@@ -79,12 +104,67 @@ ${timelineStr}
 `;
 
   // ═══════════════════════════════════════════
+  // SECTION 0.5: 교차 패턴 분석 (코드 사전 계산)
+  // ═══════════════════════════════════════════
+  const crossPatterns: string[] = [];
+
+  // 패턴 1: 관계 갈등 시그널 교차
+  const sajuConflict = sewoonRels.some((r: any) => r.type === '파' || r.type === '충' || r.type === '형');
+  const astroConflict = aspects.some((asp: any) =>
+    asp.isHarmonious === false && (
+      (asp.planet1 === '화성' && asp.planet2 === '명왕성') ||
+      (asp.planet1 === '토성' && asp.planet2 === '수성') ||
+      (asp.planet1 === '달' && asp.planet2 === '금성' && asp.type?.includes('사각'))
+    )
+  );
+  const ziweiConflict = (zRaw.natalTransformations || []).some((t: any) => t.type === '화기') ||
+    (zRaw.annualTransformations || []).some((t: any) => t.type === '화기');
+
+  if (sajuConflict && astroConflict) {
+    crossPatterns.push('⚠️ 관계 갈등 강화 패턴: 사주(' + sewoonRels.filter((r: any) => r.type === '파' || r.type === '충').map((r: any) => r.pair + ' ' + r.type).join(', ') + ') + 점성술(Mars□Pluto 등 긴장 어스펙트) → 직장/대인관계에서 마찰 가능성 높음');
+  }
+  if (sajuConflict && ziweiConflict) {
+    crossPatterns.push('⚠️ 소통 주의 패턴: 사주 지지 충돌 + 자미두수 화기(' + (zRaw.natalTransformations || []).filter((t: any) => t.type === '화기').map((t: any) => t.star + '→' + t.palace).join(', ') + ') → 구설, 오해 발생 가능');
+  }
+
+  // 패턴 2: 성장/확장 시그널 교차
+  const sajuGrowth = seunTwelveStage.level >= 70;
+  const astroGrowth = transits.some((t: string) => t.includes('삼합') || t.includes('합(0°)'));
+  const numGrowth = (n.personal_year === 1 || n.personal_year === 3 || n.personal_year === 5 || n.personal_year === 8);
+
+  if (sajuGrowth && astroGrowth) {
+    crossPatterns.push('✅ 확장 기회 패턴: 사주 세운 12운성 ' + seunTwelveStage.stage + '(' + seunTwelveStage.level + '점) + 점성술 긍정적 트랜짓 → 새로운 시도에 유리한 시기');
+  }
+
+  // 패턴 3: 내면 성찰 시그널 교차
+  const sajuIntrospect = dwTwelveStage.level <= 40;
+  const numIntrospect = (n.personal_year === 7 || n.personal_year === 4);
+
+  if (sajuIntrospect && numIntrospect) {
+    crossPatterns.push('🔍 내면 성찰 패턴: 사주 대운 에너지 ' + dwTwelveStage.level + '점(성찰기) + 수비학 개인년 ' + n.personal_year + '(탐구) → 외부 활동보다 내면 점검이 우선되는 시기');
+  }
+
+  // 패턴 4: 재물 기회 시그널 교차
+  const sajuWealth = (s.tenGods?.재성 || 0) > 0 || sewoonRels.some((r: any) => r.type === '지지육합');
+  const ziweiWealth = palaces.find((p: any) => p.name === '재백궁')?.main_stars?.length > 0;
+
+  if (sajuWealth && ziweiWealth) {
+    const jaeBaekStars = palaces.find((p: any) => p.name === '재백궁')?.main_stars?.join(', ') || '';
+    crossPatterns.push('💰 재물 기회 패턴: 사주 세운 육합/재성 활성 + 자미두수 재백궁(' + jaeBaekStars + ') → 투자, 수입 증가 가능성');
+  }
+
+  const section05 = crossPatterns.length > 0
+    ? `
+═══ [SECTION 0.5] 엔진 간 교차 패턴 (사전 분석) ═══
+${crossPatterns.join('\n')}
+
+★ 지시: 위 교차 패턴을 리딩의 핵심 뼈대로 사용하라. 단일 엔진 데이터보다 교차 패턴을 우선 인용하라.
+`
+    : '';
+
+  // ═══════════════════════════════════════════
   // SECTION 1: SAJU 핵심
   // ═══════════════════════════════════════════
-  const s = saju || {} as any;
-  const dw = s.daewoon || {} as any;
-  const currentDw = dw.currentDaewoon || {};
-  const currentSeun = dw.current_seun || {};
 
   // 오행 한줄 요약
   const el = s.elements || {};
@@ -96,19 +176,9 @@ ${timelineStr}
   if (deficient.length) elParts.push(`${deficient.join('·')} 결핍`);
   const elSummary = elParts.join(', ') || '균형';
 
-  // 세운-원국 교차작용 TOP 3
-  const crossInt = s.cross_interactions || {} as any;
-  const sewoonRels = [
-    ...(crossInt.sewoon?.with_original?.branch_rels || []),
-    ...(crossInt.sewoon?.with_original?.stem_rels || []),
-  ];
   const sewoonTop3 = sewoonRels.slice(0, 3)
     .map((r: any) => `${r.pair} ${r.type}: ${r.description}`)
     .join(' / ') || '특별한 작용 없음';
-
-  // 현재 흐름 한줄 압축 생성용 데이터
-  const seunTwelveStage = s.twelve_stages?.seun || {} as any;
-  const dwTwelveStage = currentDw.twelveStageEnergy || {} as any;
 
   const section1 = `
 ═══ [SECTION 1] 사주 명리 (핵심) ═══
@@ -126,9 +196,6 @@ ${timelineStr}
   // ═══════════════════════════════════════════
   // SECTION 2: ZIWEI 핵심
   // ═══════════════════════════════════════════
-  const z = ziwei || {} as any;
-  const zRaw = z.rawData || z;
-  const palaces = zRaw.palaces || [];
 
   // 명궁 주성
   const mingPalace = palaces.find((p: any) => p.name === '명궁');
@@ -168,9 +235,6 @@ ${selectedPalaces}
   // ═══════════════════════════════════════════
   // SECTION 3: ASTROLOGY 핵심
   // ═══════════════════════════════════════════
-  const a = astrology || {} as any;
-  const aRaw = a.rawData || a;
-  const planets = aRaw.planets || a.planets || [];
 
   // Sun/Moon/ASC 필수
   const sun = planets.find((p: any) => p.planet === '태양');
@@ -183,7 +247,6 @@ ${selectedPalaces}
   const dignityPlanets = planets.filter((p: any) => p.dignity && p.dignity !== '없음');
 
   // 주요 어스펙트 TOP 6 (orb 작은 순)
-  const aspects = aRaw.aspects || [];
   const topAspects = [...aspects]
     .filter((asp: any) => typeof asp.orb === 'number')
     .sort((a: any, b: any) => a.orb - b.orb)
@@ -192,7 +255,6 @@ ${selectedPalaces}
     .join('\n');
 
   // 트랜짓 TOP 3 (가장 가까운 정점)
-  const transits = aRaw.transits || a.transits || [];
   const transitFiltered = transits.filter((t: string) => t.includes('정점') && !t.includes('통과'));
   const topTransits = transitFiltered.slice(0, 3).join('\n') || '주요 트랜짓 없음';
 
@@ -220,7 +282,6 @@ ${topTransits}
   // ═══════════════════════════════════════════
   // SECTION 4: NUMEROLOGY 핵심
   // ═══════════════════════════════════════════
-  const n = numerology || {} as any;
   const currentPinnacle = (n.pinnacles || []).find((p: any) => {
     if (!p.period) return false;
     const match = p.period.match(/(\d+)세?\s*~\s*(종료|\d+)/);
@@ -281,5 +342,5 @@ ${cardList}
 ■ 출력 분량: 2000~3000자 (한국어 기준)
 `;
 
-  return `${section0}${section1}${section2}${section3}${section4}${section5}${instructions}`;
+  return `${section0}${section05}${section1}${section2}${section3}${section4}${section5}${instructions}`;
 }
