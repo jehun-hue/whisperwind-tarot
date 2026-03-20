@@ -1355,7 +1355,7 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
 
   // ── [Phase 2] Cross-Validation & Unified Timeline ──
   const userInfo: UserInfo = {
-    name: input.userName || "님",
+    name: input.userName || "",
     birthDate: birthInfo.birthDate,
     birthTime: birthInfo.birthTime || (hasTime ? `${birthInfo.hour}:${birthInfo.minute}` : "모름"),
     gender: birthInfo.gender === "M" ? "남성" : "여성",

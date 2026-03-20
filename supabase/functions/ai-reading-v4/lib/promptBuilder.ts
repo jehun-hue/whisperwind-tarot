@@ -40,7 +40,7 @@ export function buildReadingPrompt(
   timeline: UnifiedTimeline
 ): string {
 
-  const name = userInfo.name || '내담자';
+  const name = userInfo.name && userInfo.name.trim() ? userInfo.name.trim() : '내담자';
   const qType = userInfo.questionType || 'general_future';
 
   // ── 데이터 추출 및 정규화 (전역 사용을 위해 상단 배치) ──
