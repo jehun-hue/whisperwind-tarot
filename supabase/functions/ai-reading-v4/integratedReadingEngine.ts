@@ -1479,7 +1479,7 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
         const cv = consensusResult?.dominant_vector;
         const growthDir = (cv?.growth > 0.5) ? '성장과 확장' : '안정과 유지';
         const riskLevel = (cv?.risk > 0.5) ? '높은 리스크 관리 필요' : '비교적 안정적';
-        thirdNarrative = `2026년은 ${growthDir}의 흐름이 지배적이며, ${riskLevel}한 시기입니다. 사주 용신(${sajuAnalysis?.yongShin || '수'}) 기운을 의식적으로 보충하고, 내면 성찰과 외부 실행의 균형을 잡는 것이 핵심입니다. 4-6월 주요 전환기에 중요한 결정을 미루지 말고 신중하게 실행하세요.`;
+        thirdNarrative = '2026년은 ' + growthDir + '의 흐름이 지배적이며, ' + riskLevel + '한 시기입니다. 사주 용신(' + (sajuAnalysis?.yongShin || '수') + ') 기운을 의식적으로 보충하고, 내면 성찰과 외부 실행의 균형을 잡는 것이 핵심입니다. 4-6월 주요 전환기에 중요한 결정을 미루지 말고 신중하게 실행하세요.';
       }
       
       geminiLatency = Date.now() - geminiStart;
