@@ -944,61 +944,75 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       const result = aiData?.reading; 
       if (!result) throw new Error("엔진 응답이 비어 있습니다.");
 
-      const existingReading = (currentSession.ai_reading as any) || {};
-      const mergedReading = {
-        ...existingReading,
-        ...result,
-        // 데이터 분석 실행 시 기존 내러티브 데이터 보호 (이미 있으면 유지)
-        tarot_reading: {
-          ...(result.tarot_reading || {}),
-          // B-115 fix: data-only 모드에서 기존 내러티브(hanna/monad/persona) 보호
-          ...(existingReading.tarot_reading?.choihanna ? { choihanna: existingReading.tarot_reading.choihanna } : {}),
-          ...(existingReading.tarot_reading?.monad ? { monad: existingReading.tarot_reading.monad } : {}),
-          ...(existingReading.tarot_reading?.e7l3 ? { e7l3: existingReading.tarot_reading.e7l3 } : {}),
-          ...(existingReading.tarot_reading?.e5l5 ? { e5l5: existingReading.tarot_reading.e5l5 } : {}),
-          ...(existingReading.tarot_reading?.l7e3 ? { l7e3: existingReading.tarot_reading.l7e3 } : {}),
-        },
-        merged_reading: (existingReading.merged_reading && Object.keys(existingReading.merged_reading).length > 0)
-          ? existingReading.merged_reading
-          : result.merged_reading,
-        convergence: (existingReading.convergence && Object.keys(existingReading.convergence).length > 0)
-          ? existingReading.convergence
-          : result.convergence,
-        action_guide: (existingReading.action_guide && Object.keys(existingReading.action_guide).length > 0)
-          ? existingReading.action_guide
-          : result.action_guide,
-        final_message: (existingReading.final_message && Object.keys(existingReading.final_message).length > 0)
-          ? existingReading.final_message
-          : result.final_message,
-        // integrated_summary 필드도 있다면 보호
-        integrated_summary: (existingReading.integrated_summary)
-          ? existingReading.integrated_summary
-          : result.integrated_summary,
-      };
- 
-      // B-174 fix: data-only 모드이거나 narrative가 있으면 completed 처리
-      const hasNarrative = !!(mergedReading.tarot_reading?.choihanna || mergedReading.tarot_reading?.monad);
-      const isDataOnly = !!(result?.reading_info?.mode === "data-only" || 
-        mergedReading.engine?.validation?.message?.includes("Data-Only"));
-      const finalStatus = (hasNarrative || isDataOnly) ? "completed" : currentSession.status;
- 
-      // Atomic save for data-only
-      await supabase.from("reading_sessions").update({
-        ai_reading: mergedReading as any,
-        status: finalStatus,
-      }).eq("id", currentSession.id);
- 
-      onUpdate({
-        ...currentSession,
-        ai_reading: mergedReading,
-        status: finalStatus,
+      // Atomic save for data-only using the write queue
+      const finalResult = await new Promise<any>((resolve, reject) => {
+        const writeTask = async () => {
+          // 1. DB에서 가장 최신 상태 다시 불러오기
+          const { data: latestDbSession } = await supabase
+            .from("reading_sessions")
+            .select("ai_reading, status")
+            .eq("id", currentSession.id)
+            .single();
+
+          const existingReading = (latestDbSession?.ai_reading as any) || {};
+          const mergedReading = {
+            ...existingReading,
+            ...result,
+            tarot_reading: {
+              ...(result.tarot_reading || {}),
+              ...(existingReading.tarot_reading?.choihanna ? { choihanna: existingReading.tarot_reading.choihanna } : {}),
+              ...(existingReading.tarot_reading?.monad ? { monad: existingReading.tarot_reading.monad } : {}),
+              ...(existingReading.tarot_reading?.e7l3 ? { e7l3: existingReading.tarot_reading.e7l3 } : {}),
+              ...(existingReading.tarot_reading?.e5l5 ? { e5l5: existingReading.tarot_reading.e5l5 } : {}),
+              ...(existingReading.tarot_reading?.l7e3 ? { l7e3: existingReading.tarot_reading.l7e3 } : {}),
+            },
+            merged_reading: (existingReading.merged_reading && Object.keys(existingReading.merged_reading).length > 0)
+              ? existingReading.merged_reading
+              : result.merged_reading,
+            convergence: (existingReading.convergence && Object.keys(existingReading.convergence).length > 0)
+              ? existingReading.convergence
+              : result.convergence,
+            action_guide: (existingReading.action_guide && Object.keys(existingReading.action_guide).length > 0)
+              ? existingReading.action_guide
+              : result.action_guide,
+            final_message: (existingReading.final_message && Object.keys(existingReading.final_message).length > 0)
+              ? existingReading.final_message
+              : result.final_message,
+            integrated_summary: (existingReading.integrated_summary)
+              ? existingReading.integrated_summary
+              : result.integrated_summary,
+          };
+
+          const hasNarrative = !!(mergedReading.tarot_reading?.choihanna || mergedReading.tarot_reading?.monad);
+          const isDataOnly = !!(result?.reading_info?.mode === "data-only" || 
+            mergedReading.engine?.validation?.message?.includes("Data-Only"));
+          const finalStatus = (hasNarrative || isDataOnly) ? "completed" : (latestDbSession?.status || currentSession.status);
+
+          await supabase.from("reading_sessions").update({
+            ai_reading: mergedReading as any,
+            status: finalStatus,
+          }).eq("id", currentSession.id);
+
+          const updatedSessionData = {
+            ...currentSession,
+            ai_reading: mergedReading,
+            status: finalStatus,
+          };
+
+          onUpdate(updatedSessionData);
+          return updatedSessionData;
+        };
+
+        sessionWriteQueue = sessionWriteQueue
+          .then(() => writeTask())
+          .then(resolve)
+          .catch(e => {
+            console.error(`[Atomic Save Error] Data-Only`, e);
+            reject(e);
+          });
       });
-      return {
-        ...currentSession,
-        ai_reading: mergedReading,
-        status: finalStatus,
-        aiResult: result, // 리턴 추가
-      };
+
+      return finalResult;
     } catch (err) {
       console.error("Data-only analysis error:", err);
       setAnalysisError(err instanceof Error ? err.message : "분석 중 오류가 발생했습니다.");
