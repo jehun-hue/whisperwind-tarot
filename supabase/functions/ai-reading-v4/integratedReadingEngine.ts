@@ -2222,8 +2222,12 @@ function buildFallbackReading(text: string, grade: string, scores: any, cards: a
 async function fetchGemini(apiKey: string, model: string, system: string, _user: string, temperature: number = 0.2): Promise<string> {
   const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`;
 
+  const combinedText = _user && _user.trim() 
+    ? `[STYLE INSTRUCTION]\n${_user.trim()}\n\n[READING DATA & INSTRUCTIONS]\n${system}`
+    : system;
+
   const requestBody = JSON.stringify({
-    contents: [{ parts: [{ text: system }] }],
+    contents: [{ parts: [{ text: combinedText }] }],
     generationConfig: {
       maxOutputTokens: 16384,
       temperature: temperature
