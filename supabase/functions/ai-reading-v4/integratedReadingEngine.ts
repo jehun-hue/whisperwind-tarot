@@ -1586,7 +1586,7 @@ ${userInfo.question ? `[질문: ${userInfo.question}]` : ''}
 
   // --- Step 3-B: Add Timing Summary (Unified Pipeline) ---
   // [Professional V4 Integrated Fields - Inject into 'parsed' for backward compatibility]
-  parsed.integrated_summary = parsed.final_message?.summary || parsed.merged_reading?.coreReading || "분석 결과를 생성하는 중입니다. 잠시만 기다려주세요.";
+  parsed.integrated_summary = parsed.integrated_summary || parsed.final_message?.summary || parsed.merged_reading?.coreReading || "분석 결과를 생성하는 중입니다. 잠시만 기다려주세요.";
   parsed.practical_advice = parsed.action_guide || { do_list: [], dont_list: [], lucky: {} };
   parsed.system_calculations = {
     ...parsed.convergence,
@@ -2004,7 +2004,7 @@ ${parsed.action_guide?.do_list?.map((item: string) => `- ${item}`).join('\n') ||
       llm_origin_json: llmOriginJson
     },
     coreReading: coreReading,
-    integrated_summary: parsed.final_message?.summary || parsed.merged_reading?.coreReading || "",
+    integrated_summary: parsed.integrated_summary || parsed.final_message?.summary || parsed.merged_reading?.coreReading || "",
     practical_advice: parsed.action_guide?.do_list?.join(", ") || "",
     // B-61: 스키마 개선
     edge_case_tags: edgeCaseTags,
