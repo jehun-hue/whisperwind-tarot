@@ -1110,7 +1110,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
 
     if (reading.merged_reading) {
       // 신규 v4 형식
-      sections.push({ title: "✦ 통합 분석 요약", content: reading.merged_reading.coreReading });
+      sections.push({ title: "✦ 통합 분석 요약", content: reading.integrated_summary || reading.merged_reading?.coreReading });
 
       if (reading.tarot_reading?.choihanna) {
         sections.push({
