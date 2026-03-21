@@ -3,12 +3,12 @@
   "birthInfo": {
     "birthDate": "1995-05-15",
     "gender": "female",
-    "userName": "금동이"
+    "userName": "Alice"
   },
   "partnerInfo": {
     "birthDate": "1992-12-25",
     "gender": "male",
-    "userName": "바둑이"
+    "userName": "Bob"
   },
-  "question": "궁합 테스트"
+  "question": "Compatibility Test"
 }

@@ -201,7 +201,10 @@ ${crossPatterns.join('\n')}
 • 현재 대운: ${currentDw.full || '?'} (${currentDw.startAge || '?'}~${currentDw.endAge || '?'}세) — 십성: ${currentDw.tenGodStem || ''}/${currentDw.tenGodBranch || ''} — 에너지: ${dwTwelveStage.level || '?'}점(${dwTwelveStage.description || ''})
 • 세운(${currentSeun.year || '?'}): ${currentSeun.full || '?'} — 십성: ${currentSeun.tenGodStem || ''}/${currentSeun.tenGodBranch || ''} — 12운성: ${seunTwelveStage.stage || '?'}(${seunTwelveStage.level || '?'}점)
 • 세운-원국 교차: ${sewoonTop3}
-• 주요 신살: ${(s.characteristics || []).filter((c: string) => !c.startsWith('격국')).slice(0, 8).join(' | ')}
+• 주요 신살:
+${(s.shinsal || []).slice(0, 10).map((ss: any) => 
+  `  - ${ss.name}${ss.hanja ? `(${ss.hanja})` : ''}[${ss.location || ss.pillar || ''}]: ${ss.effect || ss.description || ss.name} (강도: ${ss.strength || '중'})`
+).join('\n') || (s.characteristics || []).filter((c: string) => !c.startsWith('격국')).slice(0, 8).join(' | ')}
 
 ★ 현재 흐름 해석 지시: 위 대운·세운·교차작용·12운성 데이터를 종합하여 "현재 흐름을 한 줄로 압축"하라. (예: "확장 타이밍인데 실행이 늦은 상태")
 `;
@@ -369,6 +372,15 @@ ${(() => {
 ` : `
 별도 질문이 없으므로 올해 전반적 운세를 해석하되, 가장 임팩트 큰 변화에 집중하라.
 `}
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 2.5: 신살 해석 (사주 심층)
+━━━━━━━━━━━━━━━━━━━━━━━━
+위 신살 목록에서:
+- 귀인(천을귀인, 천덕귀인 등)이 있으면 → 해당 영역에서 도움을 받을 수 있음을 강조
+- 흉살(도화살, 역마살, 백호대살 등)이 있으면 → 구체적 주의사항과 활용법을 제시
+- 귀인과 흉살이 동시에 있으면 → 흉살의 부정적 영향이 귀인에 의해 완화될 수 있음을 설명
+- 신살의 위치(년주/월주/일주/시주)에 따라 영향 범위가 다름을 반영하라
 
 ━━━━━━━━━━━━━━━━━━━━━━━━
 STEP 2: 엔진 간 교차 검증 (핵심)
