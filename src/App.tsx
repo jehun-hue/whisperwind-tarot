@@ -9,6 +9,7 @@ import LocaleSelector from "./pages/LocaleSelector";
 import LocalizedClientPage from "./pages/LocalizedClientPage";
 import ReaderPage from "./pages/ReaderPage";
 import ReadingResultPage from "./pages/ReadingResultPage";
+import CompatibilityPage from "@/pages/CompatibilityPage";
 import NotFound from "./pages/NotFound";
 import { localeConfigs } from "@/config/locales";
 
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/us" element={<LocalizedClientPage config={localeConfigs.us} />} />
             <Route path="/reader" element={<ReaderPage />} />
             <Route path="/reader/result/:id" element={<ReadingResultPage />} />
+            <Route path="/compatibility" element={<CompatibilityPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
