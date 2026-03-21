@@ -8,6 +8,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { runFullProductionEngineV8, fetchGeminiStream } from "./integratedReadingEngine.ts";
 import { processChat } from "./interactivityLayer.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { runCompatibilityEngine } from "./lib/compatibilityEngine.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -128,7 +129,7 @@ serve(async (req: Request) => {
     let result: any;
     try {
       if (mode === "compatibility") {
-        const { runCompatibilityEngine } = await import("./lib/compatibilityEngine.ts");
+        console.log("[INFO][Compatibility] mode=compatibility 감지, 궁합 엔진 시작");
         result = await runCompatibilityEngine(supabase, API_KEY, payload);
       } else {
         result = await runFullProductionEngineV8(supabase, API_KEY, payload);

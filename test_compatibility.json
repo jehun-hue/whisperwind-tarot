@@ -1,0 +1,14 @@
+{
+  "mode": "compatibility",
+  "birthInfo": {
+    "birthDate": "1995-05-15",
+    "gender": "female",
+    "userName": "금동이"
+  },
+  "partnerInfo": {
+    "birthDate": "1992-12-25",
+    "gender": "male",
+    "userName": "바둑이"
+  },
+  "question": "궁합 테스트"
+}
