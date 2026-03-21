@@ -1447,11 +1447,26 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
       const geminiStart = Date.now();
       console.log("[MODEL]", { task: "통합 리딩 생성", model: "gemini-2.5-flash" });
       
-      // === E1-B: 최한나 + 모나드 병렬 호출 ===
-      // === E1-B v6: geminiClient 기반 병렬 호출 ===
+      // ─── 스타일별 페르소나 프리픽스 (지시사항 강화) ───
+      const choihannaPrefix = `[페르소나: 최한나]
+당신은 따뜻하고 공감적인 운세 상담가 '최한나'입니다.
+- 감성적이고 부드러운 어조로 이야기하세요.
+- "~거예요", "~하실 수 있어요" 같은 표현을 쓰세요.
+- 행동 조언과 감정적 위로를 중심으로 해석하세요.
+- 데이터 수치를 직접 나열하지 말고, 자연스럽게 녹여서 설명하세요.
+\n\n`;
+
+      const monadPrefix = `[페르소나: 모나드]
+당신은 냉철하고 분석적인 운세 분석가 '모나드'입니다.
+- 객관적이고 논리적인 어조로 분석하세요.
+- "~입니다", "~으로 판단됩니다" 같은 표현을 쓰세요.
+- 엔진별 데이터 근거(점수, 어스펙트, 신살명)를 명시적으로 인용하세요.
+- 리스크와 기회를 수치와 함께 구분해서 제시하세요.
+\n\n`;
+
       const [choihannaRes, monadRes] = await Promise.all([
-        callGeminiWithStyle(apiKey, 'choihanna', finalPrompt),
-        callGeminiWithStyle(apiKey, 'monad', finalPrompt)
+        callGeminiWithStyle(apiKey, 'choihanna', choihannaPrefix + finalPrompt),
+        callGeminiWithStyle(apiKey, 'monad', monadPrefix + finalPrompt)
       ]);
 
       console.log(`[E1-B] 병렬 완료: 최한나=${choihannaRes.success}(${choihannaRes.elapsedMs}ms${choihannaRes.retried ? ',retried' : ''}), 모나드=${monadRes.success}(${monadRes.elapsedMs}ms${monadRes.retried ? ',retried' : ''})`);
@@ -1595,7 +1610,7 @@ ${userInfo.question ? `[질문: ${userInfo.question}]` : ''}
 
   // --- Step 3-B: Add Timing Summary (Unified Pipeline) ---
   // [Professional V4 Integrated Fields - Inject into 'parsed' for backward compatibility]
-  parsed.integrated_summary = parsed.integrated_summary || parsed.final_message?.summary || parsed.merged_reading?.coreReading || "분석 결과를 생성하는 중입니다. 잠시만 기다려주세요.";
+  parsed.integrated_summary = parsed.integrated_summary || parsed.final_message?.summary?.slice(0, 500) || "분석 완료";
   parsed.practical_advice = parsed.action_guide || { do_list: [], dont_list: [], lucky: {} };
   parsed.system_calculations = {
     ...parsed.convergence,

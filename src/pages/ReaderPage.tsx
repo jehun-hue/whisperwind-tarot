@@ -1003,9 +1003,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
             final_message: (existingReading.final_message && Object.keys(existingReading.final_message).length > 0)
               ? existingReading.final_message
               : result.final_message,
-            integrated_summary: (existingReading.integrated_summary)
-              ? existingReading.integrated_summary
-              : result.integrated_summary,
+            integrated_summary: result.integrated_summary || existingReading.integrated_summary || "",
           };
 
           const hasNarrative = !!(mergedReading.tarot_reading?.choihanna || mergedReading.tarot_reading?.monad);
