@@ -1519,10 +1519,11 @@ ${userInfo.question ? `[질문: ${userInfo.question}]` : ''}
       const dominant = Number(growth) >= Number(risk) && Number(growth) >= Number(transition) ? '성장' 
         : Number(risk) >= Number(transition) ? '리스크 관리' : '전환';
 
-      const consensusSummary = `[시스템 합의] ${userInfo.name || '내담자'}님의 엔진 간 합의도는 ${scoreLabel}(${(score * 100).toFixed(0)}%)이며, 주요 흐름은 '${dominant}' 방향입니다. ${conflicts ? `\n[주의 신호] ${conflicts}` : ""}`;
+      const consensusSummary = `[시스템 합의] ${userInfo.name || '내담자'}님 엔진 간 합의도는 ${scoreLabel}(${(score * 100).toFixed(0)}%)이며, 주요 흐름은 '${dominant}' 방향입니다. ${conflicts && conflicts !== '없음' ? `\n[주의 신호] ${conflicts}` : ""}`;
         
-        console.log(`[FORCE][consensus] integrated_summary 할당 완료: "${consensusSummary.slice(0, 80)}..."`);
-        parsed.integrated_summary = consensusSummary;
+      console.log(`[FORCE][consensus] integrated_summary 할당 및 잠금: "${consensusSummary.slice(0, 80)}..."`);
+      (parsed as any).integrated_summary = consensusSummary;
+      (parsed as any)._consensusLocked = true;
       parsed.final_message.summary = thirdNarrative || finalChoihanna;
       
       const cardData = {
@@ -1610,7 +1611,10 @@ ${userInfo.question ? `[질문: ${userInfo.question}]` : ''}
 
   // --- Step 3-B: Add Timing Summary (Unified Pipeline) ---
   // [Professional V4 Integrated Fields - Inject into 'parsed' for backward compatibility]
-  parsed.integrated_summary = parsed.integrated_summary || parsed.final_message?.summary?.slice(0, 500) || "분석 완료";
+  // consensus가 잠겨있지 않은 경우에만 폴백 할당
+  if (!(parsed as any)._consensusLocked) {
+    parsed.integrated_summary = parsed.integrated_summary || parsed.final_message?.summary?.slice(0, 500) || "분석 완료";
+  }
   parsed.practical_advice = parsed.action_guide || { do_list: [], dont_list: [], lucky: {} };
   parsed.system_calculations = {
     ...parsed.convergence,
@@ -2028,7 +2032,9 @@ ${parsed.action_guide?.do_list?.map((item: string) => `- ${item}`).join('\n') ||
       llm_origin_json: llmOriginJson
     },
     coreReading: coreReading,
-    integrated_summary: parsed.integrated_summary || parsed.final_message?.summary?.slice(0, 500) || "",
+    integrated_summary: (parsed as any)._consensusLocked 
+      ? parsed.integrated_summary 
+      : (parsed.integrated_summary || parsed.final_message?.summary?.slice(0, 500) || ""),
     practical_advice: parsed.action_guide?.do_list?.join(", ") || "",
     // B-61: 스키마 개선
     edge_case_tags: edgeCaseTags,
