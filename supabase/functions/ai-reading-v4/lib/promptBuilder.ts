@@ -96,14 +96,39 @@ export function buildReadingPrompt(
     ? `합의도: ${(cv.consistencyScore * 100).toFixed(0)}% (${cv.consistencyLevel || '보통'})`
     : '';
 
-  // 타임라인
-  const tl = timeline as any;
-  const timelineEntries = Array.isArray(tl) ? tl : (tl?.entries || tl?.timeline || []);
-  const timelineStr = Array.isArray(timelineEntries)
-    ? timelineEntries.map((t: any) =>
-        `${t.window || t.period}: ${t.label} (확률 ${((t.probability || 0) * 100).toFixed(0)}%) — ${t.description || ''}`
-      ).join('\n')
-    : '타임라인 데이터 없음';
+  // ═══ 타임라인: 대운/세운/월운 3단 구조 ═══
+  const tl = timeline || {} as any;
+  // s is already defined as saju above.
+  
+  // 대운 정보
+  const dwInfo = s.currentDaewoon || s.daewoon || {};
+  const daewoonStr = dwInfo.full 
+    ? `▶ 대운(10년 흐름): ${dwInfo.full} (${dwInfo.tenGodStem || ''}/${dwInfo.tenGodBranch || ''}) - ${dwInfo.startAge || '?'}세~${dwInfo.endAge || '?'}세`
+    : '';
+
+  // 세운 정보
+  const swInfo = s.sewoon || {};
+  const sewoonStr = swInfo.full
+    ? `▶ 세운(올해): ${swInfo.full} - 12운성: ${swInfo.twelveStage || s.twelveStage?.stage || '?'} (에너지 ${swInfo.score || s.twelveStage?.score || '?'}점)`
+    : '';
+
+  // 월운 정보 (timelineEngine의 months 배열)
+  const monthEntries = tl.months || tl.entries || tl.timeline || [];
+  const monthlyStr = Array.isArray(monthEntries) && monthEntries.length > 0
+    ? monthEntries.map((m: any) => {
+        const month = m.month || m.label || '';
+        const summary = m.summary || m.description || m.event || '';
+        const score = m.score !== undefined ? ` (${m.grade || ''} ${m.score}점)` : '';
+        return `  - [${month}]: ${summary}${score}`;
+      }).join('\n')
+    : '월별 상세 데이터 없음';
+
+  // 대운 전환기 특별 안내
+  const dwTransition = dwInfo.startAge && Math.abs((s.currentAge || 0) - dwInfo.startAge) <= 2
+    ? `\n⚠ 대운 전환기(±2년): 현재 ${s.currentAge}세로 대운 시작(${dwInfo.startAge}세)과 가까워 에너지 변동이 큰 시기입니다.`
+    : '';
+
+  const timelineStr = `${daewoonStr}\n${sewoonStr}${dwTransition}\n\n[월별 상세 흐름]\n${monthlyStr}`;
 
   const section0 = `
 ═══ [SECTION 0] 핵심 결론 (CORE CONSENSUS) ═══
@@ -441,7 +466,7 @@ STEP 4: 글 구조
 [핵심 흐름 40%] STEP 2에서 찾은 합치/모순을 중심으로 올해의 핵심 흐름 서술.
   - 반드시 최소 3개 엔진 데이터를 교차 인용.
   - 모순이 있으면 여기서 해결.
-[시기별 조언 30%] 분기별(1~3월/4~6월/7~9월/10~12월) 또는 핵심 시점 중심.
+[시기별 조언 30%] 반드시 대운→세운→월운 순서로 계층적 해석. 대운이 제시하는 10년 방향 위에 세운의 올해 에너지를 겹치고, 월운에서 구체적 행동 시점을 제시. 분기별 또는 핵심 월 중심으로 서술.
   - 점성술 트랜짓 날짜를 활용해 구체적 시점 제시.
   - 각 시기마다 "무엇을 하라/하지 마라" 명확히.
 [주의사항 10%] 가장 큰 리스크 1~2개. 구체적 상황으로 표현.
