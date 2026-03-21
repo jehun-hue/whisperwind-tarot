@@ -72,17 +72,29 @@ export function buildReadingPrompt(
   // SECTION 0: CORE CONSENSUS (결론 먼저)
   // ═══════════════════════════════════════════
   const cv = crossValidation || {} as any;
-  const dv = cv.dominant_vector || {};
+  
+  // inferenceLayer.ts 실제 출력 필드에 맞춤 매핑
+  const dv = cv.dominant_vector || cv.dominantVector || {};
+  const topVectors = Object.keys(dv).length > 0
+    ? Object.entries(dv)
+        .filter(([_, v]) => typeof v === 'number')
+        .sort(([, a], [, b]) => (b as number) - (a as number))
+        .slice(0, 3)
+        .map(([k, v]) => `${k}: ${(v as number).toFixed(2)}`)
+        .join(', ')
+    : cv.commonKeywords?.length
+      ? `공통 키워드: ${cv.commonKeywords.slice(0, 5).join(', ')}`
+      : '분석 데이터 수집 중';
 
-  // dominant_vector에서 상위 3개 추출
-  const topVectors = Object.entries(dv)
-    .filter(([_, v]) => typeof v === 'number')
-    .sort(([, a], [, b]) => (b as number) - (a as number))
-    .slice(0, 3)
-    .map(([k, v]) => `${k}: ${(v as number).toFixed(2)}`)
-    .join(', ');
+  const conflictSummary = cv.conflict_summary 
+    || cv.conflictSummary
+    || (cv.divergentPoints?.length 
+        ? cv.divergentPoints.slice(0, 3).join(' / ') 
+        : '엔진 간 주요 충돌 없음');
 
-  const conflictSummary = cv.conflict_summary || '충돌 없음';
+  const consistencyInfo = cv.consistencyScore !== undefined
+    ? `합의도: ${(cv.consistencyScore * 100).toFixed(0)}% (${cv.consistencyLevel || '보통'})`
+    : '';
 
   // 타임라인
   const tl = timeline as any;
@@ -97,10 +109,11 @@ export function buildReadingPrompt(
 ═══ [SECTION 0] 핵심 결론 (CORE CONSENSUS) ═══
 ▶ 지배 에너지: ${topVectors || '분석 중'}
 ▶ 엔진 간 충돌: ${conflictSummary}
+${consistencyInfo ? `▶ ${consistencyInfo}` : ''}
 ▶ 타임라인:
 ${timelineStr}
 
-★ 지시: 위 결론을 기반으로 리딩 첫머리에 (1) 올해의 핵심 방향을 요약한 한 문장, (2) 가장 주의할 점을 요약한 한 문장을 자연스러운 문장으로 제시하라. "final_one_line", "risk_one_line" 같은 라벨을 절대 출력하지 말라.
+★ 지시: 위 결론을 기반으로 리딩 첫머리에 (1) 올해의 핵심 방향을 요약한 한 문장, (2) 가장 주의할 점을 요약한 한 문장을 자연스러운 문장으로 제시하라. 합의도가 70% 이상이면 "여러 관점이 일치합니다"라고 신뢰를 강조하고, 50% 미만이면 "다양한 가능성이 열려 있습니다"라고 유연하게 표현하라. 내부 수치나 용어(합의도, 지배벡터 등)는 절대 노출하지 말 것.
 `;
 
   // ═══════════════════════════════════════════
