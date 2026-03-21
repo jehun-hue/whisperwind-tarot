@@ -62,7 +62,7 @@ function transformAstrologyData(frontAstro: any): any {
   if (!frontAstro) return createFallbackAstrology();
 
   const planets = frontAstro.planets || [];
-  const planet_positions = planets.map((p: any) => ({
+  const planet_positions = (planets || []).map((p: any) => ({
     planet: p.name || p.planet,
     sign: p.sign,
     house: p.house,
@@ -1153,7 +1153,7 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
         category: tarotSymbolic.category,
         characteristics: [
           ...Object.keys(tarotSymbolic.dominant_patterns),
-          ...input.cards.map((c: any) => c.name)
+          ...((input.cards || []).map((c: any) => c.name) || [])
         ],
         card_vectors: enrichedCardVectors,
         yongshin_wuxing: yongshinWuxing
@@ -1192,14 +1192,14 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
 
   const rawVectors = generatePatternVectors(systemResults);
   // Symbol 기준 중복 제거 (Set/filter)
-  const patternVectors = rawVectors.filter((v, i, a) => 
+  const patternVectors = (rawVectors || []).filter((v, i, a) => 
     a.findIndex(t => t.symbol === v.symbol) === i
   );
   console.log(`📊 [Vector Merge] 중복 제거 완료: ${rawVectors.length} -> ${patternVectors.length}`);
 
   // Step 2: Cross-System Topic Validation (Voting System)
   const systemWins: Record<string, string> = {};
-  const activeSystems = [...new Set(patternVectors.map(v => v.system.toLowerCase()))];
+  const activeSystems = [...new Set((patternVectors || []).map(v => v.system.toLowerCase()))];
   
   activeSystems.forEach(sys => {
     const sysVectors = patternVectors.filter(v => v.system.toLowerCase() === sys);
@@ -1581,7 +1581,7 @@ ${userInfo.question ? `[질문: ${userInfo.question}]` : ''}
     card_count: tarotCards?.length || 0,
     question: input.question
   };
-  const validSystemCount = patternVectors.map(v => v.system).filter((v, i, a) => a.indexOf(v) === i).length;
+  const validSystemCount = (patternVectors || []).map(v => v.system).filter((v, i, a) => a.indexOf(v) === i).length;
   parsed.convergence = {
     ...parsed.convergence,
     grade,
@@ -1624,7 +1624,7 @@ ${userInfo.question ? `[질문: ${userInfo.question}]` : ''}
     engine_reliability: consensusResult.engine_reliability,
     timeline: temporalResult,
     validation: validationResult,
-    vectors: patternVectors,
+    vectors: patternVectors || [],
     system_weights: (consensusResult as any).topic_weights_used || { tarot: 0.40, saju: 0.25, ziwei: 0.20, astrology: 0.10, numerology: 0.05 },
     // B-163 fix: topic_weights_used 별도 필드로 추가 (프론트엔드 참조용)
     topic_weights_used: (consensusResult as any).topic_weights_used || null,
@@ -1640,6 +1640,11 @@ ${userInfo.question ? `[질문: ${userInfo.question}]` : ''}
   parsed.ziweiAnalysis = ziweiAnalysis?.characteristics?.join(", ") || "";
   parsed.numerology_data = numerologyResult;
   parsed.saju_raw = sajuRaw;
+  (parsed as any).debug_raw = {
+    has_saju: !!sajuAnalysis,
+    has_vectors: !!patternVectors,
+    vector_len: patternVectors?.length
+  };
 
   const consultationCopy = `
 ### [${input.memo || "사용자"}] 분석 결과 요약
@@ -1647,7 +1652,7 @@ ${userInfo.question ? `[질문: ${userInfo.question}]` : ''}
 ${parsed.merged_reading?.coreReading || parsed.integrated_summary}
 
 [실행 계획]
-${parsed.action_guide?.do_list?.map((item: string) => `- ${item}`).join('\n') || "준비 중입니다."}
+${parsed?.action_guide?.do_list?.map((item: string) => `- ${item}`).join('\n') || "준비 중입니다."}
 
 [행운 요소]
 - 색상: ${parsed.action_guide?.lucky?.color || "다양함"}
@@ -1835,10 +1840,13 @@ ${parsed.action_guide?.do_list?.map((item: string) => `- ${item}`).join('\n') ||
       });
     } catch (_) {}
 
+    console.log(`[DEBUG] entries count: ${entries?.length}, typeof entries: ${typeof entries}`);
+    (parsed as any)._debug_entries = { len: entries?.length, defined: true };
+    
     // 현재 활성 항목 먼저, 나머지 나이 순 정렬
     const sorted = [
-      ...entries.filter(e => e.current),
-      ...entries.filter(e => !e.current)
+      ...entries.filter(e => e && e.current),
+      ...entries.filter(e => e && !e.current)
         .sort((a, b) => {
           const aAge = parseInt(a.age_range?.split("~")[0] || "0");
           const bAge = parseInt(b.age_range?.split("~")[0] || "0");
@@ -1846,16 +1854,17 @@ ${parsed.action_guide?.do_list?.map((item: string) => `- ${item}`).join('\n') ||
         })
     ];
 
+    console.log(`[DEBUG] summary creation. entries defined: ${!!entries}`);
     return {
       current_age: currentAge,
       entries: sorted,
       summary: {
-        saju_major: entries.find(e => e.system === "saju" && e.current)?.label || null,
-        ziwei_major: entries.find(e => e.system === "ziwei" && e.type === "major_period")?.label || null,
-        ziwei_minor: entries.find(e => e.system === "ziwei" && e.type === "minor_period")?.label || null,
-        astrology_transits: entries
-          .filter(e => e.system === "astrology")
-          .map(e => e.label)
+        saju_major: (entries || []).find(e => e && e.system === "saju" && e.current)?.label || null,
+        ziwei_major: (entries || []).find(e => e && e.system === "ziwei" && e.type === "major_period")?.label || null,
+        ziwei_minor: (entries || []).find(e => e && e.system === "ziwei" && e.type === "minor_period")?.label || null,
+        astrology_transits: (entries || [])
+          .filter(e => e && e.system === "astrology")
+          .map(e => e.label || "점성술")
           .slice(0, 3)
       }
     };
@@ -1864,8 +1873,8 @@ ${parsed.action_guide?.do_list?.map((item: string) => `- ${item}`).join('\n') ||
   // B-108: Life Timeline Engine 연동 (Consensus → Timeline → Narrative 파이프라인)
   let lifeTimelineResult: LifeTimelineResult | null = null;
   try {
-    const tarotSymbolList: string[] = patternVectors
-      .filter(v => v.system === "tarot")
+    const tarotSymbolList: string[] = (patternVectors || [])
+      .filter(v => v && v.system === "tarot")
       .flatMap(v => Object.keys(v.vector ?? {}).filter(k => (v.vector[k] ?? 0) > 0.3));
 
     lifeTimelineResult = runLifeTimelineEngine(
@@ -2094,7 +2103,7 @@ ${parsed.action_guide?.do_list?.map((item: string) => `- ${item}`).join('\n') ||
     reasoning_trace: {
       topic_detected: finalTopic,
       topic_weights: (consensusResult as any).topic_weights_used ?? {},
-      engine_contributions: patternVectors.map(v => ({
+      engine_contributions: (patternVectors || []).map(v => ({
         system: v.system,
         dominant_dimension: Object.entries(v.vector ?? {}).sort((a: any, b: any) => b[1] - a[1])[0]?.[0] ?? "unknown",
         top_score: Object.values(v.vector ?? {}).sort((a: any, b: any) => b - a)[0] ?? 0
@@ -2105,7 +2114,7 @@ ${parsed.action_guide?.do_list?.map((item: string) => `- ${item}`).join('\n') ||
       is_time_unknown: (consensusResult as any).is_time_unknown ?? !birthTimeProvided,
       reasoning_steps: [
         `1. 토픽 감지: ${finalTopic} → 가중치 조정`,
-        `2. 벡터 수렴: ${patternVectors.length}개 엔진 분석`,
+        `2. 벡터 수렴: ${(patternVectors || []).length}개 엔진 분석`,
         `3. 충돌 감지: ${consensusResult.conflict_log?.length ?? 0}건`,
         `4. 최종 신뢰도: ${Math.round(consensusResult.confidence_score * 100)}%`,
         `5. 내러티브 톤: ${consensusResult.confidence_score >= 0.8 ? "confident" : consensusResult.confidence_score < 0.5 ? "cautious" : "balanced"}`
