@@ -1,62 +1,69 @@
 /**
  * tenGods.ts
+ * Logic for calculating Ten Gods (십신/육친) relations.
  */
 
-import { STEMS, BRANCHES, FIVE_ELEMENTS_MAP } from "./fiveElements.ts";
-
-const RELATION_NAMES = {
-  SAME_SAME: "비견",
-  SAME_DIFF: "겁재",
-  SAENG_ME_SAME: "편인",
-  SAENG_ME_DIFF: "정인",
-  ME_SAENG_SAME: "식신",
-  ME_SAENG_DIFF: "상관",
-  ME_GEUK_SAME: "편재",
-  ME_GEUK_DIFF: "정재",
-  GEUK_ME_SAME: "편관",
-  GEUK_ME_DIFF: "정관"
+const LOCAL_STEM_ELEMENTS: Record<string, string> = {
+  "甲": "wood", "乙": "wood",
+  "丙": "fire", "丁": "fire",
+  "戊": "earth", "己": "earth",
+  "庚": "metal", "辛": "metal",
+  "壬": "water", "癸": "water"
 };
 
-const ELEMENTS_CYCLE = ["wood", "fire", "earth", "metal", "water"];
+const LOCAL_STEM_POLARITY: Record<string, "+" | "-"> = {
+  "甲": "+", "丙": "+", "戊": "+", "庚": "+", "壬": "+",
+  "乙": "-", "丁": "-", "己": "-", "辛": "-", "癸": "-"
+};
 
-function getRelation(meLong: string, itLong: string, meIsYang: boolean, itIsYang: boolean): string {
-  const meIdx = ELEMENTS_CYCLE.indexOf(meLong);
-  const itIdx = ELEMENTS_CYCLE.indexOf(itLong);
-  const diff = (itIdx - meIdx + 5) % 5;
-  const sameYinYang = meIsYang === itIsYang;
-
-  if (diff === 0) return sameYinYang ? RELATION_NAMES.SAME_SAME : RELATION_NAMES.SAME_DIFF;
-  if (diff === 1) return sameYinYang ? RELATION_NAMES.ME_SAENG_SAME : RELATION_NAMES.ME_SAENG_DIFF;
-  if (diff === 2) return sameYinYang ? RELATION_NAMES.ME_GEUK_SAME : RELATION_NAMES.ME_GEUK_DIFF;
-  if (diff === 3) return sameYinYang ? RELATION_NAMES.GEUK_ME_SAME : RELATION_NAMES.GEUK_ME_DIFF;
-  if (diff === 4) return sameYinYang ? RELATION_NAMES.SAENG_ME_SAME : RELATION_NAMES.SAENG_ME_DIFF;
-  
-  return "unknown";
-}
-
+/**
+ * calculateTenGod
+ * Finds the relation of 'targetStem' relative to 'dayMaster'.
+ */
 export function calculateTenGod(dayMaster: string, targetStem: string): string {
-  const meLong = FIVE_ELEMENTS_MAP[dayMaster];
-  const itLong = FIVE_ELEMENTS_MAP[targetStem];
-  
-  const meIsYang = STEMS.indexOf(dayMaster) % 2 === 0;
-  const itIsYang = STEMS.indexOf(targetStem) % 2 === 0;
-  
-  return getRelation(meLong, itLong, meIsYang, itIsYang);
-}
+  if (!dayMaster || !targetStem) return "";
 
-// Branch version: maps branch to its main (Energy-wise but usually Saju uses the "Hidden Stem" that is dominant)
-// Actually many systems just map a branch to its "representative" stem for Ten Gods.
-// 子->癸, 丑->己, 寅->甲, 卯->乙, 辰->戊, 巳->丙, 午->丁, 未->己, 申->庚, 酉->辛, 戌->戊, 亥->壬
-export function calculateTenGodBranch(dayMaster: string, branch: string): string {
-  const branchMainStem: Record<string, string> = {
-    "子": "癸", "丑": "己", "寅": "甲", "卯": "乙", "辰": "戊", "巳": "丙", 
-    "午": "丁", "未": "己", "申": "庚", "酉": "辛", "戌": "戊", "亥": "壬"
-  };
-  return calculateTenGod(dayMaster, branchMainStem[branch]);
+  const dmEl = LOCAL_STEM_ELEMENTS[dayMaster];
+  const targetEl = LOCAL_STEM_ELEMENTS[targetStem];
+  const dmPol = LOCAL_STEM_POLARITY[dayMaster];
+  const targetPol = LOCAL_STEM_POLARITY[targetStem];
+
+  if (!dmEl || !targetEl) return "";
+
+  const samePol = dmPol === targetPol;
+
+  const ELEMENTS_ORDER = ["wood", "fire", "earth", "metal", "water"];
+  const meIdx = ELEMENTS_ORDER.indexOf(dmEl);
+  const itIdx = ELEMENTS_ORDER.indexOf(targetEl);
+  const diff = (itIdx - meIdx + 5) % 5;
+
+  // Debug log to trace 丁-丁 issue
+  if (dayMaster === "丁" && targetStem === "丁") {
+    console.log("[DEBUG TEN_GOD] 丁-丁 calculation. dmEl:", dmEl, "targetEl:", targetEl, "diff:", diff);
+  }
+
+  if (diff === 0) return samePol ? "비견" : "겁재";
+  if (diff === 1) return samePol ? "식신" : "상관";
+  if (diff === 2) return samePol ? "편재" : "정재";
+  if (diff === 3) return samePol ? "편관" : "정관";
+  if (diff === 4) return samePol ? "편인" : "정인";
+
+  return "";
 }
 
 /**
- * Hidden Stems (Jijang-gan)
+ * calculateTenGodBranch - using representative stem for the branch
+ */
+export function calculateTenGodBranch(dayMaster: string, branch: string): string {
+  const branchMap: Record<string, string> = {
+    "子": "癸", "丑": "己", "寅": "甲", "卯": "乙", "辰": "戊", "巳": "丙", 
+    "午": "丁", "未": "己", "申": "庚", "酉": "辛", "戌": "戊", "亥": "壬"
+  };
+  return calculateTenGod(dayMaster, branchMap[branch] || "");
+}
+
+/**
+ * HIDDEN_STEMS (지장간)
  */
 export const HIDDEN_STEMS: Record<string, string[]> = {
   "子": ["壬", "癸"],

@@ -21,28 +21,27 @@ async function verify() {
     })
   });
 
-  const data = await res.json();
-  const raw = data.saju_raw || {};
-  const analysis = data.saju_analysis || {};
+  const body = await res.json();
+  const raw = body.saju_raw || {};
+  const analysis = body.saju_analysis || {};
   
-  console.log("=== 사주 엔진 최종 정밀 확인 (1987-07-17 15:30) ===");
-  if (!raw.year || !analysis.daewoon) {
-    console.log("실패: 데이터를 불러오지 못했습니다.");
-  } else {
-    console.log("1. 4주:", `${raw.year.stem}${raw.year.branch} / ${raw.month.stem}${raw.month.branch} / ${raw.day.stem}${raw.day.branch} / ${raw.hour.stem}${raw.hour.branch}`);
-    console.log("2. 대운 시작 나이:", analysis.daewoon.age, "세");
-    console.log("3. 대운 방향:", analysis.daewoon.isForward ? "순행" : "역행");
-    console.log("4. 보정 시각:", raw.correctedDate);
-    
-    console.log("\n=== 정답 대조 ===");
-    const pillarsMatch = (raw.year.stem + raw.year.branch === "丁卯") && (raw.month.stem + raw.month.branch === "丁未");
-    const daewoonMatch = (analysis.daewoon.age === 3 && !analysis.daewoon.isForward);
-    const dateProvided = !!raw.correctedDate;
+  console.log("=== 사주 데이터 정밀 로그 (1987-07-17 15:30) ===");
+  console.log("1. saju_raw.dayMaster:", raw.dayMaster);
+  console.log("2. saju_raw.day.stem:", raw.day?.stem);
+  console.log("3. saju_raw.year.stem:", raw.year?.stem);
+  console.log("4. saju_analysis.year.stem_tenGod (if exist):", analysis.year?.stem_tenGod);
 
-    console.log("丁卯 / 丁未 기둥 일치 :", pillarsMatch ? "PASS ✅" : "FAIL ❌");
-    console.log("대운 3세 역행 일치    :", daewoonMatch ? "PASS ✅" : "FAIL ❌");
-    console.log("보정 시각 정상 반환    :", dateProvided ? "PASS ✅" : "FAIL ❌");
+  if (analysis.daewoon) {
+    console.log("5. 대운 시작 나이 (age):", analysis.daewoon.age);
+    console.log("6. 대운 시작 나이 (startAge):", analysis.daewoon.startAge);
   }
+
+  console.log("\n=== 십신(TenGod) 계산 원천값 확인 ===");
+  // 년/월/일/시 기둥 전체
+  ["year", "month", "day", "hour"].forEach(p => {
+    const pData = raw[p] || {};
+    console.log(`[${p}] stem: ${pData.stem}, branch: ${pData.branch}, tenGod: ${JSON.stringify(pData.tenGod)}`);
+  });
 }
 
 verify().catch(console.error);
