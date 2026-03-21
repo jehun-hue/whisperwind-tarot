@@ -584,27 +584,54 @@ export async function analyzeSajuStructure(
 
   // ── B-258: 기신(忌神) / 구신(仇神) / 한신(閑神) 정밀 분류 ──
   const mainYongsin = yongsin_detail.final.primary;
-  const heeShin = SUPPORT_ELEM[mainYongsin] || "";
-  
-  const ELEMENTS_ORDER = ["목", "화", "토", "금", "수"];
-  const yongIdx = ELEMENTS_ORDER.indexOf(mainYongsin);
-  
+  let heeShin = "";
   let giShin = "";
   let guShin = "";
   let hanShin = "";
-  
-  if (yongIdx >= 0) {
-    // 용신을 극하는 오행 (기신)
-    const giIdx = (yongIdx - 2 + 5) % 5;
-    giShin = ELEMENTS_ORDER[giIdx];
+
+  // 희신, 기신, 구신, 한신 계산 로직
+  if (strengthLevel === "극신강" || strengthLevel === "신강") {
+    giShin = myElement;                          // 기신 = 비겁
+    guShin = getProducingElement(myElement);      // 구신 = 인성
     
-    // 기신을 생하는 오행 (구신)
-    const guIdx = (giIdx - 1 + 5) % 5;
-    guShin = ELEMENTS_ORDER[guIdx];
+    // 희신 = 용신을 생하는 오행, 한신 = 용신이 생하는 오행
+    if (yongsin) {
+      heeShin = getProducingElement(yongsin);
+      hanShin = getProducedElement(yongsin);
+      // 희신이 기신·구신과 겹치면 차선책
+      if (heeShin === giShin || heeShin === guShin) {
+        heeShin = getProducedElement(yongsin);
+      }
+    } else {
+      // 용신 미정 시 fallback
+      const produced = getProducedElement(myElement);
+      heeShin = produced;
+      hanShin = getConqueredElement(myElement);
+    }
+  } else if (strengthLevel === "극신약" || strengthLevel === "신약") {
+    giShin = getConqueringElement(myElement);    // 기신 = 관성
+    guShin = getConqueredElement(myElement);      // 구신 = 재성
     
-    // 나머지 하나 (한신)
-    const used = new Set([mainYongsin, heeShin, giShin, guShin]);
-    hanShin = ELEMENTS_ORDER.find(e => !used.has(e)) || "";
+    // 희신 = 용신을 생하는 오행, 한신 = 용신이 생하는 오행
+    if (yongsin) {
+      heeShin = getProducingElement(yongsin);
+      hanShin = getProducedElement(yongsin);
+      // 희신이 기신·구신과 겹치면 차선책
+      if (heeShin === giShin || heeShin === guShin) {
+        heeShin = getProducedElement(yongsin);
+      }
+    } else {
+      // 용신 미정 시 fallback
+      const produced = getProducedElement(myElement);
+      heeShin = produced;
+      hanShin = getConqueredElement(myElement);
+    }
+  } else { // 중화
+    // 중화는 억부용신이 관성으로 설정되었으므로, 관성을 생하는 재성을 희신으로, 관성을 극하는 식상을 기신으로 설정
+    giShin = getProducedElement(myElement); // 식상
+    guShin = getProducingElement(giShin); // 식상을 생하는 비겁
+    heeShin = getConqueredElement(myElement); // 재성 (관성을 생함)
+    hanShin = getProducingElement(myElement); // 인성 (비겁을 생함)
   }
 
   console.log("[YONGSHIN DETAIL]", JSON.stringify(yongsin_detail));
@@ -997,6 +1024,22 @@ export async function analyzeSajuStructure(
       characteristics.push(`${s.name}: ${s.description}`);
     }
   });
+  
+  // [B-252 FIX] 유실된 정밀 신살 로직 복구 및 정정 (Legacy compatibility)
+  const legacy_list: string[] = [];
+  const b_list = [pillars.year?.branch, pillars.month?.branch, pillars.day?.branch, pillars.hour?.branch];
+  b_list.forEach(b => {
+      if (!b) return;
+      if (dm === "丙" && b === "午") legacy_list.push("양인살(년기)");
+      if (dm === "丁" && b === "午") legacy_list.push("양인살(년기)"); // 정정: 丁의 양인은 午
+      if (dm === "戊" && b === "午") legacy_list.push("양인살(년기)");
+      if (dm === "己" && b === "未") legacy_list.push("양인살(년기)");
+      if (dm === "壬" && b === "子") legacy_list.push("양인살(년기)");
+      if (dm === "癸" && b === "丑") legacy_list.push("양인살(년기)");
+      if ((dm === "丙" || dm === "丁") && b === "未") legacy_list.push("음착살");
+      // 상관살은 십신이므로 제거
+  });
+  characteristics.push(...[...new Set(legacy_list)]);
 
   // Gongmang을 shinsal 배열에도 추가 (검증 테스트용)
   if (gongmang.emptied.length > 0) {
@@ -1108,6 +1151,7 @@ export async function analyzeSajuStructure(
 
   // 1. 천간 점수 (일간 제외)
   const stemsToScore = [pillars.year?.stem, pillars.month?.stem, pillars.hour?.stem].filter(Boolean) as string[];
+  console.log("[DEBUG-STEMS]", stemsToScore, "dm:", dm);
   stemsToScore.forEach(s => {
     const tg = calculateTenGod(dm, s);
     if (tg && tenGodScores[tg] !== undefined) tenGodScores[tg] += 1.0;
