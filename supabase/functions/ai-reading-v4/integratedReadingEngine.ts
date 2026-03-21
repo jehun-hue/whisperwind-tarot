@@ -1051,21 +1051,29 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
         major_period: serverZiwei.dahan?.[0] || {},
         characteristics: [
           ...ziweiPalaces.flatMap(p => p.main_stars),
-          ...Object.values(serverZiwei.birthSihua || {}),
+          ...Object.values(serverZiwei.siHua || {}),
         ].filter(Boolean) as string[],
         period_analysis: "",
-        natal_transformations: serverZiwei.birthSihua || {},
-        annual_transformations: serverZiwei.liunian?.sihua || {},
+        // B-108 compatibility: 뱀케이스와 카멜케이스 모두 제공
+        natal_transformations: serverZiwei.natalTransformations || serverZiwei.siHua || [],
+        natalTransformations: serverZiwei.natalTransformations || [],
+        annual_transformations: serverZiwei.annualTransformations || [],
+        annualTransformations: serverZiwei.annualTransformations || [],
+        
         ziwei_warnings: ziweiWarnings,
-        annual_year: serverZiwei.liunian?.year || 2026,
-        annual_gan: serverZiwei.liunian?.stem || "",
+        annualYear: serverZiwei.annualYear || 2026,
+        annualGan: serverZiwei.annualGan || "",
         currentMinorPeriod: serverZiwei.liunian || null,
         patterns: [],
+        
+        // promptBuilder용 필드
         mingGong: serverZiwei.mingGong,
-        bureau: serverZiwei.wuxingJu?.name,
-        currentMajorPeriod: serverZiwei.dahan?.[0],
-        rawData: serverZiwei,
-        shenGong: serverZiwei.shenGong
+        lifePalace: serverZiwei.mingGong,
+        shenGong: serverZiwei.shenGong,
+        bureau: serverZiwei.bureau,
+        fiveElementFrame: serverZiwei.bureau,
+        currentMajorPeriod: serverZiwei.currentMajorPeriod || null,
+        rawData: serverZiwei
       };
     }
 
