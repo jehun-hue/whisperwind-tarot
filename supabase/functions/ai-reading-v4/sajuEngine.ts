@@ -294,6 +294,7 @@ export function getFullSaju(
     jd,
     sunLong,
     termIdx,
+    correctedDate: kstSolarDate.toISOString(),
     is_near_solar_term_boundary: isNearSolarTermBoundary,
     time_corrected: timeCorrected,
     is_borderline_time: isBorderlineTime,
