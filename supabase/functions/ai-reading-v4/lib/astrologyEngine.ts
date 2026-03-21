@@ -510,8 +510,8 @@ export function calculateServerAstrology(
 
   // 출생지 제공 여부 확인
   const birthPlaceProvided = !!(latitude && latitude !== 0 && longitude && longitude !== 0);
-  const lat = birthPlaceProvided ? latitude! : 37.5;
-  const lon = birthPlaceProvided ? longitude! : 127.0;
+  const lat = birthPlaceProvided ? latitude! : 37.5665;
+  const lon = birthPlaceProvided ? longitude! : 126.978;
   const observer = new Observer(lat, lon, 0);
 
   // 출생지 없을 때 신뢰도 경고 플래그
