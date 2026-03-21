@@ -3,12 +3,12 @@
 
 export interface UserInfo {
   name?: string;
-  birthDate: string;
+  birthDate?: string;
   birthTime?: string;
   gender?: string;
-  question: string;
+  question?: string;
   questionType?: string;
-  language?: 'ko' | 'en' | 'ja';
+  language?: string;
 }
 
 interface SajuAnalysisResult { [key: string]: any; }

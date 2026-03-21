@@ -1360,6 +1360,7 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     birthTime: birthInfo.birthTime || (hasTime ? `${birthInfo.hour}:${birthInfo.minute}` : "모름"),
     gender: birthInfo.gender === "M" ? "남성" : "여성",
     question: input.question,
+    questionType: questionType || "general_future",
     language: input.locale === 'ja' ? 'ja' : input.locale === 'en' ? 'en' : 'ko'
   };
 
