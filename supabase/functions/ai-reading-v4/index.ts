@@ -127,7 +127,12 @@ serve(async (req: Request) => {
     console.log(`[PlatformV9] Starting Analysis Path: ${READING_VERSION}...`);
     let result: any;
     try {
-      result = await runFullProductionEngineV8(supabase, API_KEY, payload);
+      if (mode === "compatibility") {
+        const { runCompatibilityEngine } = await import("./lib/compatibilityEngine.ts");
+        result = await runCompatibilityEngine(supabase, API_KEY, payload);
+      } else {
+        result = await runFullProductionEngineV8(supabase, API_KEY, payload);
+      }
     } catch (engineErr: any) {
       // Re-throw to be caught by the outer catch to return 200 degraded
       throw engineErr;
