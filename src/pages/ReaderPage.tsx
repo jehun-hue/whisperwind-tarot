@@ -1681,7 +1681,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
 
               {/* 1-1. Choi Hanna Tarot (v4 Detail) */}
               <div className="p-6 border-b border-border/10">
-                <div className="mb-3 text-xs font-bold text-purple-400 tracking-widest uppercase">💫 최한나 카드별 해석</div>
+                <div className="mb-3 text-xs font-bold text-purple-400 tracking-widest uppercase">💫 최한나 통합 리딩</div>
                 {reading.tarot_reading?.choihanna ? (
                   <>
                     <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap mb-3">{renderSafe(reading.tarot_reading.choihanna.story)}</p>
@@ -1699,7 +1699,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
               </div>
 
               <div className="p-6 border-b border-border/10 bg-secondary/5">
-                <div className="mb-3 text-xs font-bold text-blue-400 tracking-widest uppercase">🔷 모나드 카드별 해석</div>
+                <div className="mb-3 text-xs font-bold text-blue-400 tracking-widest uppercase">🔷 모나드 통합 리딩</div>
                 {reading.tarot_reading?.monad ? (
                   <>
                     <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap mb-3">{renderSafe(reading.tarot_reading.monad.story)}</p>
