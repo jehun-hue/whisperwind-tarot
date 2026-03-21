@@ -95,10 +95,21 @@ serve(async (req: Request) => {
     }
 
     if (mode === "chat") {
-      const chatResponse = await processChat(API_KEY, question, payload.context);
-      return new Response(JSON.stringify({ response: chatResponse }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      console.log("[INFO][Chat] mode=chat 감지, AI 채팅 엔진 시작");
+      const chatResult = await processChat(
+        API_KEY,
+        question || "",
+        payload.context || {},
+        locale || "kr"
+      );
+      return new Response(
+        JSON.stringify({
+          success: true,
+          mode: "chat",
+          answer: chatResult,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const supabase = createClient(

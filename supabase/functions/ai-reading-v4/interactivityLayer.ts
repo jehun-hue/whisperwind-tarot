@@ -3,6 +3,7 @@
  * - 다국어(KR, JP, US) 대응 및 어조/문화권별 시스템 프롬프트 관리
  * - V9: AI Narrative Orchestrator 모델 적용
  */
+import { callGemini } from "./lib/geminiClient.ts";
 
 export interface LocalePromptConfig {
   systemRole: string;
@@ -572,12 +573,81 @@ export function getLocalizedStyle(lang: string, _baseReading: string): string {
   return cfg.toneDirective;
 }
 
-export async function processChat(_apiKey: string, question: string, context: any): Promise<string> {
-  const intent = question.includes("연애") || question.includes("恋") || /love|relationship/i.test(question) 
-    ? "love" 
-    : question.includes("돈") || question.includes("金") || /money/i.test(question) 
-    ? "money" 
-    : "general";
-  
-  return `상담 결과: ${intent} 운세에 대한 분석이 완료되었습니다. ${context?.summary || ""}`;
+// ─── B4: AI 기반 후속 질문 엔진 ───
+export async function processChat(
+  apiKey: string,
+  question: string,
+  context: any,
+  locale: string = "kr"
+): Promise<string> {
+  console.log(`[INFO][Chat] 후속질문 수신: "${question.slice(0, 50)}..."`);
+
+  // 1) 이전 리딩 요약 추출
+  const prevReading = context?.ai_reading || context?.summary || context;
+  let readingSummary = "";
+  if (typeof prevReading === "string") {
+    readingSummary = prevReading.slice(0, 3000);
+  } else if (typeof prevReading === "object") {
+    const parts = [
+      prevReading?.integrated_summary,
+      prevReading?.final_message?.summary,
+      prevReading?.coreReading,
+    ].filter(Boolean);
+    readingSummary = parts.join("\n\n").slice(0, 3000) || JSON.stringify(prevReading).slice(0, 2000);
+  }
+
+  // 2) 사주/타로 핵심 데이터 추출
+  const birthData = context?.birthInfo || context?.birth_info || {};
+  const sajuData = context?.saju || context?.saju_analysis || {};
+  const cardData = context?.cards || context?.tarot_cards || {};
+
+  const dataContext = [
+    birthData.birthDate ? `생년월일: ${birthData.birthDate}` : "",
+    sajuData.dayMaster ? `일간: ${sajuData.dayMaster}` : "",
+    sajuData.tenGod ? `십신: ${JSON.stringify(sajuData.tenGod)}` : "",
+    Array.isArray(cardData) && cardData.length > 0
+      ? `타로카드: ${cardData.map((c: any) => c.name || c).join(", ")}`
+      : "",
+  ].filter(Boolean).join(" | ");
+
+  // 3) 시스템 프롬프트 구성
+  const toneMap: Record<string, string> = {
+    kr: "따뜻하고 공감적인 한국어로 답변하세요. 존댓말을 사용하세요.",
+    jp: "温かく共感的な日本語で回答してください。敬語を使ってください。",
+    us: "Respond warmly and empathetically in English.",
+  };
+  const tone = toneMap[locale] || toneMap.kr;
+
+  const systemPrompt = `당신은 전문 운세 상담가(최한나)입니다. 이전 리딩 결과를 기반으로 내담자의 추가 질문에 답변합니다.
+
+[규칙]
+1. 이전 리딩에서 분석된 데이터(사주, 타로, 점성술)를 근거로 답변하세요.
+2. 새로운 데이터를 지어내지 마세요. 이전 결과에 없는 내용은 "기존 리딩에서 해당 부분은 다루지 않았습니다"라고 솔직히 말하세요.
+3. 구체적인 시기, 방향, 행동 조언을 포함하세요.
+4. 답변은 300자 이내로 간결하게 하세요.
+5. ${tone}
+
+[내담자 데이터]
+${dataContext || "데이터 없음"}
+
+[이전 리딩 결과 요약]
+${readingSummary || "이전 리딩 없음"}`;
+
+  // 4) Gemini 호출 (GeminiRequest 인터페이스에 맞춤)
+  try {
+    const geminiResponse = await callGemini({
+      apiKey,
+      systemPrompt,
+      userPrompt: question,
+      temperature: 0.7,
+      maxOutputTokens: 1024,
+    });
+
+    const answer = geminiResponse.text || "";
+    console.log(`[INFO][Chat] Gemini 응답 수신 (${answer.length}자)`);
+    return answer || "죄송합니다, 답변을 생성하지 못했습니다. 다시 질문해 주세요.";
+  } catch (err) {
+    console.error(`[ERROR][Chat] Gemini 호출 실패:`, err);
+    return "일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.";
+  }
 }
