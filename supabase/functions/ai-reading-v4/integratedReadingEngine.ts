@@ -1493,22 +1493,21 @@ ${userInfo.question ? `[질문: ${userInfo.question}]` : ''}
       const finalMonad = secondNarrative;
 
       parsed = buildFallbackReading(thirdNarrative || finalChoihanna || "통합 분석 결과를 준비 중입니다.", grade, scores, tarotCards, input.question, style);
-      const consensusSummary = (() => {
-        const score = consensusResult?.consensus_score || 0;
-        const dv = consensusResult?.dominant_vector || {};
-        const growth = (dv.growth || 0).toFixed(2);
-        const risk = (dv.risk || 0).toFixed(2);
-        const transition = (dv.life_transition || 0).toFixed(2); // 지배벡터 필드명 맞춤
-        const conflicts = consensusResult?.conflict_summary || '없음';
+      
+      const score = consensusResult?.consensus_score || 0;
+      const dv = consensusResult?.dominant_vector || {};
+      const growth = (dv.growth || 0).toFixed(2);
+      const risk = (dv.risk || 0).toFixed(2);
+      const transition = (dv.life_transition || 0).toFixed(2);
+      const conflicts = consensusResult?.conflict_summary || '없음';
+      const scoreLabel = score >= 0.7 ? '매우 높음' : score >= 0.5 ? '높음' : score >= 0.3 ? '보통' : '낮음';
+      const dominant = Number(growth) >= Number(risk) && Number(growth) >= Number(transition) ? '성장' 
+        : Number(risk) >= Number(transition) ? '리스크 관리' : '전환';
+
+      const consensusSummary = `[시스템 합의] ${userInfo.name || '내담자'}님의 엔진 간 합의도는 ${scoreLabel}(${(score * 100).toFixed(0)}%)이며, 주요 흐름은 '${dominant}' 방향입니다. ${conflicts ? `\n[주의 신호] ${conflicts}` : ""}`;
         
-        const scoreLabel = score >= 0.7 ? '매우 높음' : score >= 0.5 ? '높음' : score >= 0.3 ? '보통' : '낮음';
-        const dominant = Number(growth) >= Number(risk) && Number(growth) >= Number(transition) ? '성장' 
-          : Number(risk) >= Number(transition) ? '리스크 관리' : '전환';
-        
-        return `${userInfo.name || '내담자'}님의 올해 엔진 간 합의도는 ${scoreLabel}(${(score * 100).toFixed(0)}%)이며, 주요 흐름은 '${dominant}' 방향입니다. 엔진들이 공통으로 짚은 핵심 신호: 사주와 점성술의 일치도가 높습니다. 주의가 필요한 부분: ${conflicts}.`;
-      })();
-      console.log(`[DEBUG][consensus] score=${consensusResult?.consensus_score}, dv=${JSON.stringify(consensusResult?.dominant_vector)}, conflict=${consensusResult?.conflict_summary}, summary=${consensusSummary?.slice(0,100)}`);
-      parsed.integrated_summary = consensusSummary;
+        console.log(`[FORCE][consensus] integrated_summary 할당 완료: "${consensusSummary.slice(0, 80)}..."`);
+        parsed.integrated_summary = consensusSummary;
       parsed.final_message.summary = thirdNarrative || finalChoihanna;
       
       const cardData = {
@@ -2014,7 +2013,7 @@ ${parsed.action_guide?.do_list?.map((item: string) => `- ${item}`).join('\n') ||
       llm_origin_json: llmOriginJson
     },
     coreReading: coreReading,
-    integrated_summary: parsed.integrated_summary || parsed.final_message?.summary || parsed.merged_reading?.coreReading || "",
+    integrated_summary: parsed.integrated_summary || parsed.final_message?.summary?.slice(0, 500) || "",
     practical_advice: parsed.action_guide?.do_list?.join(", ") || "",
     // B-61: 스키마 개선
     edge_case_tags: edgeCaseTags,
@@ -2197,6 +2196,7 @@ function buildFallbackReading(text: string, grade: string, scores: any, cards: a
   return {
     reading_info: { question, grade, date: new Date().toISOString().slice(0, 10), card_count: cards?.length || 0 },
     tarot_reading: tarotReading,
+    integrated_summary: "",
     convergence: { 
       total_systems: 6, 
       converged_count: Math.round((scores.overall / 100) * 6), 
