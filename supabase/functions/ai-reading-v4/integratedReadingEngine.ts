@@ -1498,6 +1498,7 @@ ${userInfo.question ? `[질문: ${userInfo.question}]` : ''}
         
         return `${userInfo.name || '내담자'}님의 올해 엔진 간 합의도는 ${scoreLabel}(${(score * 100).toFixed(0)}%)이며, 주요 흐름은 '${dominant}' 방향입니다. 엔진들이 공통으로 짚은 핵심 신호: 사주와 점성술의 일치도가 높습니다. 주의가 필요한 부분: ${conflicts}.`;
       })();
+      console.log(`[DEBUG][consensus] score=${consensusResult?.consensus_score}, dv=${JSON.stringify(consensusResult?.dominant_vector)}, conflict=${consensusResult?.conflict_summary}, summary=${consensusSummary?.slice(0,100)}`);
       parsed.integrated_summary = consensusSummary;
       parsed.final_message.summary = thirdNarrative || finalChoihanna;
       
