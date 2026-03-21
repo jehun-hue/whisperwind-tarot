@@ -29,7 +29,6 @@ export function calculateSaju(
     jd: result.jd,
     sunLong: result.sunLong,
     termIdx: result.termIdx,
-    correctedDate: result.correctedDate,
     gender
   };
 }

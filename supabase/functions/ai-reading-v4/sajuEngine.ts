@@ -256,44 +256,6 @@ export function getFullSaju(
   const branchLabels = ["년지", "월지", "일지", "시지"];
   const hiddenLabels = ["본기", "중기", "초기"];
 
-  pillars.
-  console.log('[SAJU DEBUG]', {
-    input: { year, month, day, hour, minute },
-    corrected: { 
-      date: !isNaN(correctedDate.getTime()) ? correctedDate.toISOString() : "Invalid Date", 
-      hour: correctedHour,
-      minute: correctedMinute 
-    },
-    isYaJaTime,
-    dayPillarDate: !isNaN(dayPillarDate.getTime()) ? dayPillarDate.toISOString() : "Invalid Date",
-    effectiveHour,
-    gender,
-    result: {
-      dayMaster: result.dayMaster,
-      pillars: result.pillars
-    }
-  });
-
-  return result;
-}
-�지", "월간", "월지", "일간", "일지", "시간", "시지"];
-  
-  // 천간 오행 집계 (각 1점) — 지지는 지장간으로만 계산하므로 여기서는 제외
-  pillars.forEach((p, idx) => {
-    const sEl = FIVE_ELEMENTS[p.stem];
-    const sName = TR_ELEMENTS[sEl];
-    
-    if (sName) {
-      elements[sName]++;
-      console.log("[ELEMENT DETAIL]", `${pillarLabels[idx * 2]}`, p.stem, "→", sName, 1.0);
-    }
-  });
-
-  // 지장간 오행 집계 (본기 0.5, 중기 0.2, 초기 0.1 — 보정됨)
-  const HIDDEN_WEIGHTS_EL = [0.5, 0.2, 0.1]; // 본기, 중기, 초기
-  const branchLabels = ["년지", "월지", "일지", "시지"];
-  const hiddenLabels = ["본기", "중기", "초기"];
-
   pillars.forEach((p, bIdx) => {
     const hidden = HIDDEN_STEMS[p.branch] || [];
     hidden.forEach((hs, idx) => {
@@ -335,7 +297,6 @@ export function getFullSaju(
     is_near_solar_term_boundary: isNearSolarTermBoundary,
     time_corrected: timeCorrected,
     is_borderline_time: isBorderlineTime,
-    correctedDate: kstSolarDate.toISOString(),
     has_time: hasTime,
     narrative: hasTime ? "" : "출생 시간 미입력으로 시주는 제외하고 3주(년월일)만 분석합니다."
   };
@@ -350,7 +311,6 @@ export function getFullSaju(
     isYaJaTime,
     dayPillarDate: !isNaN(dayPillarDate.getTime()) ? dayPillarDate.toISOString() : "Invalid Date",
     effectiveHour,
-    gender,
     result: {
       dayMaster: result.dayMaster,
       pillars: result.pillars

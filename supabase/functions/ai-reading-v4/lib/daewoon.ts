@@ -30,7 +30,6 @@ export interface TransitionInfo {
 
 export interface DaewoonResult {
   startAge: number;           // 대운 시작 나이
-  age: number;                // B-266: 호환성을 위한 시작 나이 (별칭)
   isForward: boolean;         // 순행 여부
   pillars: DaewoonPillar[];   // 10개 대운 기둥
   currentDaewoon: DaewoonPillar | null;
@@ -256,7 +255,6 @@ export function calculateFullDaewoon(
 
   return {
     startAge,
-    age: startAge,
     isForward,
     pillars,
     currentDaewoon,
