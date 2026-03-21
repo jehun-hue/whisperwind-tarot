@@ -28,16 +28,20 @@ export function calculateSaju(
   hour: number,
   minute: number,
   gender: 'M' | 'F' = 'M',
-  longitude: number = 127.5
+  longitude: number = 127.5,
+  hasTime: boolean = true
 ) {
-  // 1. Time correction (Longitude + simplified DST)
-  // Base KST is +9. If Summer Time, it's +10.
-  const timezoneOffset = getKoreanTimezoneOffset(year, month, day);
-  const dstOffset = -(timezoneOffset - 9) * 60; // in minutes (0 or -60)
-
-  const solarTimeMinute = minute + (longitude - 135) * 4 + dstOffset;
-  const correctedDate = new Date(year, month - 1, day, hour, 0);
-  correctedDate.setMinutes(solarTimeMinute);
+  // 1. Time correction (Handle UTC environment)
+  const timezoneOffset = getKoreanTimezoneOffset(year, month, day); // 9 for KST, 10 for KDT
+  
+  // Create a Date object in the system's UTC context, representing KST/KDT wall clock
+  const wallClockUTC = Date.UTC(year, month - 1, day, hour, minute);
+  const birthMomentUTC = wallClockUTC - (timezoneOffset * 60 * 60 * 1000);
+  
+  // Solar Mean Time (LMT) calculation
+  // Local Solar Time = UTC + (longitude / 15)
+  const lmtMoment = birthMomentUTC + (longitude / 15) * 60 * 60 * 1000;
+  const correctedDate = new Date(lmtMoment);
 
   const jd = calculateJulianDay(correctedDate);
   const sunLong = getSunLongitude(jd);

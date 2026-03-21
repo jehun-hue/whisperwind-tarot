@@ -50,29 +50,44 @@ export function getDaewoonInfo(
   const jval = Number(jd) || 0;
   const yval = Number(year) || 2000;
 
+  // 1. 순행/역행 판정 (년간 음양 + 성별)
+  // 양년(0,2,4,6,8) 남성/음년(1,3,5,7,9) 여성: 순행
+  // 양년 여성/음년 남성: 역행
   const isYangYear = (Number(yearStemIdx) || 0) % 2 === 0;
   const isForward = (isYangYear && gender === 'M') || (!isYangYear && gender === 'F');
 
+  // 2. 현재 위치 기준 절기(Jeol-gi, 30도 간격) 찾기
+  // sunLong이 이미 보정된 JD로부터 온 것이어야 함
   const termIdx = Math.floor((sLong - 315 + 360) % 360 / 30);
   const currentJeolLong = MONTH_JEOL_LONGS[termIdx];
   const nextJeolLong = MONTH_JEOL_LONGS[(termIdx + 1) % 12];
   
+  // 현재 절기와 다음 절기의 정확한 JD(UTC) 구하기
   let currentJeolJD = findSolarTermJD(yval, currentJeolLong);
-  if (currentJeolJD > jval + 1) {
+  // 만약 현재 시각이 절기보다 앞서 있다면 작년 절기를 찾아야 할 수도 있음
+  if (currentJeolJD > jval + 5) { // 5일 이상 차이나면 연도 보정
     currentJeolJD = findSolarTermJD(yval - 1, currentJeolLong);
+  } else if (currentJeolJD < jval - 35) {
+     currentJeolJD = findSolarTermJD(yval, currentJeolLong); // 이미 맞음
   }
   
   let nextJeolJD = findSolarTermJD(yval, nextJeolLong);
-  if (nextJeolJD < jval - 1) {
+  if (nextJeolJD < jval - 5) {
     nextJeolJD = findSolarTermJD(yval + 1, nextJeolLong);
   }
 
+  // 3. 대운 시작 나이 계산 (3일 = 1년)
+  // 순행: 다음 절기까지 남은 시간 / 3
+  // 역행: 이전 절기(현재 절기)로부터 경과 시간 / 3
   let diff = isForward ? (nextJeolJD - jval) : (jval - currentJeolJD);
-  if (!Number.isFinite(diff) || diff < 0) diff = 0;
+  
+  // 방어 코드: 절기 경계에서 음수가 나오지 않게 함
+  if (diff < 0) diff = 0;
 
+  // 3일당 1세. 나머지가 1.5일(0.5년) 이상이면 올림, 미만이면 내림 (Math.round)
   const daewoonAge = Math.max(1, Math.round(diff / 3));
-  const finalAge = Number.isFinite(daewoonAge) ? daewoonAge : 1;
-  return { age: finalAge, isForward };
+  
+  return { age: daewoonAge, isForward };
 }
 
 /**

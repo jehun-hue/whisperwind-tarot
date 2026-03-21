@@ -11,10 +11,21 @@
 import { STEMS, BRANCHES } from "./fiveElements.ts";
 
 export function getDayPillar(jd: number): { stem: string; branch: string; idx: number } {
-  // JD를 정수로 변환 후 60갑자 인덱스 계산
-  const idx = Math.floor(jd + 0.5 + 49) % 60;
-  const stem = STEMS[idx % 10];
-  const branch = BRANCHES[idx % 12];
+  // jd to timestamp (ms)
+  // Unix Epoch (1970-01-01 00:00:00 UTC) JD is 2440587.5
+  const ms = (jd - 2440587.5) * 86400000;
+  
+  // Korean Date (KST +9h)
+  const kstMs = ms + (9 * 60 * 60 * 1000);
+  const daysSinceEpoch = Math.floor(kstMs / (24 * 60 * 60 * 1000));
+  
+  // 1970-01-01 is 癸巳 (Index 29)
+  // 0:甲子... 29:癸巳
+  const idx = (daysSinceEpoch + 29) % 60;
+  const calibratedIdx = (idx + 60) % 60;
 
-  return { stem, branch, idx };
+  const stem = STEMS[calibratedIdx % 10];
+  const branch = BRANCHES[calibratedIdx % 12];
+
+  return { stem, branch, idx: calibratedIdx };
 }
