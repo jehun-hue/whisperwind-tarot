@@ -37,7 +37,8 @@ export function buildReadingPrompt(
   numerology: NumerologyResult,
   tarot: TarotResult,
   crossValidation: CrossValidationResult,
-  timeline: UnifiedTimeline
+  timeline: UnifiedTimeline,
+  readingHistory?: any[]
 ): string {
 
   const name = userInfo.name && userInfo.name.trim() ? userInfo.name.trim() : '내담자';
@@ -397,6 +398,21 @@ ${(() => {
 ` : `
 별도 질문이 없으므로 올해 전반적 운세를 해석하되, 가장 임팩트 큰 변화에 집중하라.
 `}
+
+${(readingHistory && readingHistory.length > 0) ? `
+━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 1.5: 과거 상담 이력 (재방문 맥락)
+━━━━━━━━━━━━━━━━━━━━━━━━
+${name}님은 이전에 다음과 같은 상담을 받은 적이 있습니다:
+${readingHistory.map((h: any, i: number) => 
+  `[${i+1}] ${h.date} - 질문: "${h.question}" → 핵심: ${h.summary.slice(0, 150)}`
+).join('\n')}
+
+→ 이전 상담 내용을 참고하여:
+- 이전과 현재의 운세 변화를 자연스럽게 언급하라 (예: "지난번에는 신중함이 필요했지만, 이번에는...")
+- 이전 조언이 현재도 유효한지 평가하라
+- 단, 이전 내용을 그대로 반복하지 말고, 변화와 흐름에 초점을 맞춰라
+` : ''}
 
 ${(() => {
   const hasBirthTime = userInfo.birthTime && userInfo.birthTime !== "" && userInfo.birthTime !== "모름";

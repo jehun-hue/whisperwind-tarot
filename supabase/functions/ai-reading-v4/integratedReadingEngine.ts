@@ -1426,7 +1426,8 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     numerologyResult as any,
     { cards: normalizedCards, insights: cardInsights },
     crossValidationResult,
-    unifiedTimeline
+    unifiedTimeline,
+    input.readingHistory || []
   );
 
   let responseType: "valid_json" | "fallback_text" | "parse_error" | "schema_mismatch" | "timeout" | "skipped" = "valid_json";

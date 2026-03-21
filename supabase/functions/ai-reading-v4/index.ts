@@ -127,6 +127,39 @@ serve(async (req: Request) => {
     // Run Production Engine v9
     console.log(`[PlatformV9] Starting Analysis Path: ${READING_VERSION}...`);
     let result: any;
+    // B3: 과거 리딩 히스토리 조회
+    let readingHistory: any[] = [];
+    try {
+      const userName = payload.birthInfo?.userName || payload.userName || "";
+      const birthDate = payload.birthInfo?.birthDate || payload.birth_date || "";
+      
+      if (userName && birthDate) {
+        const { data: pastReadings } = await supabase
+          .from("reading_sessions")
+          .select("question, ai_reading, created_at")
+          .eq("user_name", userName)
+          .eq("birth_date", birthDate)
+          .not("ai_reading", "is", null)
+          .order("created_at", { ascending: false })
+          .limit(3);
+        
+        readingHistory = (pastReadings || []).map((r: any) => ({
+          date: r.created_at?.split("T")[0] || "",
+          question: r.question || "종합운",
+          summary: r.ai_reading?.integrated_summary 
+            || r.ai_reading?.final_message?.summary 
+            || "요약 없음",
+        }));
+        
+        console.log(`[INFO][History] ${userName} 과거 리딩 ${readingHistory.length}건 발견`);
+      }
+    } catch (histErr: any) {
+      console.log(`[WARN][History] 조회 실패: ${histErr.message}`);
+    }
+    
+    // payload에 히스토리 추가
+    payload.readingHistory = readingHistory;
+
     try {
       if (mode === "compatibility") {
         console.log("[INFO][Compatibility] mode=compatibility 감지, 궁합 엔진 시작");
