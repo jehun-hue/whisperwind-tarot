@@ -24,6 +24,8 @@ export interface NumerologyResult {
   compound_number: number;
   numberMeanings: any;
   vibrations: string[];
+  karmic_debts: number[];
+  has_karmic_debt: boolean;
 }
 
 const PYTHAGOREAN_MAP: Record<string, number> = {
@@ -63,28 +65,65 @@ function reduceToSingle(n: number): number {
   return n;
 }
 
-function calculateDestinyNumber(name: string): number | null {
+const KARMIC_DEBT_NUMBERS = [13, 14, 16, 19];
+
+export function detectKarmicDebt(...rawSums: number[]): number[] {
+  const debts: number[] = [];
+  for (const n of rawSums) {
+    if (KARMIC_DEBT_NUMBERS.includes(n) && !debts.includes(n)) {
+      debts.push(n);
+    }
+  }
+  return debts;
+}
+
+const CONSONANT_STROKE: Record<string, number> = {
+  'ㄱ':1,'ㄲ':2,'ㄴ':1,'ㄷ':2,'ㄸ':4,'ㄹ':3,
+  'ㅁ':3,'ㅂ':4,'ㅃ':8,'ㅅ':2,'ㅆ':4,'ㅇ':2,
+  'ㅈ':3,'ㅉ':6,'ㅊ':4,'ㅋ':2,'ㅌ':3,'ㅍ':4,'ㅎ':4
+};
+
+const VOWEL_STROKE: Record<string, number> = {
+  'ㅏ':2,'ㅐ':3,'ㅑ':3,'ㅒ':4,'ㅓ':2,'ㅔ':3,
+  'ㅕ':3,'ㅖ':4,'ㅗ':2,'ㅘ':4,'ㅙ':5,'ㅚ':3,
+  'ㅛ':3,'ㅜ':2,'ㅝ':4,'ㅞ':5,'ㅟ':3,'ㅠ':3,
+  'ㅡ':1,'ㅢ':2,'ㅣ':1
+};
+
+const COMPLEX_JONG_STROKE: Record<string, number> = {
+  'ㄳ':3,'ㄵ':4,'ㄶ':5,'ㄺ':4,'ㄻ':6,
+  'ㄼ':7,'ㄽ':5,'ㄾ':4,'ㄿ':7,'ㅀ':7,
+  'ㅄ':6
+};
+
+export function calculateDestinyNumber(name: string): { value: number; rawTotal: number } | null {
   if (!name || name.trim() === "" || name === "이름없음") return null;
-  const STROKE_MAP: Record<string, number> = {
-    'ㄱ': 1, 'ㄲ': 2, 'ㄴ': 1, 'ㄷ': 2, 'ㄸ': 4, 'ㄹ': 3, 'ㅁ': 3, 'ㅂ': 4, 'ㅃ': 8, 'ㅅ': 2, 'ㅆ': 4, 'ㅇ': 1, 'ㅈ': 3, 'ㅉ': 6, 'ㅊ': 4, 'ㅋ': 2, 'ㅌ': 3, 'ㅍ': 4, 'ㅎ': 3,
-    'ㄳ': 3, 'ㄵ': 4, 'ㄶ': 4, 'ㄺ': 4, 'ㄻ': 6, 'ㄼ': 7, 'ㄽ': 5, 'ㄾ': 5, 'ㄿ': 5, 'ㅀ': 6, 'ㅄ': 6
-  };
-  const CHOSEONG_LIST = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
-  const JONGSEONG_LIST = ['', 'ㄱ', 'ㄲ', 'ㄳ', 'ㄴ', 'ㄵ', 'ㄶ', 'ㄷ', 'ㄹ', 'ㄺ', 'ㄻ', 'ㄼ', 'ㄽ', 'ㄾ', 'ㄿ', 'ㅀ', 'ㅁ', 'ㅂ', 'ㅄ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
   let totalStrokes = 0;
   let hasHangul = false;
+
   for (const char of name) {
-    const code = char.charCodeAt(0) - 0xAC00;
-    if (code >= 0 && code <= 11171) {
+    const code = char.charCodeAt(0);
+    if (code >= 0xAC00 && code <= 0xD7A3) {
       hasHangul = true;
-      const choseongIndex = Math.floor(code / (21 * 28));
-      const jongseongIndex = code % 28;
-      totalStrokes += STROKE_MAP[CHOSEONG_LIST[choseongIndex]] || 0;
-      if (jongseongIndex > 0) totalStrokes += STROKE_MAP[JONGSEONG_LIST[jongseongIndex]] || 0;
+      const offset = code - 0xAC00;
+      const choIdx = Math.floor(offset / (21 * 28));
+      const jungIdx = Math.floor((offset % (21 * 28)) / 28);
+      const jongIdx = offset % 28;
+
+      const CHO = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+      const JUNG = ['ㅏ','ㅐ','ㅑ','ㅒ','ㅓ','ㅔ','ㅕ','ㅖ','ㅗ','ㅘ','ㅙ','ㅚ','ㅛ','ㅜ','ㅝ','ㅞ','ㅟ','ㅠ','ㅡ','ㅢ','ㅣ'];
+      const JONG = ['','ㄱ','ㄲ','ㄳ','ㄴ','ㄵ','ㄶ','ㄷ','ㄹ','ㄺ','ㄻ','ㄼ','ㄽ','ㄾ','ㄿ','ㅀ','ㅁ','ㅂ','ㅄ','ㅅ','ㅆ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+
+      totalStrokes += CONSONANT_STROKE[CHO[choIdx]] || 0;
+      totalStrokes += VOWEL_STROKE[JUNG[jungIdx]] || 0;
+      if (jongIdx > 0) {
+        const jong = JONG[jongIdx];
+        totalStrokes += CONSONANT_STROKE[jong] || COMPLEX_JONG_STROKE[jong] || 0;
+      }
     }
   }
   if (!hasHangul) return null;
-  return reduceToSingle(totalStrokes);
+  return { value: reduceToSingle(totalStrokes), rawTotal: totalStrokes };
 }
 
 export function calculateNumerology(
@@ -117,11 +156,11 @@ export function calculateNumerology(
   let expression: number | null = null;
   let soulUrge: number | null = null;
   let personality: number | null = null;
+  let eSum = 0, sSum = 0, pSum = 0;
 
   if (name) {
     const cleanName = name.toUpperCase().replace(/[^A-Z]/g, '');
     if (cleanName.length > 0) {
-      let eSum = 0, sSum = 0, pSum = 0;
       for (const char of cleanName) {
         const val = PYTHAGOREAN_MAP[char] || 0;
         eSum += val;
@@ -147,7 +186,9 @@ export function calculateNumerology(
   const personalDay = reduceToSingle(personalMonth + now.getDate());
 
   // 6. Destiny (Hangul fallback)
-  const destiny = calculateDestinyNumber(name || "");
+  const destinyResult = calculateDestinyNumber(name || "");
+  const destiny = destinyResult ? destinyResult.value : null;
+  const destinyRawTotal = destinyResult ? destinyResult.rawTotal : 0;
 
   // 7. Pinnacles & Challenges
 
@@ -197,6 +238,10 @@ export function calculateNumerology(
   else if (expression && masterNumbers.includes(expression)) masterNumberType = `표현수 ${expression}`;
   else if (masterNumbers.includes(personalYear)) masterNumberType = `개인년 ${personalYear}`;
 
+  // Karmic Debt 감지 (환원 전 원시 합계에서 체크)
+  const lpRawSum = rMonth + rDay + rYear;
+  const karmicDebts = detectKarmicDebt(lpRawSum, eSum, sSum, pSum, day, destinyRawTotal);
+
   return {
     life_path_number: lifePath,
     destiny_number: destiny,
@@ -214,7 +259,9 @@ export function calculateNumerology(
     master_number_type: masterNumberType,
     compound_number: lpSum,
     numberMeanings,
-    vibrations
+    vibrations,
+    karmic_debts: karmicDebts,
+    has_karmic_debt: karmicDebts.length > 0
   };
 }
 

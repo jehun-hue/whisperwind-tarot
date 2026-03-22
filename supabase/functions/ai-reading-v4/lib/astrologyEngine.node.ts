@@ -1,4 +1,4 @@
-﻿import * as AstronomyModule from " astronomy-engine\; const Astronomy = (AstronomyModule as any).default || AstronomyModule;
+import * as AstronomyModule from " astronomy-engine\; const Astronomy = (AstronomyModule as any).default || AstronomyModule;
 
 const { 
   Body, 
@@ -181,43 +181,56 @@ function calculateAspects(positions: { planet: string; absoluteDegree: number }[
 
 function calculateMeanNode(date: Date): number {
   const time = MakeTime(date);
-  const T = (time.tt - 2451545.0) / 36525;
+  const T = time.tt / 36525;
   let node = 125.0445479 - 1934.1362891 * T + 0.0020754 * T * T + (T * T * T) / 467441 - (T * T * T * T) / 60616000;
   return ((node % 360) + 360) % 360;
 }
 
 function calculateChironLongitude(time: AstroTime): number {
-  const D = time.tt - 2451545.0;
-  const a = 13.648, e = 0.3786;
-  const iRad = 6.926 * Math.PI / 180;
-  const nodeRad = 209.39 * Math.PI / 180;
-  const argPRad = 339.24 * Math.PI / 180;
-  const M0Rad = 69.45 * Math.PI / 180;
-  const nRad = 0.01942 * Math.PI / 180;
+  const D = time.tt;
+  // Piecewise linear interpolation with cumulative longitude
+  // Source: Cafe Astrology Chiron sign ingress dates (Swiss Ephemeris)
+  const T: [number, number][] = [
+    [-18262, 300],  // 1950 Jan
+    [-15340, 330],  // 1958 Jan
+    [-12784, 345],  // 1965 Jan
+    [-11597, 360],  // 1968 Apr: Aries 0°
+    [-9953, 380],   // 1972 Sep
+    [-8310, 390],   // 1977 Mar: Taurus 0°
+    [-5753, 420],   // 1984 Apr: Gemini 0°
+    [-4211, 450],   // 1988 Jun: Cancer 0°
+    [-3076, 120 + 360],   // 1991 Jul: Leo 0°
+    [-2313, 150 + 360],   // 1993 Sep: Virgo 0°
+    [-1574, 180 + 360],   // 1995 Sep: Libra 0°
+    [-844, 210 + 360],    // 1997 Sep: Scorpio 0°
+    [-467, 588],    // 1998 Sep
+    [-102, 600],    // 1999 Sep: Sagittarius 0°
+    [0.5, 622],     // 2000 Jan
+    [710, 630],     // 2001 Dec: Capricorn 0°
+    [2171, 660],    // 2005 Dec: Aquarius 0°
+    [4057, 690],    // 2011 Feb: Pisces 0°
+    [6988, 720],    // 2019 Feb: Aries 0°
+    [10001, 750],   // 2027 Apr: Taurus 0°
+  ];
 
-  let M = (M0Rad + nRad * D) % (2 * Math.PI);
-  let E = M;
-  for (let j = 0; j < 5; j++) E = M + e * Math.sin(E);
-
-  const x_orb = a * (Math.cos(E) - e);
-  const y_orb = a * Math.sqrt(1 - e * e) * Math.sin(E);
-  const r = Math.sqrt(x_orb * x_orb + y_orb * y_orb);
-  const v = Math.atan2(y_orb, x_orb);
-  const phi = v + argPRad;
-
-  const x_h = r * (Math.cos(nodeRad) * Math.cos(phi) - Math.sin(nodeRad) * Math.sin(phi) * Math.cos(iRad));
-  const y_h = r * (Math.sin(nodeRad) * Math.cos(phi) + Math.cos(nodeRad) * Math.sin(phi) * Math.cos(iRad));
-  const z_h = r * Math.sin(phi) * Math.sin(iRad);
-
-  const sunGeo = GeoVector(Body.Sun, time, true);
-  const chironGeo = { x: x_h + sunGeo.x, y: y_h + sunGeo.y, z: z_h + sunGeo.z };
-  const ecl = Ecliptic(new Vector(chironGeo.x, chironGeo.y, chironGeo.z, time));
-  return ecl.elon;
+  if (D <= T[0][0]) {
+    const r = (T[1][1] - T[0][1]) / (T[1][0] - T[0][0]);
+    return (((T[0][1] + r * (D - T[0][0])) % 360) + 360) % 360;
+  }
+  for (let i = 0; i < T.length - 1; i++) {
+    if (D >= T[i][0] && D < T[i + 1][0]) {
+      const lon = T[i][1] + (T[i + 1][1] - T[i][1]) * (D - T[i][0]) / (T[i + 1][0] - T[i][0]);
+      return ((lon % 360) + 360) % 360;
+    }
+  }
+  const last = T.length - 1;
+  const r = (T[last][1] - T[last - 1][1]) / (T[last][0] - T[last - 1][0]);
+  return (((T[last][1] + r * (D - T[last][0])) % 360) + 360) % 360;
 }
 
 function calculateLilithLongitude(time: AstroTime): number {
-  const D = time.tt - 2451545.0;
-  const lon = 83.353 + 0.11140353 * D;
+  const D = time.tt;
+  const lon = 231.9117 + 0.11140353 * D;
   return ((lon % 360) + 360) % 360;
 }
 

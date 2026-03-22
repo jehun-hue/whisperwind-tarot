@@ -1,5 +1,4 @@
-// lib/promptBuilder.ts — E1-A Master Prompt v2 (2026-03-20)
-// 결론 강제 + 선별 데이터 주입 + 질문별 궁 선택
+import { Signal, CrossSignal } from './signalExtractor.ts';
 
 export interface UserInfo {
   name?: string;
@@ -38,7 +37,8 @@ export function buildReadingPrompt(
   tarot: TarotResult,
   crossValidation: CrossValidationResult,
   timeline: UnifiedTimeline,
-  readingHistory?: any[]
+  readingHistory?: any[],
+  signalData?: { signals: Signal[], crossSignals: CrossSignal[] }
 ): string {
 
   const name = userInfo.name && userInfo.name.trim() ? userInfo.name.trim() : '내담자';
@@ -201,6 +201,30 @@ ${crossPatterns.join('\n')}
 `
     : '';
 
+  // ─── 추출된 리스크/기회 신호 (Phase 2-1) ───
+  const signals = signalData?.signals || [];
+  const crossSignals = signalData?.crossSignals || [];
+
+  const signalText = signals.map(sig => 
+    `- [${sig.source.toUpperCase()}] ${sig.title}: ${sig.description} (심각도:${sig.severity})`
+  ).join('\n') || '추출된 개별 신호 없음';
+
+  const crossSignalText = crossSignals.map(cs => 
+    `- [${cs.category.toUpperCase()} ${cs.type.toUpperCase()}] 합의도:${cs.agreementCount} (${cs.confidence}) -> 상세:${cs.sources.map(s=>s.title).join(', ')}`
+  ).join('\n') || '교차 합의된 강력한 신호 없음';
+
+  const sectionSignals = `
+═══ [SECTION 0.1] 리스크 및 기회 정밀 신호 (RISK & OPPORTUNITY SIGNALS) ═══
+여기에 나열된 신호는 엔진들이 직접 계산한 가장 확실한 근거입니다. 
+특히 합의도가 높은 중복 신호는 리딩에서 반드시 강조하십시오.
+
+[강력한 교차 합의 신호]
+${crossSignalText}
+
+[시스템별 개별 신호 근거]
+${signalText}
+`;
+
   // ═══════════════════════════════════════════
   // SECTION 1: SAJU 핵심
   // ═══════════════════════════════════════════
@@ -224,7 +248,7 @@ ${crossPatterns.join('\n')}
 • 일간: ${s.dayMaster || '?'} | 신강/약: ${s.strength || '?'} | 격국: ${s.gyeokguk?.name || '?'} (${s.gyeokguk?.type || ''})
 • 용신: ${s.yongShin || '?'} (${s.yongShinMethod || ''}) | 희신: ${s.heeShin || '?'}
 • 오행: ${elSummary}
-• 현재 대운: ${currentDw.full || '?'} (${currentDw.startAge || '?'}~${currentDw.endAge || '?'}세) — 십성: ${currentDw.tenGodStem || ''}/${currentDw.tenGodBranch || ''} — 에너지: ${dwTwelveStage.level || '?'}점(${dwTwelveStage.description || ''})
+• 현재 대운: ${currentDw.full || '?'} (${currentDw.startAge || '?'}~${currentDw.endAge || '?'}세) — 십성: ${currentDw.tenGodStem || ''}/${currentDw.tenGodBranch || ''}${s.is_daewoon_changing_year ? ' [★교운기: 환경/심경 급변기]' : ''} — 에너지: ${dwTwelveStage.level || '?'}점(${dwTwelveStage.description || ''})
 • 세운(${currentSeun.year || '?'}): ${currentSeun.full || '?'} — 십성: ${currentSeun.tenGodStem || ''}/${currentSeun.tenGodBranch || ''} — 12운성: ${seunTwelveStage.stage || '?'}(${seunTwelveStage.level || '?'}점)
 • 세운-원국 교차: ${sewoonTop3}
 • 주요 신살:
@@ -269,6 +293,7 @@ ${(s.shinsal || []).slice(0, 10).map((ss: any) =>
 • 생년사화: ${natalSiHua}
 • 유년사화(${zRaw.annualYear || '?'}년 ${zRaw.annualGan || '?'}년간): ${annualSiHua}
 • 현재 대한(${currentMajor.startAge || '?'}~${currentMajor.endAge || '?'}세): ${currentMajor.palace || '?'}궁 — 주성: ${majorStars}
+• 올해 유년/소한: ${zRaw.currentMinorPeriod?.palace || '?'}궁(${zRaw.currentMinorPeriod?.branch || '?'}지) — ${zRaw.currentMinorPeriod?.interpretation || ''}
 • 질문 관련 핵심 궁:
 ${selectedPalaces}
 
@@ -327,6 +352,7 @@ ${dignityPlanets.length > 0 ? `• 디그니티: ${dignityPlanets.map((p: any) =
 ${topAspects}
 • 트랜짓 핵심:
 ${topTransits}
+• 프로그레션(내적 변화): 달 ${aRaw.progression?.moon || '?'} (${aRaw.progression?.moon_house || '?'}하우스) — 어스펙트: ${aRaw.progression?.moon_aspects?.map((ma: any) => `${ma.aspect} to ${ma.planet}`).join(', ') || '없음'}
 • 솔라리턴(${sr.year || '?'}): ASC ${srAsc}, 달 ${srMoonHouse}하우스
 `;
 
@@ -373,8 +399,8 @@ ${cardList}
 MASTER READING PROTOCOL V4
 ═══════════════════════════════════════
 
-당신은 사주, 자미두수, 서양 점성술, 수비학, 타로를 통합 해석하는 최상위 점술가입니다.
-아래 5개 엔진 데이터를 기반으로 ${name}님에게 깊이 있는 통합 리딩을 작성하세요.
+당신은 타로와 사주를 중심으로 자미두수, 점성술, 수비학의 다각적 데이터를 통합 해석하는 최상위 점술가입니다.
+아래 엔진 데이터를 기반으로 ${name}님에게 깊이 있는 통합 리딩을 작성하세요.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━
 STEP 1: 질문 맥락 파악 (최우선)
@@ -480,16 +506,38 @@ STEP 4: 글 구조
 
 [도입 10%] ${name}님의 현재 상태를 공감하며 시작. 질문이 있으면 질문을 언급.
 [핵심 흐름 40%] STEP 2에서 찾은 합치/모순을 중심으로 올해의 핵심 흐름 서술.
-  - 반드시 최소 3개 엔진 데이터를 교차 인용.
+  - 리딩은 **타로와 사주를 중심축**으로 서술하십시오.
+  - **자미두수, 점성술, 수비학은 체계 이름을 본문에서 직접 언급하지 마십시오.** 또한 다음 전문 용어를 리딩 본문에 절대 사용하지 마십시오: **자미두수, 명궁, 화기, 화록, 명궁주성, 점성술, 상승궁, 트랜짓, 수비학, 생명수, 표현수**. 이들은 사용자에게 보이지 않는 '객관적 분석 근거'로만 활용하여 전체적인 해석의 신뢰도를 높이는 데 사용하십시오.
   - 모순이 있으면 여기서 해결.
-[시기별 조언 30%] 반드시 대운→세운→월운 순서로 계층적 해석. 대운이 제시하는 10년 방향 위에 세운의 올해 에너지를 겹치고, 월운에서 구체적 행동 시점을 제시. 분기별 또는 핵심 월 중심으로 서술.
-  - 점성술 트랜짓 날짜를 활용해 구체적 시점 제시.
+[시기별 조언 30%] '지금이 적기인가'에 대해 명확히 답하십시오.
+  - 대운은 '배경(Weather)', 세운은 '이벤트(Major Event)', 월운은 '타이밍(Action Point)'입니다.
+  - 대운이 불리해도 세운이 좋으면 "조건부 진행", 둘 다 좋으면 "적극 실행", 둘 다 불리하면 "철저 대기"로 판단하십시오.
+  - **교운기(대운 교체 1-2년 전후)**는 항로가 바뀌는 시기이므로, 이 정보가 있는 경우 반드시 "급격한 환경 변화나 심경 변화에 주의"하라고 경고하십시오.
+  - 트랜짓 날짜나 점성술 프로그레션 달의 이동을 활용해 '구체적인 월(Month)'을 지목하여 조언하십시오.
   - 각 시기마다 "무엇을 하라/하지 마라" 명확히.
 [주의사항 10%] 가장 큰 리스크 1~2개. 구체적 상황으로 표현.
 [마무리 10%] ${name}님의 강점을 언급하며 격려.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━
-STEP 5: 금지 사항
+[STEP 5: 의사결정 어드바이저 원칙]
+━━━━━━━━━━━━━━━━━━━━━━━━
+당신은 단순한 점술가가 아니라 '운명 기반 의사결정 어드바이저'입니다. 다음 6가지 원칙을 반드시 따르세요:
+
+원칙1 - 타로 중심 스토리텔링: 타로 카드가 질문에 대한 핵심 방향을 제시하고, 나머지 체계는 그 방향을 검증하고 보강하는 구조로 서술하세요.
+원칙2 - 타이밍 검증: 사주(세운/월운), 자미두수(유년/유월), 점성술(트랜짓)의 시간축 데이터가 있다면, "언제"가 적기인지 구체적 시기를 제시하세요. 없다면 원국 기반으로 방향성만 제시하세요.
+원칙3 - 합의 강조: 3개 이상의 체계가 같은 방향을 가리키면, "여러 체계가 동의합니다"라고 명시하여 내담자에게 확신을 부여하세요.
+원칙4 - 불일치 활용: 체계 간 의견이 갈리면, "기회는 있지만 조건이 붙습니다" 또는 "가능하지만 시기 조정이 필요합니다"처럼 조건부 해석으로 전환하세요. 절대 무시하지 마세요.
+원칙5 - 경고는 구체적으로: 위험 신호가 감지되면 반드시 (1) 어떤 영역인지 (2) 언제인지 (3) 어떻게 피하거나 완화할 수 있는지 세 가지를 모두 포함하세요.
+원칙6 - 행동 지침 마무리: 리딩의 마지막은 반드시 "지금 당장 할 수 있는 구체적 행동 1~2가지"로 끝내세요. 막연한 조언이 아니라 실행 가능한 지침이어야 합니다.
+
+[의사결정 판단 기준]
+- 4개 이상 체계가 긍정 → "확신을 가지고 진행하셔도 좋습니다"
+- 3:2로 긍정 우세 → "가능하지만 [부정 체계의 경고 영역]에 주의하세요"  
+- 2:3 또는 그 이하 → "지금은 준비 기간으로 삼고, [긍정 전환 시기]를 기다리세요"
+- 강력한 경고 합의 → "현재는 보류하고, 구체적으로 [회피 방법]을 실천하세요"
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 6: 금지 사항
 ━━━━━━━━━━━━━━━━━━━━━━━━
 - 마크다운(#, **, -, \`\`\`) 절대 금지. 순수 텍스트만.
 - JSON 형식 금지.
@@ -500,5 +548,5 @@ STEP 5: 금지 사항
 - 동일한 문장/표현을 2회 이상 반복 금지.
 `;
 
-  return `${section0}${section05}${section1}${section2}${section3}${section4}${section5}${instructions}`;
+  return `${section0}${sectionSignals}${section05}${section1}${section2}${section3}${section4}${section5}${instructions}`;
 }

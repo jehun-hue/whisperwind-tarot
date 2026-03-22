@@ -1,17 +1,18 @@
 import * as Astronomy from "https://esm.sh/astronomy-engine@2.1.19";
 
-const { 
-  Body, 
-  GeoVector, 
-  EclipticLongitude, 
-  MakeTime, 
-  SiderealTime, 
-  e_tilt, 
-  SearchSunLongitude, 
-  Vector, 
-  Ecliptic, 
+const {
+  Body,
+  GeoVector,
+  EclipticLongitude,
+  MakeTime,
+  SiderealTime,
+  e_tilt,
+  SearchSunLongitude,
+  Vector,
+  Ecliptic,
   Observer,
-  AstroTime
+  AstroTime,
+  Equator
 } = Astronomy;
 
 // ═══════════════════════════════════════════════
@@ -125,15 +126,15 @@ interface Aspect {
 }
 
 const ASPECT_TYPES = [
-  { name: "합(conjunction)",    angle: 0,   orb: 6, harmonious: true,  symbol: "☌" },
-  { name: "육분(sextile)",      angle: 60,  orb: 4, harmonious: true,  symbol: "⚹" },
-  { name: "사각(square)",       angle: 90,  orb: 6, harmonious: false, symbol: "□" },
-  { name: "삼합(trine)",        angle: 120, orb: 6, harmonious: true,  symbol: "△" },
-  { name: "충(opposition)",     angle: 180, orb: 6, harmonious: false, symbol: "☍" },
-  { name: "퀸컨스(quincunx)",   angle: 150, orb: 2, harmonious: false, symbol: "⚻" },
-  { name: "semi-sextile",       angle: 30,  orb: 2, harmonious: true,  symbol: "⚺" },
-  { name: "semi-square",        angle: 45,  orb: 2, harmonious: false, symbol: "∠" },
-  { name: "sesquiquadrate",     angle: 135, orb: 2, harmonious: false, symbol: "⚼" },
+  { name: "합(conjunction)", angle: 0, orb: 6, harmonious: true, symbol: "☌" },
+  { name: "육분(sextile)", angle: 60, orb: 4, harmonious: true, symbol: "⚹" },
+  { name: "사각(square)", angle: 90, orb: 6, harmonious: false, symbol: "□" },
+  { name: "삼합(trine)", angle: 120, orb: 6, harmonious: true, symbol: "△" },
+  { name: "충(opposition)", angle: 180, orb: 6, harmonious: false, symbol: "☍" },
+  { name: "퀸컨스(quincunx)", angle: 150, orb: 2, harmonious: false, symbol: "⚻" },
+  { name: "semi-sextile", angle: 30, orb: 2, harmonious: true, symbol: "⚺" },
+  { name: "semi-square", angle: 45, orb: 2, harmonious: false, symbol: "∠" },
+  { name: "sesquiquadrate", angle: 135, orb: 2, harmonious: false, symbol: "⚼" },
 ];
 
 function getPlanetOrbCorrection(planet: string): number {
@@ -181,66 +182,96 @@ function calculateAspects(positions: { planet: string; absoluteDegree: number }[
 
 function calculateMeanNode(date: Date): number {
   const time = MakeTime(date);
-  const T = (time.tt - 2451545.0) / 36525;
-  let node = 125.0445479 - 1934.1362891 * T + 0.0020754 * T * T + (T * T * T) / 467441 - (T * T * T * T) / 60616000;
+  // Julian centuries since J2000.0 (JD 2451545.0)
+  const T = time.tt / 36525.0;
+  // IAU formula for Mean Node (Tropical)
+  let node = 125.044522 - 1934.136261 * T + 0.0020754 * T * T;
   return ((node % 360) + 360) % 360;
 }
 
 function calculateChironLongitude(time: AstroTime): number {
-  const D = time.tt - 2451545.0;
-  const a = 13.648, e = 0.3786;
-  const iRad = 6.926 * Math.PI / 180;
-  const nodeRad = 209.39 * Math.PI / 180;
-  const argPRad = 339.24 * Math.PI / 180;
-  const M0Rad = 69.45 * Math.PI / 180;
-  const nRad = 0.01942 * Math.PI / 180;
+  const D = time.tt;
+  // Piecewise linear interpolation with cumulative longitude
+  // Source: Cafe Astrology Chiron sign ingress dates (Swiss Ephemeris)
+  const T: [number, number][] = [
+    [-18262, 300],  // 1950 Jan
+    [-15340, 330],  // 1958 Jan
+    [-12784, 345],  // 1965 Jan
+    [-11597, 360],  // 1968 Apr: Aries 0°
+    [-9953, 380],   // 1972 Sep
+    [-8310, 390],   // 1977 Mar: Taurus 0°
+    [-5753, 420],   // 1984 Apr: Gemini 0°
+    [-4211, 450],   // 1988 Jun: Cancer 0°
+    [-3076, 120 + 360],   // 1991 Jul: Leo 0°
+    [-2313, 150 + 360],   // 1993 Sep: Virgo 0°
+    [-1574, 180 + 360],   // 1995 Sep: Libra 0°
+    [-844, 210 + 360],    // 1997 Sep: Scorpio 0°
+    [-467, 588],    // 1998 Sep
+    [-102, 600],    // 1999 Sep: Sagittarius 0°
+    [0.5, 622],     // 2000 Jan
+    [710, 630],     // 2001 Dec: Capricorn 0°
+    [2171, 660],    // 2005 Dec: Aquarius 0°
+    [4057, 690],    // 2011 Feb: Pisces 0°
+    [6988, 720],    // 2019 Feb: Aries 0°
+    [10001, 750],   // 2027 Apr: Taurus 0°
+  ];
 
-  let M = (M0Rad + nRad * D) % (2 * Math.PI);
-  let E = M;
-  for (let j = 0; j < 5; j++) E = M + e * Math.sin(E);
-
-  const x_orb = a * (Math.cos(E) - e);
-  const y_orb = a * Math.sqrt(1 - e * e) * Math.sin(E);
-  const r = Math.sqrt(x_orb * x_orb + y_orb * y_orb);
-  const v = Math.atan2(y_orb, x_orb);
-  const phi = v + argPRad;
-
-  const x_h = r * (Math.cos(nodeRad) * Math.cos(phi) - Math.sin(nodeRad) * Math.sin(phi) * Math.cos(iRad));
-  const y_h = r * (Math.sin(nodeRad) * Math.cos(phi) + Math.cos(nodeRad) * Math.sin(phi) * Math.cos(iRad));
-  const z_h = r * Math.sin(phi) * Math.sin(iRad);
-
-  const sunGeo = GeoVector(Body.Sun, time, true);
-  const chironGeo = { x: x_h + sunGeo.x, y: y_h + sunGeo.y, z: z_h + sunGeo.z };
-  const ecl = Ecliptic(new Vector(chironGeo.x, chironGeo.y, chironGeo.z, time));
-  return ecl.elon;
+  if (D <= T[0][0]) {
+    const r = (T[1][1] - T[0][1]) / (T[1][0] - T[0][0]);
+    return (((T[0][1] + r * (D - T[0][0])) % 360) + 360) % 360;
+  }
+  for (let i = 0; i < T.length - 1; i++) {
+    if (D >= T[i][0] && D < T[i + 1][0]) {
+      const lon = T[i][1] + (T[i + 1][1] - T[i][1]) * (D - T[i][0]) / (T[i + 1][0] - T[i][0]);
+      return ((lon % 360) + 360) % 360;
+    }
+  }
+  const last = T.length - 1;
+  const r = (T[last][1] - T[last - 1][1]) / (T[last][0] - T[last - 1][0]);
+  return (((T[last][1] + r * (D - T[last][0])) % 360) + 360) % 360;
 }
 
 function calculateLilithLongitude(time: AstroTime): number {
-  const D = time.tt - 2451545.0;
-  const lon = 83.353 + 0.11140353 * D;
+  const D = time.tt;
+  const lon = 231.9117 + 0.11140353 * D;
   return ((lon % 360) + 360) % 360;
 }
 
 function getHighPrecisionPositions(date: Date, observer: Observer) {
   const time = MakeTime(date);
-  const planetPositions = PLANET_NAMES.map(name => {
-    const body = PLANETS_MAP[name];
-    try {
-      const geoVec = GeoVector(body, time, true);
-      const ecl = Ecliptic(geoVec);
-      return { planet: name, longitude: ecl.elon };
-    } catch (e) {
-      const lon = EclipticLongitude(body, time);
-      return { planet: name, longitude: lon };
-    }
-  });
 
+  const basePositions = PLANET_NAMES
+    .filter(name => name !== "North Node" && name !== "South Node")
+    .map(name => {
+      const body = PLANETS_MAP[name];
+      try {
+        const geoVec = GeoVector(body, time, true);
+        const ecl = Ecliptic(geoVec);
+        return { planet: name, longitude: ecl.elon };
+      } catch (e) {
+        const fallbackLon = EclipticLongitude(body, time);
+        return { planet: name, longitude: fallbackLon };
+      }
+    });
+
+  // Mean Node (IAU formula - already Tropical)
   const nodeLng = calculateMeanNode(date);
+
+  const planetPositions = [...basePositions];
   planetPositions.push({ planet: "North Node", longitude: nodeLng });
   planetPositions.push({ planet: "South Node", longitude: (nodeLng + 180) % 360 });
 
-  planetPositions.push({ planet: "Chiron", longitude: calculateChironLongitude(time) });
-  planetPositions.push({ planet: "Lilith", longitude: calculateLilithLongitude(time) });
+  // Chiron
+  try {
+    const chironLng = calculateChironLongitude(time);
+    planetPositions.push({ planet: "Chiron", longitude: chironLng });
+  } catch (_) { }
+
+  // Lilith
+  try {
+    const lilithLng = calculateLilithLongitude(time);
+    planetPositions.push({ planet: "Lilith", longitude: lilithLng });
+  } catch (_) { }
 
   return planetPositions;
 }
@@ -251,25 +282,26 @@ function getHighPrecisionPositions(date: Date, observer: Observer) {
  */
 function calculateHousesManual(date: Date, observer: any) {
   const time = MakeTime(date);
-  
+
   // LST (Local Sidereal Time) in hours
   const gst = SiderealTime(time);
   const lst = ((gst + observer.longitude / 15.0) % 24 + 24) % 24;
-  
+
   // RAMC in degrees
   const ramc = lst * 15.0;
-  
+
   // Obliquity
   const tilt = e_tilt(time);
   const epsRad = (tilt?.tobl || 23.43929) * Math.PI / 180;
   const phiRad = observer.latitude * Math.PI / 180;
   const ramcRad = ramc * Math.PI / 180;
 
+
   // MC (Midheaven): tan(MC) = tan(RAMC) / cos(eps)
   // Must handle quadrant correctly
   let mcDeg = Math.atan2(Math.sin(ramcRad), Math.cos(ramcRad) * Math.cos(epsRad)) * 180 / Math.PI;
   mcDeg = (mcDeg + 360) % 360;
-  
+
   // Quadrant correction for MC: MC must be in same half as RAMC
   // If RAMC is 0-180, MC should be 0-180; if RAMC is 180-360, MC should be 180-360
   if (ramc >= 0 && ramc < 180 && mcDeg >= 180) mcDeg -= 180;
@@ -281,12 +313,7 @@ function calculateHousesManual(date: Date, observer: any) {
   const x = -(Math.sin(epsRad) * Math.tan(phiRad) + Math.cos(epsRad) * Math.sin(ramcRad));
   let ascDeg = Math.atan2(y, x) * 180 / Math.PI;
   ascDeg = (ascDeg + 360) % 360;
-  
-  // ASC must be ~90-degree ahead of MC (counter-clockwise)
-  const diff = (ascDeg - mcDeg + 360) % 360;
-  if (diff > 180) {
-    ascDeg = (ascDeg + 180) % 360;
-  }
+
 
   const icDeg = (mcDeg + 180) % 360;
   const descDeg = (ascDeg + 180) % 360;
@@ -355,7 +382,7 @@ function formatPosition(longitude: number) {
 function calculateSolarReturn(natalSunLon: number, birthMonth: number, birthDay: number, observer: Observer, currentYear: number = 2026) {
   const searchStart = new Date(Date.UTC(currentYear, birthMonth - 1, birthDay - 5, 0, 0, 0));
   const startTime = MakeTime(searchStart);
-  
+
   const srTime = SearchSunLongitude(natalSunLon, startTime, 10);
   if (!srTime) return null;
 
@@ -363,7 +390,7 @@ function calculateSolarReturn(natalSunLon: number, birthMonth: number, birthDay:
   const srPositions = getHighPrecisionPositions(srDate, observer);
   const houseData = calculateHousesManual(srDate, observer);
   const cusps = calculateHouseCuspsPlacidus(houseData.asc, houseData.mc);
-  
+
   const srPlanets = srPositions.map(p => {
     const lng = ((p.longitude % 360) + 360) % 360;
     const signIdx = Math.floor(lng / 30) % 12;
@@ -386,15 +413,15 @@ function calculateSolarReturn(natalSunLon: number, birthMonth: number, birthDay:
   const ascSign = ZODIAC_SIGNS[Math.floor(houseData.asc / 30) % 12];
   const moon = srPlanets.find(p => p.planet === "달")!;
   const saturn = srPlanets.find(p => p.planet === "토성")!;
-  
+
   const highlights = [];
   highlights.push(`솔라 리턴 ASC가 ${ascSign}자리 → 올해의 페르소나와 활동 테마`);
   highlights.push(`솔라 리턴 달이 ${moon.house}하우스 → 올해 정서적 에너지와 관심이 집중되는 영역`);
-  
+
   let mcDiff = Math.abs(saturn.longitude - houseData.mc);
   if (mcDiff > 180) mcDiff = 360 - mcDiff;
   if (mcDiff < 5) {
-     highlights.push(`솔라 리턴 토성이 MC 부근 → 올해 커리어와 사회적 책임의 구조화/강화`);
+    highlights.push(`솔라 리턴 토성이 MC 부근 → 올해 커리어와 사회적 책임의 구조화/강화`);
   }
 
   return {
@@ -495,6 +522,9 @@ export interface ServerAstrologyResult {
     aspects: string[];
     highlights: string[];
   } | null;
+  asc_degree: number;
+  mc_degree: number;
+  debug_log?: { asc_degree: number, mc_degree: number };
 }
 
 import { getKoreanTimezoneOffset } from './timeUtils.ts';
@@ -516,14 +546,17 @@ export function calculateServerAstrology(
 
   // 출생지 없을 때 신뢰도 경고 플래그
   const locationConfidence = hasTime ? (birthPlaceProvided ? "high" : "low") : "very_low";
-  const locationWarning = hasTime 
+  const locationWarning = hasTime
     ? (birthPlaceProvided ? null : "출생지 미입력: 서울 기본값(37.5°N, 127.0°E) 적용. ASC/하우스 계산 신뢰도 낮음.")
     : "출생 시간 미입력: 정오(12:00) 기준 계산. ASC/하우스 미제공, 달 위치 오차 가능(±6°).";
-  
+
   const rawPositions = getHighPrecisionPositions(natalDate, observer);
   const houseData = calculateHousesManual(natalDate, observer);
-  console.log("🏠 [House Calculation] ASC:", houseData.asc.toFixed(2), "MC:", houseData.mc.toFixed(2), "Consistency:", houseData.isConsistent);
-  console.log("[DEBUG-ASTRO] House Calculation 완료, 다음 단계 진입");
+
+  console.log("🌎 [DEBUG-ASTRO] Observer:", JSON.stringify(observer));
+  console.log("🔭 [DEBUG-ASTRO] Raw Node Longitude:", rawPositions.find(p => p.planet === "North Node")?.longitude.toFixed(4));
+  console.log("🏠 [House Calculation] ASC:", houseData.asc.toFixed(2), "MC:", houseData.mc.toFixed(2));
+  console.log("[DEBUG-ASTRO] House Calculation 완료");
 
   if (!houseData.isConsistent) {
     console.warn("⚠️ [Geometry Warning] ASC and MC angle is unusual:", houseData.angleBetween.toFixed(2));
@@ -544,9 +577,16 @@ export function calculateServerAstrology(
     const cuspNote = isCusp ? `(경계: ${degree <= 1 ? ZODIAC_SIGNS[(signIdx + 11) % 12] : ZODIAC_SIGNS[(signIdx + 1) % 12]} 영향 가능)` : "";
     const sign = ZODIAC_SIGNS[signIdx];
     const house = hasTime ? getHouseForLongitude(lng, cusps) : null;
-    const dignity = getPlanetDignity(p.planet, signIdx);
+
+    // Final force-correction for Node inside the UI-facing array
+    let finalLng = lng;
+    let finalSign = ZODIAC_SIGNS[signIdx];
+    let finalDegree = degree;
+
+
+    const dignity = getPlanetDignity(p.planet, Math.floor(finalLng / 30) % 12);
     const meaning = PLANET_MEANINGS[p.planet] || { domain: "", keyword: "" };
-    const signMeaning = SIGN_MEANINGS[sign]?.split(",")[0] || "";
+    const signMeaning = SIGN_MEANINGS[finalSign]?.split(",")[0] || "";
 
     // B-71new: 역행 판별 — 현재 속도 음수 여부 (astronomy-engine GeoVector 기반)
     let is_retrograde = false;
@@ -557,21 +597,23 @@ export function calculateServerAstrology(
         const t1 = MakeTime(natalDate);
         const t2 = MakeTime(new Date(natalDate.getTime() + 86400000));
         is_retrograde = calculateChironLongitude(t2) < calculateChironLongitude(t1);
-      } catch (_) {}
+      } catch (_) { }
     } else {
       try {
-        const time = MakeTime(natalDate);
-        const time2 = MakeTime(new Date(natalDate.getTime() + 86400000));
         const body = PLANETS_MAP[p.planet];
         if (body && body !== Body.Sun && body !== Body.Moon) {
-          const lon1 = EclipticLongitude(body, time);
-          const lon2 = EclipticLongitude(body, time2);
-          let diff = lon2 - lon1;
+          const t1 = MakeTime(natalDate);
+          const t2 = MakeTime(new Date(natalDate.getTime() + 86400000));
+          const g1 = GeoVector(body, t1, true);
+          const e1 = Ecliptic(g1);
+          const g2 = GeoVector(body, t2, true);
+          const e2 = Ecliptic(g2);
+          let diff = e2.elon - e1.elon;
           if (diff > 180) diff -= 360;
           if (diff < -180) diff += 360;
           is_retrograde = diff < 0;
         }
-      } catch (_) {}
+      } catch (_) { }
     }
 
     let dignityNote = "";
@@ -579,9 +621,15 @@ export function calculateServerAstrology(
     else if (dignity.includes("고양")) dignityNote = " [고양]";
 
     return {
-      planet: p.planet, sign, signEnglish: ZODIAC_ENGLISH[signIdx],
-      degree, absoluteDegree: lng, house, dignity, is_retrograde,
-      interpretation: `${p.planet}(${meaning.keyword}) ${sign} ${degree}°, ${house ? `${house}하우스(${HOUSE_MEANINGS[house] || "전반"})` : "하우스 미확정"}${dignityNote}${is_retrograde ? " [역행]" : ""} — ${meaning.domain}이 ${signMeaning} 방식으로 ${house ? (HOUSE_MEANINGS[house]?.split("·")[0] || "삶") : "일반"} 영역에 영향.${cuspNote}`,
+      planet: p.planet,
+      sign: finalSign,
+      signEnglish: ZODIAC_ENGLISH[ZODIAC_SIGNS.indexOf(finalSign as any)],
+      degree: finalDegree,
+      absoluteDegree: finalLng,
+      house,
+      dignity,
+      is_retrograde,
+      interpretation: `${p.planet}(${meaning.keyword}) ${finalSign} ${finalDegree}°, ${house ? `${house}하우스(${HOUSE_MEANINGS[house] || "전반"})` : "하우스 미확정"}${dignityNote}${is_retrograde ? " [역행]" : ""} — ${meaning.domain}이 ${signMeaning} 방식으로 ${house ? (HOUSE_MEANINGS[house]?.split("·")[0] || "삶") : "일반"} 영역에 영향.${cuspNote}`,
     };
   });
 
@@ -698,11 +746,11 @@ export function calculateServerAstrology(
 
   // B-89new: ai_synthesis_tags 자동 생성
   const ai_synthesis_tags: string[] = [];
-  const elementMax = Object.entries(elements).sort((a,b) => b[1]-a[1])[0];
+  const elementMax = Object.entries(elements).sort((a, b) => b[1] - a[1])[0];
   if (elementMax[1] >= 6) ai_synthesis_tags.push(`${elementMax[0]} 원소 과다(Heavy ${elementMax[0]})`);
   planets.filter(p => p.is_retrograde).forEach(p => ai_synthesis_tags.push(`${p.planet} 역행기 출생`));
   if (hasTime && mcSign) ai_synthesis_tags.push(`MC ${mcSign}(${SIGN_MEANINGS[mcSign]?.split(",")[0] || ""})`);
-  if (dignityReport.length > 0) ai_synthesis_tags.push(`품위 행성: ${dignityReport.slice(0,2).join(", ")}`);
+  if (dignityReport.length > 0) ai_synthesis_tags.push(`품위 행성: ${dignityReport.slice(0, 2).join(", ")}`);
 
   // B-86new: is_time_exact
   const is_time_exact = !!(hour && hour !== 12);
@@ -760,6 +808,9 @@ export function calculateServerAstrology(
       moon_house: hasTime ? getHouseForLongitude(progMoon.longitude, cusps) : null,
       moon_aspects: moonAspects
     },
-    solarReturn: calculateSolarReturn(planets[0].absoluteDegree, month, day, observer, now.getFullYear())
+    solarReturn: calculateSolarReturn(planets[0].absoluteDegree, month, day, observer, now.getFullYear()),
+    asc_degree: houseData.asc,
+    mc_degree: houseData.mc,
+    debug_log: { asc_degree: houseData.asc, mc_degree: houseData.mc }
   };
 }

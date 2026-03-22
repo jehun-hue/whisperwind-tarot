@@ -16,7 +16,7 @@ import { predictTemporalV8 } from "./temporalPredictionEngine.ts";
 import { callGeminiWithStyle, callGemini } from "./lib/geminiClient.ts";
 import { validateEngineOutput } from "./validationLayer.ts";
 import { getLocalizedStyle } from "./interactivityLayer.ts";
-import { calculateNumerology } from "./numerologyEngine.ts";
+import { calculateNumerology, calculateDestinyNumber, detectKarmicDebt } from "./numerologyEngine.ts";
 import { validateV3Schema, patchMissingFields, logMonitoringEvent } from "./monitoringLayer.ts";
 import { safeParseGeminiJSON } from "./jsonUtils.ts";
 import { calculateServerAstrology } from "./lib/astrologyEngine.ts";
@@ -39,6 +39,7 @@ import {
   crossValidate, 
   CrossValidationResult 
 } from "./lib/inferenceLayer.ts";
+import { extractAllSignals } from "./lib/signalExtractor.ts";
 import { analyzeCardCombinations, DrawnCard } from "./hybridTarotEngine.ts";
 
 /**
@@ -610,113 +611,7 @@ ${yinyangMessage}- 핵심 기운: ${sajuDisplay.yongShin} → [상징: ${SYMBOLI
  * ㄱ=1, ㄴ=2, ㄷ=3, ㄹ=4, ㅁ=5, ㅂ=6, ㅅ=7, ㅇ=8, ㅈ=9
  * ㅊ=1, ㅋ=2, ㅌ=3, ㅍ=4, ㅎ=5
  */
-const HANGUL_CONSONANT_MAP: Record<string, number> = {
-  'ㄱ': 1, 'ㄴ': 2, 'ㄷ': 3, 'ㄹ': 4, 'ㅁ': 5, 'ㅂ': 6, 'ㅅ': 7, 'ㅇ': 8, 'ㅈ': 9,
-  'ㅊ': 1, 'ㅋ': 2, 'ㅌ': 3, 'ㅍ': 4, 'ㅎ': 5,
-  'ㄲ': 1, 'ㄸ': 3, 'ㅃ': 6, 'ㅆ': 7, 'ㅉ': 9
-};
 
-/**
- * 모음 변환 테이블
- * ㅏ=1, ㅑ=2, ㅓ=3, ㅕ=4, ㅗ=5, ㅛ=6, ㅜ=7, ㅠ=8, ㅡ=9, ㅣ=1
- */
-const HANGUL_VOWEL_MAP: Record<string, number> = {
-  'ㅏ': 1, 'ㅑ': 2, 'ㅓ': 3, 'ㅕ': 4, 'ㅗ': 5, 'ㅛ': 6, 'ㅜ': 7, 'ㅠ': 8, 'ㅡ': 9, 'ㅣ': 1,
-  'ㅐ': 2, 'ㅒ': 3, 'ㅔ': 4, 'ㅖ': 5, 'ㅘ': 6, 'ㅙ': 7, 'ㅚ': 6, 'ㅝ': 1, 'ㅞ': 2, 'ㅟ': 8, 'ㅢ': 1
-};
-
-/**
- * 영문 피타고라스 시스템 (A=1 ~ Z=8)
- */
-const ENGLISH_NUMERO_MAP: Record<string, number> = {
-  'A': 1, 'B': 2, 'C': 3, 'D': 4, 'E': 5, 'F': 6, 'G': 7, 'H': 8, 'I': 9,
-  'J': 1, 'K': 2, 'L': 3, 'M': 4, 'N': 5, 'O': 6, 'P': 7, 'Q': 8, 'R': 9,
-  'S': 1, 'T': 2, 'U': 3, 'V': 4, 'W': 5, 'X': 6, 'Y': 7, 'Z': 8
-};
-
-/**
- * 수비학 이름 계산 함수
- * - Expression Number: 전체 합산
- * - Soul Number: 모음 합산
- * - Personality Number: 자음 합산
- */
-function calculateNameNumerology(name: string) {
-  if (!name || name.trim() === "" || name === "이름없음") {
-    return { expression: 0, soul: 0, personality: 0 };
-  }
-
-  let expressionSum = 0;
-  let soulSum = 0;
-  let personalitySum = 0;
-
-  for (const char of name) {
-    const code = char.charCodeAt(0);
-    // 한글 유니코드 범위: 0xAC00 ~ 0xD7A3
-    if (code >= 0xAC00 && code <= 0xD7A3) {
-      const relativeCode = code - 0xAC00;
-      const choseongIdx = Math.floor(relativeCode / (21 * 28));
-      const jungseongIdx = Math.floor((relativeCode % 588) / 28);
-      const jongseongIdx = relativeCode % 28;
-
-      const CHOSEONG = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
-      const JUNGSEONG = ['ㅏ', 'ㅐ', 'ㅑ', 'ㅒ', 'ㅓ', 'ㅔ', 'ㅕ', 'ㅖ', 'ㅗ', 'ㅘ', 'ㅙ', 'ㅚ', 'ㅛ', 'ㅜ', 'ㅝ', 'ㅞ', 'ㅟ', 'ㅠ', 'ㅡ', 'ㅢ', 'ㅣ'];
-      const JONGSEONG = ['', 'ㄱ', 'ㄲ', 'ㄳ', 'ㄴ', 'ㄵ', 'ㄶ', 'ㄷ', 'ㄹ', 'ㄺ', 'ㄻ', 'ㄼ', 'ㄽ', 'ㄾ', 'ㄿ', 'ㅀ', 'ㅁ', 'ㅂ', 'ㅄ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
-
-      const cho = CHOSEONG[choseongIdx];
-      const jung = JUNGSEONG[jungseongIdx];
-      const jong = JONGSEONG[jongseongIdx];
-
-      // 초성 (자음)
-      const choVal = HANGUL_CONSONANT_MAP[cho] || 0;
-      expressionSum += choVal;
-      personalitySum += choVal;
-
-      // 중성 (모음)
-      const jungVal = HANGUL_VOWEL_MAP[jung] || 0;
-      expressionSum += jungVal;
-      soulSum += jungVal;
-
-      // 종성 (자음)
-      if (jong) {
-        const JONG_DECOMP: Record<string, string[]> = {
-          'ㄳ': ['ㄱ', 'ㅅ'], 'ㄵ': ['ㄴ', 'ㅈ'], 'ㄶ': ['ㄴ', 'ㅎ'],
-          'ㄺ': ['ㄹ', 'ㄱ'], 'ㄻ': ['ㄹ', 'ㅁ'], 'ㄼ': ['ㄹ', 'ㅂ'],
-          'ㄽ': ['ㄹ', 'ㅅ'], 'ㄾ': ['ㄹ', 'ㅌ'], 'ㄿ': ['ㄹ', 'ㅍ'],
-          'ㅀ': ['ㄹ', 'ㅎ'], 'ㅄ': ['ㅂ', 'ㅅ']
-        };
-        const parts = JONG_DECOMP[jong] || [jong];
-        parts.forEach(p => {
-          const val = HANGUL_CONSONANT_MAP[p] || 0;
-          expressionSum += val;
-          personalitySum += val;
-        });
-      }
-    } else if (/[a-zA-Z]/.test(char)) {
-      const upper = char.toUpperCase();
-      const val = ENGLISH_NUMERO_MAP[upper] || 0;
-      expressionSum += val;
-      if (['A', 'E', 'I', 'O', 'U'].includes(upper)) {
-        soulSum += val;
-      } else {
-        personalitySum += val;
-      }
-    }
-  }
-
-  const reduceNumber = (num: number): number => {
-    if (num === 0) return 0;
-    while (num > 9 && num !== 11 && num !== 22 && num !== 33) {
-      num = num.toString().split("").reduce((acc, digit) => acc + (parseInt(digit) || 0), 0);
-    }
-    return num;
-  };
-
-  return {
-    expression: reduceNumber(expressionSum),
-    soul: reduceNumber(soulSum),
-    personality: reduceNumber(personalitySum)
-  };
-}
 
 export async function runFullProductionEngineV8(supabaseClient: any, apiKey: string, input: any) {
   const pipelineStart = Date.now();
@@ -731,7 +626,8 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
   // Normalize birthInfo: client sends {birthDate:"1987-07-17", birthTime:"15:30", gender:"male"}
   const rawBirth = input.birthInfo || {};
   // B-228 + B-225: 출생시간 "모름" 처리 표준화
-  const hasTime = rawBirth.birthTime !== "" && rawBirth.birthTime !== null && rawBirth.birthTime !== undefined && rawBirth.birthTime !== "모름";
+  const rawBirthTime = rawBirth.birthTime || rawBirth.birth_time || rawBirth.time;
+  const hasTime = rawBirthTime !== "" && rawBirthTime !== null && rawBirthTime !== undefined && rawBirthTime !== "모름";
 
   let birthInfo: any;
 
@@ -947,6 +843,8 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
       house_positions: serverAstrology.house_positions,
       keyAspects: serverAstrology.keyAspects,
       transits: serverAstrology.transits,
+      secondary_progression: serverAstrology.secondaryProgression || [],
+      solar_return: serverAstrology.solarReturn || [],
       confidence: serverAstrology.location_confidence,
       rawData: serverAstrology
     } : null;
@@ -982,23 +880,33 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     // 수비학 (생년월일 + 이름 기반)
     let numerologyResult: any = null;
     try {
+      // ──── 수비학 연산 (표준 엔진 통합) ────
+      const koreanName = rawBirth.name || input.userName || "이름없음";
+      const englishName = rawBirth.englishName || input.englishName || "";
+
       const baseResult = calculateNumerology(
         `${solarBirthInfo.year}-${String(solarBirthInfo.month).padStart(2,'0')}-${String(solarBirthInfo.day).padStart(2,'0')}`,
         new Date().getFullYear(),
-        rawBirth.name || input.userName
+        englishName || koreanName
       );
 
-      // B-256: 이름 기반 수비학 추가
-      const name = rawBirth.name || input.userName || "이름없음";
-      const nameResult = calculateNameNumerology(name);
+      const destinyResult = calculateDestinyNumber(koreanName);
+      const koreanDestiny = destinyResult ? destinyResult.value : null;
+      const destinyRawTotal = destinyResult ? destinyResult.rawTotal : 0;
+
+      // 영문 baseResult의 debts와 한글 이름 원시 획수를 합쳐서 재감지
+      const finalKarmicDebts = detectKarmicDebt(...(baseResult.karmic_debts || []), destinyRawTotal);
 
       numerologyResult = {
         ...baseResult,
         lifePath: baseResult.life_path_number,
-        expression: nameResult.expression,
-        soul: nameResult.soul,
-        personality: nameResult.personality,
-        data_quality_score: 0.85 // 상향
+        expression: englishName ? baseResult.expressionNumber : koreanDestiny,
+        soul: englishName ? baseResult.soulUrgeNumber : null,
+        personality: englishName ? baseResult.personalityNumber : null,
+        koreanDestiny,
+        karmic_debts: finalKarmicDebts,
+        has_karmic_debt: finalKarmicDebts.length > 0,
+        data_quality_score: 0.85
       };
 
     } catch (e) {
@@ -1035,11 +943,11 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
         warning: "출생 시간 미확인으로 명궁 정확도가 낮을 수 있습니다"
       };
     } else if (serverZiwei) {
-      const ziweiPalaces = Object.entries(serverZiwei.palaces).map(([branch, data]: [string, any]) => ({
+      const ziweiPalaces = (serverZiwei.palaces || []).map((data: any) => ({
         name: data.name,
-        main_stars: data.mainStars || [],
-        location: branch,
-        is_empty: data.mainStars?.length === 0,
+        main_stars: data.main_stars || [],
+        location: data.branch,
+        is_empty: (data.main_stars || []).length === 0,
         is_borrowed_stars: false,
         borrowed_from: null
       }));
@@ -1072,7 +980,12 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
         shenGong: serverZiwei.shenGong,
         bureau: serverZiwei.bureau,
         fiveElementFrame: serverZiwei.bureau,
-        currentMajorPeriod: serverZiwei.currentMajorPeriod || null,
+        currentMajorPeriod: serverZiwei.currentMajorPeriod || serverZiwei.dahan?.[0] || null,
+        current_major_period: serverZiwei.currentMajorPeriod || serverZiwei.dahan?.[0] || null,
+        currentMinorPeriod: serverZiwei.liunian || null,
+        current_minor_period: serverZiwei.liunian || null,
+        annualTransformations: serverZiwei.annualTransformations || [],
+        annual_transformations: serverZiwei.annualTransformations || [],
         rawData: serverZiwei
       };
     }
@@ -1195,14 +1108,14 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
   const patternVectors = rawVectors.filter((v, i, a) => 
     a.findIndex(t => t.symbol === v.symbol) === i
   );
-  console.log(`📊 [Vector Merge] 중복 제거 완료: ${rawVectors.length} -> ${patternVectors.length}`);
+  // console.log(`📊 [Vector Merge] 중복 제거 완료: ${rawVectors.length} -> ${patternVectors.length}`);
 
   // Step 2: Cross-System Topic Validation (Voting System)
   const systemWins: Record<string, string> = {};
-  const activeSystems = [...new Set(patternVectors.map(v => v.system.toLowerCase()))];
+  const activeSystems = [...new Set(patternVectors.map(v => (v.system || "").toLowerCase()))].filter(Boolean);
   
   activeSystems.forEach(sys => {
-    const sysVectors = patternVectors.filter(v => v.system.toLowerCase() === sys);
+    const sysVectors = patternVectors.filter(v => (v.system || "").toLowerCase() === sys);
     const votes: Record<string, number> = {};
     
     sysVectors.forEach(v => {
@@ -1417,7 +1330,16 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     }
   );
 
-  // 3. 통합 프롬프트 빌드
+  // 4. 리스크 및 기회 신호 추출 (Phase 2-1)
+  const signalData = extractAllSignals(
+    sajuAnalysis,
+    ziweiAnalysis,
+    astrologyAnalysis,
+    numerologyResult,
+    { cards: normalizedCards, insights: cardInsights }
+  );
+
+  // 5. 통합 프롬프트 빌드
   const finalPrompt = buildReadingPrompt(
     userInfo,
     sajuAnalysis,
@@ -1427,7 +1349,8 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     { cards: normalizedCards, insights: cardInsights },
     crossValidationResult,
     unifiedTimeline,
-    input.readingHistory || []
+    input.readingHistory || [],
+    signalData
   );
 
   let responseType: "valid_json" | "fallback_text" | "parse_error" | "schema_mismatch" | "timeout" | "skipped" = "valid_json";
@@ -1453,14 +1376,17 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
 - 감성적이고 부드러운 어조로 이야기하세요.
 - "~거예요", "~하실 수 있어요" 같은 표현을 쓰세요.
 - 행동 조언과 감정적 위로를 중심으로 해석하세요.
-- 데이터 수치를 직접 나열하지 말고, 자연스럽게 녹여서 설명하세요.
+- 리딩은 **타로와 사주를 중심축**으로 서술하며, **자미두수, 점성술, 수비학은 체계 이름을 직접 언급하지 마세요.**
+- **[금지어 리스트] 리딩 본문에 다음 단어를 절대 사용하지 마십시오: 자미두수, 명궁, 화기, 화록, 명궁주성, 점성술, 상승궁, 트랜짓, 수비학, 생명수, 표현수.** 이 단어들은 '내면의 기질', '운명의 상징', '사회적 이미지', '인생의 흐름' 등으로 완벽하게 일상어로 치환하십시오.
+- 당신은 의사결정 어드바이저입니다. 리딩의 결론은 반드시 '해도 좋다/기다려라/조건부로 접근하라' 중 하나의 명확한 방향과 함께, 내담자가 오늘 당장 실행할 수 있는 행동 지침으로 마무리하세요.
 \n\n`;
 
       const monadPrefix = `[페르소나: 모나드]
 당신은 냉철하고 분석적인 운세 분석가 '모나드'입니다.
 - 객관적이고 논리적인 어조로 분석하세요.
 - "~입니다", "~으로 판단됩니다" 같은 표현을 쓰세요.
-- 엔진별 데이터 근거(점수, 어스펙트, 신살명)를 명시적으로 인용하세요.
+- 엔진별 데이터 근거(점수, 어스펙트, 신살명)를 명시적으로 인용하세요. 단, 자미두수/점성술/수비학의 체계명과 전문 용어(명궁, 화기, 상승궁 등)는 직접 노출하지 말고 의미로 풀어서 서술하세요.
+- **[금지어 리스트] 자미두수, 명궁, 화기, 화록, 명궁주성, 점성술, 상승궁, 트랜짓, 수비학, 생명수, 표현수 사용 금지.**
 - 리스크와 기회를 수치와 함께 구분해서 제시하세요.
 \n\n`;
 
@@ -1479,13 +1405,21 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
       const hybridPrompt = `[내담자: ${userInfo.name || '내담자'}님]
 ${userInfo.question ? `[질문: ${userInfo.question}]` : ''}
 [핵심 데이터]
-- 사주: ${sajuAnalysis?.dayMaster || ''}일간, ${sajuAnalysis?.strength || ''}, 용신 ${sajuAnalysis?.yongShin || ''}, 세운 ${sajuAnalysis?.sewoon?.full || '丙午'}
-- 수비학: 생명수 ${numerologyResult?.life_path_number || ''}, 개인년 ${numerologyResult?.personal_year || ''}
+- 기질분석: ${sajuAnalysis?.dayMaster || '미산출'}일간, ${sajuAnalysis?.strength || '미산출'}, 용신 ${sajuAnalysis?.yongShin || '미산출'}, 현재대운 ${sajuAnalysis?.currentDaewoon?.full || '?'}(${sajuAnalysis?.currentDaewoon?.startAge}~${sajuAnalysis?.currentDaewoon?.endAge}세), 세운 ${sajuAnalysis?.sewoon?.full || '丙午'}${sajuAnalysis?.is_daewoon_changing_year ? ' (교운기/전환기)' : ''}
+- 수리분석: 생명수 ${numerologyResult?.life_path_number || '미산출'}, 표현수 ${numerologyResult?.expression_number || '미산출'}, 개인년 ${numerologyResult?.personal_year || '미산출'}
+- 내면기질: ${ziweiAnalysis?.mingGong || '미산출'} 중심, ${ziweiAnalysis?.fiveElementFrame || ziweiAnalysis?.bureau || '미산출'} 기질, 유년사화 ${ziweiAnalysis?.annualTransformations?.slice(0, 2).map((t: any) => t.type + t.star).join('/') || '없음'}
+- 에너지흐름: 사회적 자아 ${astrologyAnalysis?.planets?.find((p: any) => p.planet === '태양' || p.name === 'Sun')?.sign || '미산출'}, 최인접트랜짓 ${astrologyAnalysis?.transits?.slice(0, 1).map((t: string) => t.split(':')[0]).join('') || '없음'}
+- 시기분석: 대운-세운 작용(${consensusResult?.dominant_vector?.life_transition >= 0.7 ? '큰 변화기' : '안정기'}), 개인년 사이클 ${numerologyResult?.personal_year} (1-9단계 중)
 - 합의점수: ${((consensusResult?.consensus_score || 0) * 100).toFixed(0)}%
 - 지배벡터: 성장 ${consensusResult?.dominant_vector?.growth?.toFixed(2) || ''}, 리스크 ${consensusResult?.dominant_vector?.risk?.toFixed(2) || ''}, 전환 ${consensusResult?.dominant_vector?.life_transition?.toFixed(2) || ''}
 - 충돌: ${consensusResult?.conflict_summary || '없음'}
 
-위 데이터를 바탕으로 3-5문장 결정 요약을 작성하라.`;
+      위 데이터를 바탕으로 전체 체계를 아우르는 3-5문장 결정 요약을 작성하십시오. 
+      [주의사항]
+      1. 반드시 첫 번째 문장은 "진행해도 좋다", "시기를 조정하라", "조건부로 접근하라" 중 질문에 가장 적합한 결론 하나를 포함하여 명확한 방향을 제시하며 시작하십시오. (예: "결론부터 말씀드리면, 지금은 시기를 조정하는 것이 현명합니다.")
+      2. 2~3번째 문장은 사주, 점성술, 타로 등의 핵심 근거를 전문용어 없이 쉽게 설명하십시오. 
+      3. 마지막 문장은 "오늘 당장" 실행 가능한 구체적인 행동 조언 1가지를 제시하며 마무리하십시오.
+      4. "합의점수", "지배벡터", "리스크 수치" 같은 시스템 내부 용어는 절대 리딩에 노출하지 마십시오. 어떤 체계도 소외시키지 말고 전체적으로 아울러야 합니다.`;
 
       const hybridRes = await callGeminiWithStyle(apiKey, 'hybrid', hybridPrompt);
       if (hybridRes.success) {
@@ -1509,21 +1443,9 @@ ${userInfo.question ? `[질문: ${userInfo.question}]` : ''}
 
       parsed = buildFallbackReading(thirdNarrative || finalChoihanna || "통합 분석 결과를 준비 중입니다.", grade, scores, tarotCards, input.question, style);
       
-      const score = consensusResult?.consensus_score || 0;
-      const dv = consensusResult?.dominant_vector || {};
-      const growth = (dv.growth || 0).toFixed(2);
-      const risk = (dv.risk || 0).toFixed(2);
-      const transition = (dv.life_transition || 0).toFixed(2);
-      const conflicts = consensusResult?.conflict_summary || '없음';
-      const scoreLabel = score >= 0.7 ? '매우 높음' : score >= 0.5 ? '높음' : score >= 0.3 ? '보통' : '낮음';
-      const dominant = Number(growth) >= Number(risk) && Number(growth) >= Number(transition) ? '성장' 
-        : Number(risk) >= Number(transition) ? '리스크 관리' : '전환';
-
-      const consensusSummary = `[시스템 합의] ${userInfo.name || '내담자'}님 엔진 간 합의도는 ${scoreLabel}(${(score * 100).toFixed(0)}%)이며, 주요 흐름은 '${dominant}' 방향입니다. ${conflicts && conflicts !== '없음' ? `\n[주의 신호] ${conflicts}` : ""}`;
-        
-      console.log(`[FORCE][consensus] integrated_summary 할당 및 잠금: "${consensusSummary.slice(0, 80)}..."`);
-      (parsed as any).integrated_summary = consensusSummary;
-      (parsed as any)._consensusLocked = true;
+      // AI가 생성한 하이브리드 요약을 최종 integrated_summary와 final_message.summary에 반영
+      (parsed as any).integrated_summary = thirdNarrative || finalChoihanna;
+      (parsed as any)._consensusLocked = false;
       parsed.final_message.summary = thirdNarrative || finalChoihanna;
       
       const cardData = {
@@ -2135,7 +2057,7 @@ function calculateSystemScore(
   birthContext?: { hasTime: boolean; hasPlace: boolean }
 ): SystemScoreDetail {
   const sysData = systemResults.find(v => v.system === systemName);
-  const dataPoints = patternVectors.filter(v => v.system.toLowerCase() === systemName.toLowerCase());
+  const dataPoints = patternVectors.filter(v => (v.system || "").toLowerCase() === (systemName || "").toLowerCase());
   const penalties: string[] = [];
 
   // ── data_quality_score (0~0.85) ─────────────────────────────

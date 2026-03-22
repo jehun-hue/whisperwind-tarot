@@ -54,8 +54,8 @@ export async function crossValidate(
   
   // 1. 성격 교차검증
   // 1-1) 사주 오행 ↔ 점성술 원소
-  const sajuMainEl = saju.elements; // { "목": 2, "화": 1, ... }
-  const astroEl = astrology.dominantElement; // "불", "흙", "공기", "물"
+  const sajuMainEl = saju.elements;
+  const astroEl = astrology?.dominantElement || (astrology as any)?.dominant_element; // "불", "흙", "공기", "물"
   
   const elementMap: Record<string, string[]> = {
     "목": ["공기"], // Wood ↔ Air (User rule)
@@ -118,7 +118,8 @@ export async function crossValidate(
   });
 
   // 2-2) 점성술 트랜짓 ↔ 사주 세운
-  const astroTransitGood = astrology.transits.length > 0 && !JSON.stringify(astrology.transits).includes("Square");
+  const transits = astrology?.transits || [];
+  const astroTransitGood = transits.length > 0 && !JSON.stringify(transits).includes("Square");
   const timingMatch2 = astroTransitGood; // 단순화
 
   detailsT.push({

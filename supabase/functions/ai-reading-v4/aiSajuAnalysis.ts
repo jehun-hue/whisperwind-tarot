@@ -531,20 +531,20 @@ export async function analyzeSajuStructure(
     } else { // 종아격
       eokbuYong = getProducedElement(myElement); eokbuReason = "종아격: 식상 오행 따라감";
     }
-  } else if (strengthLevel === "극신강" || strengthLevel === "신강") {
+  } else if (strengthLevel.trim() === "극신강" || strengthLevel.trim() === "신강") {
     // 신강 용신 우선순위: 관성 > 재성 > 식상
     const conquerElem = getConqueringElement(myElement); 
     const drainElem = getConqueredElement(myElement);   
     const releaseElem = getProducedElement(myElement);  
     const candidates = [
-       { elem: conquerElem, priority: 1, name: "관성" },
-       { elem: drainElem, priority: 2, name: "재성" },
+       { elem: drainElem, priority: 1, name: "재성" }, // [B-252 FIX] 재성(금) 우선순위 상향
+       { elem: conquerElem, priority: 2, name: "관성" },
        { elem: releaseElem, priority: 3, name: "식상" }
     ];
     const sortedCandidates = candidates.sort((a,b) => (elements[a.elem]||0) - (elements[b.elem]||0) || a.priority - b.priority);
     eokbuYong = sortedCandidates[0].elem;
     eokbuReason = `신강: ${sortedCandidates[0].name} 우선순위 기준 ${eokbuYong} 선택`;
-  } else if (strengthLevel === "신약" || strengthLevel === "극신약") {
+  } else if (strengthLevel.trim() === "신약" || strengthLevel.trim() === "극신약") {
     // 신약 용신 우선순위: 인성 > 비겁
     const supportElem = getProducingElement(myElement); 
     const selfElem = myElement;                         
@@ -589,8 +589,12 @@ export async function analyzeSajuStructure(
   let guShin = "";
   let hanShin = "";
 
+  // [DEBUG] strengthLevel 판정 추적
+  console.log("[DEBUG-STRENGTH-FINAL]", { strengthLevel, deukCount, deukryeongResult, deukjiResult, deukseResult, deukseTarget });
+
   // 희신, 기신, 구신, 한신 계산 로직
-  if (strengthLevel === "극신강" || strengthLevel === "신강") {
+  const cleanStrength = (strengthLevel || "").trim();
+  if (cleanStrength === "극신강" || cleanStrength === "신강") {
     giShin = myElement;                          // 기신 = 비겁
     guShin = getProducingElement(myElement);      // 구신 = 인성
     
@@ -608,7 +612,7 @@ export async function analyzeSajuStructure(
       heeShin = produced;
       hanShin = getConqueredElement(myElement);
     }
-  } else if (strengthLevel === "극신약" || strengthLevel === "신약") {
+  } else if (cleanStrength === "극신약" || cleanStrength === "신약") {
     giShin = getConqueringElement(myElement);    // 기신 = 관성
     guShin = getConqueredElement(myElement);      // 구신 = 재성
     

@@ -216,7 +216,7 @@ function placeMajorStars(ziWeiPos: number): Map<number, MajorStar[]> {
   const placements = new Map<number, MajorStar[]>();
   const ziWeiGroup: [MajorStar, number][] = [["자미", 0], ["천기", -1], ["태양", -3], ["무곡", -4], ["천동", -5], ["염정", -8]];
   const tianFuPos = (12 - ziWeiPos + 4) % 12;
-  const tianFuGroup: [MajorStar, number][] = [["천부", 0], ["태음", 1], ["탐랑", 2], ["거문", 3], ["천상", 4], ["천량", 5], ["칠살", 6], ["파군", 7]];
+  const tianFuGroup: [MajorStar, number][] = [["천부", 0], ["태음", 1], ["탐랑", 2], ["거문", 3], ["천상", 4], ["천량", 5], ["칠살", 6], ["파군", 10]];
   for (const [star, offset] of ziWeiGroup) { const pos = ((ziWeiPos + offset) % 12 + 12) % 12; if (!placements.has(pos)) placements.set(pos, []); placements.get(pos)!.push(star); }
   for (const [star, offset] of tianFuGroup) { const pos = ((tianFuPos + offset) % 12 + 12) % 12; if (!placements.has(pos)) placements.set(pos, []); placements.get(pos)!.push(star); }
   return placements;

@@ -61,10 +61,10 @@ export const STYLE_PRESETS = {
 
 [규칙]
 - 반드시 3~5문장만 작성. 절대 초과 금지.
-- 1문장: 올해의 핵심 방향 (결론)
+- 1문장: 질문에 대한 명확한 의사결정 방향 (진행해도 좋다 / 시기를 조정하라 / 조건부로 접근하라 중 하나의 결론)을 첫머리에 제시.
 - 2~3문장: 가장 중요한 근거 2개 (사주/점성술/수비학 중 핵심만, 전문용어 없이 쉽게)
-- 마지막 1문장: 구체적 행동 추천
-- "내담자님" 대신 반드시 이름을 사용하라.
+- 마지막 1문장: "오늘 당장" 실천할 수 있는 구체적 행동 하나로 마무리.
+- "내담자님" 대신 반드시 내담자의 이름을 사용하라.
 - "지배벡터", "합의점수", "심각 충돌", "조율" 같은 시스템 내부 용어 절대 금지.
 - 마크다운 금지. 순수 텍스트만.
 - 친구에게 핵심만 알려주듯 자연스럽고 따뜻하게.`
@@ -80,7 +80,7 @@ export async function callGemini(req: GeminiRequest): Promise<GeminiResponse> {
   const maxTokens = req.maxOutputTokens ?? 16384;
   const timeoutMs = req.timeoutMs ?? 35000;
   const retryOn503 = req.retryOn503 !== false; // default true
-  
+
   const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${req.apiKey}`;
   console.log(`[INFO][GeminiClient:start] model=${model}, temp=${temperature}, timeoutMs=${timeoutMs}, userPrompt=${req.userPrompt ? 'YES' : 'NO'}`);
 
@@ -154,7 +154,7 @@ export async function callGemini(req: GeminiRequest): Promise<GeminiResponse> {
         .replace(/`{1,3}/g, '')
         .replace(/^\s*[\*\-]\s+/gm, '')
         .trim();
-        
+
       console.log(`[INFO][GeminiClient:success] ${cleaned.slice(0, 80)}... (${cleaned.length}chars, ${Date.now() - start}ms, retried=${retried})`);
       return {
         success: true,
@@ -165,7 +165,7 @@ export async function callGemini(req: GeminiRequest): Promise<GeminiResponse> {
 
     } catch (err: any) {
       clearTimeout(timer);
-      
+
       if (err.name === 'AbortError') {
         console.log(`[ERROR][GeminiClient] Timeout after ${timeoutMs}ms`);
         return {
