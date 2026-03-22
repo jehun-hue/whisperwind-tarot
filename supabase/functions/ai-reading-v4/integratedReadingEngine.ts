@@ -842,9 +842,9 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
       planet_positions: serverAstrology.planets,
       house_positions: serverAstrology.house_positions,
       keyAspects: serverAstrology.keyAspects,
-      transits: serverAstrology.transits,
-      secondary_progression: serverAstrology.secondaryProgression || [],
-      solar_return: serverAstrology.solarReturn || [],
+      transits: serverAstrology.transits || [],
+      secondary_progression: serverAstrology.progression || null,
+      solar_return: serverAstrology.solarReturn || null,
       confidence: serverAstrology.location_confidence,
       rawData: serverAstrology
     } : null;
@@ -982,10 +982,10 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
         fiveElementFrame: serverZiwei.bureau,
         currentMajorPeriod: serverZiwei.currentMajorPeriod || serverZiwei.dahan?.[0] || null,
         current_major_period: serverZiwei.currentMajorPeriod || serverZiwei.dahan?.[0] || null,
-        currentMinorPeriod: serverZiwei.liunian || null,
-        current_minor_period: serverZiwei.liunian || null,
-        annualTransformations: serverZiwei.annualTransformations || [],
-        annual_transformations: serverZiwei.annualTransformations || [],
+        currentMinorPeriod: serverZiwei.liunian || serverZiwei.liuNian || null,
+        current_minor_period: serverZiwei.liunian || serverZiwei.liuNian || null,
+        annualTransformations: serverZiwei.annualTransformations || serverZiwei.siHua?.annual || [],
+        annual_transformations: serverZiwei.annualTransformations || serverZiwei.siHua?.annual || [],
         rawData: serverZiwei
       };
     }

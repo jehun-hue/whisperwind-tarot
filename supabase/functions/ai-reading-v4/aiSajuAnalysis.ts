@@ -12,6 +12,8 @@ export interface SajuAnalysisResult {
   elements: Record<string, number>;
   characteristics: string[];
   narrative: string;
+  sewoon: any | null;
+  wolwoon: any | null;
   tenGods: Record<string, number>;
   yongShin: string;
   yongShinMethod: string;
@@ -1247,6 +1249,8 @@ export async function analyzeSajuStructure(
     yongShinMethod,
     heeShin: heeShin,
     daewoon,
+    sewoon: (sajuRaw as any).seun || null,
+    wolwoon: (sajuRaw as any).wolun || null,
     interactions,
     shinsal,
     health_risk_tags,
