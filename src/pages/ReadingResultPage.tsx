@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { Copy, Check, Loader2 } from "lucide-react";
+import { Copy, Check, Loader2, Sparkles } from "lucide-react";
 
 const READER_PIN = "1234";
 
@@ -45,6 +45,20 @@ export default function ReadingResultPage() {
 
     if (reading.final_message?.title) {
       lines.push(`【 ${reading.final_message.title} 】\n`);
+    }
+
+    const decision = reading.reasoning_trace?.decision_result?.decision || reading.decision_result?.decision;
+    const reason = reading.reasoning_trace?.decision_result?.reason || reading.decision_result?.reason;
+    if (decision) {
+      lines.push(`━━━ 최종 제언: ${decision} ━━━`);
+      if (reason) lines.push(reason);
+      lines.push("");
+    }
+
+    if (reading.integrated_summary) {
+      lines.push("━━━ 통합 분석 요약 ━━━");
+      lines.push(reading.integrated_summary);
+      lines.push("");
     }
 
     if (reading.tarot_reading?.waite) {
@@ -202,6 +216,50 @@ export default function ReadingResultPage() {
               JSON 복사
             </Button>
           </div>
+        )}
+
+        {/* v4 핵심 의사결정 대시보드 (신규 추가) */}
+        {reading && (reading.reasoning_trace?.decision_result || reading.decision_result) && (
+          <Card className={`border-2 p-5 ${
+            (reading.reasoning_trace?.decision_result?.decision || reading.decision_result?.decision) === 'PROCEED' 
+              ? 'border-emerald-500/50 bg-emerald-500/5' 
+              : (reading.reasoning_trace?.decision_result?.decision || reading.decision_result?.decision) === 'WAIT'
+                ? 'border-red-500/50 bg-red-500/5'
+                : 'border-gold/50 bg-gold/5'
+          }`}>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Badge className={
+                  (reading.reasoning_trace?.decision_result?.decision || reading.decision_result?.decision) === 'PROCEED' 
+                    ? 'bg-emerald-500 text-white' 
+                    : (reading.reasoning_trace?.decision_result?.decision || reading.decision_result?.decision) === 'WAIT'
+                      ? 'bg-red-500 text-white'
+                      : 'bg-gold text-primary-foreground'
+                }>
+                  {reading.reasoning_trace?.decision_result?.decision || reading.decision_result?.decision}
+                </Badge>
+                <span className="text-sm font-bold text-foreground">
+                  신뢰도: {reading.reasoning_trace?.decision_result?.confidence || reading.decision_result?.confidence || 0}%
+                </span>
+              </div>
+              <Sparkles className="h-4 w-4 text-gold animate-pulse" />
+            </div>
+            <p className="text-sm leading-relaxed text-foreground font-medium">
+              {reading.reasoning_trace?.decision_result?.reason || reading.decision_result?.reason}
+            </p>
+          </Card>
+        )}
+
+        {/* v4 통합 요약 (신규 추가) */}
+        {reading && reading.integrated_summary && (
+          <Card className="border-accent/40 bg-accent/5 p-5">
+            <h3 className="text-sm font-semibold text-accent mb-2 flex items-center gap-2">
+              <Sparkles className="h-3.5 w-3.5" /> AI 통합 분석 요약
+            </h3>
+            <p className="text-sm leading-relaxed text-foreground/90 whitespace-pre-wrap italic">
+              " {reading.integrated_summary} "
+            </p>
+          </Card>
         )}
 
         {/* Formatted Reading */}

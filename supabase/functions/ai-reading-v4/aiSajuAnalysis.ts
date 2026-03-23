@@ -895,6 +895,17 @@ export async function analyzeSajuStructure(
   const wolunTwelveStageEnergy = getTwelveStageEnergy(wolunTwelveStage);
   characteristics.push(`월운 12운성: ${wolunTwelveStage} (${wolunTwelveStageEnergy.level}점)`);
 
+  // B-252: 월운(月運) 객체 조립
+  const current_wolwoon = {
+    full: wolunFull,
+    month: currentMonth,
+    stem: wolunStem,
+    branch: wolunBranch,
+    element: wolunElement,
+    twelveStage: wolunTwelveStage,
+    score: wolunTwelveStageEnergy.level
+  };
+
   narrative += ` 이번 달(${currentMonth}월) 월운은 ${wolunFull}이며,`;
   if (wolunChungs.length > 0) narrative += ` 원국과 충이 있어 주의가 필요하고,`;
   if (wolunHaps.length > 0) narrative += ` 원국과 합이 있어 좋은 기회가 있으며,`;
@@ -1249,8 +1260,8 @@ export async function analyzeSajuStructure(
     yongShinMethod,
     heeShin: heeShin,
     daewoon,
-    sewoon: (sajuRaw as any).seun || null,
-    wolwoon: (sajuRaw as any).wolun || null,
+    sewoon: daewoon?.current_seun || (sajuRaw as any).seun || null,
+    wolwoon: current_wolwoon,
     interactions,
     shinsal,
     health_risk_tags,

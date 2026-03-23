@@ -59,6 +59,12 @@ async function run() {
     console.log('daewoon:', !!s.daewoon);
     console.log('sewoon:', !!s.sewoon);
 
+    const n = d.analyses?.numerology || d.system_calculations?.numerology || {};
+    console.log('\n=== 수비학 (Numerology) ===');
+    console.log('personal_year:', n.personal_year || '없음');
+    console.log('pinnacle:', n.currentPinnacle?.number || '없음');
+    console.log('challenge:', n.currentChallenge?.number || '없음');
+
   } catch (err) {
     console.error("Fetch Error:", err.message);
   }

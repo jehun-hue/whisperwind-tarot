@@ -27,6 +27,7 @@ export const STYLE_PRESETS = {
   choihanna: {
     temperature: 0.35,
     timeoutMs: 35000,
+    maxOutputTokens: 8192,
     instruction: `당신은 "최한나" 스타일의 위스퍼윈드입니다.
 
 [최한나 스타일 규칙]
@@ -42,6 +43,7 @@ export const STYLE_PRESETS = {
   monad: {
     temperature: 0.1,
     timeoutMs: 40000,
+    maxOutputTokens: 8192,
     instruction: `당신은 "모나드" 스타일의 위스퍼윈드입니다.
 
 [모나드 스타일 규칙]
@@ -56,7 +58,8 @@ export const STYLE_PRESETS = {
   },
   hybrid: {
     temperature: 0.15,
-    timeoutMs: 20000,
+    timeoutMs: 40000,
+    maxOutputTokens: 1024,
     instruction: `당신은 점술 상담 결과를 한눈에 보여주는 요약 전문가입니다.
 
 [규칙]
@@ -205,6 +208,7 @@ export async function callGeminiWithStyle(
     userPrompt: preset.instruction,
     temperature: preset.temperature,
     timeoutMs: preset.timeoutMs,
+    maxOutputTokens: (preset as any).maxOutputTokens,
     ...overrides
   });
 }

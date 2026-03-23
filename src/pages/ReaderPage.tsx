@@ -654,7 +654,9 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       setIsStreaming(true);
 
       const supabaseUrl = (supabase as any).supabaseUrl || import.meta.env.VITE_SUPABASE_URL;
-      const supabaseKey = (supabase as any).supabaseKey || import.meta.env.VITE_SUPABASE_ANON_KEY;
+      // [Phase 4-2] 보안 강화: Anon Key 대신 세션 JWT 사용
+      const { data: { session: authSession } } = await supabase.auth.getSession();
+      const authToken = authSession?.access_token || (supabase as any).supabaseKey || import.meta.env.VITE_SUPABASE_ANON_KEY;
 
       // 스트리밍(UI용)과 full 분석(DB 저장용)을 병렬 실행
       const [aiResult] = await Promise.all([
@@ -682,8 +684,8 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              "Authorization": `Bearer ${supabaseKey}`,
-              "apikey": supabaseKey,
+              "Authorization": `Bearer ${authToken}`,
+              "apikey": (supabase as any).supabaseKey || import.meta.env.VITE_SUPABASE_ANON_KEY,
             },
             body: JSON.stringify({ ...fnBody, mode: "stream", modelInput: fnBody.question }),
           }
@@ -718,6 +720,17 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       // management_tracks 누락 방지: reading 객체 내에 병합 후 저장
       if (aiData.management_tracks) {
         result.management_tracks = aiData.management_tracks;
+      }
+      
+      // [Phase 4-1] v4 핵심 데이터 병합 (추론 트레이스 및 통합 요약)
+      if (aiData.reasoning_trace) {
+        result.reasoning_trace = aiData.reasoning_trace;
+      }
+      if (aiData.integrated_summary) {
+        result.integrated_summary = aiData.integrated_summary;
+      }
+      if (aiData.decision_result) { // Fallback용
+        result.decision_result = aiData.decision_result;
       }
 
       // 큐를 사용하여 순차적 DB 갱신 (Race Condition 방지)

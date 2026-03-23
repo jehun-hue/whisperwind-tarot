@@ -21,7 +21,7 @@ import { validateV3Schema, patchMissingFields, logMonitoringEvent } from "./moni
 import { safeParseGeminiJSON } from "./jsonUtils.ts";
 import { calculateServerAstrology } from "./lib/astrologyEngine.ts";
 import { calculateZiwei, ServerZiWeiResult } from "./lib/ziweiEngine.ts";
-import { classifyWithFallback, classifyQuestion, TOPIC_SYSTEM_FOCUS } from "./questionClassifier.ts";
+import { classifyWithFallback, classifyQuestion, TOPIC_SYSTEM_FOCUS, DECISION_AXES } from "./questionClassifier.ts";
 import { detectCombinations, aggregateCombinationScore, processCardVector, SPREAD_POSITION_WEIGHTS } from "./tarotCombinationDB.ts";
 import { getCardVector, getCardWuxing, getElementCompatibility } from "./tarotVectorDB.ts";
 import { lunarToSolarAccurate } from "./lunarData.ts";
@@ -39,7 +39,7 @@ import {
   crossValidate, 
   CrossValidationResult 
 } from "./lib/inferenceLayer.ts";
-import { extractAllSignals } from "./lib/signalExtractor.ts";
+import { extractAllSignals, computeDecision, calculateTarotPolarity } from "./lib/signalExtractor.ts";
 import { analyzeCardCombinations, DrawnCard } from "./hybridTarotEngine.ts";
 
 /**
@@ -123,7 +123,9 @@ function transformAstrologyData(frontAstro: any): any {
     elementDistribution: frontAstro.elementDistribution || {},
     qualityDistribution: frontAstro.qualityDistribution || {},
     questionAnalysis: frontAstro.questionAnalysis || null,
-    transits: frontAstro.transits || []
+    transits: frontAstro.transits || [],
+    progression: frontAstro.progression || frontAstro.secondaryProgression || null,
+    solarReturn: frontAstro.solarReturn || frontAstro.solar_return || null
   };
 }
 
@@ -897,6 +899,26 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
       // 영문 baseResult의 debts와 한글 이름 원시 획수를 합쳐서 재감지
       const finalKarmicDebts = detectKarmicDebt(...(baseResult.karmic_debts || []), destinyRawTotal);
 
+      // === 현재 나이 기준 피너클/챌린지 추출 ===
+      const currentAgeVal = new Date().getFullYear() - new Date(birthDate).getFullYear();
+      const currentPinnacle = (baseResult.pinnacles || []).find((p: any) => {
+        if (!p.period) return false;
+        const match = p.period.match(/(\d+)\s*~\s*(종료|\d+)/);
+        if (!match) return false;
+        const start = parseInt(match[1]);
+        const end = match[2] === '종료' ? 999 : parseInt(match[2]);
+        return currentAgeVal >= start && currentAgeVal <= end;
+      }) || (baseResult.pinnacles || [])[0] || null;
+
+      const currentChallenge = (baseResult.challenges || []).find((c: any) => {
+        if (!c.period) return false;
+        const match = c.period.match(/(\d+)\s*~\s*(종료|\d+)/);
+        if (!match) return false;
+        const start = parseInt(match[1]);
+        const end = match[2] === '종료' ? 999 : parseInt(match[2]);
+        return currentAgeVal >= start && currentAgeVal <= end;
+      }) || (baseResult.challenges || [])[0] || null;
+
       numerologyResult = {
         ...baseResult,
         lifePath: baseResult.life_path_number,
@@ -906,6 +928,8 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
         koreanDestiny,
         karmic_debts: finalKarmicDebts,
         has_karmic_debt: finalKarmicDebts.length > 0,
+        currentPinnacle,
+        currentChallenge,
         data_quality_score: 0.85
       };
 
@@ -971,7 +995,7 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
         ziwei_warnings: ziweiWarnings,
         annualYear: serverZiwei.annualYear || 2026,
         annualGan: serverZiwei.annualGan || "",
-        currentMinorPeriod: serverZiwei.liunian || null,
+        currentMinorPeriod: serverZiwei.currentMinorPeriod || serverZiwei.liunian || null,
         patterns: [],
         
         // promptBuilder용 필드
@@ -982,7 +1006,7 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
         fiveElementFrame: serverZiwei.bureau,
         currentMajorPeriod: serverZiwei.currentMajorPeriod || serverZiwei.dahan?.[0] || null,
         current_major_period: serverZiwei.currentMajorPeriod || serverZiwei.dahan?.[0] || null,
-        currentMinorPeriod: serverZiwei.liunian || serverZiwei.liuNian || null,
+        currentMinorPeriod: serverZiwei.currentMinorPeriod || serverZiwei.liunian || serverZiwei.liuNian || null,
         current_minor_period: serverZiwei.liunian || serverZiwei.liuNian || null,
         annualTransformations: serverZiwei.annualTransformations || serverZiwei.siHua?.annual || [],
         annual_transformations: serverZiwei.annualTransformations || serverZiwei.siHua?.annual || [],
@@ -1321,7 +1345,7 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     },
     { 
       dahan: ziweiAnalysis?.dahan || [], 
-      sohan: ziweiAnalysis?.liunian || null 
+      sohan: ziweiAnalysis?.currentMinorPeriod || ziweiAnalysis?.liunian || null 
     },
     { 
       personalYear: numerologyResult?.personal_year || 0, 
@@ -1340,6 +1364,19 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
   );
 
   // 5. 통합 프롬프트 빌드
+  const isTransitioning = sajuAnalysis.daewoon_transition?.isTransitioning ?? false;
+  const tarotPolarity = calculateTarotPolarity(normalizedCards);
+  const decisionResult = computeDecision(
+    consensusResult.consensus_score || 0,
+    signalData.crossSignals,
+    signalData.signals, // v11: 모든 원시 신호 추가
+    isTransitioning,
+    tarotPolarity
+  );
+
+  const topicFocus = TOPIC_SYSTEM_FOCUS[finalTopic] || undefined;
+  const categoryAxes = DECISION_AXES[finalTopic] || DECISION_AXES.general_future;
+
   const finalPrompt = buildReadingPrompt(
     userInfo,
     sajuAnalysis,
@@ -1350,7 +1387,10 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     crossValidationResult,
     unifiedTimeline,
     input.readingHistory || [],
-    signalData
+    signalData,
+    topicFocus,
+    categoryAxes,
+    decisionResult
   );
 
   let responseType: "valid_json" | "fallback_text" | "parse_error" | "schema_mismatch" | "timeout" | "skipped" = "valid_json";
@@ -1390,18 +1430,23 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
 - 리스크와 기회를 수치와 함께 구분해서 제시하세요.
 \n\n`;
 
-      const [choihannaRes, monadRes] = await Promise.all([
-        callGeminiWithStyle(apiKey, 'choihanna', choihannaPrefix + finalPrompt),
-        callGeminiWithStyle(apiKey, 'monad', monadPrefix + finalPrompt)
-      ]);
+      // === [Phase 5] Performance Optimization: Parallelize 3 calls ===
+      // hybridPrompt 조립 (Promise.all 앞으로 전진 배치)
+      const focusLines = topicFocus
+        ? Object.entries(topicFocus)
+            .map(([system, keywords]) => {
+              const systemLabel: Record<string, string> = {
+                saju: '기질분석 초점',
+                ziwei: '내면궁위 초점',
+                astrology: '운세흐름 초점',
+                numerology: '수리분석 초점',
+                tarot: '카드해석 초점'
+              };
+              return `- ${systemLabel[system] || system}: ${keywords.join(', ')}`;
+            })
+            .join('\n')
+        : '';
 
-      console.log(`[E1-B] 병렬 완료: 최한나=${choihannaRes.success}(${choihannaRes.elapsedMs}ms${choihannaRes.retried ? ',retried' : ''}), 모나드=${monadRes.success}(${monadRes.elapsedMs}ms${monadRes.retried ? ',retried' : ''})`);
-
-      const rawNarrative = choihannaRes.text || monadRes.text || '해석을 생성하지 못했습니다.';
-      const secondNarrative = monadRes.text || choihannaRes.text || '해석을 생성하지 못했습니다.';
-
-      // === hybrid 경량 호출 ===
-      let thirdNarrative = '';
       const hybridPrompt = `[내담자: ${userInfo.name || '내담자'}님]
 ${userInfo.question ? `[질문: ${userInfo.question}]` : ''}
 [핵심 데이터]
@@ -1409,22 +1454,38 @@ ${userInfo.question ? `[질문: ${userInfo.question}]` : ''}
 - 수리분석: 생명수 ${numerologyResult?.life_path_number || '미산출'}, 표현수 ${numerologyResult?.expression_number || '미산출'}, 개인년 ${numerologyResult?.personal_year || '미산출'}
 - 내면기질: ${ziweiAnalysis?.mingGong || '미산출'} 중심, ${ziweiAnalysis?.fiveElementFrame || ziweiAnalysis?.bureau || '미산출'} 기질, 유년사화 ${ziweiAnalysis?.annualTransformations?.slice(0, 2).map((t: any) => t.type + t.star).join('/') || '없음'}
 - 에너지흐름: 사회적 자아 ${astrologyAnalysis?.planets?.find((p: any) => p.planet === '태양' || p.name === 'Sun')?.sign || '미산출'}, 최인접트랜짓 ${astrologyAnalysis?.transits?.slice(0, 1).map((t: string) => t.split(':')[0]).join('') || '없음'}
+${focusLines ? `\n[질문 주제 핵심 키워드]\n${focusLines}` : ''}
 - 시기분석: 대운-세운 작용(${consensusResult?.dominant_vector?.life_transition >= 0.7 ? '큰 변화기' : '안정기'}), 개인년 사이클 ${numerologyResult?.personal_year} (1-9단계 중)
 - 합의점수: ${((consensusResult?.consensus_score || 0) * 100).toFixed(0)}%
 - 지배벡터: 성장 ${consensusResult?.dominant_vector?.growth?.toFixed(2) || ''}, 리스크 ${consensusResult?.dominant_vector?.risk?.toFixed(2) || ''}, 전환 ${consensusResult?.dominant_vector?.life_transition?.toFixed(2) || ''}
 - 충돌: ${consensusResult?.conflict_summary || '없음'}
 
       위 데이터를 바탕으로 전체 체계를 아우르는 3-5문장 결정 요약을 작성하십시오. 
-      [주의사항]
-      1. 반드시 첫 번째 문장은 "진행해도 좋다", "시기를 조정하라", "조건부로 접근하라" 중 질문에 가장 적합한 결론 하나를 포함하여 명확한 방향을 제시하며 시작하십시오. (예: "결론부터 말씀드리면, 지금은 시기를 조정하는 것이 현명합니다.")
-      2. 2~3번째 문장은 사주, 점성술, 타로 등의 핵심 근거를 전문용어 없이 쉽게 설명하십시오. 
-      3. 마지막 문장은 "오늘 당장" 실행 가능한 구체적인 행동 조언 1가지를 제시하며 마무리하십시오.
-      4. "합의점수", "지배벡터", "리스크 수치" 같은 시스템 내부 용어는 절대 리딩에 노출하지 마십시오. 어떤 체계도 소외시키지 말고 전체적으로 아울러야 합니다.`;
 
-      const hybridRes = await callGeminiWithStyle(apiKey, 'hybrid', hybridPrompt);
+      [최종 결정 지시]
+      ${categoryAxes.conclusionTemplate}
+
+      [주의사항]
+      1. "합의점수", "지배벡터", "리스크 수치" 등 시스템 내부 용어는 절대 리딩에 노출하지 마십시오.
+      2. [금지어 리스트] 리딩 본문(요약 포함)에 다음 단어 사용 절대 금지: 자미두수, 명궁, 화기, 화록, 명궁주성, 점성술, 상승궁, 트랜짓, 수비학, 생명수, 표현수, 타이밍, 리스크, 대안, 유입, 누수, 변동성, 감정, 현실, 지속성. 
+      3. 전문 용어와 축 이름은 '내면의 기질', '인생의 흐름', '시기', '위험 요소', '다른 선택지', '실제 여건' 등으로 완벽하게 일상어로 치환하십시오.
+      4. 어떤 체계도 소외시키지 말고 전체적으로 아울러야 합니다.`;
+
+      const [choihannaRes, monadRes, hybridRes] = await Promise.all([
+        callGeminiWithStyle(apiKey, 'choihanna', choihannaPrefix + finalPrompt),
+        callGeminiWithStyle(apiKey, 'monad', monadPrefix + finalPrompt),
+        callGeminiWithStyle(apiKey, 'hybrid', hybridPrompt)
+      ]);
+
+      console.log(`[E1-B] 병렬 완료: 최한나=${choihannaRes.success}(${choihannaRes.elapsedMs}ms), 모나드=${monadRes.success}(${monadRes.elapsedMs}ms), 요약=${hybridRes.success}(${hybridRes.elapsedMs}ms)`);
+
+      const rawNarrative = choihannaRes.text || monadRes.text || '해석을 생성하지 못했습니다.';
+      const secondNarrative = monadRes.text || choihannaRes.text || '해석을 생성하지 못했습니다.';
+
+      // === hybrid 결과 처리 ===
+      let thirdNarrative = '';
       if (hybridRes.success) {
         thirdNarrative = hybridRes.text;
-        console.log(`[E1-B] hybrid 성공: ${hybridRes.elapsedMs}ms`);
       } else {
         console.log(`[E1-B] hybrid 실패: ${hybridRes.error}`);
         const dv = consensusResult?.dominant_vector || {};
@@ -1435,7 +1496,6 @@ ${userInfo.question ? `[질문: ${userInfo.question}]` : ''}
           `내면의 성찰과 외부 실행의 균형을 맞추는 것이 핵심입니다. ` +
           `특히 4-6월 전환기에 중요한 결정을 미루지 말고 신중하게 실행하세요.`;
       }
-
       geminiLatency = Date.now() - geminiStart;
 
       const finalChoihanna = rawNarrative;
@@ -2015,6 +2075,10 @@ ${parsed.action_guide?.do_list?.map((item: string) => `- ${item}`).join('\n') ||
     // B-71new_p3: 추론 추적 (reasoning_trace)
     reasoning_trace: {
       topic_detected: finalTopic,
+      decision_result: decisionResult,
+      tarot_polarity: tarotPolarity,
+      is_transitioning: isTransitioning,
+      cross_signals: signalData.crossSignals,
       topic_weights: (consensusResult as any).topic_weights_used ?? {},
       engine_contributions: patternVectors.map(v => ({
         system: v.system,
