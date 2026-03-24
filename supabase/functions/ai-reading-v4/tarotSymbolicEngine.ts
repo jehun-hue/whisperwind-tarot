@@ -18,7 +18,7 @@ export interface TarotCardPattern {
 // 1. Question Classification Engine
 // ══════════════════════════════════════
 export function classifyTarotQuestion(question: string): TarotCategory {
-  const q = question.toLowerCase();
+  const q = (question || "").toLowerCase();
 
   if (/(헤어짐|재회|다시\s*만남|전남친|전여친|전애인|이별|끝난|돌아올|미련|차단)/.test(q))
     return "reconciliation";

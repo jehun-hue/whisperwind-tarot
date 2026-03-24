@@ -1,4 +1,4 @@
-console.log("[BOOT] Edge function starting...");
+﻿console.log("[BOOT] Edge function starting...");
 /**
  * index.ts
  * - Production AI Symbolic Prediction Engine Platform (v8).
@@ -44,7 +44,7 @@ serve(async (req: Request) => {
       throw new Error(`Invalid JSON payload: ${pe.message}`);
     }
 
-    const { sessionId, question, mode = "full", locale = "kr" } = payload;
+    const { sessionId, question, mode = "full", locale = "kr" } = payload; payload.cards = payload.cards || payload.tarotCards || []; payload.question = payload.question || payload.userQuestion || "";
     payload.locale = locale;
 
     // 스트리밍 모드

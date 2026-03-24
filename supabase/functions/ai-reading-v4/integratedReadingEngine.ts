@@ -1090,7 +1090,7 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
         category: tarotSymbolic.category,
         characteristics: [
           ...Object.keys(tarotSymbolic.dominant_patterns),
-          ...input.cards?.map((c: any) => c.name)
+          ...(input.cards || []).map((c: any) => c.name)
         ],
         card_vectors: enrichedCardVectors,
         yongshin_wuxing: yongshinWuxing
@@ -1334,17 +1334,17 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     ageContext.international_age,
     new Date().getFullYear(),
     { 
-      daewoon: sajuAnalysis.daewoon, 
-      sewoon: sajuAnalysis.sewoon, 
-      wolwoon: sajuAnalysis.wolwoon 
+      daewoon: sajuAnalysis?.daewoon || [], 
+      sewoon: sajuAnalysis?.sewoon || [], 
+      wolwoon: sajuAnalysis?.wolwoon || [] 
     },
     { 
-      transits: astrologyAnalysis?.transits || [], 
-      transitAspects: astrologyAnalysis?.aspects || [], 
+      transits: astrologyAnalysis?.transits || [] || [], 
+      transitAspects: astrologyAnalysis?.aspects || [] || [], 
       progressions: (astrologyAnalysis as any)?.progressions || [] 
     },
     { 
-      dahan: ziweiAnalysis?.dahan || [], 
+      dahan: ziweiAnalysis?.dahan || [] || [], 
       sohan: ziweiAnalysis?.currentMinorPeriod || ziweiAnalysis?.liunian || null 
     },
     { 

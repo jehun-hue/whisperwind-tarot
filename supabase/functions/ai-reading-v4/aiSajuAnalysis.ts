@@ -523,7 +523,7 @@ export async function analyzeSajuStructure(
     } else { // 종아격
       eokbuYong = getProducedElement(myElement); eokbuReason = "종아격: 식상 오행 따라감";
     }
-  } else if (strengthLevel.trim() === "극신강" || strengthLevel.trim() === "신강") {
+  } else if (strengthLevel.trim() === "극신강" || strengthLevel.trim() === "신강" || strengthLevel.trim() === "약변강") {
     // 신강 용신 우선순위: 관성 > 재성 > 식상
     const conquerElem = getConqueringElement(myElement); 
     const drainElem = getConqueredElement(myElement);   
@@ -536,7 +536,7 @@ export async function analyzeSajuStructure(
     const sortedCandidates = candidates.sort((a,b) => (elements[a.elem]||0) - (elements[b.elem]||0) || a.priority - b.priority);
     eokbuYong = sortedCandidates[0].elem;
     eokbuReason = `신강: ${sortedCandidates[0].name} 우선순위 기준 ${eokbuYong} 선택`;
-  } else if (strengthLevel.trim() === "신약" || strengthLevel.trim() === "극신약") {
+  } else if (strengthLevel.trim() === "신약" || strengthLevel.trim() === "극신약" || strengthLevel.trim() === "강변약") {
     // 신약 용신 우선순위: 인성 > 비겁
     const supportElem = getProducingElement(myElement); 
     const selfElem = myElement;                         
@@ -585,7 +585,7 @@ export async function analyzeSajuStructure(
 
   // 희신, 기신, 구신, 한신 계산 로직
   const cleanStrength = (strengthLevel || "").trim();
-  if (cleanStrength === "극신강" || cleanStrength === "신강") {
+  if (cleanStrength === "극신강" || cleanStrength === "신강" || cleanStrength === "약변강") {
     giShin = myElement;                          // 기신 = 비겁
     guShin = getProducingElement(myElement);      // 구신 = 인성
     
@@ -603,7 +603,7 @@ export async function analyzeSajuStructure(
       heeShin = produced;
       hanShin = getConqueredElement(myElement);
     }
-  } else if (cleanStrength === "극신약" || cleanStrength === "신약") {
+  } else if (cleanStrength === "극신약" || cleanStrength === "신약" || cleanStrength === "강변약") {
     giShin = getConqueringElement(myElement);    // 기신 = 관성
     guShin = getConqueredElement(myElement);      // 구신 = 재성
     

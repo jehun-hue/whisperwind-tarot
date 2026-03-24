@@ -1,4 +1,4 @@
-/**
+﻿/**
  * sajuEngine.ts
  * Core Saju (Four Pillars) logic.
  * Handles Pillars, Ten Gods, Hidden Stems, and Elements.
