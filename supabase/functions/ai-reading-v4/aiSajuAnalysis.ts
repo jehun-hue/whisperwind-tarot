@@ -1,4 +1,4 @@
-﻿/**
+/**
  * aiSajuAnalysis.ts (v9)
  * 사주 구조 분석 엔진 — 일간별 동적 분석, 십성(十星), 6충, 삼합/방합/형살
  *
@@ -529,8 +529,8 @@ export async function analyzeSajuStructure(
     const drainElem = getConqueredElement(myElement);   
     const releaseElem = getProducedElement(myElement);  
     const candidates = [
-       { elem: drainElem, priority: 1, name: "재성" }, // [B-252 FIX] 재성(금) 우선순위 상향
-       { elem: conquerElem, priority: 2, name: "관성" },
+       { elem: conquerElem, priority: 1, name: "관성" },
+       { elem: drainElem, priority: 2, name: "재성" },
        { elem: releaseElem, priority: 3, name: "식상" }
     ];
     const sortedCandidates = candidates.sort((a,b) => (elements[a.elem]||0) - (elements[b.elem]||0) || a.priority - b.priority);
@@ -560,7 +560,16 @@ export async function analyzeSajuStructure(
   const tonggwanDetail = determineTonggwanYong(elements);
 
   // 최종 용신 종합
-  const finalYong = eokbuYong;
+  // 최종 용신 종합: 조후용신 오행이 억부용신과 같은 계열이면 조후 우선
+  const johuStem = johuDetail.yongsin ? johuDetail.yongsin.charAt(0) : "";
+  const johuElement = johuStem ? STEM_ELEMENT[johuStem] : null;
+  let finalYong: string;
+  if (johuElement && johuElement !== myElement && johuElement !== getProducingElement(myElement)) {
+    // 조후용신이 기신/구신 계열이 아니면 조후 채택
+    finalYong = johuElement;
+  } else {
+    finalYong = eokbuYong;
+  }
   const yongsin_detail = {
     eokbu: { yongsin: eokbuYong, reason: eokbuReason },
     johu: johuDetail,
