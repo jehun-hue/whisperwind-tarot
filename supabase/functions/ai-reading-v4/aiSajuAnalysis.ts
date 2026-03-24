@@ -595,47 +595,34 @@ export async function analyzeSajuStructure(
   // 희신, 기신, 구신, 한신 계산 로직
   const cleanStrength = (strengthLevel || "").trim();
   if (cleanStrength === "극신강" || cleanStrength === "신강" || cleanStrength === "약변강") {
-    giShin = myElement;                          // 기신 = 비겁
-    guShin = getProducingElement(myElement);      // 구신 = 인성
-    
-    // 희신 = 용신을 생하는 오행, 한신 = 용신이 생하는 오행
-    if (yongsin) {
-      heeShin = getProducingElement(yongsin);
-      hanShin = getProducedElement(yongsin);
-      // 희신이 기신·구신과 겹치면 차선책
-      if (heeShin === giShin || heeShin === guShin) {
-        heeShin = getProducedElement(yongsin);
-      }
-    } else {
-      // 용신 미정 시 fallback
-      const produced = getProducedElement(myElement);
-      heeShin = produced;
-      hanShin = getConqueredElement(myElement);
-    }
+    // 희신 = 용신을 생하는 오행
+    heeShin = getProducingElement(yongsin);
+    // 기신 = 용신을 극하는 오행
+    giShin = getConqueringElement(yongsin);
+    // 구신 = 기신을 생하는 오행
+    guShin = getProducingElement(giShin);
+    // 한신 = 나머지 오행 (용신, 희신, 기신, 구신 어디에도 해당하지 않는 오행)
+    const allElements = ["목", "화", "토", "금", "수"];
+    const usedElements = [yongsin, heeShin, giShin, guShin];
+    hanShin = allElements.find(e => !usedElements.includes(e)) || getProducedElement(yongsin);
   } else if (cleanStrength === "극신약" || cleanStrength === "신약" || cleanStrength === "강변약") {
-    giShin = getConqueringElement(myElement);    // 기신 = 관성
-    guShin = getConqueredElement(myElement);      // 구신 = 재성
-    
-    // 희신 = 용신을 생하는 오행, 한신 = 용신이 생하는 오행
-    if (yongsin) {
-      heeShin = getProducingElement(yongsin);
-      hanShin = getProducedElement(yongsin);
-      // 희신이 기신·구신과 겹치면 차선책
-      if (heeShin === giShin || heeShin === guShin) {
-        heeShin = getProducedElement(yongsin);
-      }
-    } else {
-      // 용신 미정 시 fallback
-      const produced = getProducedElement(myElement);
-      heeShin = produced;
-      hanShin = getConqueredElement(myElement);
-    }
+    // 희신 = 용신을 생하는 오행
+    heeShin = getProducingElement(yongsin);
+    // 기신 = 용신을 극하는 오행
+    giShin = getConqueringElement(yongsin);
+    // 구신 = 기신을 생하는 오행
+    guShin = getProducingElement(giShin);
+    // 한신 = 나머지 오행
+    const allElements2 = ["목", "화", "토", "금", "수"];
+    const usedElements2 = [yongsin, heeShin, giShin, guShin];
+    hanShin = allElements2.find(e => !usedElements2.includes(e)) || getProducedElement(yongsin);
   } else { // 중화
-    // 중화는 억부용신이 관성으로 설정되었으므로, 관성을 생하는 재성을 희신으로, 관성을 극하는 식상을 기신으로 설정
-    giShin = getProducedElement(myElement); // 식상
-    guShin = getProducingElement(giShin); // 식상을 생하는 비겁
-    heeShin = getConqueredElement(myElement); // 재성 (관성을 생함)
-    hanShin = getProducingElement(myElement); // 인성 (비겁을 생함)
+    heeShin = getProducingElement(yongsin);
+    giShin = getConqueringElement(yongsin);
+    guShin = getProducingElement(giShin);
+    const allElements3 = ["목", "화", "토", "금", "수"];
+    const usedElements3 = [yongsin, heeShin, giShin, guShin];
+    hanShin = allElements3.find(e => !usedElements3.includes(e)) || getProducedElement(yongsin);
   }
 
 
