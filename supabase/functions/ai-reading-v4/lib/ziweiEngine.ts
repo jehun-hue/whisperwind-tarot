@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ziweiEngine.ts
  * 자미두수(紫微斗數) 명반 계산 엔진 - Edge Function 서버사이드
  */
@@ -247,7 +247,7 @@ function calculateMajorPeriods(bureau: Bureau, mingGongIdx: number, gender: "mal
   const isYangStem = yearGanIdx % 2 === 0; const isForward = (gender === "male" && isYangStem) || (gender === "female" && !isYangStem); const direction = isForward ? 1 : -1; const periods: MajorPeriod[] = [];
   for (let i = 0; i < 12; i++) {
     const periodStart = startAge + i * 10; const periodEnd = periodStart + 9; const palaceIdx = ((mingGongIdx + direction * i) % 12 + 12) % 12; const palaceOffset = ((palaceIdx - mingGongIdx) % 12 + 12) % 12; const palace = PALACES[palaceOffset]; const branch = BRANCHES[palaceIdx];
-    const starsInPalace = starMap.get(palaceIdx) || []; const starPlacements: StarPlacement[] = starsInPalace.map(star => ({ star, palace, brightness: getStarBrightness(star as any, palaceIdx), description: star }));
+    const starsInPalace = starMap.get(palaceIdx) || []; const starPlacements: StarPlacement[] = starsInPalace?.map(star => ({ star, palace, brightness: getStarBrightness(star as any, palaceIdx), description: star }));
     periods.push({ startAge: periodStart, endAge: periodEnd, palace, branch, stars: starPlacements, transformations: [], interpretation: `${periodStart}-${periodEnd}세 대한: ${palace}(${branch}궁)` });
   }
   return periods;
@@ -271,14 +271,14 @@ export function calculateServerZiWei(
   const auxMap = placeAuxiliaryStars(birthHourBranch, lunarMonth, yearGanIdx);
   for (const [pos, stars] of auxMap.entries()) { if (!starMap.has(pos)) starMap.set(pos, []); for (const s of stars) (starMap.get(pos) as any[]).push(s); }
   const natalTransformations = calculateNatalTransformations(yearGanIdx, starMap, mingGongIdx);
-  const palaces: PalaceInfo[] = PALACES.map((name, idx) => {
+  const palaces: PalaceInfo[] = PALACES?.map((name, idx) => {
     const palaceIdx = (mingGongIdx + idx) % 12; 
     const stars = starMap.get(palaceIdx) || [];
     const main_stars = stars.filter(s => (MAJOR_STARS as readonly string[]).includes(s as any)).map(s => s as string);
     return { 
       name, 
       branch: BRANCHES[palaceIdx], 
-      stars: stars.map(s => ({ star: s as any, palace: name, brightness: getStarBrightness(s as any, palaceIdx), description: s })), 
+      stars: stars?.map(s => ({ star: s as any, palace: name, brightness: getStarBrightness(s as any, palaceIdx), description: s })), 
       main_stars,
       transformations: [], 
       interpretation: `${name}: ${stars.join(", ")}` 

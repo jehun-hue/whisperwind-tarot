@@ -1,4 +1,4 @@
-/**
+﻿/**
  * test-edge-saju.ts
  * 사주 엔진 엣지케이스 테스트 스크립트 (수정본)
  */
@@ -78,7 +78,7 @@ async function runTests() {
 
       // 5. 신살 계산
       const sinsalList = calculateSinsal(dm, stems, branches, p.month.branch, p.year.branch);
-      const sinsalNames = sinsalList.map(s => s.name).slice(0, 5).join(", ");
+      const sinsalNames = sinsalList?.map(s => s.name).slice(0, 5).join(", ");
       console.log(`  Sinsal: ${sinsalNames || "없음"}...`);
 
       console.log("  ✅ PASS\n");

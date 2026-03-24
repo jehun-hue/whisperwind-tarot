@@ -1,4 +1,4 @@
-/**
+﻿/**
  * testRunner.ts (B-80~84)
  * 자동 검증 러너 — 사주/점성술/자미두수/수비학/통합 테스트셋 일괄 실행
  * 실행: npx ts-node tests/testRunner.ts [engine?]
@@ -86,7 +86,7 @@ function checkFlags(actual: any, flags: Record<string, any>): string[] {
 
 // ── 사주 엔진 테스트 ────────────────────────────────────────
 async function runSajuTests(cases: TestCase[]): Promise<TestResult[]> {
-  return cases.map(tc => {
+  return cases?.map(tc => {
     const start = Date.now();
     const failures: string[] = [];
     const warnings: string[] = [];
@@ -150,7 +150,7 @@ async function runSajuTests(cases: TestCase[]): Promise<TestResult[]> {
 
 // ── 수비학 엔진 테스트 ──────────────────────────────────────
 async function runNumerologyTests(cases: TestCase[]): Promise<TestResult[]> {
-  return cases.map(tc => {
+  return cases?.map(tc => {
     const start = Date.now();
     const failures: string[] = [];
     const warnings: string[] = [];
@@ -171,7 +171,7 @@ async function runNumerologyTests(cases: TestCase[]): Promise<TestResult[]> {
 
 // ── 자미두수 엔진 테스트 ────────────────────────────────────
 async function runZiweiTests(cases: TestCase[]): Promise<TestResult[]> {
-  return cases.map(tc => {
+  return cases?.map(tc => {
     const start = Date.now();
     const failures: string[] = [];
     const warnings: string[] = [];

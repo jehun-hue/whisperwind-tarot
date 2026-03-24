@@ -1,4 +1,4 @@
-import { Signal, CrossSignal } from './signalExtractor.ts';
+﻿import { Signal, CrossSignal } from './signalExtractor.ts';
 
 export interface UserInfo {
   name?: string;
@@ -124,7 +124,7 @@ export function buildReadingPrompt(
   // 월운 정보 (timelineEngine의 months 배열)
   const monthEntries = tl.months || tl.entries || tl.timeline || [];
   const monthlyStr = Array.isArray(monthEntries) && monthEntries.length > 0
-    ? monthEntries.map((m: any) => {
+    ? monthEntries?.map((m: any) => {
         const month = m.month || m.label || '';
         const summary = m.summary || m.description || m.event || '';
         const score = m.score !== undefined ? ` (${m.grade || ''} ${m.score}점)` : '';
@@ -214,12 +214,12 @@ ${crossPatterns.join('\n')}
   const signals = signalData?.signals || [];
   const crossSignals = signalData?.crossSignals || [];
 
-  const signalText = signals.map(sig => 
+  const signalText = signals?.map(sig => 
     `- [${sig.source.toUpperCase()}] ${sig.title}: ${sig.description} (심각도:${sig.severity})`
   ).join('\n') || '추출된 개별 신호 없음';
 
-  const crossSignalText = crossSignals.map(cs => 
-    `- [${cs.category.toUpperCase()} ${cs.type.toUpperCase()}] 합의도:${cs.agreementCount} (${cs.confidence}) -> 상세:${cs.sources.map(s=>s.title).join(', ')}`
+  const crossSignalText = crossSignals?.map(cs => 
+    `- [${cs.category.toUpperCase()} ${cs.type.toUpperCase()}] 합의도:${cs.agreementCount} (${cs.confidence}) -> 상세:${cs.sources?.map(s=>s.title).join(', ')}`
   ).join('\n') || '교차 합의된 강력한 신호 없음';
 
   const sectionSignals = `
@@ -293,7 +293,7 @@ ${sortedShinsal.slice(0, 10).map((ss: any) =>
 
   // 질문별 핵심 궁 선택
   const targetPalaceNames = ZIWEI_PALACE_MAP[qType] || ZIWEI_PALACE_MAP.default;
-  const selectedPalaces = targetPalaceNames.map((pName: string) => {
+  const selectedPalaces = targetPalaceNames?.map((pName: string) => {
     const p = palaces.find((pp: any) => pp.name === pName);
     if (!p) return `${pName}: 데이터 없음 (출생 시간 미확인)`;
     const stars = p.main_stars?.join(', ') || p.stars?.map((s: any) => `${s.star}(${s.brightness})`).join(', ');
@@ -345,8 +345,8 @@ ${selectedPalaces}
   const sortAstroByRelevance = (arr: any[], fields: string[]) => {
     if (!astroKw.length || !arr?.length) return arr;
     return [...arr].sort((a, b) => {
-      const aText = typeof a === 'string' ? a : fields.map(f => String(a[f] || '')).join(' ');
-      const bText = typeof b === 'string' ? b : fields.map(f => String(b[f] || '')).join(' ');
+      const aText = typeof a === 'string' ? a : fields?.map(f => String(a[f] || '')).join(' ');
+      const bText = typeof b === 'string' ? b : fields?.map(f => String(b[f] || '')).join(' ');
       const aMatch = astroKw.some(kw => aText.includes(kw));
       const bMatch = astroKw.some(kw => bText.includes(kw));
       if (aMatch && !bMatch) return -1;
@@ -383,7 +383,7 @@ ${selectedPalaces}
 • 달: ${formatPlanet(moon)}
 • 토성: ${formatPlanet(saturn)}
 • ASC: ${ascSign} ${ascDeg}°
-${dignityPlanets.length > 0 ? `• 디그니티: ${dignityPlanets.map((p: any) => `${p.planet} ${p.sign} [${p.dignity}]`).join(', ')}` : ''}
+${dignityPlanets.length > 0 ? `• 디그니티: ${dignityPlanets?.map((p: any) => `${p.planet} ${p.sign} [${p.dignity}]`).join(', ')}` : ''}
 • 주요 어스펙트 (orb 순):
 ${topAspects}
 • 트랜짓 핵심:
@@ -418,7 +418,7 @@ ${topTransits}
   const tarotCards = tarot?.cards || [];
   let section5 = '';
   if (tarotCards.length > 0) {
-    const cardList = tarotCards.map((c: any, i: number) =>
+    const cardList = (tarotCards||[]).map((c: any, i: number) =>
       `${c.position || i + 1}. ${c.name || '?'}${c.reversed ? '(역방향)' : '(정방향)'}`
     ).join('\n');
     section5 = `
@@ -457,7 +457,7 @@ ${Object.entries(topicFocus)
 [의사결정 분석 항목: ${qType || '종합운'}]
 ========================
 이 질문에 대해 다음 3가지 핵심 요소를 깊이 있게 분석하라:
-${decisionAxes.axes.map((a, i) => {
+${decisionAxes.axes?.map((a, i) => {
   // '타이밍 (지금이 적기인가)' 형태에서 '(지금이 적기인가)'만 추출
   const match = a.match(/\(([^)]+)\)/);
   const desc = match ? match[1] : a;
@@ -512,7 +512,7 @@ ${(readingHistory && readingHistory.length > 0) ? `
 STEP 1.5: 과거 상담 이력 (재방문 맥락)
 ========================
 ${name}님은 이전에 다음과 같은 상담을 받은 적이 있습니다:
-${readingHistory.map((h: any, i: number) => 
+${readingHistory?.map((h: any, i: number) => 
   `[${i+1}] ${h.date} - 질문: "${h.question}" → 핵심: ${h.summary.slice(0, 150)}`
 ).join('\n')}
 

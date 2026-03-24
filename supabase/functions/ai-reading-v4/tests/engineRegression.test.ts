@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+﻿import { describe, it, expect, vi } from 'vitest';
 import { 
   getPillarFromData, 
   getDayMasterFromData, 
@@ -101,7 +101,7 @@ describe('whisperwind-tarot Engine Regression', () => {
         { system: 'astrology' }
       ];
       // Simulate unique systems
-      const validSystemCount = mockVectors.map(v => v.system).filter((v, i, a) => a.indexOf(v) === i).length;
+      const validSystemCount = mockVectors?.map(v => v.system).filter((v, i, a) => a.indexOf(v) === i).length;
       expect(validSystemCount).toBe(3);
 
       const consensusScore = 0.6; // High agreement
@@ -114,7 +114,7 @@ describe('whisperwind-tarot Engine Regression', () => {
       const mockVectors = [
         { system: 'tarot' }
       ];
-      const validSystemCount = mockVectors.map(v => v.system).filter((v, i, a) => a.indexOf(v) === i).length;
+      const validSystemCount = mockVectors?.map(v => v.system).filter((v, i, a) => a.indexOf(v) === i).length;
       expect(validSystemCount).toBe(1);
     });
   });

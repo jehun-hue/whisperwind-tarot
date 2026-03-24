@@ -1,4 +1,4 @@
-/**
+﻿/**
  * tarotSymbolicEngine.ts (v10)
  * - PART 1: Question Classification Engine.
  * - PART 2: 78 Tarot Card Pattern Vector Mapping (COMPLETE).
@@ -298,7 +298,7 @@ export function analyzeSuitDistribution(cards: any[]): any {
     analysis: `${analysisMap[dominant]} ${absent.length > 0 ? `${absent.join(", ")} 부재 — 해당 영역의 에너지가 현재 비활성 상태.` : ""}`,
     elementMapping: {
       dominant_element: ELEMENT_MAP[dominant],
-      absent_element: absent.map(s => ELEMENT_MAP[s]),
+      absent_element: absent?.map(s => ELEMENT_MAP[s]),
       imbalance: `${absent.length > 0 ? `${absent.join("/")} 부족, ` : ""}${dominant} 과잉`
     }
   };

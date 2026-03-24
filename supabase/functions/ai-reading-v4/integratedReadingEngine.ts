@@ -1,4 +1,4 @@
-/**
+﻿/**
  * integratedReadingEngine.ts (v9)
  * - Production AI Symbolic Prediction Engine Platform.
  * - Runtime Flow: Calc -> Pattern -> Semantic -> Consensus -> Temporal -> Validation -> Narrative.
@@ -63,7 +63,7 @@ function transformAstrologyData(frontAstro: any): any {
   if (!frontAstro) return createFallbackAstrology();
 
   const planets = frontAstro.planets || [];
-  const planet_positions = planets.map((p: any) => ({
+  const planet_positions = planets?.map((p: any) => ({
     planet: p.name || p.planet,
     sign: p.sign,
     house: p.house,
@@ -138,7 +138,7 @@ function transformZiweiData(frontZiwei: any): any {
 
   const palaces = (frontZiwei.palaces || []).map((p: any) => ({
     name: p.name,
-    main_stars: p.main_stars || p.mainStars || (p.stars ? p.stars.map((s: any) => s.star) : []),
+    main_stars: p.main_stars || p.mainStars || (p.stars ? p.stars?.map((s: any) => s.star) : []),
     location: p.branch || p.location || ""
   }));
 
@@ -1090,7 +1090,7 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
         category: tarotSymbolic.category,
         characteristics: [
           ...Object.keys(tarotSymbolic.dominant_patterns),
-          ...input.cards.map((c: any) => c.name)
+          ...input.cards?.map((c: any) => c.name)
         ],
         card_vectors: enrichedCardVectors,
         yongshin_wuxing: yongshinWuxing
@@ -1136,7 +1136,7 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
 
   // Step 2: Cross-System Topic Validation (Voting System)
   const systemWins: Record<string, string> = {};
-  const activeSystems = [...new Set(patternVectors.map(v => (v.system || "").toLowerCase()))].filter(Boolean);
+  const activeSystems = [...new Set((patternVectors||[]).map(v => (v.system || "").toLowerCase()))].filter(Boolean);
   
   activeSystems.forEach(sys => {
     const sysVectors = patternVectors.filter(v => (v.system || "").toLowerCase() === sys);
@@ -1215,7 +1215,7 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     : consensusResult.consensus_score >= 0.3 ? "B" : "C";
 
   // 타로 카드 조합 감지 로직 (#92)
-  const cardNamesForCombos = tarotCards.map((c: any) => c.name).filter(Boolean);
+  const cardNamesForCombos = (tarotCards||[]).map((c: any) => c.name).filter(Boolean);
   const matchedCombinations = detectCombinations(cardNamesForCombos, finalTopic);
   const detectedCombinations = matchedCombinations.length;
   const combinationBonus = aggregateCombinationScore(matchedCombinations);
@@ -1309,7 +1309,7 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     language: input.locale === 'ja' ? 'ja' : input.locale === 'en' ? 'en' : 'ko'
   };
 
-  const normalizedCards: DrawnCard[] = tarotCards.map((c: any) => ({
+  const normalizedCards: DrawnCard[] = (tarotCards||[]).map((c: any) => ({
     name: c.name,
     isMajor: ["The Fool", "The Magician", "The High Priestess", "The Empress", "The Emperor", "The Hierophant", "The Lovers", "The Chariot", "Strength", "The Hermit", "Wheel of Fortune", "Justice", "The Hanged Man", "Death", "Temperance", "The Devil", "The Tower", "The Star", "The Moon", "The Sun", "Judgement", "The World"].includes(c.name),
     isReversed: !!c.isReversed,
@@ -1509,7 +1509,7 @@ ${focusLines ? `\n[질문 주제 핵심 키워드]\n${focusLines}` : ''}
       parsed.final_message.summary = thirdNarrative || finalChoihanna;
       
       const cardData = {
-        cards: tarotCards.map((c: any) => ({ name: c.name, position: c.position, reversed: !!c.isReversed }))
+        cards: (tarotCards||[]).map((c: any) => ({ name: c.name, position: c.position, reversed: !!c.isReversed }))
       };
       
       parsed.tarot_reading = {
@@ -1563,7 +1563,7 @@ ${focusLines ? `\n[질문 주제 핵심 키워드]\n${focusLines}` : ''}
     card_count: tarotCards?.length || 0,
     question: input.question
   };
-  const validSystemCount = patternVectors.map(v => v.system).filter((v, i, a) => a.indexOf(v) === i).length;
+  const validSystemCount = (patternVectors||[]).map(v => v.system).filter((v, i, a) => a.indexOf(v) === i).length;
   parsed.convergence = {
     ...parsed.convergence,
     grade,
@@ -1689,7 +1689,7 @@ ${parsed.action_guide?.do_list?.map((item: string) => `- ${item}`).join('\n') ||
             (ziweiAnalysis as any).currentMajorPeriod?.interpretation ? `대한: ${(ziweiAnalysis as any).currentMajorPeriod.interpretation}` : null,
             (ziweiAnalysis as any).currentMinorPeriod?.interpretation ? `소한: ${(ziweiAnalysis as any).currentMinorPeriod.interpretation}` : null,
             (ziweiAnalysis as any).annualTransformations?.length > 0
-              ? `${(ziweiAnalysis as any).annualYear}년 유년사화: ${(ziweiAnalysis as any).annualTransformations.map((t: any) => t.description).join(", ")}`
+              ? `${(ziweiAnalysis as any).annualYear}년 유년사화: ${(ziweiAnalysis as any).annualTransformations?.map((t: any) => t.description).join(", ")}`
               : null,
             (ziweiAnalysis as any).natalTransformations?.length > 0
               ? `선천사화: ${(ziweiAnalysis as any).natalTransformations.slice(0, 3).map((t: any) => `${t.type}(${t.star}→${t.palace})`).join(", ")}`
@@ -1714,7 +1714,7 @@ ${parsed.action_guide?.do_list?.map((item: string) => `- ${item}`).join('\n') ||
         const careerCards = ["The Emperor", "The Chariot", "Ace of Pentacles", "Knight of Swords"];
         const matchedCards = input?.cards?.filter((c: any) => careerCards.includes(c.name)) || [];
         return {
-          signals: matchedCards.map((c: any) => `${c.name}(${c.isReversed ? '역방향' : '정방향'}) → ${questionTopic} 관련 카드`),
+          signals: matchedCards?.map((c: any) => `${c.name}(${c.isReversed ? '역방향' : '정방향'}) → ${questionTopic} 관련 카드`),
           topic_alignment: matchedCards.length > 0 ? "high" : "low"
         };
       })(),
@@ -2080,7 +2080,7 @@ ${parsed.action_guide?.do_list?.map((item: string) => `- ${item}`).join('\n') ||
       is_transitioning: isTransitioning,
       cross_signals: signalData.crossSignals,
       topic_weights: (consensusResult as any).topic_weights_used ?? {},
-      engine_contributions: patternVectors.map(v => ({
+      engine_contributions: (patternVectors||[]).map(v => ({
         system: v.system,
         dominant_dimension: Object.entries(v.vector ?? {}).sort((a: any, b: any) => b[1] - a[1])[0]?.[0] ?? "unknown",
         top_score: Object.values(v.vector ?? {}).sort((a: any, b: any) => b - a)[0] ?? 0

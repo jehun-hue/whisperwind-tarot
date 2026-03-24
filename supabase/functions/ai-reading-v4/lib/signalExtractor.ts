@@ -1,4 +1,4 @@
-/**
+﻿/**
  * lib/signalExtractor.ts
  * 비정형 점술 데이터를 정형화된 Signal 객체로 변환하고 교차 검증하는 모듈
  */
@@ -313,7 +313,7 @@ export function crossValidateSignals(allSignals: Signal[]): CrossSignal[] {
 
   for (const [key, signals] of groups) {
     const [category, type] = key.split(':');
-    const uniqueSources = new Set(signals.map(s => s.source));
+    const uniqueSources = new Set(signals?.map(s => s.source));
     if (uniqueSources.size >= 2) {
       crossSignals.push({
         category,
@@ -344,7 +344,7 @@ export function extractAllSignals(
   const numSignals = extractNumerologySignals(numResult);
   const tarotSignals = tarotResult ? extractTarotSignals(tarotResult.cards, tarotResult.insights) : [];
 
-  const allSignals = [...sajuSignals, ...ziweiSignals, ...astroSignals, ...numSignals, ...tarotSignals];
+  const allSignals = [...(sajuSignals||[]), ...(ziweiSignals||[]), ...(astroSignals||[]), ...(numSignals||[]), ...(tarotSignals||[])];
   const crossSignals = crossValidateSignals(allSignals);
 
   return { signals: allSignals, crossSignals };

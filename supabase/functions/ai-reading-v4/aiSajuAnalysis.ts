@@ -1,4 +1,4 @@
-/**
+﻿/**
  * aiSajuAnalysis.ts (v9)
  * 사주 구조 분석 엔진 — 일간별 동적 분석, 십성(十星), 6충, 삼합/방합/형살
  *
@@ -708,7 +708,7 @@ export async function analyzeSajuStructure(
   const hyungDesc = hyungResults.length > 0 ? " 형살 구조가 있어 건강이나 대인관계 마찰에 주의가 필요합니다." : "";
 
   let narrative = `일간이 ${dmKorean[dm] || dm}으로, ${strengthDesc[strength] || strength}. ` +
-    `오행 분포는 ${elementNames.map(n => `${n}(${elements[n] || 0})`).join(", ")}이며, ` +
+    `오행 분포는 ${elementNames?.map(n => `${n}(${elements[n] || 0})`).join(", ")}이며, ` +
     `주요 십성 구성은 ${tenGodDesc || "고르게 분포"}입니다. ` +
     `용신은 '${yongsin}'으로 판단됩니다 (${yongShinMethod}법: ${strength.includes("강") ? "신강한 일간을 균형 있게 조절" : "신약한 일간을 생조하여 보완"}).` +
     (heeShin ? ` 희신은 '${heeShin}'으로, 용신을 보조하는 역할을 합니다.` : "") +
@@ -964,7 +964,7 @@ export async function analyzeSajuStructure(
         });
       }
     } else if (inter.type === "지지충") {
-      const losers = inter.elements.map(e => BRANCH_ELEMENT[e]);
+      const losers = inter.elements?.map(e => BRANCH_ELEMENT[e]);
       losers.forEach(le => {
         if (le) {
           elements_weighted[le] = Math.max(0, (elements_weighted[le] || 0) - 0.25); // 개별 -0.25 (합 -0.5)
@@ -1232,7 +1232,7 @@ export async function analyzeSajuStructure(
       pillar: `${dailyStem}${dailyBranch}`,
       stem_tenGod: stemTenGod,
       branch_relation: branchRelations,
-      interpretation: `오늘의 에너지: ${stemTenGod} 기운, 원국 지지와 ${branchRelations.length > 0 ? branchRelations.map(r => r.type).join("/") : "조화로운"} 관계`
+      interpretation: `오늘의 에너지: ${stemTenGod} 기운, 원국 지지와 ${branchRelations.length > 0 ? branchRelations?.map(r => r.type).join("/") : "조화로운"} 관계`
     };
   } catch (e) {
 

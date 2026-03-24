@@ -1,4 +1,4 @@
-import { getFullSaju } from "./sajuEngine.ts";
+﻿import { getFullSaju } from "./sajuEngine.ts";
 import { analyzeSajuStructure } from "./aiSajuAnalysis.ts";
 
 async function runTest() {
@@ -123,7 +123,7 @@ async function runTest() {
   console.log("9. 신살 목록");
   if (analysis.shinsal_grouped) {
     const sg = analysis.shinsal_grouped;
-    const formatS = (list: any[]) => list.map(s => s.name).join(", ") || "없음";
+    const formatS = (list: any[]) => list?.map(s => s.name).join(", ") || "없음";
     console.log(`   년주 ${pillars.year.branch}: ${formatS(sg.year)}`);
     console.log(`   월주 ${pillars.month.branch}: ${formatS(sg.month)}`);
     console.log(`   일주 ${pillars.day.branch}: ${formatS(sg.day)}`);

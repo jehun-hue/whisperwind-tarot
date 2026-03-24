@@ -1,4 +1,4 @@
-/**
+﻿/**
  * interactivityLayer.ts
  * - 다국어(KR, JP, US) 대응 및 어조/문화권별 시스템 프롬프트 관리
  * - V9: AI Narrative Orchestrator 모델 적용
@@ -501,13 +501,13 @@ ${coreReadingJson}
 
 ${priorityEvents && priorityEvents.length > 0 ? `
 [필수 시기 정보]
-${priorityEvents.map((e: any) => `- ${e.domain}: ${e.peak_period || "올해"} (${e.severity})${e.decision_trigger ? " → " + e.decision_trigger : ""}`).join("\n")}
+${priorityEvents?.map((e: any) => `- ${e.domain}: ${e.peak_period || "올해"} (${e.severity})${e.decision_trigger ? " → " + e.decision_trigger : ""}`).join("\n")}
 위 시기를 본문에 반드시 포함하세요.
 
 ${priorityEvents.some(e => e.tarot_stance && e.tarot_stance.length > 0) ? `
 [타로 카드 해석 방향]
 ${priorityEvents.filter(e => e.tarot_stance && e.tarot_stance.length > 0).map((e: any) => {
-  const stanceText = e.tarot_stance.map((s: any) => {
+  const stanceText = (e.tarot_stance||[]).map((s: any) => {
     if (s.type === "confirms") {
       const instruction = s.bias === "negative" ? "이 영역의 위험을 강조하되 구체적 대안 제시" : "이 영역의 긍정적 기회를 강하게 격려";
       return `confirms(${s.bias}) — "${s.reason}". ${instruction}.`;
@@ -612,7 +612,7 @@ export async function processChat(
     sajuData.dayMaster ? `일간: ${sajuData.dayMaster}` : "",
     sajuData.tenGod ? `십신: ${JSON.stringify(sajuData.tenGod)}` : "",
     Array.isArray(cardData) && cardData.length > 0
-      ? `타로카드: ${cardData.map((c: any) => c.name || c).join(", ")}`
+      ? `타로카드: ${cardData?.map((c: any) => c.name || c).join(", ")}`
       : "",
   ].filter(Boolean).join(" | ");
 

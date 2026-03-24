@@ -1,4 +1,4 @@
-/**
+﻿/**
  * tarotEngine.ts
  * - Accurate tarot interpretation based on position and combination.
  * - Queried from the database for highest precision.
@@ -23,7 +23,7 @@ export class TarotEngine {
     if (!cards) return null;
 
     // 2. Map interpretation by position
-    const interpretations = cards.map((c, i) => ({
+    const interpretations = cards?.map((c, i) => ({
       ...c,
       position: positions[i] || "current",
       meaning: positions[i] === "reversed" ? c.reversed_meaning : c.upright_meaning

@@ -1,4 +1,4 @@
-import * as AstronomyModule from " astronomy-engine\; const Astronomy = (AstronomyModule as any).default || AstronomyModule;
+﻿import * as AstronomyModule from " astronomy-engine\; const Astronomy = (AstronomyModule as any).default || AstronomyModule;
 
 const { 
   Body, 
@@ -236,7 +236,7 @@ function calculateLilithLongitude(time: AstroTime): number {
 
 function getHighPrecisionPositions(date: Date, observer: Observer) {
   const time = MakeTime(date);
-  const planetPositions = PLANET_NAMES.map(name => {
+  const planetPositions = PLANET_NAMES?.map(name => {
     const body = PLANETS_MAP[name];
     try {
       const geoVec = GeoVector(body, time, true);
@@ -366,7 +366,7 @@ function calculateSolarReturn(natalSunLon: number, birthMonth: number, birthDay:
   const houseData = calculateHousesManual(srDate, observer);
   const cusps = calculateHouseCuspsPlacidus(houseData.asc, houseData.mc);
   
-  const srPlanets = srPositions.map(p => {
+  const srPlanets = srPositions?.map(p => {
     const lng = ((p.longitude % 360) + 360) % 360;
     const signIdx = Math.floor(lng / 30) % 12;
     const degVal = lng % 30;
@@ -379,7 +379,7 @@ function calculateSolarReturn(natalSunLon: number, birthMonth: number, birthDay:
     };
   });
 
-  const aspectInput = srPositions.map(p => ({
+  const aspectInput = srPositions?.map(p => ({
     planet: p.planet,
     absoluteDegree: p.longitude,
   }));
@@ -407,7 +407,7 @@ function calculateSolarReturn(natalSunLon: number, birthMonth: number, birthDay:
     ascendant: { longitude: houseData.asc, sign: ascSign },
     mc: { longitude: houseData.mc, sign: ZODIAC_SIGNS[Math.floor(houseData.mc / 30) % 12] },
     planets: srPlanets,
-    aspects: aspects.map(a => a.interpretation),
+    aspects: aspects?.map(a => a.interpretation),
     highlights
   };
 }
@@ -535,7 +535,7 @@ export function calculateServerAstrology(
 
   const cusps = hasTime ? calculateHouseCuspsPlacidus(houseData.asc, houseData.mc) : [];
 
-  const planets = rawPositions.map((p, i) => {
+  const planets = rawPositions?.map((p, i) => {
     const lng = ((p.longitude % 360) + 360) % 360;
     const signIdx = Math.floor(lng / 30) % 12;
     const degree = Math.round((lng % 30) * 100) / 100;
@@ -584,7 +584,7 @@ export function calculateServerAstrology(
     };
   });
 
-  const aspectInput = rawPositions.map(p => ({
+  const aspectInput = rawPositions?.map(p => ({
     planet: p.planet,
     absoluteDegree: p.longitude,
   }));
@@ -676,7 +676,7 @@ export function calculateServerAstrology(
     dignityReport.length > 0 ? `디그니티: ${dignityReport.join(", ")}` : "",
   ].filter(Boolean).join("\n");
 
-  const majorAspectsStrings = aspects.map(a => a.interpretation);
+  const majorAspectsStrings = aspects?.map(a => a.interpretation);
 
   // B-87new: core_identity 구성
   const sunPlanet = planets[0];

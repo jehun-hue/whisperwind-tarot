@@ -1,4 +1,4 @@
-/**
+﻿/**
  * test-edge-integrated.ts
  * 5개 엔진 통합 엣지테스트 (Saju, Astrology, Ziwei, Numerology, Tarot)
  */
@@ -87,7 +87,7 @@ async function runIntegratedTests() {
     // 5. Tarot Engine
     try {
         const cardIndices = drawCards(user.tarotCount);
-        const drawnCards: DrawnCard[] = cardIndices.map((idx, i) => {
+        const drawnCards: DrawnCard[] = cardIndices?.map((idx, i) => {
             const pos = getSpreadPositionContext(user.spread, i);
             return {
                 name: `Card ${idx}`,

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * lifeTimelineEngine.ts (B-102~108)
  * 개인 생애 타임라인 엔진
  * - 사주 대운 + 점성술 트랜짓 + 수비학 개인년을 통합
@@ -307,7 +307,7 @@ function mapTarotToTimeline(
     "life_transition":  "transition",
   };
 
-  const boostedWindows = [...eventWindows];
+  const boostedWindows = [...(eventWindows||[])];
 
   for (const symbol of tarotSymbols) {
     const mapped = TAROT_TIMELINE_MAP[symbol];
@@ -361,7 +361,7 @@ export function runLifeTimelineEngine(
   eventWindows = mapTarotToTimeline(tarotSymbols, eventWindows);
 
   // 5. 타임라인 생성 (B-103)
-  const timeline: TimelineEvent[] = eventWindows.map(ew => ({
+  const timeline: TimelineEvent[] = eventWindows?.map(ew => ({
     age: currentAge,
     phase: `${currentAge}세 ${ew.event}`,
     event_type: ew.event_type as TimelineEvent["event_type"],

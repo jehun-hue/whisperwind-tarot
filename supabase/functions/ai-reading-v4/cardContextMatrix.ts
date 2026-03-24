@@ -1,4 +1,4 @@
-/**
+﻿/**
  * cardContextMatrix.ts (B-109~114)
  * Card Context Matrix (CCM) — 동적 타로 카드 의미 계산
  * meaning = f(card, topic, position, neighbors)
@@ -330,7 +330,7 @@ export function analyzeSpreadCCM(
   overall_intensity: "high" | "medium" | "low";
   pattern_summary: PatternMatch[];
 } {
-  const cardAnalyses = cards.map((card, i) => {
+  const cardAnalyses = cards?.map((card, i) => {
     const neighbors = cards.filter((_, j) => j !== i);
     const position = positions[i] ?? "present";
     const result = lookupCCM(card, topic, position, neighbors);
@@ -360,7 +360,7 @@ export function analyzeSpreadCCM(
 
   // 스프레드 내러티브
   const spreadNarrative = uniquePatterns.length > 0
-    ? uniquePatterns.map(p => p.meaning).join(" / ")
+    ? uniquePatterns?.map(p => p.meaning).join(" / ")
     : `${dominantTheme} 에너지가 스프레드를 지배합니다.`;
 
   return {

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * sajuEngine.ts
  * Main coordinator for Saju (Four Pillars) calculation.
  */

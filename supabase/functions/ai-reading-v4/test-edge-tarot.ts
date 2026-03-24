@@ -1,4 +1,4 @@
-/**
+﻿/**
  * test-edge-tarot.ts
  * 타로 엔진 엣지케이스 테스트
  */
@@ -78,7 +78,7 @@ async function runTests() {
       if (unique.size !== tc.count) throw new Error("Duplicates found");
 
       // 2. 카드 객체화 & 스프레드 위치
-      const drawnCards: DrawnCard[] = indices.map((idx, i) => {
+      const drawnCards: DrawnCard[] = indices?.map((idx, i) => {
         const posInfo = getSpreadPositionContext(tc.spread, i);
         return mapToDrawnCard(idx, posInfo.name);
       });

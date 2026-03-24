@@ -1,4 +1,4 @@
-/**
+﻿/**
  * hybridTarotEngine.ts (v9)
  * - Monad 구조 분석 + 최한나 스타일 서사 해석 통합
  * - v9: 3장 → 메이저 22장 + 코트 16장 = 38장 패턴 완성
@@ -256,7 +256,7 @@ export function analyzeCardCombinations(drawnCards: DrawnCard[]): CombinationIns
   const count = drawnCards.length;
   if (count === 0) return [];
 
-  const cardNames = drawnCards.map(c => c.name);
+  const cardNames = drawnCards?.map(c => c.name);
 
   // 1) 같은 숫자 반복 (3장 이상)
   const rankMap: Record<number, string[]> = {};
@@ -407,7 +407,7 @@ export function getSpreadPositionContext(spreadType: string, position: number): 
 }
 
 export function hybridTarotReading(cards: any[]) {
-  return cards.map(c => ({
+  return cards?.map(c => ({
     ...c,
     structure: analyzeTarotStructure(c.name, c.position, c.isReversed),
     narrative: generateTarotNarrative(c.name, c.position, c.isReversed)
