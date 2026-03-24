@@ -1,4 +1,4 @@
-﻿/**
+/**
  * sajuEngine.ts
  * Core Saju (Four Pillars) logic.
  * Handles Pillars, Ten Gods, Hidden Stems, and Elements.
@@ -303,10 +303,12 @@ export function getFullSaju(
 
   const strengthPercent = Math.round((strengthScore / 110) * 100);
   let strength: string;
-  if (strengthPercent >= 70) strength = "극신강";
-  else if (strengthPercent >= 55) strength = "신강";
+  if (strengthPercent >= 85) strength = "극신강";
+  else if (strengthPercent >= 65) strength = "신강";
+  else if (strengthPercent >= 50) strength = "약변강";
   else if (strengthPercent >= 45) strength = "중화";
-  else if (strengthPercent >= 25) strength = "신약";
+  else if (strengthPercent >= 35) strength = "강변약";
+  else if (strengthPercent >= 15) strength = "신약";
   else strength = "극신약";
 
   const strength_detail = {
