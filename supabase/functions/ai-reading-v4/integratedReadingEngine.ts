@@ -1,4 +1,4 @@
-﻿/**
+/**
  * integratedReadingEngine.ts (v9)
  * - Production AI Symbolic Prediction Engine Platform.
  * - Runtime Flow: Calc -> Pattern -> Semantic -> Consensus -> Temporal -> Validation -> Narrative.
@@ -774,7 +774,7 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
         solarBirthInfo.year, solarBirthInfo.month, solarBirthInfo.day, 
         solarBirthInfo.hour, solarBirthInfo.minute, solarBirthInfo.gender,
         solarBirthInfo.longitude,
-        hasTime
+        !!(solarBirthInfo.hour !== undefined && solarBirthInfo.hour !== null)
       );
       if (!sajuRaw) throw new Error("사주 계산 결과가 유효하지 않습니다.");
     } catch (e: any) {
