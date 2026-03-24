@@ -2038,9 +2038,9 @@ ${parsed.action_guide?.do_list?.map((item: string) => `- ${item}`).join('\n') ||
     // B-63: consensus vector 기반 카드 제안
     consensus_card_suggestion: consensusCardSuggestion,
     saju_raw: sajuRaw,
-    saju_analysis: sajuAnalysis,
+    saju_analysis: { ...sajuAnalysis, ...sajuRaw },
     analyses: {
-      saju: sajuAnalysis,
+      saju: { ...sajuRaw, ...sajuAnalysis },
       tarot: tarotSymbolic,
       astrology: astrologyAnalysis,
       ziwei: ziweiAnalysis,

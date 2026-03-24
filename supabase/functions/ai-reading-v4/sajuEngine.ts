@@ -76,7 +76,7 @@ export function getFullSaju(
   longitude: number = 127.5,
   hasTime: boolean = true
 ) {
-  console.log("[GET FULL SAJU]", { year, month, day, hour, minute });
+
   // 1. Longitude & DST Correction
   // B-66new: 한국 시간대 히스토리 완전 반영
   // 1954~1961.08.09: UTC+8:30 사용 → KST(UTC+9) 기준 -30분 보정
@@ -108,12 +108,7 @@ export function getFullSaju(
   }
   
   dstOffset = utc830Correction + dstCorrection;
-  console.log("[DST DEBUG]", { 
-    year, month, day, mmdd, 
-    isUTC830Period, utc830Correction, 
-    isDST: dstCorrection !== 0, dstCorrection, 
-    finalDstOffset: dstOffset 
-  });
+
   // 진태양시 보정 (분 단위)
   // KST = UTC+9 = 135도 기준, 경도 1도당 4분
   const longitudeCorrectionMinutes = (longitude - 135) * 4;
@@ -130,15 +125,7 @@ export function getFullSaju(
   const correctedHour = kstSolarDate.getUTCHours();
   const correctedMinute = kstSolarDate.getUTCMinutes();
   
-  console.log("[LONGITUDE FIX]", { 
-    rawHour: hour, 
-    rawMinute: minute, 
-    longitude, 
-    totalOffset: totalOffsetMinutes, 
-    correctedHour, 
-    correctedMinute,
-    solarUtcMinutes
-  });
+
 
   // 야자시(夜子時) 처리: 23:00~23:59는 자시(子時)에 해당
   // 일주(日柱) 계산 시: 야자시는 "다음날"의 자시이므로 날짜를 +1
@@ -198,12 +185,7 @@ export function getFullSaju(
   // B-213 fix: JD 기준 일주 오프셋 수정 (50 → 49, 癸亥일/丙申일 기준 재검증)
   const dIdx = Math.floor(jd + 0.5 + 49) % 60;
   const dayPillar = { stem: STEMS[dIdx % 10], branch: BRANCHES[dIdx % 12] };
-  console.log("[YAJASI CHECK]", { 
-    kstDate: `${localSolarYear}-${localSolarMonth + 1}-${localSolarDay}`, 
-    correctedHour, 
-    isYaJa: isYaJaTime,
-    resultDay: `${dayPillar.stem}${dayPillar.branch}`
-  });
+
   const dayMaster = dayPillar.stem;
 
   // 5. Hour Pillar
@@ -222,20 +204,9 @@ export function getFullSaju(
     ? { stem: STEMS[hStemIdx], branch: BRANCHES[hBranchIdx] }
     : { stem: "미상", branch: "미상" };
   
-  console.log("[HOUR PILLAR DEBUG]", { 
-    correctedHour, 
-    effectiveHour,
-    correctedMinute,
-    normalizedMinutes,
-    dayGan: dayMaster, 
-    hourBranch: hourPillar.branch, 
-    hourGan: hourPillar.stem, 
-    hourPillar 
-  });
 
-  // 6. Elements Distribution (천간 1.0 + 지장간 가중치)
-  console.log("[HIDDEN_STEMS DEBUG]", JSON.stringify(HIDDEN_STEMS));
   const pillars = [yearPillar, monthPillar, dayPillar, hourPillar];
+
   const elements: Record<string, number> = { "목": 0, "화": 0, "토": 0, "금": 0, "수": 0 };
 
   const pillarLabels = ["년간", "년지", "월간", "월지", "일간", "일지", "시간", "시지"];
@@ -247,7 +218,7 @@ export function getFullSaju(
     
     if (sName) {
       elements[sName]++;
-      console.log("[ELEMENT DETAIL]", `${pillarLabels[idx * 2]}`, p.stem, "→", sName, 1.0);
+
     }
   });
 
@@ -264,7 +235,7 @@ export function getFullSaju(
       const weight = HIDDEN_WEIGHTS_EL[idx] ?? 0.1;
       if (name) {
         elements[name] += weight;
-        console.log("[ELEMENT DETAIL]", `${branchLabels[bIdx]} 지장간 ${hiddenLabels[idx]}`, hs, "→", name, weight);
+
       }
     });
   });
@@ -280,7 +251,73 @@ export function getFullSaju(
   for (const key of Object.keys(elements)) {
     roundedElements[key] = Math.round(elements[key] * 10) / 10;
   }
-  console.log("[ELEMENTS DEBUG]", JSON.stringify(roundedElements));
+  // === 궁위별 가중치 신강약 계산 (110점 만점) ===
+  const POS_W: Record<string, number> = {
+    ys: 10, yb: 10, ms: 10, mb: 30, db: 20, hs: 10, hb: 10
+  };
+  const dayMasterElement = TR_ELEMENTS[FIVE_ELEMENTS[dayMaster]];
+  const GEN_MAP: Record<string, string> = {"목":"수","화":"목","토":"화","금":"토","수":"금"};
+  const generatingElement = GEN_MAP[dayMasterElement];
+
+  function mainElOf(char: string, kind: 'S'|'B'): string {
+    if (kind === 'S') return TR_ELEMENTS[FIVE_ELEMENTS[char]] || "";
+    const h = HIDDEN_STEMS[char];
+    if (!h || h.length === 0) return "";
+    return TR_ELEMENTS[FIVE_ELEMENTS[h[0]]] || "";  // h[0] = 정기
+  }
+
+  const posArr = [
+    { k:'ys', c: yearPillar.stem,    t:'S' as const },
+    { k:'yb', c: yearPillar.branch,  t:'B' as const },
+    { k:'ms', c: monthPillar.stem,   t:'S' as const },
+    { k:'mb', c: monthPillar.branch, t:'B' as const },
+    { k:'db', c: dayPillar.branch,   t:'B' as const },
+    { k:'hs', c: hourPillar.stem,    t:'S' as const },
+    { k:'hb', c: hourPillar.branch,  t:'B' as const },
+  ];
+
+  let strengthScore = 0;
+  const bd: Record<string, {el:string; help:boolean; sc:number}> = {};
+
+  for (const p of posArr) {
+    const el = mainElOf(p.c, p.t);
+    const help = (el === dayMasterElement || el === generatingElement);
+    const sc = help ? POS_W[p.k] : 0;
+    strengthScore += sc;
+    bd[p.k] = { el, help, sc };
+  }
+
+  // 진술축미 보정: 습토(丑辰)는 목·금·수 일간에게 반점 가산
+  const WET = ['丑','辰'];
+  const WET_FAV = ['목','금','수'];
+  for (const p of posArr) {
+    if (p.t !== 'B') continue;
+    if (!WET.includes(p.c)) continue;
+    if (mainElOf(p.c, 'B') !== '토') continue;
+    if (!WET_FAV.includes(dayMasterElement)) continue;
+    const bonus = Math.floor(POS_W[p.k] * 0.5);
+    strengthScore += bonus;
+    bd[p.k].sc += bonus;
+    bd[p.k].help = true;
+  }
+
+  const strengthPercent = Math.round((strengthScore / 110) * 100);
+  let strength: string;
+  if (strengthPercent >= 70) strength = "극신강";
+  else if (strengthPercent >= 55) strength = "신강";
+  else if (strengthPercent >= 45) strength = "중화";
+  else if (strengthPercent >= 25) strength = "신약";
+  else strength = "극신약";
+
+  const strength_detail = {
+    score: strengthScore,
+    totalPossible: 110,
+    percent: strengthPercent,
+    dayMasterElement,
+    generatingElement,
+    level: strength,
+    breakdown: bd,
+  };
 
   const result = {
     pillars: {
@@ -290,6 +327,10 @@ export function getFullSaju(
       hour: hourPillar
     },
     dayMaster,
+    strength,
+    strength_detail,
+    solarTimeApplied: true,
+    solarTimeNote: `진태양시 적용 (기준경도 ${longitude}°, 보정 ${longitudeCorrectionMinutes.toFixed(1)}분)`,
     elements: roundedElements,
     jd,
     sunLong,
@@ -302,21 +343,7 @@ export function getFullSaju(
     narrative: hasTime ? "" : "출생 시간 미입력으로 시주는 제외하고 3주(년월일)만 분석합니다."
   };
 
-  console.log('[SAJU DEBUG]', {
-    input: { year, month, day, hour, minute },
-    corrected: { 
-      date: !isNaN(correctedDate.getTime()) ? correctedDate.toISOString() : "Invalid Date", 
-      hour: correctedHour,
-      minute: correctedMinute 
-    },
-    isYaJaTime,
-    dayPillarDate: !isNaN(dayPillarDate.getTime()) ? dayPillarDate.toISOString() : "Invalid Date",
-    effectiveHour,
-    result: {
-      dayMaster: result.dayMaster,
-      pillars: result.pillars
-    }
-  });
+
 
   return result;
 }

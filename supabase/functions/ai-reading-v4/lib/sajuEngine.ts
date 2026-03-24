@@ -80,23 +80,36 @@ export function calculateSaju(
   };
 
   // Strength (Simple dummy logic based on count for now, but user asks for a return - "중신약")
+  // Strength Calculation (Precision 100-point system)
   const dmEl = FIVE_ELEMENTS_MAP[dayMaster];
-  let strengthScore = 0;
-  // Same/Saeng = +1.0, Geuk/Seol = -1.0
-  // Simplified point system:
-  // Month branch = 3.0
-  // Other branches = 1.0
-  // Day branch = 1.5
-  // Other Stems = 0.5
-  // BaseDM = 5.0 (for balancing)
-  // This is a complex calculation; I'll use a qualitative "Shin-Yak/Shin-Gang" based on count for now.
   const powerElements = dmEl === "wood" ? ["wood", "water"] :
                         dmEl === "fire" ? ["fire", "wood"] :
                         dmEl === "earth" ? ["earth", "fire"] :
                         dmEl === "metal" ? ["metal", "earth"] : ["water", "metal"];
-  
-  const powerCount = elementsCount[powerElements[0]] + elementsCount[powerElements[1]];
-  const strength = powerCount >= 5 ? "중신강" : (powerCount <= 3 ? "중신약" : "중화");
+
+  const weights = {
+    yearStem: 8,
+    monthStem: 9,
+    hourStem: 8,
+    yearBranch: 10,
+    monthBranch: 40, // Deuk-Ryeong (Core)
+    dayBranch: 15,   // Deuk-Ji
+    hourBranch: 10
+  };
+
+  let strengthScore = 0;
+  if (powerElements.includes(FIVE_ELEMENTS_MAP[yP.stem])) strengthScore += weights.yearStem;
+  if (powerElements.includes(FIVE_ELEMENTS_MAP[mP.stem])) strengthScore += weights.monthStem;
+  if (powerElements.includes(FIVE_ELEMENTS_MAP[hP.stem])) strengthScore += weights.hourStem;
+  if (powerElements.includes(FIVE_ELEMENTS_MAP[yP.branch])) strengthScore += weights.yearBranch;
+  if (powerElements.includes(FIVE_ELEMENTS_MAP[mP.branch])) strengthScore += weights.monthBranch;
+  if (powerElements.includes(FIVE_ELEMENTS_MAP[dP.branch])) strengthScore += weights.dayBranch;
+  if (powerElements.includes(FIVE_ELEMENTS_MAP[hP.branch])) strengthScore += weights.hourBranch;
+
+  const strength = strengthScore >= 80 ? "극신강" :
+                   strengthScore >= 55 ? "신강" :
+                   strengthScore >= 45 ? "중화" :
+                   strengthScore >= 30 ? "신약" : "극신약";
 
   return {
     year: { stem: yP.stem, branch: yP.branch, tenGod: yearTG },

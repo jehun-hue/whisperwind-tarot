@@ -386,7 +386,7 @@ export async function analyzeSajuStructure(
 
   const dayMaster = pillars.day?.stem;
   if (!dayMaster) {
-    console.warn("[aiSajuAnalysis] dayMaster is missing, skipping tenGod calculation");
+
   } else {
     const dayElement = STEM_ELEMENT[dayMaster];
 
@@ -466,52 +466,39 @@ export async function analyzeSajuStructure(
   };
 
   // 종합 판단 및 보정 규칙
-  const deukCount = [deukryeongResult, deukjiResult, deukseResult].filter(Boolean).length;
-  let strengthLevel = "중화";
-  if (deukCount === 3) strengthLevel = "극신강";
-  else if (deukCount === 2) strengthLevel = "신강";
-  else if (deukCount === 1) strengthLevel = "신약";
-  else strengthLevel = "극신약";
-
-  // 보정 규칙 1/2: 득세/실세 압도
+  // Use strength determined in sajuEngine (100-point weighted system)
+  let strengthLevel = sajuRaw.strength || "중화";
   let calibrationNote = "";
-  if (strengthLevel === "신강" && deukseTarget >= 5.6) {
-    strengthLevel = "극신강";
-    calibrationNote = ", 득세 5.6점 이상 압도적으로 극신강 상향";
-  } else if (strengthLevel === "신약" && deukseTarget <= 1.2) {
-    strengthLevel = "극신약";
-    calibrationNote = ", 득세 1.2점 이하 실세압도로 극신약 하향";
-  }
-
-  // 보정 규칙 3: 천간 단일 오행 독점 (전부 비견/겁재/인성 계열인 경우)
-  const stemsAreSame = stems.every(s => STEM_ELEMENT[s || ""] === myElement);
-  if (stemsAreSame && (strengthLevel === "신약" || strengthLevel === "극신약" || strengthLevel === "중화")) {
-    strengthLevel = "신강";
-    calibrationNote += ", 천간 4개 계열 동일 오행으로 신강 보정";
-  } else if (stemsAreSame && strengthLevel === "신강") {
-    strengthLevel = "극신강"; // 천간이 다 같으면 신강은 무조건 극신강으로
-    calibrationNote += ", 천간 전부 비견/겁재 계열로 극신강 보정";
-  }
 
   const strength_detail = {
     deukryeong,
     deukji,
     deukse,
     overall: strengthLevel,
-    overall_reason: `${deukCount}개 항목 득(得) 판정${calibrationNote}`
+    overall_reason: `sajuEngine 정밀 판정 결과(가중치 점수제) 기반${calibrationNote}`
   };
 
-  console.log("[STRENGTH DETAIL]", JSON.stringify(strength_detail));
+
 
   const isDeukyeong = deukryeongResult;
-  const supportRatio = (deukseTarget + 0.1) / (tenGodCount["비겁"] + tenGodCount["인성"] + tenGodCount["식상"] + tenGodCount["재성"] + tenGodCount["관성"] + 0.1);
+  const supportRatio = (sajuRaw?.strength_detail?.percent ?? 50) / 100;
 
   // ── B-257: 격국(格局) 판별 ──────────────────────────────────────
-  const gyeokguk = determineGyeokguk(dm, pillars.month?.branch || "", tenGodCount, { supportRatio, isDeukyeong }, stems, branches);
+  const gyeokguk = determineGyeokguk(
+    {
+      year: [pillars.year?.stem, pillars.year?.branch],
+      month: [pillars.month?.stem, pillars.month?.branch],
+      day: [pillars.day?.stem, pillars.day?.branch],
+      hour: [pillars.hour?.stem, pillars.hour?.branch],
+    },
+    dm,
+    tenGodCount,
+    supportRatio
+  );
   
   // Back-compatibility for other logic using 'strength' variable
   const strength = strengthLevel;
-  const isSpecialFormat = gyeokguk.type === "외격" || gyeokguk.name === "건록격" || gyeokguk.name === "양인격";
+  const isSpecialFormat = gyeokguk.type === "외격" || gyeokguk.name.includes("건록") || gyeokguk.name.includes("양인");
   const specialFormatType = gyeokguk.name;
 
   const PRODUCE_ELEM: Record<string, string> = { "목":"화", "화":"토", "토":"금", "금":"수", "수":"목" }; 
@@ -524,11 +511,14 @@ export async function analyzeSajuStructure(
   let eokbuYong: string;
   let eokbuReason = "";
   if (isSpecialFormat) {
-    if (specialFormatType === "종강격") {
+    if (gyeokguk.yongShinElement) {
+      eokbuYong = gyeokguk.yongShinElement;
+      eokbuReason = `외격(${gyeokguk.name}): 격국 원리에 따라 ${eokbuYong} 선택`;
+    } else if (specialFormatType.includes("종강")) {
       eokbuYong = myElement; eokbuReason = "종강격: 일간과 같은 오행 따라감";
-    } else if (specialFormatType === "종재격") {
+    } else if (specialFormatType.includes("종재")) {
       eokbuYong = getConqueredElement(myElement); eokbuReason = "종재격: 재성 오행 따라감";
-    } else if (specialFormatType === "종관격") {
+    } else if (specialFormatType.includes("종관")) {
       eokbuYong = getConqueringElement(myElement); eokbuReason = "종관격: 관성 오행 따라감";
     } else { // 종아격
       eokbuYong = getProducedElement(myElement); eokbuReason = "종아격: 식상 오행 따라감";
@@ -591,8 +581,7 @@ export async function analyzeSajuStructure(
   let guShin = "";
   let hanShin = "";
 
-  // [DEBUG] strengthLevel 판정 추적
-  console.log("[DEBUG-STRENGTH-FINAL]", { strengthLevel, deukCount, deukryeongResult, deukjiResult, deukseResult, deukseTarget });
+
 
   // 희신, 기신, 구신, 한신 계산 로직
   const cleanStrength = (strengthLevel || "").trim();
@@ -640,7 +629,7 @@ export async function analyzeSajuStructure(
     hanShin = getProducingElement(myElement); // 인성 (비겁을 생함)
   }
 
-  console.log("[YONGSHIN DETAIL]", JSON.stringify(yongsin_detail));
+
 
   // ── 4. Characteristics 생성 ──
   const characteristics: string[] = [];
@@ -774,7 +763,7 @@ export async function analyzeSajuStructure(
       }
     }
   } catch (e) {
-    console.error("[Daewoon] Calculation failed:", e);
+
   }
 
   // v2: 대운 전환기 경고
@@ -1168,7 +1157,7 @@ export async function analyzeSajuStructure(
 
   // 1. 천간 점수 (일간 제외)
   const stemsToScore = [pillars.year?.stem, pillars.month?.stem, pillars.hour?.stem].filter(Boolean) as string[];
-  console.log("[DEBUG-STEMS]", stemsToScore, "dm:", dm);
+
   stemsToScore.forEach(s => {
     const tg = calculateTenGod(dm, s);
     if (tg && tenGodScores[tg] !== undefined) tenGodScores[tg] += 1.0;
@@ -1246,7 +1235,7 @@ export async function analyzeSajuStructure(
       interpretation: `오늘의 에너지: ${stemTenGod} 기운, 원국 지지와 ${branchRelations.length > 0 ? branchRelations.map(r => r.type).join("/") : "조화로운"} 관계`
     };
   } catch (e) {
-    console.error("[Daily Pillar] Calculation failed:", e);
+
   }
 
   return {

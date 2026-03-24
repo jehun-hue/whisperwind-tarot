@@ -1858,6 +1858,19 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
                             <div className="space-y-2">
                               <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">일간(Day Master)</span><span className="font-bold">{renderSafe(reading.saju_analysis.dayMaster)}</span></div>
                               <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">강약(Strength)</span><span className="text-primary font-bold">{renderSafe(reading.saju_analysis.strength)}</span></div>
+                              {reading.saju_analysis?.gyeokguk && (
+                                <div className="flex items-center gap-2 text-sm mt-1">
+                                  <span className="text-muted-foreground">격국:</span>
+                                  <span className="font-medium text-[11px]">
+                                    {reading.saju_analysis.gyeokguk.name}
+                                  </span>
+                                  {reading.saju_analysis.gyeokguk.specialTrait && (
+                                    <span className="text-[10px] text-muted-foreground ml-1">
+                                      ({reading.saju_analysis.gyeokguk.specialTrait})
+                                    </span>
+                                  )}
+                                </div>
+                              )}
                               <div className="pt-2">
                                 <div className="mb-1 text-[9px] text-muted-foreground italic">오행 분포 (Elements)</div>
                                 <div className="flex gap-1">

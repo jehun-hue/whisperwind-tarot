@@ -1,224 +1,440 @@
-/**
- * gyeokguk.ts
- * 사주 격국(格局) 판별 모듈
- */
+// lib/gyeokguk.ts — 격국 판정 엔진 v2 (전통 명리학 우선순위 준수)
+// 판정 순서: ① 전왕격 → ② 종격 → ③ 내격 → ④ 특수 십성 조합(보조 속성)
 
-import { calculateTenGod } from "./tenGods.ts";
-
+// ─── 타입 정의 ───
 export interface GyeokgukResult {
-  type: "내격" | "외격" | "특수격";
+  type: "외격" | "내격";
   name: string;
-  hanja?: string;
   description: string;
-  strength: "강" | "중" | "약";
+  specialTrait?: string;          // 식신제살, 관인상생 등 (보조 정보)
+  specialTraitDescription?: string;
+  yongShinElement?: string;       // 격국 기반 용신 오행
 }
 
-/**
- * 월지의 본기(정기) 장간을 리턴
- */
-export function getMonthBranchMainGan(monthBranch: string): string {
-  const map: Record<string, string> = {
-    "子": "癸", "丑": "己", "寅": "甲", "卯": "乙", "辰": "戊", "巳": "丙",
-    "午": "丁", "未": "己", "申": "庚", "酉": "辛", "戌": "戊", "亥": "壬"
-  };
-  return map[monthBranch] || "";
+// ─── 상수 ───
+const STEM_ELEMENT: Record<string, string> = {
+  "甲": "목", "乙": "목", "丙": "화", "丁": "화", "戊": "토",
+  "己": "토", "庚": "금", "辛": "금", "壬": "수", "癸": "수"
+};
+
+const BRANCH_MAIN_ELEMENT: Record<string, string> = {
+  "子": "수", "丑": "토", "寅": "목", "卯": "목", "辰": "토", "巳": "화",
+  "午": "화", "未": "토", "申": "금", "酉": "금", "戌": "토", "亥": "수"
+};
+
+const STEM_POLARITY: Record<string, boolean> = {
+  "甲": true, "乙": false, "丙": true, "丁": false, "戊": true,
+  "己": false, "庚": true, "辛": false, "壬": true, "癸": false
+};
+
+const GYEOK_BRANCH_STEM: Record<string, string> = {
+  "子": "癸", "丑": "己", "寅": "甲", "卯": "乙", "辰": "戊", "巳": "丙",
+  "午": "丁", "未": "己", "申": "庚", "酉": "辛", "戌": "戊", "亥": "壬"
+};
+
+const GENERATE_MAP: Record<string, string> = {
+  "목": "수", "화": "목", "토": "화", "금": "토", "수": "금"
+};
+
+const CONTROL_MAP: Record<string, string> = {
+  "목": "금", "화": "수", "토": "목", "금": "화", "수": "토"
+};
+
+const PRODUCE_MAP: Record<string, string> = {
+  "목": "화", "화": "토", "토": "금", "금": "수", "수": "목"
+};
+
+// ─── 헬퍼 함수 ───
+function getDayMasterElement(dayMaster: string): string {
+  return STEM_ELEMENT[dayMaster] || "목";
 }
 
-/**
- * 특수격국 (Special Structures) 판별
- */
-function checkSpecialGyeok(
-  dayStem: string,
-  allStems: string[],
-  allBranches: string[],
-  tenGodsCount: Record<string, number>
+function countElementsInPillars(
+  pillars: { year: string[]; month: string[]; day: string[]; hour: string[] }
+): Record<string, number> {
+  const counts: Record<string, number> = { 목: 0, 화: 0, 토: 0, 금: 0, 수: 0 };
+  const allChars = [
+    pillars.year[0], pillars.year[1],
+    pillars.month[0], pillars.month[1],
+    pillars.day[0], pillars.day[1],
+    pillars.hour[0], pillars.hour[1]
+  ];
+  for (const ch of allChars) {
+    if (!ch) continue;
+    const el = STEM_ELEMENT[ch] || BRANCH_MAIN_ELEMENT[ch];
+    if (el) counts[el]++;
+  }
+  return counts;
+}
+
+function hasElementInStemsBranches(
+  pillars: { year: string[]; month: string[]; day: string[]; hour: string[] },
+  element: string,
+  excludeDayStem = true
+): boolean {
+  const stems = [pillars.year[0], pillars.month[0], pillars.hour[0]];
+  if (!excludeDayStem) stems.push(pillars.day[0]);
+  const branches = [pillars.year[1], pillars.month[1], pillars.day[1], pillars.hour[1]];
+  for (const s of stems) {
+    if (STEM_ELEMENT[s] === element) return true;
+  }
+  for (const b of branches) {
+    if (BRANCH_MAIN_ELEMENT[b] === element) return true;
+  }
+  return false;
+}
+
+// 일간의 뿌리(통근처)가 지지에 있는지 확인
+function hasDayMasterRoot(
+  pillars: { year: string[]; month: string[]; day: string[]; hour: string[] },
+  dayMasterElement: string
+): boolean {
+  const branches = [pillars.year[1], pillars.month[1], pillars.day[1], pillars.hour[1]];
+  for (const b of branches) {
+    if (BRANCH_MAIN_ELEMENT[b] === dayMasterElement) return true;
+  }
+  return false;
+}
+
+// 월지가 일간을 돕는지 (득령)
+function isDeukryeong(monthBranch: string, dayMasterElement: string): boolean {
+  const mbEl = BRANCH_MAIN_ELEMENT[monthBranch];
+  return mbEl === dayMasterElement || mbEl === GENERATE_MAP[dayMasterElement];
+}
+
+// ════════════════════════════════════════
+// 1단계: 전왕격 (一行得氣格 / 專旺格) 판정
+// ════════════════════════════════════════
+function checkJeonwangGyeok(
+  pillars: { year: string[]; month: string[]; day: string[]; hour: string[] },
+  dayMaster: string,
+  balance: number
 ): GyeokgukResult | null {
-  const branchCount: Record<string, number> = {};
-  allBranches.forEach(b => {
-    const char = b.charAt(0);
-    branchCount[char] = (branchCount[char] || 0) + 1;
-  });
+  if (balance < 0.75) return null; // 최소 75% 이상 신강해야 후보
 
-  const stemTenGods = allStems.map(s => calculateTenGod(dayStem, s));
-  const hasInStems = (god: string) => stemTenGods.includes(god);
+  const dmEl = getDayMasterElement(dayMaster);
+  const counts = countElementsInPillars(pillars);
+  const controlEl = CONTROL_MAP[dmEl]; // 관살 오행
 
-  // Helper for Banghap
-  const hasBanghap = (set: string[]) => set.every(b => allBranches.some(ab => ab.includes(b)));
-  
-  // 1. 곡직격 (曲直格)
-  if (["甲", "乙"].includes(dayStem)) {
-    const woodCount = (branchCount["寅"] || 0) + (branchCount["卯"] || 0) + (branchCount["辰"] || 0);
-    if (hasBanghap(["寅", "卯", "辰"]) || woodCount >= 3) {
-      return { type: "외격", name: "곡직격", hanja: "曲直格", description: "나무의 생동하는 기운을 가진 격으로 인자함과 성장성이 돋보입니다.", strength: "강" };
+  // 관살이 천간·지지 본기에 존재하면 전왕격 불성립
+  if (hasElementInStemsBranches(pillars, controlEl)) return null;
+
+  // 일간 오행 + 인성 오행이 전체 8자 중 6자 이상 차지
+  const genEl = GENERATE_MAP[dmEl];
+  const selfCount = counts[dmEl] + counts[genEl];
+  if (selfCount < 6) return null;
+
+  // 월지가 일간 오행이어야 함
+  const monthBranch = pillars.month[1];
+  const mbEl = BRANCH_MAIN_ELEMENT[monthBranch];
+  if (mbEl !== dmEl && mbEl !== genEl) return null;
+
+  // 비겁이 천간에 투출해야 진격
+  const stems = [pillars.year[0], pillars.month[0], pillars.hour[0]];
+  const hasBigeopTouchul = stems.some(s => STEM_ELEMENT[s] === dmEl);
+
+  const nameMap: Record<string, string[]> = {
+    "목": ["곡직격(曲直格)", "목의 기운이 한쪽으로 편중된 전왕격입니다. 인성(수)·비겁(목) 운이 길하고, 관살(금) 운이 흉합니다."],
+    "화": ["염상격(炎上格)", "화의 기운이 한쪽으로 편중된 전왕격입니다. 인성(목)·비겁(화) 운이 길하고, 관살(수) 운이 흉합니다."],
+    "토": ["가색격(稼穡格)", "토의 기운이 한쪽으로 편중된 전왕격입니다. 인성(화)·비겁(토) 운이 길하고, 관살(목) 운이 흉합니다."],
+    "금": ["종혁격(從革格)", "금의 기운이 한쪽으로 편중된 전왕격입니다. 인성(토)·비겁(금) 운이 길하고, 관살(화) 운이 흉합니다."],
+    "수": ["윤하격(潤下格)", "수의 기운이 한쪽으로 편중된 전왕격입니다. 인성(금)·비겁(수) 운이 길하고, 관살(토) 운이 흉합니다."]
+  };
+
+  const info = nameMap[dmEl];
+  if (!info) return null;
+
+  return {
+    type: "외격",
+    name: info[0] + (hasBigeopTouchul ? "" : " (가격)"),
+    description: info[1],
+    yongShinElement: dmEl // 전왕격은 일간 오행 자체가 용신
+  };
+}
+
+// ════════════════════════════════════════
+// 2단계: 종격 (從格) 판정
+// ════════════════════════════════════════
+function checkJongGyeok(
+  pillars: { year: string[]; month: string[]; day: string[]; hour: string[] },
+  dayMaster: string,
+  tenGods: Record<string, number>,
+  balance: number
+): GyeokgukResult | null {
+  const dmEl = getDayMasterElement(dayMaster);
+  const genEl = GENERATE_MAP[dmEl];
+  const monthBranch = pillars.month[1];
+
+  // ── 종강격 / 종왕격 (극신강) ──
+  if (balance >= 0.80) {
+    // 일간이 득령해야 함
+    if (!isDeukryeong(monthBranch, dmEl)) return null;
+
+    const bigeop = (tenGods["비겁"] || 0);
+    const inseong = (tenGods["인성"] || 0);
+
+    if (inseong >= bigeop) {
+      return {
+        type: "외격",
+        name: "종강격(從强格)",
+        description: "인성이 태왕하여 일간이 극도로 강한 사주입니다. 비겁·인성 운이 길하고, 재성·관살 운이 흉합니다. 식상 운은 비겁이 많으면 길하나 인성이 많으면 흉합니다.",
+        yongShinElement: genEl
+      };
+    } else {
+      return {
+        type: "외격",
+        name: "종왕격(從旺格)",
+        description: "비겁이 태왕하여 일간이 극도로 강한 사주입니다. 비겁·인성 운이 길하고, 재성·관살 운이 흉합니다.",
+        yongShinElement: dmEl
+      };
     }
   }
 
-  // 2. 염상격 (炎上格)
-  if (["丙", "丁"].includes(dayStem)) {
-    const fireCount = (branchCount["巳"] || 0) + (branchCount["午"] || 0) + (branchCount["未"] || 0);
-    if (hasBanghap(["巳", "午", "未"]) || fireCount >= 3) {
-      return { type: "외격", name: "염상격", hanja: "炎上格", description: "불의 정점이나 확산력을 가진 격으로 열정과 예의가 살아있습니다.", strength: "강" };
+  // ── 종재격 / 종관격 / 종아격 (극신약) ──
+  if (balance <= 0.20) {
+    // 일간이 실령(失令)해야 함
+    if (isDeukryeong(monthBranch, dmEl)) return null;
+
+    // 일간의 뿌리가 없거나 극히 미약해야 함
+    const hasRoot = hasDayMasterRoot(pillars, dmEl);
+    const hasGenRoot = hasDayMasterRoot(pillars, genEl);
+
+    // 천간에 인성·비겁이 투출되면 종격 불성립 (가종 제외)
+    const stems = [pillars.year[0], pillars.month[0], pillars.hour[0]];
+    const hasSupportStem = stems.some(s => {
+      const el = STEM_ELEMENT[s];
+      return el === dmEl || el === genEl;
+    });
+
+    const isJinJong = !hasRoot && !hasGenRoot && !hasSupportStem;
+    const suffix = isJinJong ? "" : " (가종)";
+
+    // 가종이면서 뿌리가 있으면 종격 불성립 → 내격으로 처리
+    if (!isJinJong && hasRoot) return null;
+
+    // 어떤 종격인지 판단: 가장 왕성한 육신 기준
+    const jaeseong = (tenGods["재성"] || 0);
+    const gwanseong = (tenGods["관성"] || 0);
+    const siksang = (tenGods["식상"] || 0);
+
+    if (gwanseong >= jaeseong && gwanseong >= siksang) {
+      return {
+        type: "외격",
+        name: "종관격(從官格)" + suffix,
+        description: "관살이 태왕하여 일간이 관살의 기세를 따르는 사주입니다. 관살·재성 운이 길하고, 인성·비겁 운이 흉합니다.",
+        yongShinElement: CONTROL_MAP[dmEl]
+      };
+    } else if (jaeseong >= siksang) {
+      return {
+        type: "외격",
+        name: "종재격(從財格)" + suffix,
+        description: "재성이 태왕하여 일간이 재성의 기세를 따르는 사주입니다. 재성·식상 운이 길하고, 인성·비겁 운이 흉합니다.",
+        yongShinElement: PRODUCE_MAP[dmEl]
+      };
+    } else {
+      return {
+        type: "외격",
+        name: "종아격(從兒格)" + suffix,
+        description: "식상이 태왕하여 일간이 식상의 기세를 따르는 사주입니다. 식상·재성 운이 길하고, 인성·비겁 운이 흉합니다.",
+        yongShinElement: PRODUCE_MAP[dmEl]
+      };
     }
-  }
-
-  // 3. 가색격 (稼穡格)
-  if (["戊", "己"].includes(dayStem)) {
-    const earthCount = (branchCount["辰"] || 0) + (branchCount["戌"] || 0) + (branchCount["丑"] || 0) + (branchCount["未"] || 0);
-    if (earthCount >= 3) {
-      return { type: "외격", name: "가색격", hanja: "稼穡格", description: "대지의 풍요를 상징하는 격으로 결실을 맺고 성실하게 기반을 닦습니다.", strength: "강" };
-    }
-  }
-
-  // 4. 종혁격 (從革格)
-  if (["庚", "辛"].includes(dayStem)) {
-    const metalCount = (branchCount["申"] || 0) + (branchCount["酉"] || 0) + (branchCount["戌"] || 0);
-    if (hasBanghap(["申", "酉", "戌"]) || metalCount >= 3) {
-      return { type: "외격", name: "종혁격", hanja: "從革格", description: "금의 결단력과 변혁을 의미하는 격으로 의리와 강력한 집행력이 돋보입니다.", strength: "강" };
-    }
-  }
-
-  // 5. 윤하격 (潤下格)
-  if (["壬", "癸"].includes(dayStem)) {
-    const waterCount = (branchCount["亥"] || 0) + (branchCount["子"] || 0) + (branchCount["丑"] || 0);
-    if (hasBanghap(["亥", "子", "丑"]) || waterCount >= 3) {
-      return { type: "외격", name: "윤하격", hanja: "潤下格", description: "물의 유동성과 지혜를 의미하는 격으로 깊은 통찰력과 침투력이 있습니다.", strength: "강" };
-    }
-  }
-
-  // 6. 양인합살격 (羊刃合殺格)
-  const yanginMap: Record<string, string> = { "甲": "卯", "乙": "寅", "丙": "午", "丁": "巳", "戊": "午", "己": "巳", "庚": "酉", "辛": "申", "壬": "子", "癸": "亥" };
-  if (allBranches.some(b => b.includes(yanginMap[dayStem])) && hasInStems("편관")) {
-    return { type: "특수격", name: "양인합살격", hanja: "羊刃合殺格", description: "강인한 양인의 기운을 날카로운 편관(살)으로 제어하여 큰 권위를 얻는 대귀한 격국입니다.", strength: "강" };
-  }
-
-  // 7. 상관배인격 (傷官佩印格)
-  if (tenGodsCount["상관"] >= 2.0 && (hasInStems("정인") || hasInStems("편인"))) {
-    return { type: "특수격", name: "상관배인격", hanja: "傷官佩印格", description: "뛰어난 재능과 언변(상관)을 지혜로운 인성(인)으로 다듬어 학문이나 전문직에서 이름을 떨칩니다.", strength: "중" };
-  }
-
-  // 8. 식신제살격 (食神制殺格)
-  if (hasInStems("식신") && hasInStems("편관")) {
-    return { type: "특수격", name: "식신제살격", hanja: "食神制殺格", description: "총명한 능력으로 난관과 고난(편관)을 해결하며 사회적 문제를 타파하는 용사형 격국입니다.", strength: "중" };
-  }
-
-  // 9. 재자약살격 (財滋弱殺格)
-  if (hasInStems("재성") && hasInStems("편관")) {
-    return { type: "특수격", name: "재자약살격", hanja: "財滋弱殺格", description: "풍요로운 재물이 명예와 권위(편관)를 뒷받침하여 실질적인 지위와 부를 동시에 거머쥡니다.", strength: "중" };
-  }
-
-  // 10. 관인상생격 (官印相生格)
-  if (hasInStems("정관") && hasInStems("정인")) {
-    return { type: "특수격", name: "관인상생격", hanja: "官印相生格", description: "조직의 신뢰와 개인의 학문적 소양이 조화를 이루어 순탄하게 성공과 승진을 이루는 명문 격국입니다.", strength: "중" };
   }
 
   return null;
 }
 
-/**
- * 격국 판별 메인 함수
- */
-export function determineGyeokguk(
-  dayStem: string,
-  monthBranch: string,
-  tenGodsCount: Record<string, number>,
-  balance: { supportRatio: number; isDeukyeong: boolean },
-  allStems: string[],
-  allBranches: string[]
-): GyeokgukResult {
-  const { supportRatio, isDeukyeong } = balance;
+// ════════════════════════════════════════
+// 3단계: 내격 (정격 / 팔격) 판정
+// ════════════════════════════════════════
+function checkNaegyeok(
+  pillars: { year: string[]; month: string[]; day: string[]; hour: string[] },
+  dayMaster: string,
+  tenGods: Record<string, number>
+): { name: string; description: string } {
+  const dmEl = getDayMasterElement(dayMaster);
+  const monthBranch = pillars.month[1];
+  const mbEl = BRANCH_MAIN_ELEMENT[monthBranch];
 
-  // 1. 특수격 판별 (Check first)
-  const special = checkSpecialGyeok(dayStem, allStems, allBranches, tenGodsCount);
-  if (special) return special;
+  // 건록격 / 양인격 체크
+  const GEOLLOG: Record<string, string> = {
+    "甲": "寅", "乙": "卯", "丙": "巳", "丁": "午", "戊": "巳",
+    "己": "午", "庚": "申", "辛": "酉", "壬": "亥", "癸": "子"
+  };
+  const YANGIN: Record<string, string> = {
+    "甲": "卯", "丙": "午", "戊": "午", "庚": "酉", "壬": "子"
+  };
 
-  // 2. 외격 (종격) 판별
-  if (supportRatio >= 0.80 && isDeukyeong) {
+  if (YANGIN[dayMaster] === monthBranch) {
+    return { name: "양인격(羊刃格)", description: "월지가 일간의 양인에 해당하는 격국입니다. 칠살로 제어하는 운이 길합니다." };
+  }
+  if (GEOLLOG[dayMaster] === monthBranch) {
+    return { name: "건록격(建祿格)", description: "월지가 일간의 건록에 해당하는 격국입니다. 재관 운이 길합니다." };
+  }
+
+  // 월지 본기 → 일간 대비 십신 → 격국명
+  const monthMainStem = GYEOK_BRANCH_STEM[monthBranch] || "甲";
+  const relation = getRelationByStem(dayMaster, monthMainStem);
+
+  const GYEOK_NAMES: Record<string, string[]> = {
+    "정관": ["정관격(正官格)", "월지 본기가 정관에 해당합니다. 신왕하고 인수가 있으면 발복합니다."],
+    "편관": ["편관격(偏官格)", "월지 본기가 편관(칠살)에 해당합니다. 식신제살 또는 인수화살이 필요합니다."],
+    "정인": ["정인격(正印格)", "월지 본기가 정인에 해당합니다. 관성이 있으면 관인양전으로 귀합니다."],
+    "편인": ["편인격(偏印格)", "월지 본기가 편인에 해당합니다. 편재로 제압하거나 비견으로 설기하면 길합니다."],
+    "식신": ["식신격(食神格)", "월지 본기가 식신에 해당합니다. 재성이 있어 식신생재가 되면 길합니다."],
+    "상관": ["상관격(傷官格)", "월지 본기가 상관에 해당합니다. 상관상진이 되거나 인성으로 제어하면 길합니다."],
+    "정재": ["정재격(正財格)", "월지 본기가 정재에 해당합니다. 신왕해야 재를 감당할 수 있습니다."],
+    "편재": ["편재격(偏財格)", "월지 본기가 편재에 해당합니다. 신왕하고 관성이 있으면 재관격으로 귀합니다."],
+    "비견": ["건록격(建祿格)", "월지 본기가 비견에 해당합니다."],
+    "겁재": ["건록격(建祿格)", "월지 본기가 겁재에 해당합니다."]
+  };
+
+  const entry = GYEOK_NAMES[relation];
+  if (entry) {
+    return { name: entry[0], description: entry[1] };
+  }
+
+  // fallback: 가장 왕성한 십신으로 격국 추정
+  let maxGod = "정관";
+  let maxCount = 0;
+  for (const [god, count] of Object.entries(tenGods)) {
+    if (god !== "비겁" && count > maxCount) {
+      maxCount = count;
+      maxGod = god;
+    }
+  }
+  const fallback = GYEOK_NAMES[maxGod];
+  return {
+    name: fallback ? fallback[0] : "잡격(雜格)",
+    description: fallback ? fallback[1] : "특정 격국으로 분류하기 어려운 사주입니다."
+  };
+}
+
+function getRelationByStem(dayMasterStem: string, targetStem: string): string {
+  const dayEl = STEM_ELEMENT[dayMasterStem];
+  const targetEl = STEM_ELEMENT[targetStem];
+  if (!dayEl || !targetEl) return "비견";
+
+  const samePol = STEM_POLARITY[dayMasterStem] === STEM_POLARITY[targetStem];
+
+  if (dayEl === targetEl) return samePol ? "비견" : "겁재";
+  if (GENERATE_MAP[dayEl] === targetEl) return samePol ? "편인" : "정인";
+  if (PRODUCE_MAP[dayEl] === targetEl) return samePol ? "식신" : "상관";
+  if (CONTROL_MAP[dayEl] === targetEl) return samePol ? "편관" : "정관";
+  return samePol ? "편재" : "정재";
+}
+
+// ════════════════════════════════════════
+// 4단계: 특수 십성 조합 (보조 속성)
+// ════════════════════════════════════════
+function checkSpecialTrait(
+  pillars: { year: string[]; month: string[]; day: string[]; hour: string[] },
+  dayMaster: string,
+  tenGods: Record<string, number>
+): { name: string; description: string } | null {
+  const dmEl = getDayMasterElement(dayMaster);
+  const allStems = [pillars.year[0], pillars.month[0], pillars.day[0], pillars.hour[0]];
+  const allBranches = [pillars.year[1], pillars.month[1], pillars.day[1], pillars.hour[1]];
+
+  const hasElement = (el: string) => {
+    return allStems.some(s => STEM_ELEMENT[s] === el) ||
+           allBranches.some(b => BRANCH_MAIN_ELEMENT[b] === el);
+  };
+
+  const siksangEl = PRODUCE_MAP[dmEl];        // 식상 오행
+  const gwanEl = CONTROL_MAP[dmEl];           // 관살 오행
+  const inEl = GENERATE_MAP[dmEl];            // 인성 오행
+  const jaeEl = PRODUCE_MAP[siksangEl] || ""; // 재성 오행
+
+  // 식신제살격: 식상과 관살이 모두 존재
+  if (hasElement(siksangEl) && hasElement(gwanEl)) {
     return {
-      type: "외격",
-      name: "종강격",
-      description: "에너지가 한곳(인성·비겁)으로 극도로 쏠려 있어 그 기운을 따라야 하는 격국",
-      strength: "강"
+      name: "식신제살(食神制殺)",
+      description: "식신이 칠살을 제압하는 구조입니다. 식신과 칠살의 힘이 균형을 이루면 귀격입니다."
     };
   }
-  
-  if (supportRatio <= 0.20) {
-    const sjCount = tenGodsCount["식상"] || 0;
-    const jjCount = tenGodsCount["재성"] || 0;
-    const kjCount = tenGodsCount["관성"] || 0;
 
-    if (jjCount >= sjCount && jjCount >= kjCount) {
+  // 관인상생격: 관성과 인성이 모두 존재
+  if (hasElement(gwanEl) && hasElement(inEl)) {
+    return {
+      name: "관인상생(官印相生)",
+      description: "관성이 인성을 생하고 인성이 일간을 돕는 구조입니다. 관살의 흉함이 인성으로 해소됩니다."
+    };
+  }
+
+  // 상관배인격: 상관과 인성이 모두 존재
+  if (hasElement(siksangEl) && hasElement(inEl)) {
+    const isSangGwan = (tenGods["식상"] || 0) >= 2;
+    if (isSangGwan) {
       return {
-        type: "외격",
-        name: "종재격",
-        description: "재성의 기운이 매우 강하여 자신의 주체성보다 재물의 흐름을 따르는 격국",
-        strength: "강"
-      };
-    } else if (kjCount >= sjCount && kjCount >= jjCount) {
-      return {
-        type: "외격",
-        name: "종관격",
-        description: "관성의 기운이 매우 강하여 대세나 조직의 규율을 따르는 격국",
-        strength: "강"
-      };
-    } else {
-      return {
-        type: "외격",
-        name: "종아격",
-        description: "식상의 기운이 매우 강하여 자신의 재능과 표현력을 극한으로 발휘하는 격국",
-        strength: "강"
+        name: "상관배인(傷官佩印)",
+        description: "상관의 기세가 강한데 인성이 이를 제어하는 구조입니다."
       };
     }
   }
 
-  // 3. 내격 판별
-  // a. 건록격 / 양인격 체크
-  const gunrokMap: Record<string, string> = {
-    "甲": "寅", "乙": "卯", "丙": "巳", "丁": "午", "戊": "巳", "己": "午", "庚": "申", "辛": "酉", "壬": "亥", "癸": "子"
-  };
-  const yanginMap: Record<string, string> = {
-    "甲": "卯", "乙": "寅", "丙": "午", "丁": "巳", "戊": "午", "己": "巳", "庚": "酉", "辛": "申", "壬": "子", "癸": "亥"
-  };
-
-  if (gunrokMap[dayStem] === monthBranch) {
+  // 재관쌍미격: 재성과 관성이 모두 존재하고 적당
+  if (hasElement(jaeEl) && hasElement(gwanEl)) {
     return {
-      type: "내격",
-      name: "건록격",
-      description: "월지에 건록을 두어 자수성가하고 주체성이 뚜렷하며 기반이 탄탄한 격국",
-      strength: "중"
-    };
-  }
-  if (yanginMap[dayStem] === monthBranch) {
-    return {
-      type: "내격",
-      name: "양인격",
-      description: "월지에 양인을 두어 리더십과 추진력이 매우 강하며 고집과 기품이 있는 격국",
-      strength: "중"
+      name: "재관쌍미(財官雙美)",
+      description: "재성이 관성을 생하여 일간에 권위와 재물이 함께 하는 구조입니다."
     };
   }
 
-  // b. 월지 장간 십신 기준 8격
-  const mainGan = getMonthBranchMainGan(monthBranch);
-  const tenGod = calculateTenGod(dayStem, mainGan);
-  
-  const gyeokMap: Record<string, { name: string; desc: string }> = {
-    "정관": { name: "정관격", desc: "명예와 원칙을 중시하며 합리적이고 조직적인 삶을 추구하는 격국" },
-    "편관": { name: "편관격", desc: "책임감이 강하고 카리스마가 있으며 고난을 극복하는 기운이 강한 격국" },
-    "정인": { name: "정인격", desc: "학문적 소양과 수용력이 뛰어나며 윗사람의 덕과 지혜를 갖춘 격국" },
-    "편인": { name: "편인격", desc: "기술적 재능이나 직관력이 뛰어나며 독창적인 정신 세계를 가진 격국" },
-    "식신": { name: "식신격", desc: "풍요로움과 전문성을 갖추고 있으며 탐구심과 낙천적인 성향의 격국" },
-    "상관": { name: "상관격", desc: "재능과 화술이 뛰어나며 변화를 추구하고 비판적 사고가 발달한 격국" },
-    "정재": { name: "정재격", desc: "성실하고 치밀하며 안정적인 재물 추구와 합리적 소비 형태를 지닌 격국" },
-    "편재": { name: "편재격", desc: "활동 범위가 넓고 재물 취득에 과감하며 수완이 뛰어난 격국" },
-    "비견": { name: "비견격", desc: "독립심이 강하고 자기 주관이 뚜렷한 삶을 추구하는 격국" },
-    "겁재": { name: "겁재격", desc: "경쟁심이 강하고 승부욕이 있으며 동료와의 협력이 돋보이는 격국" }
-  };
+  // 식신생재격: 식상과 재성이 모두 존재
+  if (hasElement(siksangEl) && hasElement(jaeEl)) {
+    return {
+      name: "식신생재(食神生財)",
+      description: "식신이 재성을 생하는 구조로, 재물 획득의 통로가 열립니다."
+    };
+  }
 
-  const selectedGyeok = gyeokMap[tenGod] || { name: `${tenGod}격`, desc: "월지 기운에 따른 일반적인 격국" };
+  return null;
+}
+
+// ════════════════════════════════════════
+// 메인: determineGyeokguk
+// ════════════════════════════════════════
+export function determineGyeokguk(
+  pillars: { year: string[]; month: string[]; day: string[]; hour: string[] },
+  dayMaster: string,
+  tenGods: Record<string, number>,
+  balance: number
+): GyeokgukResult {
+
+  // ── 1순위: 전왕격 ──
+  const jeonwang = checkJeonwangGyeok(pillars, dayMaster, balance);
+  if (jeonwang) {
+    const trait = checkSpecialTrait(pillars, dayMaster, tenGods);
+    if (trait) {
+      jeonwang.specialTrait = trait.name;
+      jeonwang.specialTraitDescription = trait.description;
+    }
+    return jeonwang;
+  }
+
+  // ── 2순위: 종격 ──
+  const jongguk = checkJongGyeok(pillars, dayMaster, tenGods, balance);
+  if (jongguk) {
+    const trait = checkSpecialTrait(pillars, dayMaster, tenGods);
+    if (trait) {
+      jongguk.specialTrait = trait.name;
+      jongguk.specialTraitDescription = trait.description;
+    }
+    return jongguk;
+  }
+
+  // ── 3순위: 내격 ──
+  const naegyeok = checkNaegyeok(pillars, dayMaster, tenGods);
+
+  // ── 4순위: 특수 십성 조합 (보조 속성) ──
+  const trait = checkSpecialTrait(pillars, dayMaster, tenGods);
 
   return {
     type: "내격",
-    name: selectedGyeok.name,
-    description: selectedGyeok.desc,
-    strength: supportRatio > 0.5 ? "강" : (supportRatio < 0.4 ? "약" : "중")
+    name: naegyeok.name,
+    description: naegyeok.description,
+    specialTrait: trait?.name,
+    specialTraitDescription: trait?.description
   };
 }

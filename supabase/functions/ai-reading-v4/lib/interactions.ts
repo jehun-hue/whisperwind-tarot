@@ -137,9 +137,18 @@ export function calculateInteractions(
     }
   }
   for (const [combo, keyword] of PENALTIES) {
-    const hits = combo.filter(b => branches.includes(b)).length;
-    if (hits >= combo.length) {
-      interactions.push({ type: "형", elements: combo, result: combo.length === 2 && combo[0] === combo[1] ? "자형" : "삼형살", meaning_keyword: keyword, severity: "흉" });
+    if (combo.length === 2 && combo[0] === combo[1]) {
+      // 자형(自刑) 체크: 같은 글자가 2개 필요
+      const count = branches.filter(b => b === combo[0]).length;
+      if (count >= 2) {
+        interactions.push({ type: "형", elements: [combo[0], combo[0]], result: "자형", meaning_keyword: keyword, severity: "흉" });
+      }
+    } else {
+      // 일반 형살: 구성 요소가 모두 존재해야 함
+      const hits = combo.filter(b => branches.includes(b)).length;
+      if (hits >= combo.length) {
+        interactions.push({ type: "형", elements: combo, result: "형살", meaning_keyword: keyword, severity: "흉" });
+      }
     }
   }
   const stemCounts: Record<string, number> = {};
@@ -288,7 +297,7 @@ const CHEONMUN_MAP: Record<string, string[]> = {
 const MYEONGYE_MAP: Record<string, string[]> = { "甲": ["卯", "辰"], "乙": ["寅", "巳"], "丙": ["午", "未"], "丁": ["巳", "申", "未"], "戊": ["午", "未"], "己": ["巳", "申"], "庚": ["酉", "戌"], "辛": ["申", "亥"], "壬": ["子", "丑"], "癸": ["亥", "寅"] };
 const EOMCHAK_PAIRS = ["丙子", "丁丑", "戊寅", "辛卯", "壬辰", "癸巳", "丙午", "丁未", "戊申", "辛酉", "壬戌", "癸亥"];
 const GEONROK_MAP: Record<string, string> = { "甲": "寅", "乙": "卯", "丙": "巳", "丁": "午", "戊": "巳", "己": "午", "庚": "申", "辛": "酉", "壬": "亥", "癸": "子" };
-const SAMJAE_MAP: Record<string, string[]> = { "寅": ["申", "酉", "戌"], "午": ["申", "酉", "戌"], "戌": ["申", "酉", "戌"], "巳": ["亥", "子", "丑"], "酉": ["亥", "子", "丑"], "丑": ["亥", "子", "丑"], "申": ["寅", "卯", "辰"], "子": ["寅", "卯", "辰"], "辰": ["寅", "卯", "辰"], "亥": ["巳", "午", "未"], "卯": ["巳", "午", "미"], "未": ["巳", "午", "미"] };
+const SAMJAE_MAP: Record<string, string[]> = { "寅": ["申", "酉", "戌"], "午": ["申", "酉", "戌"], "戌": ["申", "酉", "戌"], "巳": ["亥", "子", "丑"], "酉": ["亥", "子", "丑"], "丑": ["亥", "子", "丑"], "申": ["寅", "卯", "辰"], "子": ["寅", "卯", "辰"], "辰": ["寅", "卯", "辰"], "亥": ["巳", "午", "未"], "卯": ["巳", "午", "未"], "未": ["巳", "午", "未"] };
 
 const TAEGEUK_MAP: Record<string, string[]> = { "甲": ["子", "午"], "乙": ["子", "午"], "丙": ["酉", "卯"], "丁": ["酉", "卯"], "戊": ["辰", "戌", "丑", "未"], "己": ["辰", "戌", "丑", "未"], "庚": ["寅", "亥"], "辛": ["寅", "亥"], "壬": ["巳", "申"], "癸": ["巳", "申"] };
 const HONGYEOM_MAP: Record<string, string[]> = { "甲": ["午"], "乙": ["午"], "丙": ["寅"], "丁": ["未", "卯"], "戊": ["辰"], "己": ["辰"], "庚": ["戌"], "辛": ["酉"], "壬": ["申"], "癸": ["申"] };
@@ -329,8 +338,8 @@ export function calculateGongmang(dayStem: string, dayBranch: string, pillars: {
 }
 
 // 귀문관살/원진살 맵
-const GWIMUN_MAP: Record<string, string> = { "辰": "亥", "亥": "辰", "子": "酉", "酉": "子", "미": "寅", "寅": "未", "巳": "戌", "戌": "巳", "午": "丑", "丑": "午", "卯": "申", "申": "卯" };
-const WONJIN_MAP: Record<string, string> = { "子": "未", "未": "자", "丑": "午", "午": "丑", "寅": "酉", "酉": "寅", "卯": "申", "申": "卯", "辰": "亥", "亥": "辰", "巳": "戌", "戌": "巳" };
+const GWIMUN_MAP: Record<string, string> = { "辰": "亥", "亥": "辰", "子": "酉", "酉": "子", "未": "寅", "寅": "未", "巳": "戌", "戌": "巳", "午": "丑", "丑": "午", "卯": "申", "申": "卯" };
+const WONJIN_MAP: Record<string, string> = { "子": "未", "未": "子", "丑": "午", "午": "丑", "寅": "酉", "酉": "寅", "卯": "申", "申": "卯", "辰": "亥", "亥": "辰", "巳": "戌", "戌": "巳" };
 
 export function calculateGwimunWonjin(branches: string[], daewoonBranch?: string, seunBranch?: string) {
   const gwimun: string[] = [];
@@ -621,7 +630,16 @@ export function analyzeTransformations(branches: string[]): TransformationResult
   };
 
   PENALTIES.forEach(([group, label]) => {
-    if (group.every(b => branchSet.has(b))) {
+    let isMatch = false;
+    if (group.length === 2 && group[0] === group[1]) {
+      // 자형 체크: 해당 지지가 2개 이상일 때
+      isMatch = branches.filter(b => b === group[0]).length >= 2;
+    } else {
+      // 일반 형살: 구성 요소가 모두 존재할 때
+      isMatch = group.every(b => branchSet.has(b));
+    }
+
+    if (isMatch) {
       const gKey = group.join("");
       results.push({
         type: '형',

@@ -18,18 +18,13 @@ export function calculateSaju(
   console.log("[CALC SAJU RECEIVED]", { year, month, day, hour, minute });
   const result = getFullSaju(year, month, day, hour, minute, gender, longitude, hasTime);
   
-  // Return in required structure
+  // Return in required structure, including all original fields
   return {
-    year: result.pillars.year,
-    month: result.pillars.month,
-    day: result.pillars.day,
-    hour: result.pillars.hour,
-    dayMaster: result.dayMaster,
-    elements: result.elements,
-    jd: result.jd,
-    sunLong: result.sunLong,
-    termIdx: result.termIdx,
-    correctedDate: result.correctedDate,
+    ...result,
+    year: result.pillars?.year,
+    month: result.pillars?.month,
+    day: result.pillars?.day,
+    hour: result.pillars?.hour,
     gender
   };
 }
