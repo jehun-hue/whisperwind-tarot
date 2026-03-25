@@ -546,7 +546,13 @@ export async function analyzeSajuStructure(
   const johuStem = johuDetail.yongsin ? johuDetail.yongsin.charAt(0) : "";
   const johuElement = johuStem ? STEM_ELEMENT[johuStem] : null;
   let finalYong: string = eokbuYong; // 억부용신 우선 적용
+  // [B-READY] 종격 엔진 분기점 — Phase 4에서 jonggyeokEngine.ts 연결 예정
+  // if (isExtremeCase && useJonggyeok) { return jonggyeokEngine(...) }
+  const isExtremeCase = (supportRatio <= 0.15 || supportRatio >= 0.85);
+  const useJonggyeok = false; // Phase 4에서 true로 전환
+
   const yongsin_detail = {
+    method: "eokbu" as "eokbu" | "jonggyeok",
     eokbu: { yongsin: eokbuYong, reason: eokbuReason },
     johu: johuDetail,
     tonggwan: tonggwanDetail,
