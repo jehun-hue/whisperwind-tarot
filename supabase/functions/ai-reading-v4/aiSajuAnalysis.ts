@@ -294,8 +294,8 @@ function determineTonggwanYong(elements: Record<string, number>): { yongsin: str
 export async function analyzeSajuStructure(
   sajuRaw: any
 ): Promise<SajuAnalysisResult> {
-  // 방어: 데이터 부족 시
-  if (!sajuRaw || !sajuRaw.dayMaster) {
+  // 방어: 데이터 부족 시 (sajuRaw 자체가 없는 경우만)
+  if (!sajuRaw) {
     return {
       dayMaster: "Unknown",
       strength: "Unknown",
@@ -574,6 +574,10 @@ export async function analyzeSajuStructure(
     hanShin = allElems.find(e => ![yongShinElement, heeShin, giShin, guShin].includes(e)) || PRODUCE_ELEM[yongShinElement];
   }
 
+  const yongShin = yongShinElement;
+  const yongShinMethodLabel = yongShinMethod === "jonggyeok" ? "종격" : (yongShinMethod === "johu_override" ? "조후" : "억부");
+
+  // ── B-252: 용신 상세 (yongsin_detail) 구성 ──
   const yongsin_detail = {
     method: yongShinMethod,
     eokbu: { yongsin: eokbuYong, reason: eokbuReason },
@@ -581,16 +585,10 @@ export async function analyzeSajuStructure(
     tonggwan: tonggwanResult,
     jonggyeok: jonggyeokResult,
     final: {
-      primary: yongShinElement,
+      primary: yongShin,
       reason: yongShinReason
     }
   };
-
-  const yongsin = yongShinElement;
-  const yongShinMethodLabel = yongShinMethod === "jonggyeok" ? "종격" : (yongShinMethod === "johu_override" ? "조후" : "억부");
-
-  // ── B-258: 기신(忌神) / 구신(仇神) / 한신(閑神) 정밀 분류 ──
-  // (희기구한신은 이미 위에서 통합 계산됨)
 
   // ── 4. Characteristics 생성 ──
   const characteristics: string[] = [];
@@ -1237,8 +1235,8 @@ export async function analyzeSajuStructure(
       "인성": Math.round(tenGodCount["인성"])
     },
     yinYang: yinYang,
-    yongShin: yongsin,
-    yongShinMethod,
+    yongShin: yongShin,
+    yongShinMethod: yongShinMethodLabel,
     heeShin: heeShin,
     daewoon,
     sewoon: daewoon?.current_seun || (sajuRaw as any).seun || null,
