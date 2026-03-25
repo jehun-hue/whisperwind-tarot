@@ -498,7 +498,8 @@ export async function analyzeSajuStructure(
   
   // Back-compatibility for other logic using 'strength' variable
   const strength = strengthLevel;
-  const isSpecialFormat = gyeokguk.type === "외격" || gyeokguk.name.includes("건록") || gyeokguk.name.includes("양인");
+  // 외격 판별: 건록/양인만 특수 처리, 종격(극신약)은 억부 로직 적용
+  const isSpecialFormat = gyeokguk.name.includes("건록") || gyeokguk.name.includes("양인");
   const specialFormatType = gyeokguk.name;
 
   const PRODUCE_ELEM: Record<string, string> = { "목":"화", "화":"토", "토":"금", "금":"수", "수":"목" }; 
@@ -512,7 +513,9 @@ export async function analyzeSajuStructure(
   let eokbuReason = "";
   if (isSpecialFormat) {
     if (gyeokguk.yongShinElement) {
-      eokbuYong = gyeokguk.yongShinElement;
+      // 한자→한글 변환 (木→목, Fire→화 등)
+      const EL_NORMALIZE: Record<string,string> = {"木":"목","火":"화","土":"토","金":"금","水":"수","wood":"목","fire":"화","earth":"토","metal":"금","water":"수","목":"목","화":"화","토":"토","금":"금","수":"수"};
+      eokbuYong = EL_NORMALIZE[gyeokguk.yongShinElement] || gyeokguk.yongShinElement;
       eokbuReason = `외격(${gyeokguk.name}): 격국 원리에 따라 ${eokbuYong} 선택`;
     } else if (specialFormatType.includes("종강")) {
       eokbuYong = myElement; eokbuReason = "종강격: 일간과 같은 오행 따라감";
@@ -543,8 +546,11 @@ export async function analyzeSajuStructure(
     eokbuYong = selfElem;
     eokbuReason = `신약: 비겁(${selfElem}) 우선 — 일간 오행 보충`;
   } else {
-    eokbuYong = getConqueringElement(myElement);
-    eokbuReason = "중화: 균형을 위한 관성 기운 보충";
+    // 중화: 사주에 가장 부족한 오행을 용신으로 선택
+    const allElem = ["목", "화", "토", "금", "수"];
+    const sorted = allElem.sort((a, b) => (elements_simple[a] || 0) - (elements_simple[b] || 0));
+    eokbuYong = sorted[0];
+    eokbuReason = `중화: 사주에 가장 부족한 오행 ${eokbuYong} 보충`;
   }
 
   // 2) 조후용신 (Climate)
