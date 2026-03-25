@@ -459,7 +459,7 @@ export async function analyzeSajuStructure(
   // Back-compatibility for other logic using 'strength' variable
   const strength = strengthLevel;
   // 외격 판별: 건록/양인만 특수 처리, 종격(극신약)은 억부 로직 적용
-  const isSpecialFormat = gyeokguk.name.includes("건록") || gyeokguk.name.includes("양인");
+  const isSpecialFormat = false;
   const specialFormatType = gyeokguk.name;
 
   // ── 3. 용신(用神) 상세 분석 (억부·조후·통관) ──
