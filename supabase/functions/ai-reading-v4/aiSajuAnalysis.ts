@@ -726,6 +726,7 @@ export async function analyzeSajuStructure(
       const { age: startAge, isForward } = getDaewoonInfo(
         yearStemIdx, gender, sLong, jdVal, birthYear
       );
+      const direction = isForward ? "순행" : "역행";
       daewoon = calculateFullDaewoon(monthStemIdx, monthBranchIdx, dm, startAge, isForward, currentAge);
       if (daewoon) {
         (daewoon as any).direction = direction;
@@ -1237,7 +1238,25 @@ export async function analyzeSajuStructure(
 
   }
 
+  // ── B-267: 음양(陰陽) 구성 분석 ──
+  const STEM_LIST = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"];
+  const BRANCH_LIST = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
+  let yang = 0;
+  let yin = 0;
+  [pillars.year, pillars.month, pillars.day, pillars.hour].forEach(p => {
+    if (p?.stem) {
+      const sIdx = STEM_LIST.indexOf(p.stem);
+      if (sIdx !== -1) { if (sIdx % 2 === 0) yang++; else yin++; }
+    }
+    if (p?.branch) {
+      const bIdx = BRANCH_LIST.indexOf(p.branch);
+      if (bIdx !== -1) { if (bIdx % 2 === 0) yang++; else yin++; }
+    }
+  });
+  const yinYang = { yang, yin };
+
   return {
+    _analysis_ver: "v4.1.2",
     dayMaster: dm,
     strength,
     elements,
