@@ -253,8 +253,8 @@ function determineJohuYong(dm: string, monthBranch: string): { yongsin: string, 
   const dmChar = dm.charAt(0);
   const mbChar = monthBranch.charAt(0);
   const recommendations = JOHU_TABLE[dmChar]?.[mbChar] || [];
-  const y1 = recommendations[0] ? `${recommendations[0]}${STEM_ELEMENT[recommendations[0]]}` : "불명";
-  const y2 = recommendations[1] ? `${recommendations[1]}${STEM_ELEMENT[recommendations[1]]}` : null;
+  const y1 = recommendations[0] ? (STEM_ELEMENT[recommendations[0]] || "불명") : "불명";
+  const y2 = recommendations[1] ? (STEM_ELEMENT[recommendations[1]] || null) : null;
   return {
     yongsin: y1,
     secondary: y2,
@@ -549,11 +549,13 @@ export async function analyzeSajuStructure(
   const summerBranches = ["巳", "午", "未"];
   const isSeasonExtreme = winterBranches.includes(mbH) || summerBranches.includes(mbH);
 
+  const VALID_ELEMENTS = ["목", "화", "토", "금", "수"];
   const shouldJohuOverride =
     !jonggyeokResult &&                          // 종격 아님
     isSeasonExtreme &&                            // 동/하절기
     johuResult &&                                 // 조후 결과 존재
     johuResult.yongshin !== "불명" &&
+    VALID_ELEMENTS.includes(johuResult.yongshin) &&
     johuResult.yongshin !== yongShinElement &&    // 억부와 다른 경우만
     strengthPercent >= 30 && strengthPercent <= 70; // 극단 아닌 강약
 
