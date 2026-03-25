@@ -6,8 +6,7 @@
 
 export const STAGES = ["장생", "목욕", "관대", "건록", "제왕", "쇠", "병", "사", "묘", "절", "태", "양"];
 
-const STEMS = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"];
-const BRANCHES = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
+import { STEMS, BRANCHES, BRANCH_MAIN_STEM } from "./fiveElements.ts";
 
 // 천간별 장생지 및 순역 방향 (true: 순행, false: 역행)
 const JANGSANG_MAP: Record<string, { branch: string, isForward: boolean }> = {
@@ -23,10 +22,6 @@ const JANGSANG_MAP: Record<string, { branch: string, isForward: boolean }> = {
   "癸": { branch: "卯", isForward: false },
 };
 
-export const BRANCH_MAIN_STEM: Record<string, string> = {
-  "子": "癸", "丑": "己", "寅": "甲", "卯": "乙", "辰": "戊", "巳": "丙",
-  "午": "丁", "未": "己", "申": "庚", "酉": "辛", "戌": "戊", "亥": "壬"
-};
 
 /**
  * 특정 일간과 지지에 대해 12운성 명칭 계산
