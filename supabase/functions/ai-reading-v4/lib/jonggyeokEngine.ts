@@ -41,8 +41,8 @@ export function calculateJonggyeok(
 
   // ── 극신강 (≥80%) ──
   if (isExtreme강) {
-    const bigeop = tenGodCounts["비겁"] || 0;
-    const inseong = tenGodCounts["인성"] || 0;
+    const bigeop = (tenGodCounts["비견"] || 0) + (tenGodCounts["겁재"] || 0);
+    const inseong = (tenGodCounts["정인"] || 0) + (tenGodCounts["편인"] || 0);
 
     if (bigeop >= inseong) {
       // 종왕격: 비겁 주도 → 용신 = 일간 오행(비겁), 희신 = 인성(생해주는 것)
@@ -55,7 +55,7 @@ export function calculateJonggyeok(
         method: "jonggyeok", type: "종왕격",
         yongshin: yong, heeshin: hee, gisin: gi, gusin: gu, hansin: han,
         confidence: Math.min((strengthPercent - 80) / 15 + 0.6, 1.0),
-        reason: `극신강(${strengthPercent}%): 비겁(${bigeop.toFixed(1)}점) 주도 → 종왕격, 일간(${dm}) 따라감`
+        reason: `극신강(${strengthPercent}%): 비겁(${bigeop}개) 주도 → 종왕격, 일간(${dm}) 따라감`
       };
     } else {
       // 종강격: 인성 주도 → 용신 = 인성, 희신 = 비겁
@@ -68,16 +68,16 @@ export function calculateJonggyeok(
         method: "jonggyeok", type: "종강격",
         yongshin: yong, heeshin: hee, gisin: gi, gusin: gu, hansin: han,
         confidence: Math.min((strengthPercent - 80) / 15 + 0.6, 1.0),
-        reason: `극신강(${strengthPercent}%): 인성(${inseong.toFixed(1)}점) 주도 → 종강격, 인성(${yong}) 따라감`
+        reason: `극신강(${strengthPercent}%): 인성(${inseong}개) 주도 → 종강격, 인성(${generatedBy(dm)}) 따라감`
       };
     }
   }
 
   // ── 극신약 (≤20%) ──
   if (isExtreme약) {
-    const gwansal = tenGodCounts["관성"] || 0;
-    const jaeseong = tenGodCounts["재성"] || 0;
-    const siksang = tenGodCounts["식상"] || 0;
+    const gwansal = (tenGodCounts["정관"] || 0) + (tenGodCounts["편관"] || 0);
+    const jaeseong = (tenGodCounts["정재"] || 0) + (tenGodCounts["편재"] || 0);
+    const siksang = (tenGodCounts["식신"] || 0) + (tenGodCounts["상관"] || 0);
 
     // 가장 많은 십성 카테고리를 따라감
     const categories = [
@@ -98,7 +98,7 @@ export function calculateJonggyeok(
       method: "jonggyeok", type: winner.name,
       yongshin: yong, heeshin: hee, gisin: gi, gusin: gu, hansin: han,
       confidence: Math.min((20 - strengthPercent) / 15 + 0.6, 1.0),
-      reason: `극신약(${strengthPercent}%): ${winner.name} — ${winner.name === "종살격" ? "관살" : winner.name === "종재격" ? "재성" : "식상"}(${winner.count.toFixed(1)}점) 주도, 용신 ${yong}`
+      reason: `극신약(${strengthPercent}%): ${winner.name} — ${winner.name === "종살격" ? "관살" : winner.name === "종재격" ? "재성" : "식상"}(${winner.count}개) 주도, 용신 ${yong}`
     };
   }
 
