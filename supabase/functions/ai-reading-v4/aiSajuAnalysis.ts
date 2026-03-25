@@ -46,7 +46,20 @@ export interface SajuAnalysisResult {
 }
 
 import { getDaewoonInfo, calculateFullDaewoon, type DaewoonResult } from "./lib/daewoon.ts";
-import { STEMS, BRANCHES, FIVE_ELEMENTS_MAP, STEM_ELEMENT_KR, BRANCH_ELEMENT_KR, HIDDEN_STEMS as COMMON_HIDDEN_STEMS, BRANCH_MAIN_STEM, ELEMENT_CYCLE as COMMON_ELEMENT_CYCLE, PRODUCE_ELEM as COMMON_PRODUCE, SUPPORT_ELEM as COMMON_SUPPORT, CONQUER_ELEM as COMMON_CONQUER, CONQUERED_BY_ELEM } from "./lib/fiveElements.ts";
+import {
+  STEM_ELEMENT_KR as STEM_ELEMENT,
+  BRANCH_ELEMENT_KR as BRANCH_ELEMENT,
+  HIDDEN_STEMS,
+  BRANCH_MAIN_STEM,
+  ELEMENT_CYCLE,
+  PRODUCE_ELEM,
+  SUPPORT_ELEM,
+  CONQUER_ELEM,
+  CONQUERED_BY_ELEM,
+  STEMS,
+  BRANCHES,
+  FIVE_ELEMENTS_MAP
+} from "./lib/fiveElements.ts";
 import { calculateInteractions, calculateShinsal, calculateShinsalGrouped, calculateGwimunWonjin, calculateGongmang, checkStemRelation, checkBranchRelation, type Interaction, type Shinsal } from "./lib/interactions.ts";
 import { calculateAllTwelveStages, calculateTwelveStage, calculateAllTwelveStagesGeobup, calculateTwelveStageGeobup, getTwelveStageEnergy } from "./lib/twelveStages.ts";
 import { determineGyeokguk, type GyeokgukResult } from "./lib/gyeokguk.ts";
@@ -55,59 +68,6 @@ import { getAllPillarNapeum } from "./lib/napeum.ts";
 import { calculateTenGod } from "./lib/tenGods.ts";
 import { getFullSaju } from "./sajuEngine.ts";
 
-// ═══════════════════════════════════════
-// 천간(天干) 오행 매핑
-// ═══════════════════════════════════════
-const STEM_ELEMENT: Record<string, string> = {
-  "甲": "목",
-  "乙": "목",
-  "丙": "화",
-  "丁": "화",
-  "戊": "토",
-  "己": "토",
-  "庚": "금",
-  "辛": "금",
-  "壬": "수",
-  "癸": "수"
-};
-
-// 지지(地支) 오행 매핑
-const BRANCH_ELEMENT: Record<string, string> = {
-  "子": "수",
-  "丑": "토",
-  "寅": "목",
-  "卯": "목",
-  "辰": "토",
-  "巳": "화",
-  "午": "화",
-  "未": "토",
-  "申": "금",
-  "酉": "금",
-  "戌": "토",
-  "亥": "수"
-};
-
-// 지지 장간(藏干) — 각 지지에 숨어있는 천간들 (본기/중기/여기)
-const HIDDEN_STEMS: Record<string, string[]> = {
-  "子": ["癸", "壬"],           // 본기 癸, 중기 壬
-  "丑": ["己", "癸", "辛"],     // 본기 己, 중기 癸, 초기 辛
-  "寅": ["甲", "丙", "戊"],     // 본기 甲, 중기 丙, 초기 戊
-  "卯": ["乙", "甲"],           // 본기 乙, 중기 甲
-  "辰": ["戊", "乙", "癸"],     // 본기 戊, 중기 乙, 초기 癸
-  "巳": ["丙", "庚", "戊"],     // 본기 丙, 중기 庚, 초기 戊
-  "午": ["丁", "己", "丙"],     // 본기 丁, 중기 己, 초기 丙
-  "未": ["己", "丁", "乙"],     // 본기 己, 중기 丁, 초기 乙
-  "申": ["庚", "壬", "戊"],     // 본기 庚, 중기 壬, 초기 戊
-  "酉": ["辛", "庚"],           // 본기 辛, 중기 庚
-  "戌": ["戊", "丁", "辛"],     // 본기 戊, 중기 丁, 초기 辛
-  "亥": ["壬", "甲"]            // 본기 壬, 중기 甲
-};
-
-// ═══════════════════════════════════════
-// 오행 상생상극 관계
-// ═══════════════════════════════════════
-// 나(일간 오행) 기준 십성 판별용
-const ELEMENT_CYCLE = ["목", "화", "토", "금", "수"];
 
 function getRelation(myElement: string, targetElement: string): string {
   const myIdx = ELEMENT_CYCLE.indexOf(myElement);
@@ -501,10 +461,6 @@ export async function analyzeSajuStructure(
   // 외격 판별: 건록/양인만 특수 처리, 종격(극신약)은 억부 로직 적용
   const isSpecialFormat = gyeokguk.name.includes("건록") || gyeokguk.name.includes("양인");
   const specialFormatType = gyeokguk.name;
-
-  const PRODUCE_ELEM: Record<string, string> = { "목":"화", "화":"토", "토":"금", "금":"수", "수":"목" }; 
-  const SUPPORT_ELEM: Record<string, string> = { "목":"수", "화":"목", "토":"화", "금":"토", "수":"금" }; 
-  const CONQUER_ELEM: Record<string, string> = { "목":"토", "화":"금", "토":"수", "금":"목", "수":"화" }; 
 
   // ── 3. 용신(用神) 상세 분석 (억부·조후·통관) ──
 
