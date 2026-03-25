@@ -67,6 +67,7 @@ import { getAllPillarJijanggan } from "./lib/jijanggan.ts";
 import { getAllPillarNapeum } from "./lib/napeum.ts";
 import { calculateTenGod } from "./lib/tenGods.ts";
 import { getFullSaju } from "./sajuEngine.ts";
+import { calculateJonggyeok } from "./lib/jonggyeokEngine.ts";
 
 
 function getRelation(myElement: string, targetElement: string): string {
@@ -458,156 +459,138 @@ export async function analyzeSajuStructure(
   
   // Back-compatibility for other logic using 'strength' variable
   const strength = strengthLevel;
-  // 외격 판별: 건록/양인만 특수 처리, 종격(극신약)은 억부 로직 적용
-  const isSpecialFormat = false;
-  const specialFormatType = gyeokguk.name;
+  const strengthPercent = sajuRaw?.strength_detail?.percent ?? 50;
 
-  // ── 3. 용신(用神) 상세 분석 (억부·조후·통관) ──
+  // ── 3. 용신(用神) 상세 분석 (종격·억부·조후·통관) ──
 
-  // 1) 억부용신 (Balance)
-  let eokbuYong: string;
+  // (1) 종격 판정 시도 (Phase 4)
+  const jonggyeokResult = calculateJonggyeok(
+    dayMaster,
+    myElement,
+    pillars,
+    tenGodCount,
+    supportRatio,
+    strengthPercent
+  );
+
+  let yongShinElement: string;
+  let yongShinReason: string;
+  let yongShinMethod: string;
+  let heeShin: string = "";
+  let giShin: string = "";
+  let guShin: string = "";
+  let hanShin: string = "";
+
+  // 억부용신 기본값 (폴백용)
+  let eokbuYong = myElement;
   let eokbuReason = "";
-  if (isSpecialFormat) {
-    if (gyeokguk.yongShinElement) {
-      // 한자→한글 변환 (木→목, Fire→화 등)
-      const EL_NORMALIZE: Record<string,string> = {"木":"목","火":"화","土":"토","金":"금","水":"수","wood":"목","fire":"화","earth":"토","metal":"금","water":"수","목":"목","화":"화","토":"토","금":"금","수":"수"};
-      eokbuYong = EL_NORMALIZE[gyeokguk.yongShinElement] || gyeokguk.yongShinElement;
-      eokbuReason = `외격(${gyeokguk.name}): 격국 원리에 따라 ${eokbuYong} 선택`;
-    } else if (specialFormatType.includes("종강")) {
-      eokbuYong = myElement; eokbuReason = "종강격: 일간과 같은 오행 따라감";
-    } else if (specialFormatType.includes("종재")) {
-      eokbuYong = getConqueredElement(myElement); eokbuReason = "종재격: 재성 오행 따라감";
-    } else if (specialFormatType.includes("종관")) {
-      eokbuYong = getConqueringElement(myElement); eokbuReason = "종관격: 관성 오행 따라감";
-    } else { // 종아격
-      eokbuYong = getProducedElement(myElement); eokbuReason = "종아격: 식상 오행 따라감";
-    }
-  } else if (strengthLevel.trim() === "극신강" || strengthLevel.trim() === "신강" || strengthLevel.trim() === "약변강") {
-    // 신강: 관성 과다(3+) → 인성 설기, 인성 과다(3+) → 재성 제어, 그 외 관성 > 재성 > 식상
-    const conquerElem = getConqueringElement(myElement);
-    const supportElem = getProducingElement(myElement);
-    const gwanCount = elements_simple[conquerElem] || 0;
-    const inCount = elements_simple[supportElem] || 0;
-    if (gwanCount >= 3) {
-      eokbuYong = supportElem;
-      eokbuReason = `신강: 관성(${conquerElem}) 과다(${gwanCount}개) — 인성(${supportElem})으로 설기`;
-    } else if (inCount >= 3) {
-      const drainElem = CONQUER_ELEM[myElement];
-      eokbuYong = drainElem;
-      eokbuReason = `신강: 인성(${supportElem}) 과다(${inCount}개) — 재성(${drainElem})으로 제어`;
-    } else {
-      const releaseElem = PRODUCE_ELEM[myElement];
-      const drainElem = CONQUER_ELEM[myElement];
-      const candidates = [
-        { elem: conquerElem, priority: 1, name: "관성" },
-        { elem: drainElem, priority: 2, name: "재성" },
-        { elem: releaseElem, priority: 3, name: "식상" }
-      ];
-      const sortedCandidates = candidates.sort((a,b) => (elements_simple[a.elem]||0) - (elements_simple[b.elem]||0) || a.priority - b.priority);
-      eokbuYong = sortedCandidates[0].elem;
-      eokbuReason = `신강: ${sortedCandidates[0].name}(${eokbuYong}) 부족 보충`;
-    }
-  } else if (strengthLevel.trim() === "신약" || strengthLevel.trim() === "극신약" || strengthLevel.trim() === "강변약") {
-    // 신약: 기본 비겁 우선, 식상 과다(3+) 시 인성으로 제어
-    const selfElem = myElement;
-    const supportElem = getProducingElement(myElement);
-    const sikSangElem = PRODUCE_ELEM[myElement];
-    const sikSangCount = elements_simple[sikSangElem] || 0;
-    if (sikSangCount >= 3) {
-      eokbuYong = supportElem;
-      eokbuReason = `신약: 식상(${sikSangElem}) 과다(${sikSangCount}개) — 인성(${supportElem})으로 제어`;
-    } else {
-      eokbuYong = selfElem;
-      eokbuReason = `신약: 비겁(${selfElem}) 우선 — 일간 오행 보충`;
-    }
+
+  if (jonggyeokResult) {
+    // 종격 적용
+    yongShinElement = jonggyeokResult.yongshin;
+    yongShinReason = jonggyeokResult.reason;
+    yongShinMethod = "jonggyeok";
+    heeShin = jonggyeokResult.heeshin;
+    giShin = jonggyeokResult.gisin;
+    guShin = jonggyeokResult.gusin;
+    hanShin = jonggyeokResult.hansin;
   } else {
-    // 중화: 비겁 우선, 식상 과다(3+) 시 인성으로 제어
-    const selfElem = myElement;
-    const supportElem = getProducingElement(myElement);
-    const sikSangElem = PRODUCE_ELEM[myElement];
-    const sikSangCount = elements_simple[sikSangElem] || 0;
-    if (sikSangCount >= 3) {
-      eokbuYong = supportElem;
-      eokbuReason = `중화: 식상(${sikSangElem}) 과다(${sikSangCount}개) — 인성(${supportElem})으로 제어`;
+    // (2) 기존 억부 로직 (Balance)
+    if (strengthLevel.trim() === "극신강" || strengthLevel.trim() === "신강" || strengthLevel.trim() === "약변강") {
+      const conquerElem = CONQUERED_BY_ELEM[myElement];
+      const supportElem = SUPPORT_ELEM[myElement];
+      const gwanCount = elements_simple[conquerElem] || 0;
+      const inCount = elements_simple[supportElem] || 0;
+      if (gwanCount >= 3) {
+        eokbuYong = supportElem;
+        eokbuReason = `신강: 관성(${conquerElem}) 과다(${gwanCount}개) — 인성(${supportElem})으로 설기`;
+      } else if (inCount >= 3) {
+        const drainElem = CONQUER_ELEM[myElement];
+        eokbuYong = drainElem;
+        eokbuReason = `신강: 인성(${supportElem}) 과다(${inCount}개) — 재성(${drainElem})으로 제어`;
+      } else {
+        const releaseElem = PRODUCE_ELEM[myElement];
+        const drainElem = CONQUER_ELEM[myElement];
+        const candidates = [
+          { elem: conquerElem, priority: 1, name: "관성" },
+          { elem: drainElem, priority: 2, name: "재성" },
+          { elem: releaseElem, priority: 3, name: "식상" }
+        ];
+        const sortedCandidates = candidates.sort((a,b) => (elements_simple[a.elem]||0) - (elements_simple[b.elem]||0) || a.priority - b.priority);
+        eokbuYong = sortedCandidates[0].elem;
+        eokbuReason = `신강: ${sortedCandidates[0].name}(${eokbuYong}) 부족 보충`;
+      }
     } else {
-      eokbuYong = selfElem;
-      eokbuReason = `중화: 비겁(${selfElem}) 우선 — 일간 보강`;
+      // 신약 또는 중화: 기본 비겁 우선, 식상 과다(3+) 시 인성으로 제어
+      const selfElem = myElement;
+      const supportElem = SUPPORT_ELEM[myElement];
+      const sikSangElem = PRODUCE_ELEM[myElement];
+      const sikSangCount = elements_simple[sikSangElem] || 0;
+      if (sikSangCount >= 3) {
+        eokbuYong = supportElem;
+        eokbuReason = `${strengthLevel}: 식상(${sikSangElem}) 과다(${sikSangCount}개) — 인성(${supportElem})으로 제어`;
+      } else {
+        eokbuYong = selfElem;
+        eokbuReason = `${strengthLevel}: 비겁(${selfElem}) 우선 — 일간 오행 보충`;
+      }
     }
+    yongShinElement = eokbuYong;
+    yongShinReason = eokbuReason;
+    yongShinMethod = "eokbu";
   }
 
-  // 2) 조후용신 (Climate)
+  // (3) 조후용신 (Climate) 및 (4) 통관용신 (Mediation) 사전 계산
   const mbH = pillars.month?.branch || "寅";
-  const johuDetail = determineJohuYong(dm, mbH);
+  const johuResult = determineJohuYong(dm, mbH);
+  const tonggwanResult = determineTonggwanYong(elements);
 
-  // 3) 통관용신 (Mediation)
-  const tonggwanDetail = determineTonggwanYong(elements);
+  // Phase 5: 조후용신 우선 판정
+  const winterBranches = ["亥", "子", "丑"];
+  const summerBranches = ["巳", "午", "未"];
+  const isSeasonExtreme = winterBranches.includes(mbH) || summerBranches.includes(mbH);
 
-  // 최종 용신 종합: 억부용신 우선, 조후·통관은 참고
-  const johuStem = johuDetail.yongsin ? johuDetail.yongsin.charAt(0) : "";
-  const johuElement = johuStem ? STEM_ELEMENT[johuStem] : null;
-  let finalYong: string = eokbuYong; // 억부용신 우선 적용
-  // [B-READY] 종격 엔진 분기점 — Phase 4에서 jonggyeokEngine.ts 연결 예정
-  // if (isExtremeCase && useJonggyeok) { return jonggyeokEngine(...) }
-  const isExtremeCase = (supportRatio <= 0.15 || supportRatio >= 0.85);
-  const useJonggyeok = false; // Phase 4에서 true로 전환
+  const shouldJohuOverride =
+    !jonggyeokResult &&                          // 종격 아님
+    isSeasonExtreme &&                            // 동/하절기
+    johuResult &&                                 // 조후 결과 존재
+    johuResult.yongshin !== "불명" &&
+    johuResult.yongshin !== yongShinElement &&    // 억부와 다른 경우만
+    strengthPercent >= 30 && strengthPercent <= 70; // 극단 아닌 강약
+
+  if (shouldJohuOverride && johuResult) {
+    const prevYong = yongShinElement;
+    yongShinElement = johuResult.yongshin;
+    yongShinReason = `조후 우선: ${mbH}월 ${dayMaster}일간, 억부(${prevYong})→조후(${johuResult.yongshin}) 전환. ${johuResult.reason}`;
+    yongShinMethod = "johu_override";
+  }
+
+  // 최종 용신 확정 및 희기구한신 재계산 (억부/조후 공용)
+  if (yongShinMethod !== "jonggyeok") {
+    // 억부나 조후일 경우 표준 상생상극 적용
+    heeShin = SUPPORT_ELEM[yongShinElement] || "";     // 용신을 생하는 것
+    giShin = CONQUERED_BY_ELEM[yongShinElement] || ""; // 용신을 극하는 것
+    guShin = SUPPORT_ELEM[giShin] || "";               // 기신을 생하는 것
+    const allElems = ["목", "화", "토", "금", "수"];
+    hanShin = allElems.find(e => ![yongShinElement, heeShin, giShin, guShin].includes(e)) || PRODUCE_ELEM[yongShinElement];
+  }
 
   const yongsin_detail = {
-    method: "eokbu" as "eokbu" | "jonggyeok",
+    method: yongShinMethod,
     eokbu: { yongsin: eokbuYong, reason: eokbuReason },
-    johu: johuDetail,
-    tonggwan: tonggwanDetail,
+    johu: johuResult,
+    tonggwan: tonggwanResult,
+    jonggyeok: jonggyeokResult,
     final: {
-      primary: finalYong,
-      reason: `억부·조후·통관 종합: 억부(${eokbuYong})를 최우선하며 조후(${johuDetail.yongsin})를 참고`
+      primary: yongShinElement,
+      reason: yongShinReason
     }
   };
 
-  const yongsin = finalYong;
-  const yongShinMethod = "억부·조후·통관 종합";
+  const yongsin = yongShinElement;
+  const yongShinMethodLabel = yongShinMethod === "jonggyeok" ? "종격" : (yongShinMethod === "johu_override" ? "조후" : "억부");
 
   // ── B-258: 기신(忌神) / 구신(仇神) / 한신(閑神) 정밀 분류 ──
-  const mainYongsin = yongsin_detail.final.primary;
-  let heeShin = "";
-  let giShin = "";
-  let guShin = "";
-  let hanShin = "";
-
-
-
-  // 희신, 기신, 구신, 한신 계산 로직
-  const cleanStrength = (strengthLevel || "").trim();
-  if (cleanStrength === "극신강" || cleanStrength === "신강" || cleanStrength === "약변강") {
-    // 희신 = 용신을 생하는 오행
-    heeShin = getProducingElement(yongsin);
-    // 기신 = 용신을 극하는 오행
-    giShin = getConqueringElement(yongsin);
-    // 구신 = 기신을 생하는 오행
-    guShin = getProducingElement(giShin);
-    // 한신 = 나머지 오행 (용신, 희신, 기신, 구신 어디에도 해당하지 않는 오행)
-    const allElements = ["목", "화", "토", "금", "수"];
-    const usedElements = [yongsin, heeShin, giShin, guShin];
-    hanShin = allElements.find(e => !usedElements.includes(e)) || getProducedElement(yongsin);
-  } else if (cleanStrength === "극신약" || cleanStrength === "신약" || cleanStrength === "강변약") {
-    // 희신 = 용신을 생하는 오행
-    heeShin = getProducingElement(yongsin);
-    // 기신 = 용신을 극하는 오행
-    giShin = getConqueringElement(yongsin);
-    // 구신 = 기신을 생하는 오행
-    guShin = getProducingElement(giShin);
-    // 한신 = 나머지 오행
-    const allElements2 = ["목", "화", "토", "금", "수"];
-    const usedElements2 = [yongsin, heeShin, giShin, guShin];
-    hanShin = allElements2.find(e => !usedElements2.includes(e)) || getProducedElement(yongsin);
-  } else { // 중화
-    heeShin = getProducingElement(yongsin);
-    giShin = getConqueringElement(yongsin);
-    guShin = getProducingElement(giShin);
-    const allElements3 = ["목", "화", "토", "금", "수"];
-    const usedElements3 = [yongsin, heeShin, giShin, guShin];
-    hanShin = allElements3.find(e => !usedElements3.includes(e)) || getProducedElement(yongsin);
-  }
-
-
+  // (희기구한신은 이미 위에서 통합 계산됨)
 
   // ── 4. Characteristics 생성 ──
   const characteristics: string[] = [];
@@ -617,8 +600,8 @@ export async function analyzeSajuStructure(
     characteristics.push(`격국: ${gyeokguk.name} (${gyeokguk.type})`);
   }
 
-  if (isSpecialFormat) {
-    characteristics.push(`특수격국: ${specialFormatType} — 일반적인 억부 용신 대신 격국에 맞는 용신 적용`);
+  if (jonggyeokResult) {
+    characteristics.push(`종격 성립: ${jonggyeokResult.type} — 일반적인 균형 대신 강한 세력을 따라감`);
   }
 
   // 십성 강약 태깅
@@ -688,7 +671,7 @@ export async function analyzeSajuStructure(
   let narrative = `일간이 ${dmKorean[dm] || dm}으로, ${strengthDesc[strength] || strength}. ` +
     `오행 분포는 ${elementNames?.map(n => `${n}(${elements[n] || 0})`).join(", ")}이며, ` +
     `주요 십성 구성은 ${tenGodDesc || "고르게 분포"}입니다. ` +
-    `용신은 '${yongsin}'으로 판단됩니다 (${yongShinMethod}법: ${strength.includes("강") ? "신강한 일간을 균형 있게 조절" : "신약한 일간을 생조하여 보완"}).` +
+    `용신은 '${yongsin}'으로 판단됩니다 (${yongShinMethodLabel}법: ${yongShinReason}).` +
     (heeShin ? ` 희신은 '${heeShin}'으로, 용신을 보조하는 역할을 합니다.` : "") +
     chungDesc + harmonyDesc + hyungDesc;
 
