@@ -21,6 +21,54 @@ export interface SajuPillars {
   dayMaster: string;
 }
 
+/**
+ * Phase 3: 지장간 경과일수 가중치
+ * 절기 진입 후 경과 일수에 따라 여기→중기→본기 에너지 전환
+ * jijanggan.ts의 JIJANGGAN_TABLE 일수 기준 사용
+ */
+function getHiddenWeights(
+  branch: string,
+  daysSinceJeol: number
+): number[] {
+  // 午, 亥 등 정밀 일수 보정
+  const JIJANGGAN_DAYS_PRECISE: Record<string, number[]> = {
+    "子": [10, 0, 20],
+    "丑": [9, 3, 18],
+    "寅": [7, 7, 16],
+    "卯": [10, 0, 20],
+    "辰": [9, 3, 18],
+    "巳": [7, 7, 16],
+    "午": [10, 9, 11],
+    "未": [9, 3, 18],
+    "申": [7, 7, 16],
+    "酉": [10, 0, 20],
+    "戌": [9, 3, 18],
+    "亥": [7, 5, 18],
+  };
+
+  const days = JIJANGGAN_DAYS_PRECISE[branch] || [10, 0, 20];
+  const [d1, d2, d3] = days;
+
+  // 경과일이 없거나 음수면 본기 100%
+  if (daysSinceJeol <= 0) return [0, 0, 1.0];
+
+  // 경과 일수에 따라 단계적 가중치 (순서: 여기, 중기, 본기)
+  if (daysSinceJeol <= d1) {
+    // 여기 구간: 여기 주도, 본기 기본값
+    const ratio = daysSinceJeol / d1;
+    return [1.0 - ratio * 0.3, 0, 0.2 + ratio * 0.1];
+  } else if (d2 > 0 && daysSinceJeol <= d1 + d2) {
+    // 중기 구간
+    const ratio = (daysSinceJeol - d1) / d2;
+    return [0.3 - ratio * 0.2, 1.0 - ratio * 0.3, 0.3 + ratio * 0.2];
+  } else {
+    // 본기 구간: 본기 주도
+    const elapsed = daysSinceJeol - d1 - d2;
+    const ratio = Math.min(elapsed / d3, 1.0);
+    return [0.1 * (1 - ratio), d2 > 0 ? 0.2 * (1 - ratio) : 0, 0.7 + ratio * 0.3];
+  }
+}
+
 export function getFullSaju(
   year: number,
   month: number,
@@ -127,6 +175,11 @@ export function getFullSaju(
   const mStemIdx = (mStemBase + termIdx) % 10;
   const monthPillar = { stem: STEMS[mStemIdx], branch: BRANCHES[mBranchIdx] };
 
+  // Phase 3: 절기 경과일수 계산 (월지 가중치용)
+  const jeolLong = (315 + termIdx * 30) % 360;
+  const jeolJD = findSolarTermJD(correctedDate.getUTCFullYear(), jeolLong);
+  const daysSinceJeol = jdForSun - jeolJD;
+
   // B-67new: 절기 경계 근처 출생 감지 (±1시간 = ±0.0417일 = 태양 이동 ±0.04°)
   // 절기 경계 황경: 315, 345, 15, 45, 75, 105, 135, 165, 195, 225, 255, 285
   const JEOL_LONGS = [315, 345, 15, 45, 75, 105, 135, 165, 195, 225, 255, 285];
@@ -179,20 +232,41 @@ export function getFullSaju(
     }
   });
 
-  // 지장간 오행 집계 (본기 0.5, 중기 0.2, 초기 0.1 — 보정됨)
-  const HIDDEN_WEIGHTS_EL = [0.5, 0.2, 0.1]; // 본기, 중기, 초기
-  const branchLabels = ["년지", "월지", "일지", "시지"];
-  const hiddenLabels = ["본기", "중기", "초기"];
+  // Phase 3: 절기 경과일수 기반 동적 가중치
+  const pillarBranches = pillars.map(p => p.branch);
+  const pillarWeights = pillarBranches.map((br, idx) => {
+    if (idx === 1) { // 월지: 절기 경과일수 기반
+      return getHiddenWeights(br, Math.floor(daysSinceJeol));
+    }
+    // 년·일·시지: 여기 5%, 중기 15%, 본기 80% 고정
+    return [0.05, 0.15, 0.80];
+  });
 
   pillars.forEach((p, bIdx) => {
     const hidden = HIDDEN_STEMS[p.branch] || [];
-    hidden.forEach((hs, idx) => {
+    const weights = pillarWeights[bIdx]; // [여, 중, 본]
+
+    hidden.forEach((hs, hIdx) => {
       const el = FIVE_ELEMENTS_MAP[hs];
       const name = ELEMENT_KOREAN[el];
-      const weight = HIDDEN_WEIGHTS_EL[idx] ?? 0.1;
+      let weight = 0;
+
+      // HIDDEN_STEMS 순서: [0]=본기(정기), [1]=중기, [2]=여기(초기)
+      // weights 순서: [0]=여기, [1]=중기, [2]=본기
+      if (hidden.length === 3) {
+        if (hIdx === 0) weight = weights[2]; // 본기
+        else if (hIdx === 1) weight = weights[1]; // 중기
+        else weight = weights[0]; // 여기
+      } else if (hidden.length === 2) {
+        // 子, 卯, 酉, 亥 등 (중기 없음)
+        if (hIdx === 0) weight = weights[2]; // 본기
+        else weight = weights[0]; // 여기
+      } else {
+        weight = weights[2]; // 본기
+      }
+
       if (name) {
         elements[name] += weight;
-
       }
     });
   });
