@@ -21,7 +21,6 @@ export function calculateTenGod(dayMaster: string, targetStem: string): string {
   const itIdx = ELEMENTS_ORDER.indexOf(targetEl);
   const diff = (itIdx - meIdx + 5) % 5;
 
-
   if (diff === 0) return samePol ? "비견" : "겁재";
   if (diff === 1) return samePol ? "식신" : "상관";
   if (diff === 2) return samePol ? "편재" : "정재";
