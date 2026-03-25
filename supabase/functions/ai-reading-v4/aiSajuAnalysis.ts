@@ -46,9 +46,9 @@ export interface SajuAnalysisResult {
 }
 
 import { getDaewoonInfo, calculateFullDaewoon, type DaewoonResult } from "./lib/daewoon.ts";
-import { STEMS, BRANCHES, FIVE_ELEMENTS_MAP } from "./lib/fiveElements.ts";
+import { STEMS, BRANCHES, FIVE_ELEMENTS_MAP, STEM_ELEMENT_KR, BRANCH_ELEMENT_KR, HIDDEN_STEMS as COMMON_HIDDEN_STEMS, BRANCH_MAIN_STEM, ELEMENT_CYCLE as COMMON_ELEMENT_CYCLE, PRODUCE_ELEM as COMMON_PRODUCE, SUPPORT_ELEM as COMMON_SUPPORT, CONQUER_ELEM as COMMON_CONQUER, CONQUERED_BY_ELEM } from "./lib/fiveElements.ts";
 import { calculateInteractions, calculateShinsal, calculateShinsalGrouped, calculateGwimunWonjin, calculateGongmang, checkStemRelation, checkBranchRelation, type Interaction, type Shinsal } from "./lib/interactions.ts";
-import { calculateAllTwelveStages, calculateTwelveStage, calculateAllTwelveStagesGeobup, calculateTwelveStageGeobup, getTwelveStageEnergy, BRANCH_MAIN_STEM } from "./lib/twelveStages.ts";
+import { calculateAllTwelveStages, calculateTwelveStage, calculateAllTwelveStagesGeobup, calculateTwelveStageGeobup, getTwelveStageEnergy } from "./lib/twelveStages.ts";
 import { determineGyeokguk, type GyeokgukResult } from "./lib/gyeokguk.ts";
 import { getAllPillarJijanggan } from "./lib/jijanggan.ts";
 import { getAllPillarNapeum } from "./lib/napeum.ts";
