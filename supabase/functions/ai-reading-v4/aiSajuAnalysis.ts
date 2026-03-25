@@ -404,8 +404,8 @@ export async function analyzeSajuStructure(
       if (rel) tenGodCount[rel] += 1.0;
     }
 
-    // 지지의 지장간 처리 (가중치: 본기 0.6, 중기 0.3, 초기 0.1)
-    const HIDDEN_WEIGHTS = [0.6, 0.3, 0.1]; // 첫 번째=본기, 두 번째=중기, 세 번째=초기
+    // 지지의 지장간 처리 (본기만 1.0, 중기/초기 무시 — 단순 정수 카운팅)
+    const HIDDEN_WEIGHTS = [1.0, 0, 0]; // 본기만 카운트
     const allBranches = [
       pillars.year?.branch,
       pillars.month?.branch,
@@ -413,8 +413,8 @@ export async function analyzeSajuStructure(
       pillars.hour?.branch
     ];
 
-    // 월지(index 1)에 월령 가중치 1.5배 적용
-    const BRANCH_MULTIPLIER = [1.0, 1.5, 1.0, 1.0];
+    // 월지 가중치 동일 (단순 정수 카운팅)
+    const BRANCH_MULTIPLIER = [1.0, 1.0, 1.0, 1.0];
 
     for (let bi = 0; bi < allBranches.length; bi++) {
       const branch = allBranches[bi];
