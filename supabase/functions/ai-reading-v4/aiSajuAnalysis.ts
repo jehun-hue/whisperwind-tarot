@@ -527,18 +527,25 @@ export async function analyzeSajuStructure(
       eokbuYong = getProducedElement(myElement); eokbuReason = "종아격: 식상 오행 따라감";
     }
   } else if (strengthLevel.trim() === "극신강" || strengthLevel.trim() === "신강" || strengthLevel.trim() === "약변강") {
-    // 신강 용신 우선순위: 관성 > 재성 > 식상
-    const conquerElem = getConqueringElement(myElement); 
-    const drainElem = getConqueredElement(myElement);   
-    const releaseElem = getProducedElement(myElement);  
-    const candidates = [
-       { elem: conquerElem, priority: 1, name: "관성" },
-       { elem: drainElem, priority: 2, name: "재성" },
-       { elem: releaseElem, priority: 3, name: "식상" }
-    ];
-    const sortedCandidates = candidates.sort((a,b) => (elements[a.elem]||0) - (elements[b.elem]||0) || a.priority - b.priority);
-    eokbuYong = sortedCandidates[0].elem;
-    eokbuReason = `신강: ${sortedCandidates[0].name} 우선순위 기준 ${eokbuYong} 선택`;
+    // 신강: 관성 과다(3+) 시 인성으로 관성 설기, 그 외 식상 > 재성 > 관성 (설기 우선)
+    const conquerElem = getConqueringElement(myElement);
+    const gwanCount = elements_simple[conquerElem] || 0;
+    const supportElem = getProducingElement(myElement);
+    if (gwanCount >= 3) {
+      eokbuYong = supportElem;
+      eokbuReason = `신강: 관성(${conquerElem}) 과다(${gwanCount}개) — 인성(${supportElem})으로 설기`;
+    } else {
+      const releaseElem = PRODUCE_ELEM[myElement];
+      const drainElem = CONQUER_ELEM[myElement];
+      const candidates = [
+        { elem: releaseElem, priority: 1, name: "식상" },
+        { elem: drainElem, priority: 2, name: "재성" },
+        { elem: conquerElem, priority: 3, name: "관성" }
+      ];
+      const sortedCandidates = candidates.sort((a,b) => (elements_simple[a.elem]||0) - (elements_simple[b.elem]||0) || a.priority - b.priority);
+      eokbuYong = sortedCandidates[0].elem;
+      eokbuReason = `신강: ${sortedCandidates[0].name}(${eokbuYong}) 설기 우선`;
+    }
   } else if (strengthLevel.trim() === "신약" || strengthLevel.trim() === "극신약" || strengthLevel.trim() === "강변약") {
     // 신약: 기본 비겁 우선, 식상 과다(3+) 시 인성으로 제어
     const selfElem = myElement;
