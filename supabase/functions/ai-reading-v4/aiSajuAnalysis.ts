@@ -527,24 +527,29 @@ export async function analyzeSajuStructure(
       eokbuYong = getProducedElement(myElement); eokbuReason = "종아격: 식상 오행 따라감";
     }
   } else if (strengthLevel.trim() === "극신강" || strengthLevel.trim() === "신강" || strengthLevel.trim() === "약변강") {
-    // 신강: 관성 과다(3+) 시 인성으로 관성 설기, 그 외 식상 > 재성 > 관성 (설기 우선)
+    // 신강: 관성 과다(3+) → 인성 설기, 인성 과다(3+) → 재성 제어, 그 외 관성 > 재성 > 식상
     const conquerElem = getConqueringElement(myElement);
-    const gwanCount = elements_simple[conquerElem] || 0;
     const supportElem = getProducingElement(myElement);
+    const gwanCount = elements_simple[conquerElem] || 0;
+    const inCount = elements_simple[supportElem] || 0;
     if (gwanCount >= 3) {
       eokbuYong = supportElem;
       eokbuReason = `신강: 관성(${conquerElem}) 과다(${gwanCount}개) — 인성(${supportElem})으로 설기`;
+    } else if (inCount >= 3) {
+      const drainElem = CONQUER_ELEM[myElement];
+      eokbuYong = drainElem;
+      eokbuReason = `신강: 인성(${supportElem}) 과다(${inCount}개) — 재성(${drainElem})으로 제어`;
     } else {
       const releaseElem = PRODUCE_ELEM[myElement];
       const drainElem = CONQUER_ELEM[myElement];
       const candidates = [
-        { elem: releaseElem, priority: 1, name: "식상" },
+        { elem: conquerElem, priority: 1, name: "관성" },
         { elem: drainElem, priority: 2, name: "재성" },
-        { elem: conquerElem, priority: 3, name: "관성" }
+        { elem: releaseElem, priority: 3, name: "식상" }
       ];
       const sortedCandidates = candidates.sort((a,b) => (elements_simple[a.elem]||0) - (elements_simple[b.elem]||0) || a.priority - b.priority);
       eokbuYong = sortedCandidates[0].elem;
-      eokbuReason = `신강: ${sortedCandidates[0].name}(${eokbuYong}) 설기 우선`;
+      eokbuReason = `신강: ${sortedCandidates[0].name}(${eokbuYong}) 부족 보충`;
     }
   } else if (strengthLevel.trim() === "신약" || strengthLevel.trim() === "극신약" || strengthLevel.trim() === "강변약") {
     // 신약: 기본 비겁 우선, 식상 과다(3+) 시 인성으로 제어
