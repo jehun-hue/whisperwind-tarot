@@ -727,6 +727,9 @@ export async function analyzeSajuStructure(
         yearStemIdx, gender, sLong, jdVal, birthYear
       );
       daewoon = calculateFullDaewoon(monthStemIdx, monthBranchIdx, dm, startAge, isForward, currentAge);
+      if (daewoon) {
+        (daewoon as any).direction = direction;
+      }
 
       // 현재 대운 특성 태깅
       if (daewoon.currentDaewoon) {
@@ -1238,9 +1241,18 @@ export async function analyzeSajuStructure(
     dayMaster: dm,
     strength,
     elements,
+    elements_simple,
     characteristics,
     narrative,
     tenGods: tenGodCount,
+    tenGods_rounded: {
+      "비겁": Math.round(tenGodCount["비겁"]),
+      "식상": Math.round(tenGodCount["식상"]),
+      "재성": Math.round(tenGodCount["재성"]),
+      "관성": Math.round(tenGodCount["관성"]),
+      "인성": Math.round(tenGodCount["인성"])
+    },
+    yinYang: yinYang,
     yongShin: yongsin,
     yongShinMethod,
     heeShin: heeShin,
