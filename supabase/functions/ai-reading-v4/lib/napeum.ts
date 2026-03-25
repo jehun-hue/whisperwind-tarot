@@ -26,7 +26,6 @@ const NAPEUM_MAP: Record<string, { name: string, element: string }> = {
   "庚辰": { name: "백랍금(白蠟金)", element: "金" },
   "辛巳": { name: "백랍금(白蠟金)", element: "金" },
   "壬午": { name: "양류목(楊柳木)", element: "木" },
-  "癸미": { name: "양류목(楊柳木)", element: "木" },
   "癸未": { name: "양류목(楊柳木)", element: "木" },
   // 21-30
   "甲申": { name: "천중수(泉中水)", element: "水" },
@@ -45,8 +44,7 @@ const NAPEUM_MAP: Record<string, { name: string, element: string }> = {
   "丙申": { name: "산하화(山下火)", element: "火" },
   "丁酉": { name: "산하화(山下火)", element: "火" },
   "戊戌": { name: "평지목(平地木)", element: "木" },
-  "己亥": { name: "평지목(平지木)", element: "木" },
-  "己亥_": { name: "평지목(平지木)", element: "木" },
+  "己亥": { name: "평지목(平地木)", element: "木" },
   "庚子": { name: "벽상토(壁上土)", element: "土" },
   "辛丑": { name: "벽상토(壁上土)", element: "土" },
   "壬寅": { name: "금박금(金箔金)", element: "金" },
