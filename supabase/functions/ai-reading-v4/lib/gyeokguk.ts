@@ -1,5 +1,16 @@
-﻿// gyeokguk.ts v2 - 전통 명리학 격국 판정 엔진
+// gyeokguk.ts v2 - 전통 명리학 격국 판정 엔진
 // 우선순위: 종격(외격) → 내격 → specialTrait(보조)
+
+import {
+  STEM_ELEMENT_HANJA as STEM_ELEMENT,
+  BRANCH_ELEMENT_HANJA as BRANCH_ELEMENT,
+  BRANCH_MAIN_STEM,
+  STEM_POLARITY,
+  GENERATES_HANJA as GENERATES,
+  CONTROLS_HANJA as CONTROLS,
+  GENERATED_BY_HANJA as GENERATED_BY,
+  CONTROLLED_BY_HANJA as CONTROLLED_BY
+} from "./fiveElements.ts";
 
 export interface GyeokgukResult {
   type: string;
@@ -10,35 +21,6 @@ export interface GyeokgukResult {
   yongShinElement?: string;
 }
 
-// === 천간/지지 음양 매핑 ===
-const STEM_POLARITY: Record<string, "양" | "음"> = {
-  "甲": "양", "乙": "음", "丙": "양", "丁": "음", "戊": "양",
-  "己": "음", "庚": "양", "辛": "음", "壬": "양", "癸": "음"
-};
-
-const STEM_ELEMENT: Record<string, string> = {
-  "甲": "木", "乙": "木", "丙": "火", "丁": "火", "戊": "土",
-  "己": "土", "庚": "金", "辛": "金", "壬": "水", "癸": "水"
-};
-
-// 지지 본기(장간 정기) 매핑
-const BRANCH_MAIN_STEM: Record<string, string> = {
-  "子": "癸", "丑": "己", "寅": "甲", "卯": "乙", "辰": "戊",
-  "巳": "丙", "午": "丁", "未": "己", "申": "庚", "酉": "辛",
-  "戌": "戊", "亥": "壬"
-};
-
-const BRANCH_ELEMENT: Record<string, string> = {
-  "子": "水", "丑": "土", "寅": "木", "卯": "木", "辰": "土",
-  "巳": "火", "午": "火", "未": "土", "申": "金", "酉": "金",
-  "戌": "土", "亥": "水"
-};
-
-// 오행 상생상극
-const GENERATES: Record<string, string> = { "木": "火", "火": "土", "土": "金", "金": "水", "水": "木" };
-const CONTROLS: Record<string, string> = { "木": "土", "火": "金", "土": "水", "金": "木", "水": "火" };
-const GENERATED_BY: Record<string, string> = { "木": "水", "火": "木", "土": "火", "金": "土", "水": "金" };
-const CONTROLLED_BY: Record<string, string> = { "木": "金", "火": "水", "土": "木", "金": "火", "水": "土" };
 
 // === 십성 판별 (음양 구분) ===
 function getRelationByStem(dayStem: string, targetStem: string): string {
