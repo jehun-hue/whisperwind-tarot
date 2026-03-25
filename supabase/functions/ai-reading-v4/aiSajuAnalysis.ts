@@ -540,17 +540,31 @@ export async function analyzeSajuStructure(
     eokbuYong = sortedCandidates[0].elem;
     eokbuReason = `신강: ${sortedCandidates[0].name} 우선순위 기준 ${eokbuYong} 선택`;
   } else if (strengthLevel.trim() === "신약" || strengthLevel.trim() === "극신약" || strengthLevel.trim() === "강변약") {
-    // 신약 용신 우선순위: 비겁 > 인성 (자기 오행 보충 우선)
+    // 신약: 기본 비겁 우선, 식상 과다(3+) 시 인성으로 제어
     const selfElem = myElement;
     const supportElem = getProducingElement(myElement);
-    eokbuYong = selfElem;
-    eokbuReason = `신약: 비겁(${selfElem}) 우선 — 일간 오행 보충`;
+    const sikSangElem = PRODUCE_ELEM[myElement];
+    const sikSangCount = elements_simple[sikSangElem] || 0;
+    if (sikSangCount >= 3) {
+      eokbuYong = supportElem;
+      eokbuReason = `신약: 식상(${sikSangElem}) 과다(${sikSangCount}개) — 인성(${supportElem})으로 제어`;
+    } else {
+      eokbuYong = selfElem;
+      eokbuReason = `신약: 비겁(${selfElem}) 우선 — 일간 오행 보충`;
+    }
   } else {
-    // 중화: 사주에 가장 부족한 오행을 용신으로 선택
-    const allElem = ["목", "화", "토", "금", "수"];
-    const sorted = allElem.sort((a, b) => (elements_simple[a] || 0) - (elements_simple[b] || 0));
-    eokbuYong = sorted[0];
-    eokbuReason = `중화: 사주에 가장 부족한 오행 ${eokbuYong} 보충`;
+    // 중화: 비겁 우선, 식상 과다(3+) 시 인성으로 제어
+    const selfElem = myElement;
+    const supportElem = getProducingElement(myElement);
+    const sikSangElem = PRODUCE_ELEM[myElement];
+    const sikSangCount = elements_simple[sikSangElem] || 0;
+    if (sikSangCount >= 3) {
+      eokbuYong = supportElem;
+      eokbuReason = `중화: 식상(${sikSangElem}) 과다(${sikSangCount}개) — 인성(${supportElem})으로 제어`;
+    } else {
+      eokbuYong = selfElem;
+      eokbuReason = `중화: 비겁(${selfElem}) 우선 — 일간 보강`;
+    }
   }
 
   // 2) 조후용신 (Climate)
