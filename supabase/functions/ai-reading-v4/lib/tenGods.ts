@@ -21,10 +21,6 @@ export function calculateTenGod(dayMaster: string, targetStem: string): string {
   const itIdx = ELEMENTS_ORDER.indexOf(targetEl);
   const diff = (itIdx - meIdx + 5) % 5;
 
-  // Debug log to trace 丁-丁 issue
-  if (dayMaster === "丁" && targetStem === "丁") {
-    console.log("[DEBUG TEN_GOD] 丁-丁 calculation. dmEl:", dmEl, "targetEl:", targetEl, "diff:", diff);
-  }
 
   if (diff === 0) return samePol ? "비견" : "겁재";
   if (diff === 1) return samePol ? "식신" : "상관";
