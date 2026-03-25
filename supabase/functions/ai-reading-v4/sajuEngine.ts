@@ -260,8 +260,8 @@ export function getFullSaju(
   if (strengthPercent >= 85) strength = "극신강";
   else if (strengthPercent >= 65) strength = "신강";
   else if (strengthPercent >= 50) strength = "약변강";
-  else if (strengthPercent >= 45) strength = "중화";
-  else if (strengthPercent >= 35) strength = "강변약";
+  else if (strengthPercent >= 40) strength = "중화";
+  else if (strengthPercent >= 30) strength = "강변약";
   else if (strengthPercent >= 15) strength = "신약";
   else strength = "극신약";
 
