@@ -537,16 +537,11 @@ export async function analyzeSajuStructure(
     eokbuYong = sortedCandidates[0].elem;
     eokbuReason = `신강: ${sortedCandidates[0].name} 우선순위 기준 ${eokbuYong} 선택`;
   } else if (strengthLevel.trim() === "신약" || strengthLevel.trim() === "극신약" || strengthLevel.trim() === "강변약") {
-    // 신약 용신 우선순위: 인성 > 비겁
-    const supportElem = getProducingElement(myElement); 
-    const selfElem = myElement;                         
-    const candidates = [
-      { elem: supportElem, priority: 1, name: "인성" },
-      { elem: selfElem, priority: 2, name: "비겁" }
-    ];
-    const sortedCandidates = candidates.sort((a, b) => (elements[a.elem] || 0) - (elements[b.elem] || 0) || a.priority - b.priority);
-    eokbuYong = sortedCandidates[0].elem;
-    eokbuReason = `신약: ${sortedCandidates[0].name} 우선순위 기준 ${eokbuYong} 선택`;
+    // 신약 용신 우선순위: 비겁 > 인성 (자기 오행 보충 우선)
+    const selfElem = myElement;
+    const supportElem = getProducingElement(myElement);
+    eokbuYong = selfElem;
+    eokbuReason = `신약: 비겁(${selfElem}) 우선 — 일간 오행 보충`;
   } else {
     eokbuYong = getConqueringElement(myElement);
     eokbuReason = "중화: 균형을 위한 관성 기운 보충";
@@ -559,17 +554,10 @@ export async function analyzeSajuStructure(
   // 3) 통관용신 (Mediation)
   const tonggwanDetail = determineTonggwanYong(elements);
 
-  // 최종 용신 종합
-  // 최종 용신 종합: 조후용신 오행이 억부용신과 같은 계열이면 조후 우선
+  // 최종 용신 종합: 억부용신 우선, 조후·통관은 참고
   const johuStem = johuDetail.yongsin ? johuDetail.yongsin.charAt(0) : "";
   const johuElement = johuStem ? STEM_ELEMENT[johuStem] : null;
-  let finalYong: string;
-  if (johuElement && johuElement !== myElement && johuElement !== getProducingElement(myElement)) {
-    // 조후용신이 기신/구신 계열이 아니면 조후 채택
-    finalYong = johuElement;
-  } else {
-    finalYong = eokbuYong;
-  }
+  let finalYong: string = eokbuYong; // 억부용신 우선 적용
   const yongsin_detail = {
     eokbu: { yongsin: eokbuYong, reason: eokbuReason },
     johu: johuDetail,
