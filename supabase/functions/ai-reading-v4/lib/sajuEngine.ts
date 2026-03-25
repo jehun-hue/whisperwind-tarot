@@ -1,4 +1,4 @@
-﻿/**
+/**
  * sajuEngine.ts
  * Main coordinator for Saju (Four Pillars) calculation.
  */
@@ -10,7 +10,8 @@ import { getYearPillar } from "./yearPillar.ts";
 import { getMonthPillar } from "./monthPillar.ts";
 import { getDayPillar } from "./dayPillar.ts";
 import { getHourPillar } from "./hourPillar.ts";
-import { HIDDEN_STEMS, calculateTenGod, calculateTenGodBranch } from "./tenGods.ts";
+import { calculateTenGod, calculateTenGodBranch } from "./tenGods.ts";
+import { HIDDEN_STEMS } from "./fiveElements.ts";
 import { getKoreanTimezoneOffset } from "./timeUtils.ts";
 import { getDaewoonInfo } from "./daewoon.ts";
 

@@ -5,54 +5,9 @@
  */
 
 import { getSunLongitude, findSolarTermJD, MONTH_JEOL_LONGS } from "./solarTermEngine.ts";
+import { STEMS, BRANCHES, FIVE_ELEMENTS_MAP, ELEMENT_KOREAN, HIDDEN_STEMS, SUPPORT_ELEM } from "./lib/fiveElements.ts";
 
-export const STEMS = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"];
 
-// 지장간(地藏干) 테이블 — 각 지지의 숨은 천간 (본기·중기·여기)
-const HIDDEN_STEMS: Record<string, string[]> = {
-  "子": ["癸", "壬"],           // 본기 癸, 중기 壬
-  "丑": ["己", "癸", "辛"],     // 본기 己, 중기 癸, 초기 辛
-  "寅": ["甲", "丙", "戊"],     // 본기 甲, 중기 丙, 초기 戊
-  "卯": ["乙", "甲"],           // 본기 乙, 중기 甲
-  "辰": ["戊", "乙", "癸"],     // 본기 戊, 중기 乙, 초기 癸
-  "巳": ["丙", "庚", "戊"],     // 본기 丙, 중기 庚, 초기 戊
-  "午": ["丁", "己", "丙"],     // 본기 丁, 중기 己, 초기 丙
-  "未": ["己", "丁", "乙"],     // 본기 己, 중기 丁, 초기 乙
-  "申": ["庚", "壬", "戊"],     // 본기 庚, 중기 壬, 초기 戊
-  "酉": ["辛", "庚"],           // 본기 辛, 중기 庚
-  "戌": ["戊", "丁", "辛"],     // 본기 戊, 중기 丁, 초기 辛
-  "亥": ["壬", "甲"]            // 본기 壬, 중기 甲
-};
-export const BRANCHES = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
-
-const FIVE_ELEMENTS: Record<string, string> = {
-  "甲": "wood",
-  "乙": "wood",
-  "丙": "fire",
-  "丁": "fire",
-  "戊": "earth",
-  "己": "earth",
-  "庚": "metal",
-  "辛": "metal",
-  "壬": "water",
-  "癸": "water",
-  "寅": "wood",
-  "卯": "wood",
-  "辰": "earth",
-  "巳": "fire",
-  "午": "fire",
-  "未": "earth",
-  "申": "metal",
-  "酉": "metal",
-  "戌": "earth",
-  "亥": "water",
-  "子": "water",
-  "丑": "earth"
-};
-
-const TR_ELEMENTS: Record<string, string> = {
-  "wood": "목", "fire": "화", "earth": "토", "metal": "금", "water": "수"
-};
 
 export function calculateJD(date: Date): number {
   return (date.getTime() / 86400000) + 2440587.5;
@@ -213,8 +168,8 @@ export function getFullSaju(
   
   // 천간 오행 집계 (각 1점) — 지지는 지장간으로만 계산하므로 여기서는 제외
   pillars.forEach((p, idx) => {
-    const sEl = FIVE_ELEMENTS[p.stem];
-    const sName = TR_ELEMENTS[sEl];
+    const sEl = FIVE_ELEMENTS_MAP[p.stem];
+    const sName = ELEMENT_KOREAN[sEl];
     
     if (sName) {
       elements[sName]++;
@@ -230,8 +185,8 @@ export function getFullSaju(
   pillars.forEach((p, bIdx) => {
     const hidden = HIDDEN_STEMS[p.branch] || [];
     hidden.forEach((hs, idx) => {
-      const el = FIVE_ELEMENTS[hs];
-      const name = TR_ELEMENTS[el];
+      const el = FIVE_ELEMENTS_MAP[hs];
+      const name = ELEMENT_KOREAN[el];
       const weight = HIDDEN_WEIGHTS_EL[idx] ?? 0.1;
       if (name) {
         elements[name] += weight;
@@ -255,15 +210,14 @@ export function getFullSaju(
   const POS_W: Record<string, number> = {
     ys: 10, yb: 10, ms: 10, mb: 30, db: 20, hs: 10, hb: 10
   };
-  const dayMasterElement = TR_ELEMENTS[FIVE_ELEMENTS[dayMaster]];
-  const GEN_MAP: Record<string, string> = {"목":"수","화":"목","토":"화","금":"토","수":"금"};
-  const generatingElement = GEN_MAP[dayMasterElement];
+  const dayMasterElement = ELEMENT_KOREAN[FIVE_ELEMENTS_MAP[dayMaster]];
+  const generatingElement = SUPPORT_ELEM[dayMasterElement];
 
   function mainElOf(char: string, kind: 'S'|'B'): string {
-    if (kind === 'S') return TR_ELEMENTS[FIVE_ELEMENTS[char]] || "";
+    if (kind === 'S') return ELEMENT_KOREAN[FIVE_ELEMENTS_MAP[char]] || "";
     const h = HIDDEN_STEMS[char];
     if (!h || h.length === 0) return "";
-    return TR_ELEMENTS[FIVE_ELEMENTS[h[0]]] || "";  // h[0] = 정기
+    return ELEMENT_KOREAN[FIVE_ELEMENTS_MAP[h[0]]] || "";  // h[0] = 정기
   }
 
   const posArr = [
@@ -349,3 +303,5 @@ export function getFullSaju(
 
   return result;
 }
+
+export { STEMS, BRANCHES } from "./lib/fiveElements.ts";
