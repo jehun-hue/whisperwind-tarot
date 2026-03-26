@@ -344,6 +344,24 @@ function placeHuoLingStars(yearBranchIdx: number, birthHourBranch: number): Map<
   return placements;
 }
 
+// ─── 지공·지겁 배치 (시지 기준) ───
+function placeKongJieStars(birthHourBranch: number): Map<number, AuxiliaryStar[]> {
+  const placements = new Map<number, AuxiliaryStar[]>();
+  
+  // 지공(地空): 시지의 다음 궁 (순행 +1)
+  const kongPos = (birthHourBranch + 1) % 12;
+  // 지겁(地劫): 시지의 이전 궁 (역행 -1)
+  const jiePos = (birthHourBranch - 1 + 12) % 12;
+  
+  if (!placements.has(kongPos)) placements.set(kongPos, []);
+  placements.get(kongPos)!.push("지공");
+  
+  if (!placements.has(jiePos)) placements.set(jiePos, []);
+  placements.get(jiePos)!.push("지겁");
+  
+  return placements;
+}
+
 // ─── 별 밝기 판단 ───
 // ─── 묘왕득함 밝기 테이블 (14주성 × 12궁) ───
 // 인덱스: 0=자, 1=축, 2=인, 3=묘, 4=진, 5=사, 6=오, 7=미, 8=신, 9=유, 10=술, 11=해
@@ -376,6 +394,8 @@ const AUX_BRIGHTNESS_TABLE: Record<string, StarBrightness[]> = {
   타라: ["함지","묘","함지","함지","묘","평화","함지","묘","함지","함지","묘","평화"],
   화성: ["평화","평화","묘","평화","평화","묘","평화","평화","묘","평화","평화","묘"],
   영성: ["평화","평화","묘","평화","평화","묘","평화","평화","묘","평화","평화","묘"],
+  지공: ["평화","평화","평화","평화","평화","평화","평화","평화","평화","평화","평화","평화"],
+  지겁: ["평화","평화","평화","평화","평화","평화","평화","평화","평화","평화","평화","평화"],
 };
 
 function getStarBrightness(star: MajorStar, palaceIdx: number): StarBrightness {
@@ -695,6 +715,7 @@ export function calculateZiWei(
     placeLuCunStars(yearGanIdx),
     placeGuiYueStars(yearGanIdx),
     placeHuoLingStars(yearBranchIdx, birthHourBranch),
+    placeKongJieStars(birthHourBranch),
   ];
   
   const auxStarMap = new Map<number, AuxiliaryStar[]>();
