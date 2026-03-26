@@ -364,6 +364,20 @@ const BRIGHTNESS_TABLE: Record<MajorStar, StarBrightness[]> = {
   파군: ["평화", "평화", "묘", "왕", "평화", "평화", "묘", "평화", "평화", "왕", "평화", "득지"],
 };
 
+const AUX_BRIGHTNESS_TABLE: Record<string, StarBrightness[]> = {
+  좌보: ["묘","득지","왕","묘","득지","평화","묘","득지","왕","묘","득지","평화"],
+  우필: ["묘","득지","왕","묘","득지","평화","묘","득지","왕","묘","득지","평화"],
+  문창: ["평화","득지","묘","왕","득지","묘","평화","함지","평화","왕","득지","묘"],
+  문곡: ["평화","득지","묘","왕","득지","묘","평화","함지","평화","왕","득지","묘"],
+  록존: ["왕","왕","왕","왕","왕","왕","왕","왕","왕","왕","왕","왕"],
+  천괴: ["왕","왕","왕","왕","왕","왕","왕","왕","왕","왕","왕","왕"],
+  천월: ["왕","왕","왕","왕","왕","왕","왕","왕","왕","왕","왕","왕"],
+  경양: ["함지","함지","묘","평화","함지","묘","함지","함지","묘","평화","함지","묘"],
+  타라: ["함지","묘","함지","함지","묘","평화","함지","묘","함지","함지","묘","평화"],
+  화성: ["평화","평화","묘","평화","평화","묘","평화","평화","묘","평화","평화","묘"],
+  영성: ["평화","평화","묘","평화","평화","묘","평화","평화","묘","평화","평화","묘"],
+};
+
 function getStarBrightness(star: MajorStar, palaceIdx: number): StarBrightness {
   const table = BRIGHTNESS_TABLE[star];
   if (table) {
@@ -567,7 +581,7 @@ function calculateMinorPeriod(
 }
 
 // ─── 궁위별 해석 (사화 포함) ───
-function interpretPalace(palace: PalaceName, stars: StarPlacement[], transformations: Transformation[]): string {
+function interpretPalace(palace: PalaceName, stars: StarPlacement[], transformations: Transformation[], isShenGong: boolean = false): string {
   const palaceContext: Record<PalaceName, string> = {
     명궁: "성격과 인생 전반의 방향", 형제궁: "형제자매 및 가까운 동료",
     부처궁: "배우자와 연애 관계", 자녀궁: "자녀와 후계",
@@ -595,6 +609,33 @@ function interpretPalace(palace: PalaceName, stars: StarPlacement[], transformat
     } else {
       result = `${palace}(${context})에 ${mainStar.star}(${mainStar.brightness}) → ${meaning.positive}과 ${meaning.negative} 혼재.`;
     }
+  }
+
+  // 보조성 영향 추가
+  const auxStars = stars.filter(s => AUX_STAR_MEANINGS[s.star as string]);
+  if (auxStars.length > 0) {
+    const auxDesc = auxStars.map(s => `${s.star}(${s.brightness}): ${AUX_STAR_MEANINGS[s.star as string]}`).join("; ");
+    result += ` [보조성: ${auxDesc}]`;
+  }
+
+  // 신궁 동궁 해석
+  if (isShenGong) {
+    result += ` [신궁(身宮) 동궁] 후반생(40대 이후)의 중심 테마가 이 궁에 집중됩니다. `;
+    const shenGongTheme: Record<PalaceName, string> = {
+      명궁: "후반생에도 자아 중심적 삶, 끊임없는 자기 발전 추구",
+      형제궁: "후반생에 형제·동료와의 관계가 인생 핵심 축이 됨",
+      부처궁: "후반생에 배우자·파트너 관계가 삶의 중심",
+      자녀궁: "후반생에 자녀·후배·창작 활동이 핵심 테마",
+      재백궁: "후반생에 재물 관리와 경제 활동이 중심",
+      질액궁: "후반생에 건강 관리가 최우선 과제",
+      천이궁: "후반생에 이동·해외·외부 활동이 많아짐",
+      노복궁: "후반생에 사회적 관계와 부하 관리가 핵심",
+      관록궁: "후반생에 사업·직업에서 큰 성취 가능",
+      전택궁: "후반생에 부동산·가정 안정이 중심 테마",
+      복덕궁: "후반생에 정신적 수양과 내면의 평화 추구",
+      부모궁: "후반생에 윗사람·조직과의 관계가 중요해짐",
+    };
+    result += shenGongTheme[palace] || "";
   }
 
   // 사화 영향 추가
@@ -665,6 +706,10 @@ export function calculateZiWei(
     palaceTransMap.get(t.palace)!.push(t);
   }
 
+  // 신궁 동궁 위치(shenGongPalace) 계산
+  const shenGongOffset = ((mingGongIdx - shenGongIdx) % 12 + 12) % 12;
+  const shenGongPalace = PALACES[shenGongOffset];
+
   // 12궁 구성
   const palaces: PalaceInfo[] = PALACES.map((name, idx) => {
     const palaceIdx = ((mingGongIdx - idx) % 12 + 12) % 12;
@@ -682,7 +727,7 @@ export function calculateZiWei(
       starPlacements.push({
         star: auxStar,
         palace: name,
-        brightness: "평화", // 보조성 밝기는 Phase 3에서 정밀화
+        brightness: AUX_BRIGHTNESS_TABLE[auxStar]?.[palaceIdx % 12] ?? "평화",
         description: AUX_STAR_MEANINGS[auxStar] || "",
       });
     }
@@ -694,7 +739,7 @@ export function calculateZiWei(
       branch: BRANCHES[palaceIdx],
       stars: starPlacements,
       transformations: trans,
-      interpretation: interpretPalace(name, starPlacements, trans),
+      interpretation: interpretPalace(name, starPlacements, trans, name === shenGongPalace),
     };
   });
 
@@ -771,10 +816,6 @@ export function calculateZiWei(
   if (currentMajorPeriod) {
     keyInsights.push(`현재 대한(${currentMajorPeriod.startAge}-${currentMajorPeriod.endAge}세): ${currentMajorPeriod.interpretation}`);
   }
-
-  // 신궁 동궁 위치(shenGongPalace) 계산
-  const shenGongOffset = ((mingGongIdx - shenGongIdx) % 12 + 12) % 12;
-  const shenGongPalace = PALACES[shenGongOffset];
 
   return {
     mingGong: BRANCHES[mingGongIdx],
