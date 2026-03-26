@@ -1,6 +1,7 @@
 /**
- * yongsin.ts
- * 용신(用神) 및 오행 강약 분석 엔진
+ * @deprecated 이 파일은 더 이상 사용되지 않습니다.
+ * 용신 판별은 aiSajuAnalysis.ts 내부 로직 + jonggyeokEngine.ts가 담당합니다.
+ * Phase 6 이후 삭제 예정.
  */
 
 import { getElement, getElementKorean, ELEMENT_KOREAN } from "./fiveElements.ts";
