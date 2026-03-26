@@ -1,4 +1,5 @@
 import { Signal, CrossSignal } from './signalExtractor.ts';
+import { ILJU_MEANINGS } from "./interpretations/index.ts";
 
 export interface UserInfo {
   name?: string;
@@ -49,6 +50,20 @@ export function buildReadingPrompt(
 
   // ── 데이터 추출 및 정규화 (전역 사용을 위해 상단 배치) ──
   const s = saju || {} as any;
+
+  // 일주(日柱) 프로필 주입
+  const dayPillarFull = s?.fourPillars?.day?.full 
+    || (s?.fourPillars?.day?.stem && s?.fourPillars?.day?.branch 
+        ? `${s.fourPillars.day.stem}${s.fourPillars.day.branch}` : '');
+  const iljuProfile = dayPillarFull ? ILJU_MEANINGS[dayPillarFull] : null;
+  const iljuBlock = iljuProfile ? `
+[일주 프로필: ${dayPillarFull}]
+- 성격 핵심: ${iljuProfile.personality}
+- 대인관계: ${iljuProfile.relationships}  
+- 적합 직업: ${iljuProfile.career}
+- 건강 유의: ${iljuProfile.health}
+- 핵심 조언: ${iljuProfile.advice}
+` : '';
   const dw = s.daewoon || {} as any;
   const currentDw = dw.currentDaewoon || {};
   const currentSeun = dw.current_seun || {};
@@ -280,6 +295,7 @@ ${signalText}
 • 이번 달(월운): [${s.fortune?.currentMonthFortune?.rating || '평'}] ${s.fortune?.currentMonthFortune?.interpretation || ''}
 • 세운-원국 교차: ${sewoonTop3}
 • 공망: ${s.gongmang?.emptied?.join(', ') || '없음'} (${s.gongmang?.affectedPillars?.join(', ') || ''})
+${iljuBlock}
 • 주요 신살:
 ${sortedShinsal.slice(0, 10).map((ss: any) => 
   `  - ${ss.name}${ss.hanja ? `(${ss.hanja})` : ''}[${ss.location || ss.pillar || ''}]: ${ss.effect || ss.description || ss.name} (강도: ${ss.strength || '중'})`

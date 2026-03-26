@@ -44,6 +44,7 @@ export interface SajuAnalysisResult {
   daewoon_transition?: any;                            // v2: 대운 전환기 경고
   daily_pillar?: any;                                  // v2: 일진 분석
   fortune?: FortuneResult;                             // v3: 세운·월운 운세
+  fourPillars?: any;                                   // v3: 사주 원국 원본 (일주 추출용)
 }
 
 import { getDaewoonInfo, calculateFullDaewoon, type DaewoonResult } from "./lib/daewoon.ts";
@@ -1313,6 +1314,7 @@ export async function analyzeSajuStructure(
     daewoon_transition,
     daily_pillar,
     fortune: fortuneResult,                             // v3: 운세
+    fourPillars: sajuRaw.pillars,                       // v3: 원국 원본 추가
   };
 }
 
