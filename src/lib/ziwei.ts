@@ -33,7 +33,7 @@ export type TransformationType = "화록" | "화권" | "화과" | "화기";
 
 export interface Transformation {
   type: TransformationType;
-  star: MajorStar;
+  star: MajorStar | AuxiliaryStar;
   palace: PalaceName;
   description: string;
 }
@@ -97,7 +97,7 @@ const BRANCHES = ["자", "축", "인", "묘", "진", "사", "오", "미", "신",
 const STEMS = ["갑", "을", "병", "정", "무", "기", "경", "신", "임", "계"];
 
 // ─── 사화 테이블 (천간별 화록/화권/화과/화기 대상 별) ───
-const TRANSFORMATION_TABLE: Record<string, Record<TransformationType, MajorStar>> = {
+const TRANSFORMATION_TABLE: Record<string, Record<TransformationType, MajorStar | AuxiliaryStar>> = {
   갑: { 화록: "염정", 화권: "파군", 화과: "무곡", 화기: "태양" },
   을: { 화록: "천기", 화권: "천량", 화과: "자미", 화기: "태음" },
   병: { 화록: "천동", 화권: "천기", 화과: "천상", 화기: "염정" },
@@ -106,7 +106,7 @@ const TRANSFORMATION_TABLE: Record<string, Record<TransformationType, MajorStar>
   기: { 화록: "무곡", 화권: "탐랑", 화과: "천량", 화기: "천상" },
   경: { 화록: "태양", 화권: "무곡", 화과: "태음", 화기: "천동" },
   신: { 화록: "거문", 화권: "태양", 화과: "천부", 화기: "천량" },
-  임: { 화록: "천량", 화권: "자미", 화과: "천부", 화기: "무곡" },
+  임: { 화록: "천량", 화권: "자미", 화과: "좌보", 화기: "무곡" },
   계: { 화록: "파군", 화권: "거문", 화과: "태음", 화기: "탐랑" },
 };
 
@@ -410,7 +410,7 @@ const AUX_STAR_MEANINGS: Record<string, string> = {
 // ─── 사화 계산 (생년 천간 기준) ───
 function calculateNatalTransformations(
   yearGanIdx: number,
-  starMap: Map<number, MajorStar[]>,
+  starMap: Map<number, (MajorStar | AuxiliaryStar)[]>,
   mingGongIdx: number
 ): Transformation[] {
   const stem = STEMS[yearGanIdx];
@@ -448,7 +448,7 @@ function calculateMajorPeriods(
   mingGongIdx: number,
   gender: "male" | "female",
   yearGanIdx: number,
-  starMap: Map<number, MajorStar[]>
+  starMap: Map<number, (MajorStar | AuxiliaryStar)[]>
 ): MajorPeriod[] {
   const bureauStartAge: Record<Bureau, number> = {
     수이국: 2, 목삼국: 3, 금사국: 4, 토오국: 5, 화육국: 6,
@@ -645,8 +645,18 @@ export function calculateZiWei(
     }
   }
 
+  // 전체 별 맵 (사화 계산용: 주성 + 보조성)
+  const totalStarMap = new Map<number, (MajorStar | AuxiliaryStar)[]>();
+  for (const [pos, stars] of starMap.entries()) {
+    totalStarMap.set(pos, [...stars]);
+  }
+  for (const [pos, stars] of auxStarMap.entries()) {
+    if (!totalStarMap.has(pos)) totalStarMap.set(pos, []);
+    totalStarMap.get(pos)!.push(...stars);
+  }
+
   // 생년 사화
-  const natalTransformations = calculateNatalTransformations(yearGanIdx, starMap, mingGongIdx);
+  const natalTransformations = calculateNatalTransformations(yearGanIdx, totalStarMap, mingGongIdx);
 
   // 궁위별 사화 매핑
   const palaceTransMap = new Map<string, Transformation[]>();
@@ -689,7 +699,7 @@ export function calculateZiWei(
   });
 
   // 대한
-  const majorPeriods = calculateMajorPeriods(bureau, mingGongIdx, gender, yearGanIdx, starMap);
+  const majorPeriods = calculateMajorPeriods(bureau, mingGongIdx, gender, yearGanIdx, totalStarMap);
   const currentYear = new Date().getFullYear();
   const currentAge = currentYear - birthYear + 1; // Korean age
   const currentMajorPeriod = majorPeriods.find(p => currentAge >= p.startAge && currentAge <= p.endAge) || null;
