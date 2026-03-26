@@ -109,6 +109,17 @@ export interface ZiWeiResult {
     natalOverlap: string[];   // 본명사화와 유년사화 겹침
     interpretation: string;
   } | null;
+  // 종합 점수 (Stage 5)
+  overallScore: {
+    total: number;          // 0~100
+    categories: {
+      name: string;         // "재물", "직업", "연애", "건강", "인간관계"
+      score: number;        // 0~100
+      summary: string;
+    }[];
+    grade: string;          // "S", "A", "B", "C", "D"
+    oneLineSummary: string; // 한줄 요약
+  };
 }
 
 // ─── 상수 ───
@@ -1201,6 +1212,110 @@ function interpretPalace(
 
 }
 
+/**
+ * 종합 점수 및 카테고리별 점수 계산 (Stage 5)
+ */
+function calculateOverallScores(
+  palaces: PalaceInfo[],
+  geokGuk: { grade: string }[]
+): ZiWeiResult['overallScore'] {
+  const categories = [
+    { name: "재물", palaceName: "재백궁" },
+    { name: "직업", palaceName: "관록궁" },
+    { name: "연애", palaceName: "부처궁" },
+    { name: "건강", palaceName: "질액궁" },
+    { name: "인간관계", palaceName: "노복궁" },
+  ];
+
+  const luckyStars = ["좌보", "우필", "천괴", "천월", "록존", "문창", "문곡"];
+  const killerStars = ["경양", "타라", "화성", "영성", "지공", "지겁"];
+  const luckyShen = ["천덕", "월덕", "천희"];
+  const unluckyShen = ["겁살", "천형"];
+  const brightnessMap: Record<string, number> = {
+    "묘": 20, "왕": 18, "득지": 15, "평화": 10, "함지": 5, "낙함": 2
+  };
+
+  const categoryResults = categories.map(cat => {
+    const p = palaces.find(pal => pal.name === cat.palaceName)!;
+    let score = 50; // 기본 베이스 점수
+
+    // 1. 주성 밝기
+    for (const star of p.stars) {
+      if (MAJOR_STARS.includes(star.star as any)) {
+        score += brightnessMap[star.brightness] || 10;
+      }
+    }
+
+    // 2. 길성/흉성
+    for (const star of p.stars) {
+      if (luckyStars.includes(star.star)) score += 3;
+      if (killerStars.includes(star.star)) score -= 2;
+    }
+
+    // 3. 격국 (모든 궁에 공통 반영)
+    if (geokGuk.length > 0) {
+      const g = geokGuk[0];
+      if (g.grade === "상격") score += 15;
+      else if (g.grade === "중격") score += 8;
+      else if (g.grade === "하격") score += 0;
+      // 파격 판단 (격국 엔진에서 파격 조건이 있으면 -10)
+      if (g.grade === "파격") score -= 10;
+    }
+
+    // 4. 사화 (명궁 기준이 아니라 해당 궁 기준 사화)
+    for (const t of p.transformations) {
+      if (t.type === "화록" || t.type === "화과") score += 5;
+      if (t.type === "화권") score += 3;
+      if (t.type === "화기") score -= 8;
+    }
+
+    // 5. 신살
+    for (const s of p.shenSha) {
+      if (luckyShen.includes(s)) score += 2;
+      if (unluckyShen.includes(s)) score -= 3;
+    }
+
+    score = Math.max(0, Math.min(100, score));
+
+    let summary = "";
+    if (score >= 85) summary = "매우 길함";
+    else if (score >= 70) summary = "양호함";
+    else if (score >= 55) summary = "보통";
+    else if (score >= 40) summary = "주의 필요";
+    else summary = "기복 심함";
+
+    return {
+      name: cat.name,
+      score: Math.round(score),
+      summary
+    };
+  });
+
+  const total = Math.round(categoryResults.reduce((acc, cur) => acc + cur.score, 0) / categoryResults.length);
+  
+  let grade = "C";
+  if (total >= 85) grade = "S";
+  else if (total >= 70) grade = "A";
+  else if (total >= 55) grade = "B";
+  else if (total >= 40) grade = "C";
+  else grade = "D";
+
+  const summaries: Record<string, string> = {
+    "S": "하늘의 축복을 받은 명운, 모든 분야에서 탁월한 성취가 기대됩니다.",
+    "A": "안정적이고 발전적인 명운, 노력한 만큼의 결실을 맺는 삶입니다.",
+    "B": "평탄한 흐름이나 특정 분야의 기복이 있으니 조화가 필요합니다.",
+    "C": "인내와 노력이 필요한 시기, 신중한 선택이 운명을 바꿉니다.",
+    "D": "도전적인 과제가 많은 명운, 수양과 지혜로 위기를 극복해야 합니다."
+  };
+
+  return {
+    total,
+    categories: categoryResults,
+    grade,
+    oneLineSummary: summaries[grade] || summaries["C"]
+  };
+}
+
 // ─── 메인 계산 함수 ───
 export function calculateZiWei(
   birthYear: number,
@@ -1211,6 +1326,7 @@ export function calculateZiWei(
   gender: "male" | "female"
 ): ZiWeiResult {
   const yearGanIdx = (birthYear - 4) % 10;
+
   const birthHourBranch = Math.floor((birthHour + 1) / 2) % 12;
 
   const mingGongIdx = calculateMingGong(lunarMonth, birthHourBranch);
@@ -1407,7 +1523,10 @@ export function calculateZiWei(
     majorPeriods
   );
 
+  const overallScore = calculateOverallScores(palaces, geokGuk);
+
   return {
+
     mingGong: BRANCHES[mingGongIdx],
     shenGong: BRANCHES[shenGongIdx],
     shenGongPalace,
@@ -1423,8 +1542,10 @@ export function calculateZiWei(
     starCombinations: allCombinations,
     geokGuk,
     currentYearAnalysis,
+    overallScore,
   };
 }
+
 
 // ─── 질문 유형별 분석 ───
 export function getZiWeiForQuestion(
@@ -1549,5 +1670,9 @@ export function getZiWeiForQuestion(
     }
   }
 
+  // 종합 점수 요약 추가
+  result += `\n[종합 운세 점수] ${ziwei.overallScore.total}점 (${ziwei.overallScore.grade}등급): ${ziwei.overallScore.oneLineSummary}`;
+
   return result;
 }
+
