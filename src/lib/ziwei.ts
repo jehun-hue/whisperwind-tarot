@@ -393,19 +393,31 @@ function placeKongJieStars(birthHourBranch: number): Map<number, AuxiliaryStar[]
 }
 
 const SHEN_SHA_MEANINGS: Record<string, string> = {
+  // ── 12신살 (placeShenShaStars) ──
+  겁살: "급변, 사고, 도난, 손재",
+  재살: "재물 손실, 도둑, 분쟁",
+  천살: "천재지변, 예측불가 사고",
+  지살: "부동산 문제, 기반 흔들림",
+  년살: "연간 반복 액운, 만성적 장애",
+  월살: "월간 기복, 소소한 방해",
+  망신살: "명예 실추, 구설, 창피",
+  장성살: "학문 성취, 문서 길함",
+  반안살: "안장에 오름, 승진, 발탁",
+  역마살: "이사, 전직, 여행, 변동",
+  육해살: "가까운 사람과의 갈등, 배신",
+  화개살: "종교, 예술, 고독, 영성",
+  // ── 특수 신살 (placeSpecialShenSha) ──
   천마: "이동, 변동, 해외, 출장운",
   홍란: "연애, 결혼, 이성 인연",
   천희: "경사, 임신, 기쁜 소식",
   천형: "수술, 형벌, 법적 분쟁, 의료",
   천요: "질병, 약물, 기이한 인연",
+  도화: "이성 매력, 색정, 인기, 예술",
   천덕: "하늘의 도움, 재난 해소, 귀인",
   월덕: "매월 귀인, 흉함 완화",
-  화개: "종교, 예술, 고독, 영성",
-  역마: "이사, 전직, 여행, 변동",
-  도화: "이성 매력, 색정, 인기, 예술",
-  겁살: "급변, 사고, 도난, 손재",
   천공: "공상, 허망, 종교성, 이상주의",
 };
+
 
 // ─── 신살(ShenSha) 배치 (연지 기준 12신살) ───
 
@@ -433,6 +445,65 @@ function placeShenShaStars(yearBranchIdx: number): Map<number, ShenSha[]> {
   }
   return shenShaMap;
 }
+
+function placeSpecialShenSha(
+  yearBranchIdx: number,
+  lunarMonth: number,
+  birthHourBranch: number
+): Map<number, string[]> {
+  const map = new Map<number, string[]>();
+  const add = (pos: number, name: string) => {
+    const p = ((pos % 12) + 12) % 12;
+    if (!map.has(p)) map.set(p, []);
+    map.get(p)!.push(name);
+  };
+
+  // 천마(天馬) — 연지 기준
+  // 인오술→신(8), 사유축→해(11), 신자진→인(2), 해묘미→사(5)
+  const tianMaTable: Record<number, number> = {
+    2:8, 6:8, 10:8,   // 인오술→신
+    5:11, 9:11, 1:11,  // 사유축→해
+    8:2, 0:2, 4:2,     // 신자진→인
+    11:5, 3:5, 7:5,    // 해묘미→사
+  };
+  add(tianMaTable[yearBranchIdx] ?? 8, "천마");
+
+  // 도화(桃花) — 연지 기준
+  // 인오술→묘(3), 사유축→오(6), 신자진→유(9), 해묘미→자(0)
+  const doHwaTable: Record<number, number> = {
+    2:3, 6:3, 10:3,
+    5:6, 9:6, 1:6,
+    8:9, 0:9, 4:9,
+    11:0, 3:0, 7:0,
+  };
+  add(doHwaTable[yearBranchIdx] ?? 3, "도화");
+
+  // 홍란(紅鸞) — 연지 기준: 卯(3)에서 연지만큼 역행
+  const hongLanPos = (3 - yearBranchIdx + 12) % 12;
+  add(hongLanPos, "홍란");
+
+  // 천희(天喜) — 홍란 대궁(+6)
+  add((hongLanPos + 6) % 12, "천희");
+
+  // 천형(天刑) — 월 기준: 酉(9)에서 월만큼 순행
+  add((9 + lunarMonth - 1) % 12, "천형");
+
+  // 천요(天姚) — 월 기준: 丑(1)에서 월만큼 순행
+  add((1 + lunarMonth - 1) % 12, "천요");
+
+  // 천덕(天德) — 월 기준
+  // 정월→酉(9), 2월→戌(10), 3월→亥(11), 4월→子(0) … 순행
+  add((9 + lunarMonth - 1) % 12, "천덕");
+
+  // 월덕(月德) — 월 기준: 巳(5)에서 월만큼 순행
+  add((5 + lunarMonth - 1) % 12, "월덕");
+
+  // 천공(天空) — 시지 기준: 시지+1
+  add((birthHourBranch + 1) % 12, "천공");
+
+  return map;
+}
+
 
 
 // ─── 삼방사정(三方四正) 관계 계산 ───
@@ -1199,11 +1270,16 @@ function interpretPalace(
       warnings.push("천형+천요: 건강·수술 주의");
     if (shenSha.includes("도화") && shenSha.includes("홍란"))
       warnings.push("도화+홍란: 이성 인연 매우 강함");
-    if (shenSha.includes("역마") && shenSha.includes("천마"))
-      warnings.push("역마+천마: 이동·변동 극대화");
+    if (shenSha.includes("역마살") && shenSha.includes("천마"))
+      warnings.push("역마살+천마: 이동·변동 극대화");
     if (shenSha.includes("겁살") && shenSha.includes("지겁"))
       warnings.push("겁살+지겁: 재물 손실 주의");
+    if (shenSha.includes("화개살") && shenSha.includes("천공"))
+      warnings.push("화개살+천공: 종교·영성 강화, 현실 주의");
+    if (shenSha.includes("도화") && shenSha.includes("천희"))
+      warnings.push("도화+천희: 연애 경사 가능성 높음");
     if (warnings.length > 0) {
+
       interpretation += `\n⚠ 신살 경고: ${warnings.join(" / ")}`;
     }
   }
@@ -1229,9 +1305,10 @@ function calculateOverallScores(
 
   const luckyStars = ["좌보", "우필", "천괴", "천월", "록존", "문창", "문곡"];
   const killerStars = ["경양", "타라", "화성", "영성", "지공", "지겁"];
-  const luckyShen = ["천덕", "월덕", "천희"];
-  const unluckyShen = ["겁살", "천형"];
+  const luckyShen = ["천덕", "월덕", "천희", "장성살", "반안살"];
+  const unluckyShen = ["겁살", "천형", "천살", "망신살", "육해살"];
   const brightnessMap: Record<string, number> = {
+
     "묘": 20, "왕": 18, "득지": 15, "평화": 10, "함지": 5, "낙함": 2
   };
 
@@ -1345,7 +1422,21 @@ export function calculateZiWei(
     placeHuoLingStars(yearBranchIdx, birthHourBranch),
     placeKongJieStars(birthHourBranch),
   ];
-  const shenShaMap = placeShenShaStars(yearBranchIdx);
+  // 12신살 배치
+  const shenSha12 = placeShenShaStars(yearBranchIdx);
+  // 특수 신살 9종 배치
+  const specialShenSha = placeSpecialShenSha(yearBranchIdx, lunarMonth, birthHourBranch);
+
+  // 통합
+  const shenShaMap = new Map<number, string[]>();
+  for (let i = 0; i < 12; i++) {
+    const merged: string[] = [
+      ...(shenSha12.get(i) || []),
+      ...(specialShenSha.get(i) || []),
+    ];
+    if (merged.length > 0) shenShaMap.set(i, merged);
+  }
+
 
   
   const auxStarMap = new Map<number, AuxiliaryStar[]>();
