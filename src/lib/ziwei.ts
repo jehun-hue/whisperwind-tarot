@@ -362,6 +362,50 @@ function placeKongJieStars(birthHourBranch: number): Map<number, AuxiliaryStar[]
   return placements;
 }
 
+// ─── 삼방사정(三方四正) 관계 계산 ───
+// 본궁(palaceIdx) 기준:
+//   대궁(對宮): +6 (맞은편)
+//   삼합궁1: +4
+//   삼합궁2: +8
+// 반환: { opposite: number, trine1: number, trine2: number }
+function getSanFangSiZheng(palaceIdx: number): {
+  opposite: number;  // 대궁
+  trine1: number;    // 삼합궁1
+  trine2: number;    // 삼합궁2
+} {
+  return {
+    opposite: (palaceIdx + 6) % 12,
+    trine1: (palaceIdx + 4) % 12,
+    trine2: (palaceIdx + 8) % 12,
+  };
+}
+
+// ─── 삼방사정 별 수집 ───
+// 본궁 + 대궁 + 삼합궁1 + 삼합궁2 에 있는 모든 별을 수집
+function collectSanFangStars(
+  palaceIdx: number,
+  starMap: Map<number, (MajorStar | AuxiliaryStar)[]>
+): {
+  mainStars: (MajorStar | AuxiliaryStar)[];
+  oppositeStars: (MajorStar | AuxiliaryStar)[];
+  trine1Stars: (MajorStar | AuxiliaryStar)[];
+  trine2Stars: (MajorStar | AuxiliaryStar)[];
+  allStars: (MajorStar | AuxiliaryStar)[];
+} {
+  const sf = getSanFangSiZheng(palaceIdx);
+  const mainStars = starMap.get(palaceIdx) || [];
+  const oppositeStars = starMap.get(sf.opposite) || [];
+  const trine1Stars = starMap.get(sf.trine1) || [];
+  const trine2Stars = starMap.get(sf.trine2) || [];
+  return {
+    mainStars,
+    oppositeStars,
+    trine1Stars,
+    trine2Stars,
+    allStars: [...mainStars, ...oppositeStars, ...trine1Stars, ...trine2Stars],
+  };
+}
+
 // ─── 별 밝기 판단 ───
 // ─── 묘왕득함 밝기 테이블 (14주성 × 12궁) ───
 // 인덱스: 0=자, 1=축, 2=인, 3=묘, 4=진, 5=사, 6=오, 7=미, 8=신, 9=유, 10=술, 11=해
@@ -615,78 +659,80 @@ function calculateMinorPeriod(
 }
 
 // ─── 궁위별 해석 (사화 포함) ───
-function interpretPalace(palace: PalaceName, stars: StarPlacement[], transformations: Transformation[], isShenGong: boolean = false): string {
-  const palaceContext: Record<PalaceName, string> = {
-    명궁: "성격과 인생 전반의 방향", 형제궁: "형제자매 및 가까운 동료",
-    부처궁: "배우자와 연애 관계", 자녀궁: "자녀와 후계",
-    재백궁: "재물 운용과 수입", 질액궁: "건강과 질병",
-    천이궁: "이동, 여행, 외부 활동", 노복궁: "부하, 직원, 팔로워",
-    관록궁: "직업과 사업", 전택궁: "부동산과 가산",
-    복덕궁: "정신적 만족과 취미", 부모궁: "부모와 상사",
-  };
+function interpretPalace(
+  palaceName: PalaceName,
+  stars: StarPlacement[],
+  transformations: Transformation[],
+  isShenGong: boolean = false,
+  starMap?: Map<number, (MajorStar | AuxiliaryStar)[]>,
+  palaceIdx?: number
+): string {
+  let interpretation = "";
 
-  const context = palaceContext[palace];
-  let result = "";
+  if (isShenGong) {
+    interpretation += `[신궁(身宮)] 후천적 자아와 행동 패턴을 나타냅니다. `;
+  }
 
-  if (stars.length === 0) {
-    result = `${palace}(${context})에 주성이 없어 타 궁의 영향을 크게 받습니다.`;
-  } else {
-    const majorPalaceStars = stars.filter(s => MAJOR_STARS.includes(s.star as MajorStar));
-    if (majorPalaceStars.length > 0) {
-      const mainStar = majorPalaceStars[0];
-      const meaning = STAR_MEANINGS[mainStar.star as MajorStar];
-      const isBright = mainStar.brightness === "묘" || mainStar.brightness === "왕";
-      const isDark = mainStar.brightness === "함지" || mainStar.brightness === "낙함";
-
-      if (isBright) {
-        result = `${palace}(${context})에 ${mainStar.star}(${mainStar.brightness}) → ${meaning.positive}. ${meaning.domain}에서 강한 에너지.`;
-      } else if (isDark) {
-        result = `${palace}(${context})에 ${mainStar.star}(${mainStar.brightness}) → ${meaning.negative} 경향. ${meaning.domain}에서 주의 필요.`;
-      } else {
-        result = `${palace}(${context})에 ${mainStar.star}(${mainStar.brightness}) → ${meaning.positive}과 ${meaning.negative} 혼재.`;
+  // 주성 해석
+  for (const sp of stars) {
+    if (STAR_MEANINGS[sp.star as MajorStar]) {
+      const meaning = STAR_MEANINGS[sp.star as MajorStar];
+      const brightnessNote =
+        sp.brightness === "묘" || sp.brightness === "왕"
+          ? `(${sp.brightness} - 매우 강력)`
+          : sp.brightness === "함지" || sp.brightness === "낙함"
+          ? `(${sp.brightness} - 힘이 약함)`
+          : `(${sp.brightness})`;
+      interpretation += `${sp.star}${brightnessNote}: ${meaning.positive}. `;
+      if (sp.brightness === "함지" || sp.brightness === "낙함") {
+        interpretation += `주의: ${meaning.negative}. `;
       }
-    } else {
-      result = `${palace}(${context})에 주성이 없어 타 궁의 영향을 크게 받습니다.`;
+    } else if (AUX_STAR_MEANINGS[sp.star]) {
+      interpretation += `${sp.star}: ${AUX_STAR_MEANINGS[sp.star]}. `;
     }
   }
 
-  // 보조성 영향 추가
-  const auxStars = stars.filter(s => AUX_STAR_MEANINGS[s.star as string]);
-  if (auxStars.length > 0) {
-    const auxDesc = auxStars.map(s => `${s.star}(${s.brightness}): ${AUX_STAR_MEANINGS[s.star as string]}`).join("; ");
-    result += ` [보조성: ${auxDesc}]`;
+  // 사화 해석
+  for (const t of transformations) {
+    interpretation += `${t.description}. `;
   }
 
-  // 신궁 동궁 해석
-  if (isShenGong) {
-    result += ` [신궁(身宮) 동궁] 후반생(40대 이후)의 중심 테마가 이 궁에 집중됩니다. `;
-    const shenGongTheme: Record<PalaceName, string> = {
-      명궁: "후반생에도 자아 중심적 삶, 끊임없는 자기 발전 추구",
-      형제궁: "후반생에 형제·동료와의 관계가 인생 핵심 축이 됨",
-      부처궁: "후반생에 배우자·파트너 관계가 삶의 중심",
-      자녀궁: "후반생에 자녀·후배·창작 활동이 핵심 테마",
-      재백궁: "후반생에 재물 관리와 경제 활동이 중심",
-      질액궁: "후반생에 건강 관리가 최우선 과제",
-      천이궁: "후반생에 이동·해외·외부 활동이 많아짐",
-      노복궁: "후반생에 사회적 관계와 부하 관리가 핵심",
-      관록궁: "후반생에 사업·직업에서 큰 성취 가능",
-      전택궁: "후반생에 부동산·가정 안정이 중심 테마",
-      복덕궁: "후반생에 정신적 수양과 내면의 평화 추구",
-      부모궁: "후반생에 윗사람·조직과의 관계가 중요해짐",
-    };
-    result += shenGongTheme[palace] || "";
+  // ── 삼방사정 분석 (신규) ──
+  if (starMap && palaceIdx !== undefined) {
+    const sf = getSanFangSiZheng(palaceIdx);
+    const oppositeStars = starMap.get(sf.opposite) || [];
+    const trine1Stars = starMap.get(sf.trine1) || [];
+    const trine2Stars = starMap.get(sf.trine2) || [];
+
+    const hasSupport = (arr: (MajorStar | AuxiliaryStar)[]) =>
+      arr.some(s => ["좌보","우필","천괴","천월","록존","문창","문곡"].includes(s));
+    const hasKiller = (arr: (MajorStar | AuxiliaryStar)[]) =>
+      arr.some(s => ["경양","타라","화성","영성","지공","지겁"].includes(s));
+
+    if (oppositeStars.length > 0) {
+      interpretation += `[대궁 ${BRANCHES[sf.opposite]}] ${oppositeStars.join(",")} 조회. `;
+      if (hasSupport(oppositeStars)) {
+        interpretation += "대궁에서 길성 조력이 들어옴. ";
+      }
+      if (hasKiller(oppositeStars)) {
+        interpretation += "대궁 살성의 충격에 주의. ";
+      }
+    }
+
+    const trineAll = [...trine1Stars, ...trine2Stars];
+    if (trineAll.length > 0) {
+      interpretation += `[삼합] ${BRANCHES[sf.trine1]}·${BRANCHES[sf.trine2]}궁에서 `;
+      interpretation += `${trineAll.join(",")} 회조. `;
+      if (hasSupport(trineAll)) {
+        interpretation += "삼합 길성이 본궁을 보호하여 안정적. ";
+      }
+      if (hasKiller(trineAll)) {
+        interpretation += "삼합 살성이 본궁에 압력을 가하므로 변동성 증가. ";
+      }
+    }
   }
 
-  // 사화 영향 추가
-  if (transformations.length > 0) {
-    const tDesc = transformations.map(t => {
-      const m = TRANSFORMATION_MEANINGS[t.type];
-      return `${t.type}(${m.meaning}): ${t.star}`;
-    }).join("; ");
-    result += ` [사화: ${tDesc}]`;
-  }
-
-  return result;
+  return interpretation || `${palaceName}의 기본적인 에너지가 작용합니다.`;
 }
 
 // ─── 메인 계산 함수 ───
@@ -779,7 +825,7 @@ export function calculateZiWei(
       branch: BRANCHES[palaceIdx],
       stars: starPlacements,
       transformations: trans,
-      interpretation: interpretPalace(name, starPlacements, trans, name === shenGongPalace),
+      interpretation: interpretPalace(name, starPlacements, trans, name === shenGongPalace, totalStarMap, palaceIdx),
     };
   });
 
@@ -899,6 +945,28 @@ export function getZiWeiForQuestion(
   // 대한/소한 시기 분석 추가
   if (ziwei.periodAnalysis) {
     result += " [시기 분석] " + ziwei.periodAnalysis;
+  }
+
+  // ── 삼방사정 컨텍스트 추가 ──
+  if (idx !== undefined) {
+    const targetPalace = ziwei.palaces[idx];
+    const branchIdx = BRANCHES.indexOf(targetPalace.branch);
+    if (branchIdx >= 0) {
+      const sfInfo = getSanFangSiZheng(branchIdx);
+      const oppPalace = ziwei.palaces.find(p => p.branch === BRANCHES[sfInfo.opposite]);
+      const tri1Palace = ziwei.palaces.find(p => p.branch === BRANCHES[sfInfo.trine1]);
+      const tri2Palace = ziwei.palaces.find(p => p.branch === BRANCHES[sfInfo.trine2]);
+      
+      let sfSummary = "\n[삼방사정 분석] ";
+      if (oppPalace) {
+        sfSummary += `대궁(${oppPalace.name}/${oppPalace.branch}): ${oppPalace.stars.map(s=>s.star).join(",") || "공궁"}. `;
+      }
+      if (tri1Palace && tri2Palace) {
+        sfSummary += `삼합(${tri1Palace.name}/${tri1Palace.branch}, ${tri2Palace.name}/${tri2Palace.branch}): `;
+        sfSummary += `${[...tri1Palace.stars, ...tri2Palace.stars].map(s=>s.star).join(",") || "없음"}.`;
+      }
+      result += sfSummary;
+    }
   }
 
   return result;
