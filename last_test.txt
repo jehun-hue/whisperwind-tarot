@@ -1,0 +1,414 @@
+﻿
+============================================================
+1.김민수 (1990-3-15 23:30 M)
+============================================================
+  PASS 년주 got: 庚午 exp: 庚午
+  PASS 월주 got: 己卯 exp: 己卯
+  PASS 일주 got: 庚辰 exp: 庚辰
+  PASS 시주 got: 丙子 exp: 丙子
+  PASS 일간 got: 庚 exp: 庚
+  PASS 용신 got: 금 exp: 금
+  PASS 희신 got: 토 exp: 토
+  PASS 기신 got: 화 exp: 화
+  PASS 구신 got: 목 exp: 목
+  PASS 한신 got: 수 exp: 수
+  PASS 음 got: 2 exp: 2
+  PASS 양 got: 6 exp: 6
+  PASS 오행_목 got: 1 exp: 1
+  PASS 오행_화 got: 2 exp: 2
+  PASS 오행_토 got: 2 exp: 2
+  PASS 오행_금 got: 2 exp: 2
+  PASS 오행_수 got: 1 exp: 1
+  PASS 십성_비겁 got: 1 exp: 1
+  PASS 십성_식상 got: 1 exp: 1
+  PASS 십성_재성 got: 1 exp: 1
+  PASS 십성_관성 got: 2 exp: 2
+  PASS 십성_인성 got: 2 exp: 2
+  PASS 대운시작 got: 7 exp: 7
+  PASS 대운방향 got: 순행 exp: 순행
+
+============================================================
+2.오성민 (1985-8-8 15:30 M)
+============================================================
+  PASS 년주 got: 乙丑 exp: 乙丑
+  PASS 월주 got: 甲申 exp: 甲申
+  PASS 일주 got: 己卯 exp: 己卯
+  PASS 시주 got: 壬申 exp: 壬申
+  PASS 일간 got: 己 exp: 己
+  PASS 용신 got: 목 exp: 목
+  PASS 희신 got: 화 exp: 화
+  PASS 기신 got: 토 exp: 토
+  PASS 구신 got: 화 exp: 화
+  PASS 한신 got: 금 exp: 금
+  PASS 음 got: 4 exp: 4
+  PASS 양 got: 4 exp: 4
+  PASS 오행_목 got: 3 exp: 3
+  PASS 오행_화 got: 0 exp: 0
+  PASS 오행_토 got: 2 exp: 2
+  PASS 오행_금 got: 2 exp: 2
+  PASS 오행_수 got: 1 exp: 1
+  PASS 십성_비겁 got: 1 exp: 1
+  PASS 십성_식상 got: 2 exp: 2
+  PASS 십성_재성 got: 1 exp: 1
+  PASS 십성_관성 got: 3 exp: 3
+  PASS 십성_인성 got: 0 exp: 0
+  PASS 대운시작 got: 1 exp: 1
+  PASS 대운방향 got: 역행 exp: 역행
+
+============================================================
+3.정대현 (1984-5-10 14:00 M)
+============================================================
+  PASS 년주 got: 甲子 exp: 甲子
+  PASS 월주 got: 己巳 exp: 己巳
+  PASS 일주 got: 甲辰 exp: 甲辰
+  PASS 시주 got: 辛未 exp: 辛未
+  PASS 일간 got: 甲 exp: 甲
+  PASS 용신 got: 목 exp: 목
+  PASS 희신 got: 수 exp: 수
+  PASS 기신 got: 금 exp: 금
+  PASS 구신 got: 토 exp: 토
+  PASS 한신 got: 화 exp: 화
+  PASS 음 got: 4 exp: 4
+  PASS 양 got: 4 exp: 4
+  PASS 오행_목 got: 2 exp: 2
+  PASS 오행_화 got: 1 exp: 1
+  PASS 오행_토 got: 3 exp: 3
+  PASS 오행_금 got: 1 exp: 1
+  PASS 오행_수 got: 1 exp: 1
+  PASS 십성_비겁 got: 1 exp: 1
+  PASS 십성_식상 got: 1 exp: 1
+  PASS 십성_재성 got: 3 exp: 3
+  PASS 십성_관성 got: 1 exp: 1
+  PASS 십성_인성 got: 1 exp: 1
+  PASS 대운시작 got: 9 exp: 9
+  PASS 대운방향 got: 순행 exp: 순행
+
+============================================================
+4.최유진 (1988-11-20 6:00 F)
+============================================================
+  PASS 년주 got: 戊辰 exp: 戊辰
+  PASS 월주 got: 癸亥 exp: 癸亥
+  PASS 일주 got: 己卯 exp: 己卯
+  PASS 시주 got: 丁卯 exp: 丁卯
+  PASS 일간 got: 己 exp: 己
+  PASS 용신 got: 토 exp: 토
+  PASS 희신 got: 화 exp: 화
+  PASS 기신 got: 목 exp: 목
+  PASS 구신 got: 수 exp: 수
+  PASS 한신 got: 금 exp: 금
+  PASS 음 got: 6 exp: 6
+  PASS 양 got: 2 exp: 2
+  PASS 오행_목 got: 2 exp: 2
+  PASS 오행_화 got: 1 exp: 1
+  PASS 오행_토 got: 3 exp: 3
+  PASS 오행_금 got: 0 exp: 0
+  PASS 오행_수 got: 2 exp: 2
+  PASS 십성_비겁 got: 2 exp: 2
+  PASS 십성_식상 got: 0 exp: 0
+  PASS 십성_재성 got: 2 exp: 2
+  PASS 십성_관성 got: 2 exp: 2
+  PASS 십성_인성 got: 1 exp: 1
+  PASS 대운시작 got: 4 exp: 4
+  PASS 대운방향 got: 역행 exp: 역행
+
+============================================================
+5.한소희 (1993-9-25 20:00 F)
+============================================================
+  PASS 년주 got: 癸酉 exp: 癸酉
+  PASS 월주 got: 辛酉 exp: 辛酉
+  PASS 일주 got: 己酉 exp: 己酉
+  PASS 시주 got: 甲戌 exp: 甲戌
+  PASS 일간 got: 己 exp: 己
+  PASS 용신 got: 금 exp: 금
+  PASS 희신 got: 수 exp: 수
+  PASS 기신 got: 토 exp: 토
+  PASS 구신 got: 화 exp: 화
+  PASS 한신 got: 화 exp: 화
+  PASS 음 got: 6 exp: 6
+  PASS 양 got: 2 exp: 2
+  PASS 오행_목 got: 1 exp: 1
+  PASS 오행_화 got: 0 exp: 0
+  PASS 오행_토 got: 2 exp: 2
+  PASS 오행_금 got: 4 exp: 4
+  PASS 오행_수 got: 1 exp: 1
+  PASS 십성_비겁 got: 1 exp: 1
+  PASS 십성_식상 got: 4 exp: 4
+  PASS 십성_재성 got: 1 exp: 1
+  PASS 십성_관성 got: 1 exp: 1
+  PASS 십성_인성 got: 0 exp: 0
+  PASS 대운시작 got: 4 exp: 4
+  PASS 대운방향 got: 순행 exp: 순행
+
+============================================================
+6.박준호 (2000-2-4 10:00 M)
+============================================================
+  PASS 년주 got: 己卯 exp: 己卯
+  PASS 월주 got: 丁丑 exp: 丁丑
+  PASS 일주 got: 壬辰 exp: 壬辰
+  PASS 시주 got: 乙巳 exp: 乙巳
+  PASS 일간 got: 壬 exp: 壬
+  PASS 용신 got: 수 exp: 수
+  PASS 희신 got: 금 exp: 금
+  PASS 기신 got: 토 exp: 토
+  PASS 구신 got: 화 exp: 화
+  PASS 한신 got: 목 exp: 목
+  PASS 음 got: 6 exp: 6
+  PASS 양 got: 2 exp: 2
+  PASS 오행_목 got: 2 exp: 2
+  PASS 오행_화 got: 2 exp: 2
+  PASS 오행_토 got: 3 exp: 3
+  PASS 오행_금 got: 0 exp: 0
+  PASS 오행_수 got: 1 exp: 1
+  PASS 십성_비겁 got: 0 exp: 0
+  PASS 십성_식상 got: 2 exp: 2
+  PASS 십성_재성 got: 2 exp: 2
+  PASS 십성_관성 got: 3 exp: 3
+  PASS 십성_인성 got: 0 exp: 0
+  FAIL 대운시작 got: 132 exp: 10
+  PASS 대운방향 got: 역행 exp: 역행
+
+============================================================
+7.유하은 (1991-12-31 12:00 F)
+============================================================
+  PASS 년주 got: 辛未 exp: 辛未
+  PASS 월주 got: 庚子 exp: 庚子
+  PASS 일주 got: 乙亥 exp: 乙亥
+  PASS 시주 got: 壬午 exp: 壬午
+  PASS 일간 got: 乙 exp: 乙
+  PASS 용신 got: 토 exp: 토
+  PASS 희신 got: 화 exp: 화
+  PASS 기신 got: 목 exp: 목
+  PASS 구신 got: 수 exp: 수
+  PASS 한신 got: 금 exp: 금
+  PASS 음 got: 4 exp: 4
+  PASS 양 got: 4 exp: 4
+  PASS 오행_목 got: 1 exp: 1
+  PASS 오행_화 got: 1 exp: 1
+  PASS 오행_토 got: 1 exp: 1
+  PASS 오행_금 got: 2 exp: 2
+  PASS 오행_수 got: 3 exp: 3
+  PASS 십성_비겁 got: 0 exp: 0
+  PASS 십성_식상 got: 1 exp: 1
+  PASS 십성_재성 got: 1 exp: 1
+  PASS 십성_관성 got: 2 exp: 2
+  PASS 십성_인성 got: 3 exp: 3
+  PASS 대운시작 got: 2 exp: 2
+  PASS 대운방향 got: 순행 exp: 순행
+
+============================================================
+8.송재원 (1986-1-8 3:00 M)
+============================================================
+  PASS 년주 got: 乙丑 exp: 乙丑
+  PASS 월주 got: 己丑 exp: 己丑
+  PASS 일주 got: 壬子 exp: 壬子
+  PASS 시주 got: 辛丑 exp: 辛丑
+  PASS 일간 got: 壬 exp: 壬
+  PASS 용신 got: 금 exp: 금
+  PASS 희신 got: 토 exp: 토
+  PASS 기신 got: 화 exp: 화
+  PASS 구신 got: 목 exp: 목
+  PASS 한신 got: 수 exp: 수
+  PASS 음 got: 6 exp: 6
+  PASS 양 got: 2 exp: 2
+  PASS 오행_목 got: 1 exp: 1
+  PASS 오행_화 got: 0 exp: 0
+  PASS 오행_토 got: 4 exp: 4
+  PASS 오행_금 got: 1 exp: 1
+  PASS 오행_수 got: 2 exp: 2
+  PASS 십성_비겁 got: 1 exp: 1
+  PASS 십성_식상 got: 1 exp: 1
+  PASS 십성_재성 got: 0 exp: 0
+  PASS 십성_관성 got: 4 exp: 4
+  PASS 십성_인성 got: 1 exp: 1
+  FAIL 대운시작 got: 123 exp: 1
+  PASS 대운방향 got: 역행 exp: 역행
+
+============================================================
+9.약변강남 (1986-3-12 5:00 M)
+============================================================
+  PASS 년주 got: 丙寅 exp: 丙寅
+  PASS 월주 got: 辛卯 exp: 辛卯
+  PASS 일주 got: 乙卯 exp: 乙卯
+  PASS 시주 got: 戊寅 exp: 戊寅
+  PASS 일간 got: 乙 exp: 乙
+  PASS 용신 got: 금 exp: 금
+  PASS 희신 got: 토 exp: 토
+  PASS 기신 got: 화 exp: 화
+  PASS 구신 got: 목 exp: 목
+  PASS 한신 got: 수 exp: 수
+  PASS 대운시작 got: 8 exp: 8
+  PASS 대운방향 got: 순행 exp: 순행
+
+============================================================
+10.신약여 (1992-6-15 11:00 F)
+============================================================
+  PASS 년주 got: 壬申 exp: 壬申
+  PASS 월주 got: 丙午 exp: 丙午
+  PASS 일주 got: 壬戌 exp: 壬戌
+  PASS 시주 got: 乙巳 exp: 乙巳
+  PASS 일간 got: 壬 exp: 壬
+  PASS 용신 got: 화 exp: 화
+  PASS 희신 got: 토 exp: 토
+  PASS 기신 got: 수 exp: 수
+  PASS 구신 got: 금 exp: 금
+  PASS 한신 got: 수 exp: 수
+  PASS 대운시작 got: 3 exp: 3
+  PASS 대운방향 got: 역행 exp: 역행
+
+============================================================
+11.약변강남2 (1995-4-20 8:00 M)
+============================================================
+  PASS 년주 got: 乙亥 exp: 乙亥
+  PASS 월주 got: 庚辰 exp: 庚辰
+  PASS 일주 got: 辛巳 exp: 辛巳
+  PASS 시주 got: 壬辰 exp: 壬辰
+  PASS 일간 got: 辛 exp: 辛
+  PASS 용신 got: 화 exp: 화
+  PASS 희신 got: 목 exp: 목
+  PASS 기신 got: 수 exp: 수
+  PASS 구신 got: 금 exp: 금
+  PASS 한신 got: 토 exp: 토
+  PASS 대운시작 got: 5 exp: 5
+  PASS 대운방향 got: 역행 exp: 역행
+
+============================================================
+12.중화여 (1988-10-5 14:00 F)
+============================================================
+  PASS 년주 got: 戊辰 exp: 戊辰
+  PASS 월주 got: 辛酉 exp: 辛酉
+  PASS 일주 got: 癸巳 exp: 癸巳
+  PASS 시주 got: 戊午 exp: 戊午
+  PASS 일간 got: 癸 exp: 癸
+  PASS 용신 got: 수 exp: 수
+  PASS 희신 got: 금 exp: 금
+  PASS 기신 got: 토 exp: 토
+  PASS 구신 got: 화 exp: 화
+  PASS 한신 got: 목 exp: 목
+  PASS 대운시작 got: 9 exp: 9
+  PASS 대운방향 got: 역행 exp: 역행
+
+============================================================
+13.야자시남 (1990-7-22 23:15 M)
+============================================================
+  PASS 년주 got: 庚午 exp: 庚午
+  PASS 월주 got: 癸未 exp: 癸未
+  PASS 일주 got: 戊子 exp: 戊子
+  PASS 시주 got: 癸亥 exp: 癸亥
+  PASS 일간 got: 戊 exp: 戊
+  PASS 용신 got: 토 exp: 토
+  PASS 희신 got: 화 exp: 화
+  PASS 기신 got: 목 exp: 목
+  PASS 구신 got: 수 exp: 수
+  PASS 한신 got: 금 exp: 금
+  PASS 대운시작 got: 5 exp: 5
+  PASS 대운방향 got: 순행 exp: 순행
+
+============================================================
+14.야자시여 (1985-1-3 23:30 F)
+============================================================
+  PASS 년주 got: 甲子 exp: 甲子
+  PASS 월주 got: 丙子 exp: 丙子
+  PASS 일주 got: 癸卯 exp: 癸卯
+  PASS 시주 got: 壬子 exp: 壬子
+  PASS 일간 got: 癸 exp: 癸
+  PASS 용신 got: 토 exp: 토
+  PASS 희신 got: 화 exp: 화
+  PASS 기신 got: 목 exp: 목
+  PASS 구신 got: 수 exp: 수
+  PASS 한신 got: 금 exp: 금
+  PASS 대운시작 got: 10 exp: 10
+  PASS 대운방향 got: 역행 exp: 역행
+
+============================================================
+15.절기경계 (2000-2-4 7:00 M)
+============================================================
+  PASS 년주 got: 己卯 exp: 己卯
+  PASS 월주 got: 丁丑 exp: 丁丑
+  PASS 일주 got: 壬辰 exp: 壬辰
+  PASS 시주 got: 癸卯 exp: 癸卯
+  PASS 일간 got: 壬 exp: 壬
+  PASS 용신 got: 수 exp: 수
+  PASS 희신 got: 금 exp: 금
+  PASS 기신 got: 토 exp: 토
+  PASS 구신 got: 화 exp: 화
+  PASS 한신 got: 목 exp: 목
+  FAIL 대운시작 got: 132 exp: 10
+  PASS 대운방향 got: 역행 exp: 역행
+
+============================================================
+17.1950대남 (1957-8-15 9:00 M)
+============================================================
+  PASS 년주 got: 丁酉 exp: 丁酉
+  PASS 월주 got: 戊申 exp: 戊申
+  PASS 일주 got: 己未 exp: 己未
+  PASS 시주 got: 戊辰 exp: 戊辰
+  PASS 일간 got: 己 exp: 己
+  PASS 용신 got: 목 exp: 목
+  PASS 희신 got: 수 exp: 수
+  PASS 기신 got: 금 exp: 금
+  PASS 구신 got: 토 exp: 토
+  PASS 한신 got: 화 exp: 화
+  PASS 대운시작 got: 3 exp: 3
+  PASS 대운방향 got: 역행 exp: 역행
+
+============================================================
+18.극신약여 (1993-12-1 6:00 F)
+============================================================
+  PASS 년주 got: 癸酉 exp: 癸酉
+  PASS 월주 got: 癸亥 exp: 癸亥
+  PASS 일주 got: 丙辰 exp: 丙辰
+  PASS 시주 got: 辛卯 exp: 辛卯
+  PASS 일간 got: 丙 exp: 丙
+  PASS 용신 got: 수 exp: 수
+  PASS 희신 got: 목 exp: 목
+  PASS 기신 got: 화 exp: 화
+  PASS 구신 got: 목 exp: 목
+  PASS 한신 got: 토 exp: 토
+  PASS 대운시작 got: 2 exp: 2
+  PASS 대운방향 got: 순행 exp: 순행
+
+============================================================
+19.신약남 (1982-5-28 23:00 M)
+============================================================
+  PASS 년주 got: 壬戌 exp: 壬戌
+  PASS 월주 got: 乙巳 exp: 乙巳
+  PASS 일주 got: 辛亥 exp: 辛亥
+  PASS 시주 got: 己亥 exp: 己亥
+  PASS 일간 got: 辛 exp: 辛
+  PASS 용신 got: 수 exp: 수
+  PASS 희신 got: 목 exp: 목
+  PASS 기신 got: 금 exp: 금
+  PASS 구신 got: 토 exp: 토
+  PASS 한신 got: 토 exp: 토
+  PASS 대운시작 got: 3 exp: 3
+  PASS 대운방향 got: 순행 exp: 순행
+
+============================================================
+20.신약여 (1997-3-8 1:00 F)
+============================================================
+  PASS 년주 got: 丁丑 exp: 丁丑
+  PASS 월주 got: 癸卯 exp: 癸卯
+  PASS 일주 got: 己酉 exp: 己酉
+  PASS 시주 got: 甲子 exp: 甲子
+  PASS 일간 got: 己 exp: 己
+  PASS 용신 got: 목 exp: 목
+  PASS 희신 got: 화 exp: 화
+  PASS 기신 got: 토 exp: 토
+  PASS 구신 got: 화 exp: 화
+  PASS 한신 got: 금 exp: 금
+  PASS 대운시작 got: 9 exp: 9
+  PASS 대운방향 got: 순행 exp: 순행
+
+============================================================
+21.시간미상남 (1990-5-10 -1:00 M)
+============================================================
+  PASS 년주 got: 庚午 exp: 庚午
+  PASS 월주 got: 辛巳 exp: 辛巳
+  PASS 일주 got: 甲戌 exp: 甲戌
+  PASS 시주 got: 미상 exp: 미상
+  PASS has_time got: false exp: false
+  PASS 일간 got: 甲 exp: 甲
+
+============================================================
+TOTAL: 327 PASS / 3 FAIL (330 checks)
+============================================================
