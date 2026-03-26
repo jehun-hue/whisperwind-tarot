@@ -611,17 +611,22 @@ function interpretPalace(palace: PalaceName, stars: StarPlacement[], transformat
   if (stars.length === 0) {
     result = `${palace}(${context})에 주성이 없어 타 궁의 영향을 크게 받습니다.`;
   } else {
-    const mainStar = stars[0];
-    const meaning = STAR_MEANINGS[mainStar.star];
-    const isBright = mainStar.brightness === "묘" || mainStar.brightness === "왕";
-    const isDark = mainStar.brightness === "함지" || mainStar.brightness === "낙함";
+    const majorPalaceStars = stars.filter(s => MAJOR_STARS.includes(s.star as MajorStar));
+    if (majorPalaceStars.length > 0) {
+      const mainStar = majorPalaceStars[0];
+      const meaning = STAR_MEANINGS[mainStar.star as MajorStar];
+      const isBright = mainStar.brightness === "묘" || mainStar.brightness === "왕";
+      const isDark = mainStar.brightness === "함지" || mainStar.brightness === "낙함";
 
-    if (isBright) {
-      result = `${palace}(${context})에 ${mainStar.star}(${mainStar.brightness}) → ${meaning.positive}. ${meaning.domain}에서 강한 에너지.`;
-    } else if (isDark) {
-      result = `${palace}(${context})에 ${mainStar.star}(${mainStar.brightness}) → ${meaning.negative} 경향. ${meaning.domain}에서 주의 필요.`;
+      if (isBright) {
+        result = `${palace}(${context})에 ${mainStar.star}(${mainStar.brightness}) → ${meaning.positive}. ${meaning.domain}에서 강한 에너지.`;
+      } else if (isDark) {
+        result = `${palace}(${context})에 ${mainStar.star}(${mainStar.brightness}) → ${meaning.negative} 경향. ${meaning.domain}에서 주의 필요.`;
+      } else {
+        result = `${palace}(${context})에 ${mainStar.star}(${mainStar.brightness}) → ${meaning.positive}과 ${meaning.negative} 혼재.`;
+      }
     } else {
-      result = `${palace}(${context})에 ${mainStar.star}(${mainStar.brightness}) → ${meaning.positive}과 ${meaning.negative} 혼재.`;
+      result = `${palace}(${context})에 주성이 없어 타 궁의 영향을 크게 받습니다.`;
     }
   }
 
