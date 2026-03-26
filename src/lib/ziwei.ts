@@ -488,8 +488,12 @@ function calculateMajorPeriods(
     const starPlacements: StarPlacement[] = starsInPalace.map((star) => ({
       star,
       palace,
-      brightness: getStarBrightness(star, palaceIdx),
-      description: STAR_MEANINGS[star].positive,
+      brightness: BRIGHTNESS_TABLE[star as MajorStar]
+        ? getStarBrightness(star as MajorStar, palaceIdx)
+        : (AUX_BRIGHTNESS_TABLE[star]?.[palaceIdx % 12] ?? "평화"),
+      description: STAR_MEANINGS[star as MajorStar]?.positive
+        ?? AUX_STAR_MEANINGS[star as string]
+        ?? "",
     }));
 
     // 대한 사화: 대한 궁의 천간으로 계산
