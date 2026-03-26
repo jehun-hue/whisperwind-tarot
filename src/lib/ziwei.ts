@@ -205,7 +205,7 @@ function placeMajorStars(ziWeiPos: number): Map<number, MajorStar[]> {
   const tianFuPos = (12 - ziWeiPos + 4) % 12;
   const tianFuGroup: [MajorStar, number][] = [
     ["천부", 0], ["태음", 1], ["탐랑", 2], ["거문", 3],
-    ["천상", 4], ["천량", 5], ["칠살", 6], ["파군", 7],
+    ["천상", 4], ["천량", 5], ["칠살", 6], ["파군", 10],
   ];
 
   for (const [star, offset] of ziWeiGroup) {
