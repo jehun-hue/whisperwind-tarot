@@ -555,12 +555,22 @@ function calculateMinorPeriod(
   gender: "male" | "female",
   yearGanIdx: number
 ): MinorPeriod {
-  const age = currentYear - birthYear + 1; // 한국 나이 (Korean age)
-  // 소한 궁위: 명궁에서 나이만큼 이동 (성별/음양에 따라 방향)
+  const age = currentYear - birthYear + 1; // 한국 나이
+
+  // 소한 시작궁: 생년 지지 기준
+  // 자년생→진(4), 축년생→사(5), 인년생→오(6), 묘년생→미(7),
+  // 진년생→신(8), 사년생→유(9), 오년생→술(10), 미년생→해(11),
+  // 신년생→자(0), 유년생→축(1), 술년생→인(2), 해년생→묘(3)
+  const yearBranchIdx = (birthYear - 4) % 12;
+  const xiaoXianStart = (yearBranchIdx + 4) % 12;
+
+  // 순역행 판단
   const isYangStem = yearGanIdx % 2 === 0;
   const isForward = (gender === "male" && isYangStem) || (gender === "female" && !isYangStem);
   const direction = isForward ? 1 : -1;
-  const palaceIdx = ((mingGongIdx + direction * (age % 12)) % 12 + 12) % 12;
+
+  // 나이에 따른 궁 이동 (1세 = 시작궁, 2세 = 다음궁, ...)
+  const palaceIdx = ((xiaoXianStart + direction * (age - 1)) % 12 + 12) % 12;
   const palaceOffset = ((mingGongIdx - palaceIdx) % 12 + 12) % 12;
   const palace = PALACES[palaceOffset];
   const branch = BRANCHES[palaceIdx];
@@ -576,7 +586,7 @@ function calculateMinorPeriod(
     age,
     palace,
     branch,
-    interpretation: `올해(${age}세, 한국나이) 소한: ${palace}(${branch}궁) → ${palaceContext[palace]}에 에너지가 집중되는 해.`,
+    interpretation: `올해(${age}세) 소한: ${palace}(${branch}궁) → ${palaceContext[palace]}에 에너지가 집중되는 해.`,
   };
 }
 
