@@ -324,7 +324,7 @@ function calculateMajorPeriods(
   for (let i = 0; i < 12; i++) {
     const periodStart = startAge + i * 10;
     const periodEnd = periodStart + 9;
-    const palaceIdx = ((mingGongIdx + direction * (i + 1)) % 12 + 12) % 12;
+    const palaceIdx = ((mingGongIdx + direction * i) % 12 + 12) % 12;
     const palaceOffset = ((palaceIdx - mingGongIdx) % 12 + 12) % 12;
     const palace = PALACES[palaceOffset];
     const branch = BRANCHES[palaceIdx];
