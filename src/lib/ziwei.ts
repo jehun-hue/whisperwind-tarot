@@ -70,6 +70,7 @@ export interface PalaceInfo {
 export interface ZiWeiResult {
   mingGong: string;
   shenGong: string;
+  shenGongPalace: string;
   bureau: Bureau;
   palaces: PalaceInfo[];
   lifeStructure: string;
@@ -595,9 +596,14 @@ export function calculateZiWei(
     keyInsights.push(`현재 대한(${currentMajorPeriod.startAge}-${currentMajorPeriod.endAge}세): ${currentMajorPeriod.interpretation}`);
   }
 
+  // 신궁 동궁 위치(shenGongPalace) 계산
+  const shenGongOffset = ((mingGongIdx - shenGongIdx) % 12 + 12) % 12;
+  const shenGongPalace = PALACES[shenGongOffset];
+
   return {
     mingGong: BRANCHES[mingGongIdx],
     shenGong: BRANCHES[shenGongIdx],
+    shenGongPalace,
     bureau,
     palaces,
     lifeStructure,
