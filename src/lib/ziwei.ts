@@ -287,7 +287,7 @@ function calculateNatalTransformations(
     // Find which palace this star is in
     for (const [posIdx, stars] of starMap.entries()) {
       if (stars.includes(targetStar)) {
-        const palaceOffset = ((posIdx - mingGongIdx) % 12 + 12) % 12;
+        const palaceOffset = ((mingGongIdx - posIdx) % 12 + 12) % 12;
         const palace = PALACES[palaceOffset];
         const meaning = TRANSFORMATION_MEANINGS[type];
         transformations.push({
@@ -328,7 +328,7 @@ function calculateMajorPeriods(
     const periodStart = startAge + i * 10;
     const periodEnd = periodStart + 9;
     const palaceIdx = ((mingGongIdx + direction * i) % 12 + 12) % 12;
-    const palaceOffset = ((palaceIdx - mingGongIdx) % 12 + 12) % 12;
+    const palaceOffset = ((mingGongIdx - palaceIdx) % 12 + 12) % 12;
     const palace = PALACES[palaceOffset];
     const branch = BRANCHES[palaceIdx];
 
@@ -350,7 +350,7 @@ function calculateMajorPeriods(
         const targetStar = periodTable[type];
         for (const [posIdx, stars] of starMap.entries()) {
           if (stars.includes(targetStar)) {
-            const tPalaceOffset = ((posIdx - mingGongIdx) % 12 + 12) % 12;
+            const tPalaceOffset = ((mingGongIdx - posIdx) % 12 + 12) % 12;
             periodTransformations.push({
               type,
               star: targetStar,
@@ -409,7 +409,7 @@ function calculateMinorPeriod(
   const isForward = (gender === "male" && isYangStem) || (gender === "female" && !isYangStem);
   const direction = isForward ? 1 : -1;
   const palaceIdx = ((mingGongIdx + direction * (age % 12)) % 12 + 12) % 12;
-  const palaceOffset = ((palaceIdx - mingGongIdx) % 12 + 12) % 12;
+  const palaceOffset = ((mingGongIdx - palaceIdx) % 12 + 12) % 12;
   const palace = PALACES[palaceOffset];
   const branch = BRANCHES[palaceIdx];
 
