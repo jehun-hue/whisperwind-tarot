@@ -55,8 +55,19 @@ export interface MinorPeriod {
   age: number;
   palace: PalaceName;
   branch: string;
+  palaceIdx: number;
+  transformations: Transformation[];
+  stars: StarPlacement[];
+  tripleOverlap: {
+    natalHits: string[];    // 본명사화와 겹침
+    dahanHits: string[];    // 대한사화와 겹침
+    flowYearHits: string[]; // 유년사화와 겹침
+    severity: "길" | "평" | "흉" | "대흉";
+    summary: string;
+  };
   interpretation: string;
 }
+
 
 // ─── 기존 타입 ───
 export type StarBrightness = "묘" | "왕" | "득지" | "평화" | "함지" | "낙함";
@@ -979,45 +990,138 @@ function calculateMajorPeriods(
 // ─── 소한 계산 (연도별) ───
 function calculateMinorPeriod(
   birthYear: number,
-  currentYear: number,
-  mingGongIdx: number,
   gender: "male" | "female",
-  yearGanIdx: number
-): MinorPeriod {
-  const age = currentYear - birthYear + 1; // 한국 나이
+  mingGongIdx: number,
+  yearGanIdx: number,
+  bureau: Bureau,
+  starMap: Map<number, (MajorStar | AuxiliaryStar)[]>,
+  natalTransformations: Transformation[],
+  majorPeriods: MajorPeriod[],
+  currentYearAnalysis: ZiWeiResult['currentYearAnalysis']
+): MinorPeriod | null {
+  const currentYear = new Date().getFullYear();
+  const age = currentYear - birthYear + 1; // 한국식 나이
 
-  // 소한 시작궁: 생년 지지 기준
-  // 자년생→진(4), 축년생→사(5), 인년생→오(6), 묘년생→미(7),
-  // 진년생→신(8), 사년생→유(9), 오년생→술(10), 미년생→해(11),
-  // 신년생→자(0), 유년생→축(1), 술년생→인(2), 해년생→묘(3)
-  const yearBranchIdx = (birthYear - 4) % 12;
-  const xiaoXianStart = (yearBranchIdx + 4) % 12;
-
-  // 순역행 판단
+  // 소한궁 위치: 남양순/음역행, 여양역/음순행
+  const yearGan = STEMS[yearGanIdx];
   const isYangStem = yearGanIdx % 2 === 0;
   const isForward = (gender === "male" && isYangStem) || (gender === "female" && !isYangStem);
+
+  // 소한궁 시작: 1세=명궁, 이후 순행/역행
   const direction = isForward ? 1 : -1;
+  const palaceIdx = ((mingGongIdx + direction * (age - 1)) % 12 + 12) % 12;
 
-  // 나이에 따른 궁 이동 (1세 = 시작궁, 2세 = 다음궁, ...)
-  const palaceIdx = ((xiaoXianStart + direction * (age - 1)) % 12 + 12) % 12;
-  const palaceOffset = ((mingGongIdx - palaceIdx) % 12 + 12) % 12;
-  const palace = PALACES[palaceOffset];
-  const branch = BRANCHES[palaceIdx];
+  // 소한궁 천간
+  const palaceGan = getPalaceGan(yearGanIdx, palaceIdx);
+  const palaceOffset = ((mingGongIdx - palaceIdx + 12) % 12);
+  const palaceName = PALACES[palaceOffset] || PALACES[0];
 
-  const palaceContext: Record<PalaceName, string> = {
-    명궁: "자아와 행동력", 형제궁: "인간관계", 부처궁: "연애/결혼",
-    자녀궁: "창의력/후배", 재백궁: "재물 흐름", 질액궁: "건강 관리",
-    천이궁: "이동/변화", 노복궁: "사회적 지원", 관록궁: "사업/직장",
-    전택궁: "부동산/가정", 복덕궁: "정신적 여유", 부모궁: "윗사람 관계",
-  };
+  // 소한궁 사화 계산
+  const sohanTransformations: Transformation[] = [];
+  if (TRANSFORMATION_TABLE[palaceGan]) {
+    const table = TRANSFORMATION_TABLE[palaceGan];
+    for (const [type, star] of Object.entries(table)) {
+      // 해당 별이 어느 궁에 있는지 찾기
+      for (const [pos, stars] of starMap.entries()) {
+        if (stars.includes(star as any)) {
+          const targetPalaceName = PALACES[((mingGongIdx - pos + 12) % 12)] || PALACES[0];
+          const meaning = TRANSFORMATION_MEANINGS[type as TransformationType];
+          sohanTransformations.push({
+            type: type as TransformationType,
+            star: star as MajorStar | AuxiliaryStar,
+            palace: targetPalaceName,
+            description: `소한 ${type}: ${star}→${targetPalaceName} (${meaning.effect})`,
+          });
+          break;
+        }
+      }
+    }
+  }
+
+  // 소한궁 별 수집
+  const starsInPalace = starMap.get(palaceIdx) || [];
+  const starPlacements: StarPlacement[] = starsInPalace.map(star => {
+    const isMajor = (MAJOR_STARS as readonly string[]).includes(star);
+    const brightness = isMajor ? getStarBrightness(star as MajorStar, palaceIdx) : "평화" as StarBrightness;
+    return {
+      star: star as MajorStar | AuxiliaryStar,
+      palace: palaceName,
+      brightness,
+      description: "",
+    };
+  });
+
+  // 삼중 교차 분석
+  const sohanStarSet = new Set(sohanTransformations.map(t => `${t.type}-${t.star}`));
+  const natalStarSet = new Set(natalTransformations.map(t => `${t.type}-${t.star}`));
+
+  // 현재 대한 찾기
+  const currentDahan = majorPeriods.find(mp => age >= mp.startAge && age <= mp.endAge);
+  const dahanStarSet = new Set((currentDahan?.transformations || []).map(t => `${t.type}-${t.star}`));
+
+  // 유년사화
+  const flowYearStarSet = new Set(
+    (currentYearAnalysis?.flowYearTransformations || []).map(t => `${t.type}-${t.star}`)
+  );
+
+  const natalHits: string[] = [];
+  const dahanHits: string[] = [];
+  const flowYearHits: string[] = [];
+
+  for (const key of sohanStarSet) {
+    if (natalStarSet.has(key)) natalHits.push(key);
+    if (dahanStarSet.has(key)) dahanHits.push(key);
+    if (flowYearStarSet.has(key)) flowYearHits.push(key);
+  }
+
+  // 심각도 판정
+  const totalOverlap = natalHits.length + dahanHits.length + flowYearHits.length;
+  const hasHuaGi = [...sohanStarSet].some(k => k.startsWith("화기"));
+  const multiHuaGi = [...sohanStarSet, ...dahanStarSet, ...flowYearStarSet]
+    .filter(k => k.startsWith("화기")).length;
+
+  let severity_final: "길" | "평" | "흉" | "대흉" = "평";
+  if (multiHuaGi >= 3) severity_final = "대흉";
+  else if (multiHuaGi >= 2 || (hasHuaGi && totalOverlap >= 2)) severity_final = "흉";
+  else if (totalOverlap === 0 && !hasHuaGi) severity_final = "길";
+
+  let summary = "";
+  if (severity_final === "대흉") summary = "소한·대한·유년 화기 삼중 충돌 — 각별한 주의 필요";
+  else if (severity_final === "흉") summary = "복수 화기 교차 — 건강·재물·인간관계 중 하나 이상에 시련";
+  else if (severity_final === "길") summary = "소한궁 사화가 안정적 — 올해 무난한 흐름";
+  else summary = "부분적 교차 있으나 관리 가능한 수준";
+
+  // 해석 텍스트
+  let interpretation = `${age}세 소한궁: ${palaceName}(${BRANCHES[palaceIdx]})`;
+  if (starPlacements.length > 0) {
+    interpretation += ` | 주성: ${starPlacements.map(s => s.star).join(",")}`;
+  }
+  if (sohanTransformations.length > 0) {
+    interpretation += ` | 소한사화: ${sohanTransformations.map(t => `${t.type}(${t.star})`).join(",")}`;
+  }
+  if (natalHits.length > 0) interpretation += ` | ⚡본명교차: ${natalHits.join(",")}`;
+  if (dahanHits.length > 0) interpretation += ` | ⚡대한교차: ${dahanHits.join(",")}`;
+  if (flowYearHits.length > 0) interpretation += ` | ⚡유년교차: ${flowYearHits.join(",")}`;
+  interpretation += ` | 판정: ${severity_final}`;
 
   return {
     age,
-    palace,
-    branch,
-    interpretation: `올해(${age}세) 소한: ${palace}(${branch}궁) → ${palaceContext[palace]}에 에너지가 집중되는 해.`,
+    palace: palaceName,
+    branch: BRANCHES[palaceIdx],
+    palaceIdx,
+    transformations: sohanTransformations,
+    stars: starPlacements,
+    tripleOverlap: {
+      natalHits,
+      dahanHits,
+      flowYearHits,
+      severity: severity_final,
+      summary,
+    },
+    interpretation,
   };
 }
+
 
 // ─── 유년(流年) 사화 계산 ───
 function calculateFlowYearTransformations(
@@ -1534,7 +1638,8 @@ export function calculateZiWei(
   const currentMajorPeriod = majorPeriods.find(p => currentAge >= p.startAge && currentAge <= p.endAge) || null;
 
   // 소한
-  const currentMinorPeriod = calculateMinorPeriod(birthYear, currentYear, mingGongIdx, gender, yearGanIdx);
+  // Moved down to ensure currentYearAnalysis is available
+
 
   // 인생 구조 분석
   const mingPalace = palaces[0];
@@ -1557,6 +1662,26 @@ export function calculateZiWei(
   } else {
     lifeStructure += "유연하고 다양한 경험을 통해 성장하는 인생 구조.";
   }
+
+
+  // 유년 교차 분석
+  const currentYearAnalysis = analyzeYearCrossover(
+    currentYear,
+    birthYear,
+    mingGongIdx,
+    gender,
+    yearGanIdx,
+    bureau,
+    totalStarMap,
+    natalTransformations,
+    majorPeriods
+  );
+
+  // 소한 (Stage 6)
+  const currentMinorPeriod = calculateMinorPeriod(
+    birthYear, gender, mingGongIdx, yearGanIdx, bureau,
+    totalStarMap, natalTransformations, majorPeriods, currentYearAnalysis
+  );
 
   // 시기 분석
   let periodAnalysis = "";
@@ -1601,18 +1726,6 @@ export function calculateZiWei(
     keyInsights.push(`현재 대한(${currentMajorPeriod.startAge}-${currentMajorPeriod.endAge}세): ${currentMajorPeriod.interpretation}`);
   }
 
-  // 유년 교차 분석
-  const currentYearAnalysis = analyzeYearCrossover(
-    currentYear,
-    birthYear,
-    mingGongIdx,
-    gender,
-    yearGanIdx,
-    bureau,
-    totalStarMap,
-    natalTransformations,
-    majorPeriods
-  );
 
   const overallScore = calculateOverallScores(palaces, geokGuk);
 
