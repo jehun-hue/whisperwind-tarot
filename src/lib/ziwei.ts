@@ -90,6 +90,10 @@ export interface ZiWeiResult {
   currentMajorPeriod: MajorPeriod | null;
   currentMinorPeriod: MinorPeriod | null;
   periodAnalysis: string;
+
+  // 격국 분석 (2단계 추가)
+  starCombinations: { palace: string; name: string; rating: string; interpretation: string }[];
+  geokGuk: { name: string; grade: string; description: string; breakConditions: string[] }[];
 }
 
 // ─── 상수 ───
@@ -485,6 +489,223 @@ const AUX_STAR_MEANINGS: Record<string, string> = {
   지겁: "손재, 투기, 도박성",
 };
 
+// ─── 성조합(星組合) 패턴 테이블 ───
+interface StarCombination {
+  name: string;           // 조합명
+  stars: string[];        // 필수 별 목록 (동궁 또는 삼방 내)
+  scope: "same" | "sanfang"; // same=동궁, sanfang=삼방사정 범위
+  condition?: (brightness: Map<string, StarBrightness>) => boolean;
+  interpretation: string;
+  rating: "상길" | "중길" | "소길" | "중흉" | "대흉" | "양면";
+}
+
+const STAR_COMBINATIONS: StarCombination[] = [
+  // ─── 대길 조합 ───
+  { name: "자부동궁", stars: ["자미","천부"], scope: "same",
+    interpretation: "제왕의 격. 리더십과 재물 관리력이 동시에 극대화. 부귀 겸비의 명.",
+    rating: "상길" },
+  { name: "자미좌우", stars: ["자미","좌보","우필"], scope: "sanfang",
+    interpretation: "군신경회. 자미가 좌보·우필의 보좌를 받아 권력과 인복이 매우 강함.",
+    rating: "상길" },
+  { name: "일월병명", stars: ["태양","태음"], scope: "same",
+    interpretation: "일월병명격. 태양과 태음이 동궁하여 음양 조화가 완벽. 명예와 재물 모두 풍족.",
+    rating: "상길" },
+  { name: "기월동량", stars: ["천기","태음","천동","천량"], scope: "sanfang",
+    interpretation: "기월동량격. 지혜·재물·복록·수명이 삼방에 모여 공직이나 전문직에 특히 유리.",
+    rating: "상길" },
+  { name: "부귀쌍전", stars: ["록존","천괴","천월"], scope: "sanfang",
+    interpretation: "귀인과 재물이 삼방에 모여 평생 귀인의 도움이 끊이지 않음.",
+    rating: "상길" },
+  { name: "문성암합", stars: ["문창","문곡"], scope: "same",
+    interpretation: "문창문곡 동궁. 학문과 예술적 재능이 뛰어나며 시험운이 극히 좋음.",
+    rating: "상길" },
+  { name: "무곡천부", stars: ["무곡","천부"], scope: "same",
+    interpretation: "재물의 창고와 칼이 만남. 사업 수완이 뛰어나고 재물 축적력이 강함.",
+    rating: "상길" },
+  { name: "자미천상", stars: ["자미","천상"], scope: "same",
+    interpretation: "인(印)을 얻은 임금. 관록과 문서운이 뛰어나며 공직에 대길.",
+    rating: "상길" },
+
+  // ─── 양면 조합 (살파랑 계열) ───
+  { name: "살파랑", stars: ["칠살","파군","탐랑"], scope: "sanfang",
+    interpretation: "살파랑격. 파란만장하고 변화무쌍한 인생. 큰 성공과 큰 실패를 반복할 수 있으나, 별 밝기가 좋으면 대성.",
+    rating: "양면" },
+  { name: "칠살독좌", stars: ["칠살"], scope: "same",
+    interpretation: "칠살 단독 좌정. 결단력과 독립성이 강하나 고독하며 변혁적 인생을 살게 됨.",
+    rating: "양면" },
+  { name: "파군독좌", stars: ["파군"], scope: "same",
+    interpretation: "파군 단독 좌정. 개척자적 기질. 파괴 후 재건의 능력이 있으나 불안정.",
+    rating: "양면" },
+  { name: "염정탐랑", stars: ["염정","탐랑"], scope: "same",
+    interpretation: "염정·탐랑 동궁. 매력과 욕망이 강렬. 연예·예술에 재능이 있으나 감정 통제가 관건.",
+    rating: "양면" },
+  { name: "무곡탐랑", stars: ["무곡","탐랑"], scope: "same",
+    interpretation: "재물과 욕망의 결합. 사업 추진력이 강하나 투기성에 주의.",
+    rating: "양면" },
+
+  // ─── 흉 조합 ───
+  { name: "화영협공", stars: ["화성","영성"], scope: "sanfang",
+    interpretation: "화성·영성이 삼방에서 협공. 급변과 사고의 위험이 높으며 감정 폭발에 주의.",
+    rating: "중흉" },
+  { name: "양타협공", stars: ["경양","타라"], scope: "sanfang",
+    interpretation: "양인·타라 협공. 시비와 방해가 끊이지 않으며 수술이나 법적 분쟁 가능.",
+    rating: "중흉" },
+  { name: "공겁협", stars: ["지공","지겁"], scope: "sanfang",
+    interpretation: "지공·지겁이 본궁 또는 삼방에 동시 출현. 재물 손실과 허탈감에 주의. 종교나 철학에 적합.",
+    rating: "중흉" },
+  { name: "화기입명", stars: [], scope: "same",
+    interpretation: "화기가 명궁에 입함. 일생 장애와 집착의 패턴이 반복되므로 의식적 전환이 필요.",
+    rating: "대흉" },
+  { name: "록존타라", stars: ["록존","타라"], scope: "same",
+    interpretation: "재물은 있으나 방해가 심함. 돈은 벌지만 지키기 어려움.",
+    rating: "중흉" },
+  { name: "거문화기", stars: ["거문"], scope: "same",
+    interpretation: "거문+화기. 구설과 시비가 심하며 법적 문제에 취약.",
+    rating: "대흉" },
+];
+
+// ─── 격국(格局) 판단 엔진 ───
+interface GeokGuk {
+  name: string;
+  grade: "상격" | "중격" | "하격";
+  description: string;
+  breakConditions: string[];
+}
+
+function detectStarCombinations(
+  palaceIdx: number,
+  starMap: Map<number, (MajorStar | AuxiliaryStar)[]>,
+  palaceTransformations?: Transformation[]
+): { combination: StarCombination; matched: string[] }[] {
+  const results: { combination: StarCombination; matched: string[] }[] = [];
+  const mainStars = starMap.get(palaceIdx) || [];
+  const sf = collectSanFangStars(palaceIdx, starMap);
+
+  for (const combo of STAR_COMBINATIONS) {
+    // 특수 케이스: 화기입명 (사화 조건)
+    if (combo.name === "화기입명") {
+      if (palaceTransformations?.some(t => t.type === "화기")) {
+        results.push({ combination: combo, matched: ["화기"] });
+      }
+      continue;
+    }
+    // 특수 케이스: 거문화기 (거문 + 화기 조건)
+    if (combo.name === "거문화기") {
+      if (mainStars.includes("거문") && palaceTransformations?.some(t => t.type === "화기")) {
+        results.push({ combination: combo, matched: ["거문", "화기"] });
+      }
+      continue;
+    }
+
+    if (combo.stars.length === 0) continue;
+
+    const searchPool = combo.scope === "same" ? mainStars : sf.allStars;
+    const matched = combo.stars.filter(s => searchPool.includes(s as any));
+
+    if (matched.length === combo.stars.length) {
+      results.push({ combination: combo, matched });
+    }
+  }
+
+  return results;
+}
+
+function detectGeokGuk(
+  mingGongIdx: number,
+  starMap: Map<number, (MajorStar | AuxiliaryStar)[]>,
+  natalTransformations: Transformation[],
+  bureau: Bureau
+): GeokGuk[] {
+  const results: GeokGuk[] = [];
+  const mingStars = starMap.get(mingGongIdx) || [];
+  const sf = collectSanFangStars(mingGongIdx, starMap);
+  const hasHuaJiInMing = natalTransformations.some(t => t.type === "화기" && t.palace === "명궁");
+  const hasHuaLuInMing = natalTransformations.some(t => t.type === "화록" && t.palace === "명궁");
+
+  // 1. 자부동궁격
+  if (mingStars.includes("자미") && mingStars.includes("천부")) {
+    results.push({
+      name: "자부동궁격",
+      grade: hasHuaJiInMing ? "중격" : "상격",
+      description: "자미와 천부가 명궁에 동궁. 제왕의 기품과 재물 관리력을 겸비한 최상격.",
+      breakConditions: hasHuaJiInMing ? ["화기 입명으로 격이 깨짐"] : [],
+    });
+  }
+
+  // 2. 살파랑격
+  const hasSha = sf.allStars.includes("칠살");
+  const hasPo = sf.allStars.includes("파군");
+  const hasTan = sf.allStars.includes("탐랑");
+  if (hasSha && hasPo && hasTan) {
+    const bright = mingStars.some(s =>
+      BRIGHTNESS_TABLE[s as MajorStar]?.[mingGongIdx] === "묘" ||
+      BRIGHTNESS_TABLE[s as MajorStar]?.[mingGongIdx] === "왕"
+    );
+    results.push({
+      name: "살파랑격",
+      grade: bright ? "중격" : "하격",
+      description: "칠살·파군·탐랑이 삼방에 포진. 파란만장한 인생이나 별이 밝으면 대업 가능.",
+      breakConditions: !bright ? ["주성이 함지/낙함으로 격이 약화"] : [],
+    });
+  }
+
+  // 3. 기월동량격
+  const qyStars = ["천기","태음","천동","천량"];
+  const qyCount = qyStars.filter(s => sf.allStars.includes(s as any)).length;
+  if (qyCount >= 3) {
+    results.push({
+      name: "기월동량격",
+      grade: qyCount === 4 ? "상격" : "중격",
+      description: "기월동량 삼방회합. 공직·전문직·학술에 뛰어난 격국.",
+      breakConditions: qyCount < 4 ? ["4성 중 일부 부재"] : [],
+    });
+  }
+
+  // 4. 일월병명격
+  if (mingStars.includes("태양") && mingStars.includes("태음")) {
+    results.push({
+      name: "일월병명격",
+      grade: "상격",
+      description: "태양·태음 명궁 동좌. 음양 완벽 조화의 귀격.",
+      breakConditions: [],
+    });
+  }
+
+  // 5. 문성귀격
+  if (mingStars.includes("문창") && mingStars.includes("문곡")) {
+    results.push({
+      name: "문성귀격",
+      grade: hasHuaJiInMing ? "하격" : "상격",
+      description: "문창·문곡 명궁 동좌. 학문과 예술의 극치.",
+      breakConditions: hasHuaJiInMing ? ["화기로 인한 격파"] : [],
+    });
+  }
+
+  // 6. 부귀격 (록존 + 천괴 or 천월 명궁/삼방)
+  const hasLuCun = sf.allStars.includes("록존");
+  const hasGui = sf.allStars.includes("천괴") || sf.allStars.includes("천월");
+  if (hasLuCun && hasGui && hasHuaLuInMing) {
+    results.push({
+      name: "부귀격",
+      grade: "상격",
+      description: "록존+귀인+화록이 명궁/삼방에 집합. 평생 귀인복과 재물운이 강한 부귀격.",
+      breakConditions: [],
+    });
+  }
+
+  // 7. 공겁격 (지공+지겁 명궁)
+  if (mingStars.includes("지공") && mingStars.includes("지겁")) {
+    results.push({
+      name: "공겁격",
+      grade: "하격",
+      description: "지공·지겁이 명궁에 동좌. 물질보다 정신 세계에 적합. 종교·철학·예술에 인연.",
+      breakConditions: ["물질적 성공에 불리"],
+    });
+  }
+
+  return results;
+}
+
 // ─── 사화 계산 (생년 천간 기준) ───
 function calculateNatalTransformations(
   yearGanIdx: number,
@@ -730,6 +951,12 @@ function interpretPalace(
         interpretation += "삼합 살성이 본궁에 압력을 가하므로 변동성 증가. ";
       }
     }
+
+    // ── 성조합 패턴 분석 ──
+    const combos = detectStarCombinations(palaceIdx, starMap, transformations);
+    for (const { combination } of combos) {
+      interpretation += `[${combination.name}(${combination.rating})] ${combination.interpretation} `;
+    }
   }
 
   return interpretation || `${palaceName}의 기본적인 에너지가 작용합니다.`;
@@ -829,6 +1056,26 @@ export function calculateZiWei(
     };
   });
 
+  // 격국 판단
+  const geokGuk = detectGeokGuk(mingGongIdx, totalStarMap, natalTransformations, bureau);
+
+  // 12궁별 성조합 수집
+  const allCombinations: { palace: string; name: string; rating: string; interpretation: string }[] = [];
+  for (let i = 0; i < 12; i++) {
+    const palaceName = PALACES[i];
+    const actualIdx = ((mingGongIdx - i) % 12 + 12) % 12;
+    const palaceTransformations = natalTransformations.filter(t => t.palace === palaceName);
+    const combos = detectStarCombinations(actualIdx, totalStarMap, palaceTransformations);
+    for (const { combination } of combos) {
+      allCombinations.push({
+        palace: palaceName,
+        name: combination.name,
+        rating: combination.rating,
+        interpretation: combination.interpretation,
+      });
+    }
+  }
+
   // 대한
   const majorPeriods = calculateMajorPeriods(bureau, mingGongIdx, gender, yearGanIdx, totalStarMap);
   const currentYear = new Date().getFullYear();
@@ -916,6 +1163,8 @@ export function calculateZiWei(
     currentMajorPeriod,
     currentMinorPeriod,
     periodAnalysis,
+    starCombinations: allCombinations,
+    geokGuk,
   };
 }
 
@@ -966,6 +1215,35 @@ export function getZiWeiForQuestion(
         sfSummary += `${[...tri1Palace.stars, ...tri2Palace.stars].map(s=>s.star).join(",") || "없음"}.`;
       }
       result += sfSummary;
+    }
+  }
+
+  // 격국 요약 추가
+  if (ziwei.geokGuk && ziwei.geokGuk.length > 0) {
+    result += "\n[격국 분석] ";
+    for (const g of ziwei.geokGuk) {
+      result += `${g.name}(${g.grade}): ${g.description} `;
+      if (g.breakConditions.length > 0) {
+        result += `파격조건: ${g.breakConditions.join(", ")}. `;
+      }
+    }
+  }
+
+  // 해당 궁 성조합 추가
+  if (ziwei.starCombinations) {
+    const targetPalaceName = idx !== undefined ? ziwei.palaces[idx].name : "";
+    const relevantCombos = ziwei.starCombinations.filter(c => {
+      // targetPalace에 해당하는 조합
+      if (targetPalaceName && c.palace === targetPalaceName) return true;
+      // 명궁 조합은 항상 포함
+      if (c.palace === "명궁") return true;
+      return false;
+    });
+    if (relevantCombos.length > 0) {
+      result += "\n[성조합] ";
+      for (const c of relevantCombos) {
+        result += `${c.palace} ${c.name}(${c.rating}): ${c.interpretation} `;
+      }
     }
   }
 
