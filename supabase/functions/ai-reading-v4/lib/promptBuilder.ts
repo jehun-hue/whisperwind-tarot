@@ -1,5 +1,5 @@
 import { Signal, CrossSignal } from './signalExtractor.ts';
-import { ILJU_MEANINGS } from "./interpretations/index.ts";
+import { ILJU_MEANINGS, TENGO_DEEP, GYEOKGUK_DEEP, TWELVE_STAGES_DEEP } from "./interpretations/index.ts";
 import { buildZiWeiPromptSection } from "./ziweiPromptBuilder.ts";
 
 export interface UserInfo {
@@ -254,6 +254,36 @@ ${signalText}
   const ziweiSection = ziwei ? buildZiWeiPromptSection(ziwei as any) : "";
 
   // ========================
+
+  // === Phase 2: 사주 심층 프로필 주입 ===
+  const gyeokName = s?.gyeokguk?.name || s?.gyeokguk || '';
+  const gyeokProfile = gyeokName ? GYEOKGUK_DEEP[gyeokName] : null;
+  const gyeokBlock = gyeokProfile ? `
+【격국 심층: ${gyeokName}】
+• 본질: ${gyeokProfile.essence}
+• 적합 진로: ${gyeokProfile.career_fit}
+• 약점: ${gyeokProfile.weakness}
+• 용신 작용: ${gyeokProfile.with_yongsin}` : '';
+
+  const seunTengo = s?.fortune?.tenGodStem || '';
+  const tengoProfile = seunTengo ? TENGO_DEEP[seunTengo] : null;
+  const tengoBlock = tengoProfile ? `
+【올해 십성 심리: ${seunTengo}】
+• 심리 변화: ${tengoProfile.psychology}
+• 영향 영역: ${tengoProfile.life_area}
+• 조언: ${tengoProfile.advice}` : '';
+
+  const stageName = s?.twelve_stages?.seun?.stage || s?.fortune?.twelveStage || '';
+  const stageProfile = stageName ? TWELVE_STAGES_DEEP[stageName] : null;
+  const stageBlock = stageProfile ? `
+【12운성 심층: ${stageName}】
+• 에너지 레벨: ${stageProfile.energy_level}%
+• 핵심 의미: ${stageProfile.meaning}
+• 조언: ${stageProfile.advice}` : '';
+
+  const deepSajuProfile = [gyeokBlock, tengoBlock, stageBlock].filter(Boolean).join('\n');
+  // === Phase 2 끝 ===
+
   // SECTION 1: SAJU 핵심
   // ========================
 
@@ -306,6 +336,8 @@ ${sortedShinsal.slice(0, 10).map((ss: any) =>
 ).join('\n') || (s.characteristics || []).filter((c: string) => !c.startsWith('격국')).slice(0, 8).join(' | ')}
 
 ★ 현재 흐름 해석 지시: 위 대운·세운·교차작용·12운성 및 [올해 운세 판정] 데이터를 종합하여 "현재 흐름을 한 줄로 압축"하라. (예: "확장 타이밍인데 실행이 늦은 상태")
+
+${deepSajuProfile}
 `;
 
   // ========================
