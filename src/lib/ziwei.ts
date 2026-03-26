@@ -169,7 +169,28 @@ function calculateZiWeiPosition(lunarDay: number, bureau: Bureau): number {
   const bureauNum: Record<Bureau, number> = {
     수이국: 2, 목삼국: 3, 금사국: 4, 토오국: 5, 화육국: 6,
   };
-  return Math.ceil(lunarDay / bureauNum[bureau]) % 12;
+  const juNumber = bureauNum[bureau];
+  const quotient = Math.floor(lunarDay / juNumber);
+  const remainder = lunarDay % juNumber;
+
+  let position: number;
+  if (remainder === 0) {
+    position = quotient;
+  } else {
+    const add = juNumber - remainder;
+    position = quotient + 1;
+    if (add % 2 === 1) {
+      position = position - add;
+    } else {
+      position = position + add;
+    }
+  }
+
+  while (position > 12) position -= 12;
+  while (position < 1) position += 12;
+
+  // position(1~12)을 지지 인덱스로 변환: 1=寅(2), 2=卯(3), ...
+  return (position - 1 + 2) % 12;
 }
 
 // ─── 14주성 배치 ───
