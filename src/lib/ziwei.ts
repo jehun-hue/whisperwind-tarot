@@ -94,6 +94,17 @@ export interface ZiWeiResult {
   // 격국 분석 (2단계 추가)
   starCombinations: { palace: string; name: string; rating: string; interpretation: string }[];
   geokGuk: { name: string; grade: string; description: string; breakConditions: string[] }[];
+
+  // 유년 분석 (3단계 추가)
+  currentYearAnalysis: {
+    year: number;
+    yearStem: string;
+    yearBranch: string;
+    flowYearTransformations: Transformation[];
+    dahanOverlap: string[];   // 대한사화와 유년사화 겹침
+    natalOverlap: string[];   // 본명사화와 유년사화 겹침
+    interpretation: string;
+  } | null;
 }
 
 // ─── 상수 ───
@@ -879,6 +890,162 @@ function calculateMinorPeriod(
   };
 }
 
+// ─── 유년(流年) 사화 계산 ───
+function calculateFlowYearTransformations(
+  currentYear: number,
+  starMap: Map<number, (MajorStar | AuxiliaryStar)[]>,
+  mingGongIdx: number
+): Transformation[] {
+  // 유년 천간 = 당해 연도의 천간
+  const yearGanIdx = (currentYear - 4) % 10;
+  const stem = STEMS[yearGanIdx];
+  const table = TRANSFORMATION_TABLE[stem];
+  if (!table) return [];
+
+  const transformations: Transformation[] = [];
+  const types: TransformationType[] = ["화록", "화권", "화과", "화기"];
+
+  for (const type of types) {
+    const targetStar = table[type];
+    for (const [posIdx, stars] of starMap.entries()) {
+      if (stars.includes(targetStar)) {
+        const palaceOffset = ((mingGongIdx - posIdx) % 12 + 12) % 12;
+        const palace = PALACES[palaceOffset];
+        const meaning = TRANSFORMATION_MEANINGS[type];
+        transformations.push({
+          type,
+          star: targetStar,
+          palace,
+          description: `유년${type}: ${targetStar} → ${palace}: ${meaning.effect}`,
+        });
+        break;
+      }
+    }
+  }
+
+  return transformations;
+}
+
+// ─── 대한·소한·유년·본명 교차 분석 ───
+function analyzeYearCrossover(
+  currentYear: number,
+  birthYear: number,
+  mingGongIdx: number,
+  gender: "male" | "female",
+  yearGanIdx: number,
+  bureau: Bureau,
+  starMap: Map<number, (MajorStar | AuxiliaryStar)[]>,
+  natalTransformations: Transformation[],
+  majorPeriods: MajorPeriod[]
+): {
+  year: number;
+  yearStem: string;
+  yearBranch: string;
+  flowYearTransformations: Transformation[];
+  dahanOverlap: string[];
+  natalOverlap: string[];
+  interpretation: string;
+} {
+  const age = currentYear - birthYear + 1;
+  const flowYearGanIdx = (currentYear - 4) % 10;
+  const flowYearBranchIdx = (currentYear - 4) % 12;
+  const yearStem = STEMS[flowYearGanIdx];
+  const yearBranch = BRANCHES[flowYearBranchIdx];
+
+  // 1. 유년 사화
+  const flowTransformations = calculateFlowYearTransformations(currentYear, starMap, mingGongIdx);
+
+  // 2. 현재 대한 찾기
+  const currentDahan = majorPeriods.find(p => age >= p.startAge && age <= p.endAge);
+  const dahanTransformations = currentDahan?.transformations || [];
+
+  // 3. 교차점 분석: 유년 사화와 대한 사화가 같은 궁에 떨어지는 경우
+  const dahanOverlap: string[] = [];
+  for (const ft of flowTransformations) {
+    for (const dt of dahanTransformations) {
+      if (ft.palace === dt.palace) {
+        dahanOverlap.push(
+          `${ft.palace}에 유년${ft.type}(${ft.star})과 대한${dt.type}(${dt.star}) 중첩`
+        );
+      }
+      // 특히 위험: 유년 화기와 대한 화기가 같은 궁
+      if (ft.type === "화기" && dt.type === "화기" && ft.palace === dt.palace) {
+        dahanOverlap.push(`⚠ ${ft.palace}에 유년화기+대한화기 이중충격!`);
+      }
+      // 특히 길: 유년 화록과 대한 화록이 같은 궁
+      if (ft.type === "화록" && dt.type === "화록" && ft.palace === dt.palace) {
+        dahanOverlap.push(`★ ${ft.palace}에 유년화록+대한화록 이중길성!`);
+      }
+    }
+  }
+
+  // 4. 교차점 분석: 유년 사화와 본명 사화
+  const natalOverlap: string[] = [];
+  for (const ft of flowTransformations) {
+    for (const nt of natalTransformations) {
+      if (ft.palace === nt.palace) {
+        natalOverlap.push(
+          `${ft.palace}에 유년${ft.type}(${ft.star})과 본명${nt.type}(${nt.star}) 중첩`
+        );
+      }
+      if (ft.type === "화기" && nt.type === "화기" && ft.palace === nt.palace) {
+        natalOverlap.push(`⚠ ${ft.palace}에 유년화기+본명화기 이중충격! 특히 주의.`);
+      }
+    }
+  }
+
+  // 5. 종합 해석
+  let interpretation = `${currentYear}년(${yearStem}${yearBranch}년) 유년 분석 (만 ${age - 1}세, 한국나이 ${age}세). `;
+
+  if (currentDahan) {
+    interpretation += `현재 대한: ${currentDahan.palace}(${currentDahan.branch}궁). `;
+  }
+
+  // 유년 사화 요약
+  const flowLu = flowTransformations.find(t => t.type === "화록");
+  const flowJi = flowTransformations.find(t => t.type === "화기");
+  if (flowLu) {
+    interpretation += `올해 재물·기회: ${flowLu.palace}(${flowLu.star}화록). `;
+  }
+  if (flowJi) {
+    interpretation += `올해 주의사항: ${flowJi.palace}(${flowJi.star}화기). `;
+  }
+
+  // 교차점 경고
+  if (dahanOverlap.length > 0) {
+    interpretation += `[대한교차] ${dahanOverlap.join("; ")}. `;
+  }
+  if (natalOverlap.length > 0) {
+    interpretation += `[본명교차] ${natalOverlap.join("; ")}. `;
+  }
+
+  // 전반적 판단
+  const jiCount = flowTransformations.filter(t => t.type === "화기").length +
+    dahanOverlap.filter(s => s.includes("화기")).length;
+  const luCount = flowTransformations.filter(t => t.type === "화록").length +
+    dahanOverlap.filter(s => s.includes("화록")).length;
+
+  if (luCount >= 2 && jiCount === 0) {
+    interpretation += "올해는 전반적으로 매우 길한 해. 적극적 행동 추천.";
+  } else if (luCount > jiCount) {
+    interpretation += "올해는 길한 에너지가 우세. 기회를 잘 포착할 것.";
+  } else if (jiCount >= 2) {
+    interpretation += "올해는 주의가 필요한 해. 큰 결정은 신중히, 건강과 재물 관리에 유의.";
+  } else {
+    interpretation += "올해는 평탄한 흐름. 안정적으로 기반을 다지기 좋은 시기.";
+  }
+
+  return {
+    year: currentYear,
+    yearStem,
+    yearBranch,
+    flowYearTransformations: flowTransformations,
+    dahanOverlap,
+    natalOverlap,
+    interpretation,
+  };
+}
+
 // ─── 궁위별 해석 (사화 포함) ───
 function interpretPalace(
   palaceName: PalaceName,
@@ -1150,6 +1317,19 @@ export function calculateZiWei(
     keyInsights.push(`현재 대한(${currentMajorPeriod.startAge}-${currentMajorPeriod.endAge}세): ${currentMajorPeriod.interpretation}`);
   }
 
+  // 유년 교차 분석
+  const currentYearAnalysis = analyzeYearCrossover(
+    currentYear,
+    birthYear,
+    mingGongIdx,
+    gender,
+    yearGanIdx,
+    bureau,
+    totalStarMap,
+    natalTransformations,
+    majorPeriods
+  );
+
   return {
     mingGong: BRANCHES[mingGongIdx],
     shenGong: BRANCHES[shenGongIdx],
@@ -1165,6 +1345,7 @@ export function calculateZiWei(
     periodAnalysis,
     starCombinations: allCombinations,
     geokGuk,
+    currentYearAnalysis,
   };
 }
 
@@ -1243,6 +1424,27 @@ export function getZiWeiForQuestion(
       result += "\n[성조합] ";
       for (const c of relevantCombos) {
         result += `${c.palace} ${c.name}(${c.rating}): ${c.interpretation} `;
+      }
+    }
+  }
+
+  // 유년 분석 추가
+  if (ziwei.currentYearAnalysis) {
+    result += `\n[유년 분석] ${ziwei.currentYearAnalysis.interpretation}`;
+
+    // 질문 유형과 관련된 궁에 유년 사화가 있는지 확인
+    const palaceMap: Record<string, number> = { "연애": 2, "재회": 2, "사업": 8, "직업": 8, "금전": 4 };
+    const idx = palaceMap[questionType];
+    const targetPalace = idx !== undefined ? ziwei.palaces[idx] : null;
+
+    if (targetPalace) {
+      const relevantFlow = ziwei.currentYearAnalysis.flowYearTransformations
+        .filter(t => t.palace === targetPalace.name);
+      if (relevantFlow.length > 0) {
+        result += ` [유년→${targetPalace.name}] `;
+        for (const rf of relevantFlow) {
+          result += `${rf.star}${rf.type}: ${TRANSFORMATION_MEANINGS[rf.type].effect}. `;
+        }
       }
     }
   }
