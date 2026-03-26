@@ -1,4 +1,4 @@
-﻿import { Signal, CrossSignal } from './signalExtractor.ts';
+import { Signal, CrossSignal } from './signalExtractor.ts';
 
 export interface UserInfo {
   name?: string;
@@ -270,17 +270,22 @@ ${signalText}
   const section1 = `
 === [SECTION 1] 사주 명리 (핵심) ===
 • 일간: ${s.dayMaster || '?'} | 신강/약: ${s.strength || '?'} | 격국: ${s.gyeokguk?.name || '?'} (${s.gyeokguk?.type || ''})
-• 용신: ${s.yongShin || '?'} (${s.yongShinMethod || ''}) | 희신: ${s.heeShin || '?'}
+• 강약 상세: ${s.strength_detail?.deukryeong?.result || '?'}/${s.strength_detail?.deukji?.result || '?'}/${s.strength_detail?.deukse?.result || '?'} — ${s.strength_detail?.overall_reason || ''}
+• 용신: ${s.yongShin || '?'} (판정법: ${s.yongShinMethod || ''}) | 희신: ${s.heeShin || '?'} | 기신: ${s.giShin || '?'}
+• 용신 근거: ${s.yongsin_detail?.final?.reason || ''}
 • 오행: ${elSummary}
 • 현재 대운: ${currentDw.full || '?'} (${currentDw.startAge || '?'}~${currentDw.endAge || '?'}세) — 십성: ${currentDw.tenGodStem || ''}/${currentDw.tenGodBranch || ''}${s.is_daewoon_changing_year ? ' [★교운기: 환경/심경 급변기]' : ''} — 에너지: ${dwTwelveStage.level || '?'}점(${dwTwelveStage.description || ''})
-• 세운(${currentSeun.year || '?'}): ${currentSeun.full || '?'} — 십성: ${currentSeun.tenGodStem || ''}/${currentSeun.tenGodBranch || ''} — 12운성: ${seunTwelveStage.stage || '?'}(${seunTwelveStage.level || '?'}점)
+• 세운(${currentSeun.year || '?'}): ${currentSeun.full || '?'} — 십성: ${currentSeun.tenGodStem || ''}/${currentSeun.tenGodBranch || ''}
+• 올해 운세(세운): [${s.fortune?.rating || '평'}] ${s.fortune?.interpretation || ''} (점수: ${s.fortune?.score || 0})
+• 이번 달(월운): [${s.fortune?.currentMonthFortune?.rating || '평'}] ${s.fortune?.currentMonthFortune?.interpretation || ''}
 • 세운-원국 교차: ${sewoonTop3}
+• 공망: ${s.gongmang?.emptied?.join(', ') || '없음'} (${s.gongmang?.affectedPillars?.join(', ') || ''})
 • 주요 신살:
 ${sortedShinsal.slice(0, 10).map((ss: any) => 
   `  - ${ss.name}${ss.hanja ? `(${ss.hanja})` : ''}[${ss.location || ss.pillar || ''}]: ${ss.effect || ss.description || ss.name} (강도: ${ss.strength || '중'})`
 ).join('\n') || (s.characteristics || []).filter((c: string) => !c.startsWith('격국')).slice(0, 8).join(' | ')}
 
-★ 현재 흐름 해석 지시: 위 대운·세운·교차작용·12운성 데이터를 종합하여 "현재 흐름을 한 줄로 압축"하라. (예: "확장 타이밍인데 실행이 늦은 상태")
+★ 현재 흐름 해석 지시: 위 대운·세운·교차작용·12운성 및 [올해 운세 판정] 데이터를 종합하여 "현재 흐름을 한 줄로 압축"하라. (예: "확장 타이밍인데 실행이 늦은 상태")
 `;
 
   // ========================
