@@ -31,6 +31,7 @@ for(const c of cases){
       body:JSON.stringify({birthInfo:{year:c.y,month:c.m,day:c.d,hour:c.h,minute:c.mi,gender:c.g,isLunar:false,longitude:127.5},
         question:'2026운세',cards:[{name:'The Tower',position:'현재',isReversed:false}],mode:'data-only'})});
     const d=await r.json();
+    if (c.name === "1.김민수") console.log('DEBUG Response:', JSON.stringify(d).slice(0, 500));
     const sa=d.saju_analysis||{};const sr=d.saju_raw||{};
     const pil=sr.pillars||sa.pillars||{};
     const mk=(s,b)=>(s==='미상'&&b==='미상')?'미상':(s||'')+(b||'');
