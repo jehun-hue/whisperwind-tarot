@@ -43,6 +43,7 @@ export interface SajuAnalysisResult {
   element_adjustments?: any[];                         // v2: 합화 오행 변화
   daewoon_transition?: any;                            // v2: 대운 전환기 경고
   daily_pillar?: any;                                  // v2: 일진 분석
+  fortune?: FortuneResult;                             // v3: 세운·월운 운세
 }
 
 import { getDaewoonInfo, calculateFullDaewoon, type DaewoonResult } from "./lib/daewoon.ts";
@@ -68,6 +69,8 @@ import { getAllPillarNapeum } from "./lib/napeum.ts";
 import { calculateTenGod } from "./lib/tenGods.ts";
 import { getFullSaju } from "./sajuEngine.ts";
 import { calculateJonggyeok } from "./lib/jonggyeokEngine.ts";
+import { calculateFortune, type FortuneResult } from "./lib/fortuneEngine.ts";
+
 
 
 function getRelation(myElement: string, targetElement: string): string {
@@ -1225,6 +1228,26 @@ export async function analyzeSajuStructure(
   });
   const yinYang = { yang, yin };
 
+  // ── v3: 운세 엔진 (세운·월운 길흉 판단) ──
+  let fortuneResult: FortuneResult | undefined;
+  try {
+    const currentDaewoon = daewoon?.currentDaewoon;
+    fortuneResult = calculateFortune(
+      dm,
+      yongShinElement,
+      heeShin,
+      giShin,
+      guShin,
+      hanShin,
+      stems,
+      branches,
+      currentDaewoon?.stem || null,
+      currentDaewoon?.branch || null
+    );
+  } catch (e) {
+    console.error("[fortuneEngine] error:", e);
+  }
+
   return {
     _analysis_ver: "v4.1.2",
     dayMaster: dm,
@@ -1288,9 +1311,11 @@ export async function analyzeSajuStructure(
     gongmang,
     element_adjustments,
     daewoon_transition,
-    daily_pillar
+    daily_pillar,
+    fortune: fortuneResult,                             // v3: 운세
   };
 }
+
 
 // ═══════════════════════════════════════
 // 오행 관계 헬퍼
