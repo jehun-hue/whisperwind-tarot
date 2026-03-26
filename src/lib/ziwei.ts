@@ -341,8 +341,7 @@ function calculateMajorPeriods(
     }));
 
     // 대한 사화: 대한 궁의 천간으로 계산
-    const periodStemIdx = (yearGanIdx + palaceIdx) % 10;
-    const periodStem = STEMS[periodStemIdx];
+    const periodStem = getPalaceGan(yearGanIdx, palaceIdx);
     const periodTable = TRANSFORMATION_TABLE[periodStem];
     const periodTransformations: Transformation[] = [];
 
@@ -502,7 +501,7 @@ export function calculateZiWei(
 
   // 12궁 구성
   const palaces: PalaceInfo[] = PALACES.map((name, idx) => {
-    const palaceIdx = (mingGongIdx + idx) % 12;
+    const palaceIdx = ((mingGongIdx - idx) % 12 + 12) % 12;
     const starsInPalace = starMap.get(palaceIdx) || [];
     const starPlacements: StarPlacement[] = starsInPalace.map((star) => ({
       star,
