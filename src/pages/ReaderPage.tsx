@@ -8,7 +8,8 @@ import { Lock, Trash2, RefreshCw, Sparkles, Loader2, Download, Search, ChevronRi
 import { tarotCards } from "@/data/tarotCards";
 import { supabase } from "@/integrations/supabase/client";
 import { calculateNatalChart, getAstrologyForQuestion, getCurrentTransits } from "@/lib/astrology";
-import { calculateZiWei, getZiWeiForQuestion } from "@/lib/ziwei";
+import { calculateZiWei, getZiWeiForQuestion, type ZiWeiResult } from "@/lib/ziwei";
+import { ZiWeiSummaryCard } from "@/components/ZiWeiSummaryCard";
 import { getCombinationSummary } from "@/data/tarotCombinations";
 import { toast } from "sonner";
 
@@ -370,6 +371,28 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
   const saju = session.saju_data;
   const [streamingText, setStreamingText] = useState<string>("");
   const [isStreaming, setIsStreaming] = useState(false);
+
+  const ziweiResult = useMemo(() => {
+    if (!session.birth_date) return null;
+    try {
+      const dateStr = ensureDateString(session.birth_date);
+      const [y, m, d] = dateStr.split("-").map(Number);
+      let hour = 12, minute = 0;
+      if (session.birth_time) {
+        const parts = session.birth_time.split(":");
+        if (parts.length >= 2) {
+          hour = parseInt(parts[0], 10);
+          minute = parseInt(parts[1], 10);
+          if (isNaN(hour)) hour = 12;
+          if (isNaN(minute)) minute = 0;
+        }
+      }
+      return calculateZiWei(y, m, d, hour, minute, (session.gender as "male" | "female") || "female");
+    } catch (e) {
+      console.error("ZiWei calculation error in UI:", e);
+      return null;
+    }
+  }, [session.birth_date, session.birth_time, session.gender]);
 
   const renderSafe = (val: any): string => {
     if (val === null || val === undefined) return "";
@@ -1650,6 +1673,8 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
           );
         })}
       </div>
+
+      {ziweiResult && <ZiWeiSummaryCard ziwei={ziweiResult} />}
 
       {/* AI Reading - V4 format (4-system stable pipeline) */}
       {
