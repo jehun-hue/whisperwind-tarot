@@ -23,3 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 .env
+
+debug_*.ts
+debug_*.mjs
+check_*.mjs
+supabase/.temp/
