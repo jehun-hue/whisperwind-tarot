@@ -1,5 +1,5 @@
 import { Signal, CrossSignal } from './signalExtractor.ts';
-import { ILJU_MEANINGS, TENGO_DEEP, GYEOKGUK_DEEP, TWELVE_STAGES_DEEP } from "./interpretations/index.ts";
+import { ILJU_MEANINGS, TENGO_DEEP, GYEOKGUK_DEEP, TWELVE_STAGES_DEEP, YONGSIN_ADVICE, SINSAL_DEEP, DAEWOON_INTERACTION, INTERACTION_DEEP } from "./interpretations/index.ts";
 import { buildZiWeiPromptSection } from "./ziweiPromptBuilder.ts";
 
 export interface UserInfo {
@@ -284,6 +284,8 @@ ${signalText}
   const deepSajuProfile = [gyeokBlock, tengoBlock, stageBlock].filter(Boolean).join('\n');
   // === Phase 2 끝 ===
 
+
+
   // SECTION 1: SAJU 핵심
   // ========================
 
@@ -312,6 +314,50 @@ ${signalText}
   const sortedSewoonRels = sortBySajuRelevance(sewoonRels, ['type', 'description']);
   const sortedShinsal = sortBySajuRelevance(s.shinsal || [], ['name', 'effect', 'description']);
 
+  // === Phase 3: 용신/신살/대운/상호작용 심층 주입 ===
+  const yongName = s?.yongShin || s?.yongsin || '';
+  const yongProfile = yongName ? YONGSIN_ADVICE[yongName] : null;
+  const yongBlock = yongProfile ? `
+【용신 개운 처방: ${yongName}】
+• 생활 습관: ${yongProfile.lifestyle}
+• 적합 직업: ${yongProfile.career}
+• 행운 색상/방향: ${yongProfile.color} / ${yongProfile.direction}` : '';
+
+  const deepShinsalLines = (sortedShinsal || []).slice(0, 3)
+    .map(ss => {
+      const p = SINSAL_DEEP[ss.name];
+      return p ? `  • ${ss.name}: ${p.meaning} (${p.effect})` : null;
+    })
+    .filter(Boolean)
+    .join('\n');
+  const deepShinsalBlock = deepShinsalLines ? `
+【주요 신살 심층 해석】
+${deepShinsalLines}` : '';
+
+  const dwStem = currentDw?.stem || '';
+  const dwInteraction = dwStem ? DAEWOON_INTERACTION[dwStem + "운"] : null;
+  const dwDeepBlock = dwInteraction ? `
+【대운 심층 테마: ${dwStem}운】
+• 기회: ${dwInteraction.opportunity}
+• 리스크: ${dwInteraction.risk}
+• 핵심 조언: ${dwInteraction.advice}` : '';
+
+  const interactions = s?.interactions || s?.characteristics || [];
+  const interactionLines = (Array.isArray(interactions) ? interactions : []).slice(0, 3)
+    .map(it => {
+      const key = typeof it === 'string' ? it : it.name || '';
+      const p = INTERACTION_DEEP[key];
+      return p ? `  • ${key}: ${p.meaning}` : null;
+    })
+    .filter(Boolean)
+    .join('\n');
+  const interactionBlock = interactionLines ? `
+【천간/지지 상호작용】
+${interactionLines}` : '';
+
+  const finalDeepSajuProfile = [deepSajuProfile, yongBlock, deepShinsalBlock, dwDeepBlock, interactionBlock].filter(Boolean).join('\n');
+  // === Phase 3 끝 ===
+
   const sewoonTop3 = sortedSewoonRels.slice(0, 3)
     .map((r: any) => `${r.pair} ${r.type}: ${r.description}`)
     .join(' / ') || '특별한 작용 없음';
@@ -337,7 +383,7 @@ ${sortedShinsal.slice(0, 10).map((ss: any) =>
 
 ★ 현재 흐름 해석 지시: 위 대운·세운·교차작용·12운성 및 [올해 운세 판정] 데이터를 종합하여 "현재 흐름을 한 줄로 압축"하라. (예: "확장 타이밍인데 실행이 늦은 상태")
 
-${deepSajuProfile}
+${finalDeepSajuProfile}
 `;
 
   // ========================
