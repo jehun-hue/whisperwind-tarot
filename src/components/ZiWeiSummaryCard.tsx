@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { ZiWeiResult } from "@/lib/ziwei";
+import { ZiWeiChart } from "./ZiWeiChart";
 
 interface Props {
   ziwei: ZiWeiResult;
@@ -24,6 +25,7 @@ export function ZiWeiSummaryCard({ ziwei }: Props) {
 
   return (
     <div className="space-y-4">
+      <ZiWeiChart ziwei={ziwei} />
       {/* 종합 점수 */}
       <Card className="bg-gray-900 border-gray-700">
         <CardHeader className="pb-2">
