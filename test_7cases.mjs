@@ -21,6 +21,7 @@ const cases=[
   {name: "18.극신약여",y: 1993, m: 12, d: 1, h: 6, mi: 0, g: "F", p: ["癸酉", "癸亥", "丙辰", "辛卯"], dm: "丙", yo: "수", he: "목", gi: "화", gu: "목", ha: "토", ds: 2, dd: "순행"},
   {name: "19.신약남",y: 1982, m: 5, d: 28, h: 23, mi: 0, g: "M", p: ["壬戌", "乙巳", "辛亥", "己亥"], dm: "辛", yo: "수", he: "목", gi: "금", gu: "토", ha: "토", ds: 3, dd: "순행"},
   {name: "20.신약여",y: 1997, m: 3, d: 8, h: 1, mi: 0, g: "F", p: ["丁丑", "癸卯", "己酉", "甲子"], dm: "己", yo: "목", he: "화", gi: "토", gu: "화", ha: "금", ds: 9, dd: "순행"},
+  {name: "21.시간미상남", y:1990, m:5, d:10, h:-1, mi:0, g:"M", p:["庚午", "辛巳", "甲戌", "미상"], dm: "甲", noTime: true},
 ];
 let totalP=0,totalF=0;
 for(const c of cases){
@@ -32,7 +33,7 @@ for(const c of cases){
     const d=await r.json();
     const sa=d.saju_analysis||{};const sr=d.saju_raw||{};
     const pil=sr.pillars||sa.pillars||{};
-    const mk=(s,b)=>(s||'')+(b||'');
+    const mk=(s,b)=>(s==='미상'&&b==='미상')?'미상':(s||'')+(b||'');
     const eng={
       p:[mk(pil.year?.stem,pil.year?.branch),mk(pil.month?.stem,pil.month?.branch),mk(pil.day?.stem,pil.day?.branch),mk(pil.hour?.stem,pil.hour?.branch)],
       dm:sr.dayMaster||sa.dayMaster||'',
@@ -42,7 +43,13 @@ for(const c of cases){
       ds:sa.daewoon?.startAge||sa.daewoon?.age||'?',dd:sa.daewoon?.direction||'?'
     };
     const chk=(n,a,e)=>{if(e===undefined)return true;const ok=String(a)===String(e);if(ok)totalP++;else totalF++;console.log(ok?'  PASS':'  FAIL',n,'got:',a,'exp:',e);return ok;};
-    chk('년주',eng.p[0],c.p[0]);chk('월주',eng.p[1],c.p[1]);chk('일주',eng.p[2],c.p[2]);chk('시주',eng.p[3],c.p[3]);
+    if (c.noTime) {
+      chk('년주',eng.p[0],c.p[0]);chk('월주',eng.p[1],c.p[1]);chk('일주',eng.p[2],c.p[2]);
+      chk('시주',eng.p[3],c.p[3]); // "미상"이어야 함
+      chk('has_time', String(sr.has_time), "false");
+    } else {
+      chk('년주',eng.p[0],c.p[0]);chk('월주',eng.p[1],c.p[1]);chk('일주',eng.p[2],c.p[2]);chk('시주',eng.p[3],c.p[3]);
+    }
     chk('일간',eng.dm,c.dm);chk('용신',eng.yo,c.yo);chk('희신',eng.he,c.he);chk('기신',eng.gi,c.gi);chk('구신',eng.gu,c.gu);chk('한신',eng.ha,c.ha);
     chk('음',eng.yi,c.yi);chk('양',eng.ya,c.ya);
     for(const k of ['목','화','토','금','수'])chk('오행_'+k,eng.el[k]??'?',c.el?.[k]);
