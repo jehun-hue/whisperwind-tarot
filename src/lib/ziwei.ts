@@ -27,6 +27,8 @@ export const AUXILIARY_STARS = [
 ] as const;
 
 export type AuxiliaryStar = typeof AUXILIARY_STARS[number];
+export type ShenSha = "겁살" | "재살" | "천살" | "지살" | "년살" | "월살" | "망신살" | "장성살" | "반안살" | "역마살" | "육해살" | "화개살";
+
 
 // ─── 사화 (Four Transformations) ───
 export type TransformationType = "화록" | "화권" | "화과" | "화기";
@@ -71,7 +73,9 @@ export interface PalaceInfo {
   name: PalaceName;
   branch: string;
   stars: StarPlacement[];
+  shenSha: string[];
   transformations: Transformation[];
+
   interpretation: string;
 }
 
@@ -376,6 +380,49 @@ function placeKongJieStars(birthHourBranch: number): Map<number, AuxiliaryStar[]
   
   return placements;
 }
+
+const SHEN_SHA_MEANINGS: Record<string, string> = {
+  천마: "이동, 변동, 해외, 출장운",
+  홍란: "연애, 결혼, 이성 인연",
+  천희: "경사, 임신, 기쁜 소식",
+  천형: "수술, 형벌, 법적 분쟁, 의료",
+  천요: "질병, 약물, 기이한 인연",
+  천덕: "하늘의 도움, 재난 해소, 귀인",
+  월덕: "매월 귀인, 흉함 완화",
+  화개: "종교, 예술, 고독, 영성",
+  역마: "이사, 전직, 여행, 변동",
+  도화: "이성 매력, 색정, 인기, 예술",
+  겁살: "급변, 사고, 도난, 손재",
+  천공: "공상, 허망, 종교성, 이상주의",
+};
+
+// ─── 신살(ShenSha) 배치 (연지 기준 12신살) ───
+
+function placeShenShaStars(yearBranchIdx: number): Map<number, ShenSha[]> {
+  const shenShaMap = new Map<number, ShenSha[]>();
+  const names: ShenSha[] = ["겁살", "재살", "천살", "지살", "년살", "월살", "망신살", "장성살", "반안살", "역마살", "육해살", "화개살"];
+
+  // 삼합(Triad) 기준 겁살(劫殺) 시작 위치
+  // 인오술(火) -> 해(亥: 11)
+  // 사유축(金) -> 인(寅: 2)
+  // 신자진(水) -> 사(巳: 5)
+  // 해묘미(木) -> 신(申: 8)
+  const baseMap: Record<number, number> = {
+    2: 11, 6: 11, 10: 11, // 인, 오, 술 -> 해
+    5: 2, 9: 2, 1: 2,    // 사, 유, 축 -> 인
+    8: 5, 0: 5, 4: 5,    // 신, 자, 진 -> 사
+    11: 8, 3: 8, 7: 8,   // 해, 묘, 미 -> 신
+  };
+
+  const startIdx = baseMap[yearBranchIdx % 12] ?? 11;
+  for (let i = 0; i < 12; i++) {
+    const pos = (startIdx + i) % 12;
+    if (!shenShaMap.has(pos)) shenShaMap.set(pos, []);
+    shenShaMap.get(pos)!.push(names[i]);
+  }
+  return shenShaMap;
+}
+
 
 // ─── 삼방사정(三方四正) 관계 계산 ───
 // 본궁(palaceIdx) 기준:
@@ -1053,8 +1100,10 @@ function interpretPalace(
   transformations: Transformation[],
   isShenGong: boolean = false,
   starMap?: Map<number, (MajorStar | AuxiliaryStar)[]>,
-  palaceIdx?: number
+  palaceIdx?: number,
+  shenSha?: string[]
 ): string {
+
   let interpretation = "";
 
   if (isShenGong) {
@@ -1126,7 +1175,30 @@ function interpretPalace(
     }
   }
 
+  // 신살 해석
+  if (shenSha && shenSha.length > 0) {
+    const shenShaDesc = shenSha
+      .map(s => `${s}(${SHEN_SHA_MEANINGS[s] || "특수 신살"})`)
+      .join(", ");
+    interpretation += `\n[신살] ${shenShaDesc}`;
+    
+    // 핵심 신살 경고
+    const warnings: string[] = [];
+    if (shenSha.includes("천형") && shenSha.includes("천요"))
+      warnings.push("천형+천요: 건강·수술 주의");
+    if (shenSha.includes("도화") && shenSha.includes("홍란"))
+      warnings.push("도화+홍란: 이성 인연 매우 강함");
+    if (shenSha.includes("역마") && shenSha.includes("천마"))
+      warnings.push("역마+천마: 이동·변동 극대화");
+    if (shenSha.includes("겁살") && shenSha.includes("지겁"))
+      warnings.push("겁살+지겁: 재물 손실 주의");
+    if (warnings.length > 0) {
+      interpretation += `\n⚠ 신살 경고: ${warnings.join(" / ")}`;
+    }
+  }
+
   return interpretation || `${palaceName}의 기본적인 에너지가 작용합니다.`;
+
 }
 
 // ─── 메인 계산 함수 ───
@@ -1157,6 +1229,8 @@ export function calculateZiWei(
     placeHuoLingStars(yearBranchIdx, birthHourBranch),
     placeKongJieStars(birthHourBranch),
   ];
+  const shenShaMap = placeShenShaStars(yearBranchIdx);
+
   
   const auxStarMap = new Map<number, AuxiliaryStar[]>();
   for (const m of auxMaps) {
@@ -1218,9 +1292,12 @@ export function calculateZiWei(
       name,
       branch: BRANCHES[palaceIdx],
       stars: starPlacements,
+      shenSha: shenShaMap.get(palaceIdx) || [],
       transformations: trans,
-      interpretation: interpretPalace(name, starPlacements, trans, name === shenGongPalace, totalStarMap, palaceIdx),
+      interpretation: interpretPalace(name, starPlacements, trans, name === shenGongPalace, totalStarMap, palaceIdx, shenShaMap.get(palaceIdx) || []),
     };
+
+
   });
 
   // 격국 판단
@@ -1368,7 +1445,15 @@ export function getZiWeiForQuestion(
     if (relevantTrans.length > 0) {
       result += " " + relevantTrans.map(t => t.description).join(". ");
     }
+
+    // 신살 추가 정보
+    if (palace.shenSha && palace.shenSha.length > 0) {
+      result += `\n[해당 궁 신살] ${palace.shenSha.map(
+        s => `${s}(${SHEN_SHA_MEANINGS[s] || ""})`
+      ).join(", ")}`;
+    }
   } else {
+
     result = ziwei.lifeStructure;
   }
 
@@ -1376,6 +1461,21 @@ export function getZiWeiForQuestion(
   if (ziwei.periodAnalysis) {
     result += " [시기 분석] " + ziwei.periodAnalysis;
   }
+
+  // 연애 질문: 전체 궁에서 도화·홍란·천희 탐색
+  if (questionType === "연애" || questionType === "결혼" || questionType === "재회") {
+    const romanceStars = ["도화", "홍란", "천희"];
+    const found: string[] = [];
+    for (const p of ziwei.palaces) {
+      const hits = (p.shenSha || []).filter(s => romanceStars.includes(s));
+      if (hits.length > 0) found.push(`${p.name}: ${hits.join(",")}`);
+    }
+    if (found.length > 0) {
+      result += `\n[연애 신살 분포] ${found.join(" | ")}`;
+    }
+  }
+
+
 
   // ── 삼방사정 컨텍스트 추가 ──
   if (idx !== undefined) {
