@@ -1,5 +1,6 @@
 import { Signal, CrossSignal } from './signalExtractor.ts';
 import { ILJU_MEANINGS } from "./interpretations/index.ts";
+import { buildZiWeiPromptSection } from "./ziweiPromptBuilder.ts";
 
 export interface UserInfo {
   name?: string;
@@ -249,6 +250,9 @@ ${crossSignalText}
 ${signalText}
 `;
 
+  // 자미두수 구조화 데이터 주입
+  const ziweiSection = ziwei ? buildZiWeiPromptSection(ziwei as any) : "";
+
   // ========================
   // SECTION 1: SAJU 핵심
   // ========================
@@ -341,6 +345,8 @@ ${sortedShinsal.slice(0, 10).map((ss: any) =>
 • 올해 유년/소한: ${zRaw.currentMinorPeriod?.palace || '?'}궁(${zRaw.currentMinorPeriod?.branch || '?'}지) — ${zRaw.currentMinorPeriod?.interpretation || ''}
 • 질문 관련 핵심 궁:
 ${selectedPalaces}
+
+${ziweiSection}
 
 ★ 궁 선택 규칙: 질문="${userInfo.question || '종합운'}" → ${targetPalaceNames.join(', ')} 궁 중심 해석
 ★ 자미두수 해석 지침: 빈궁이 있으면 대궁(반대편 궁)의 주성 영향으로 해석하라. 데이터가 전체적으로 부족하면 "자미두수 관점에서는 출생 시간 확인이 필요하지만, 사주와 점성술 기준으로..."라고 전환하라. 자미두수 데이터가 있는 궁은 반드시 해석에 포함할 것.
