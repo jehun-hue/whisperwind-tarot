@@ -1,7 +1,10 @@
 /**
- * jonggyeokEngine.ts - Phase 4: 종격 용신 엔진
+ * jonggyeokEngine.ts - Phase 4: 종격 용신 엔진 (v3)
  * 극신강(≥80%) → 종왕격/종강격
  * 극신약(≤20%) → 종살격/종재격/종아격
+ *
+ * ★ v3 수정: tenGodCounts 키를 5분류("비겁","인성","관성","재성","식상")로 통일
+ *   aiSajuAnalysis.ts에서 넘기는 키와 일치시킴
  */
 
 export interface JonggyeokResult {
@@ -39,58 +42,64 @@ export function calculateJonggyeok(
 
   const dm = dayMasterElement; // 일간 오행 (목/화/토/금/수)
 
+  // ★ v3: 5분류 키 사용 (aiSajuAnalysis.ts의 tenGodCount 키와 일치)
+  // 10분류 키("비견","겁재" 등)가 들어올 수도 있으므로 양쪽 모두 지원
+  const bigeop = (tenGodCounts["비겁"] || 0)
+    + (tenGodCounts["비견"] || 0) + (tenGodCounts["겁재"] || 0);
+  const inseong = (tenGodCounts["인성"] || 0)
+    + (tenGodCounts["정인"] || 0) + (tenGodCounts["편인"] || 0);
+  const gwansal = (tenGodCounts["관성"] || 0)
+    + (tenGodCounts["정관"] || 0) + (tenGodCounts["편관"] || 0);
+  const jaeseong = (tenGodCounts["재성"] || 0)
+    + (tenGodCounts["정재"] || 0) + (tenGodCounts["편재"] || 0);
+  const siksang = (tenGodCounts["식상"] || 0)
+    + (tenGodCounts["식신"] || 0) + (tenGodCounts["상관"] || 0);
+
   // ── 극신강 (≥80%) ──
   if (isExtreme강) {
-    const bigeop = (tenGodCounts["비견"] || 0) + (tenGodCounts["겁재"] || 0);
-    const inseong = (tenGodCounts["정인"] || 0) + (tenGodCounts["편인"] || 0);
-
     if (bigeop >= inseong) {
-      // 종왕격: 비겁 주도 → 용신 = 일간 오행(비겁), 희신 = 인성(생해주는 것)
+      // 종왕격: 비겁 주도
       const yong = dm;
       const hee = generatedBy(dm);   // 인성
-      const gi = controls(dm);       // 재성 (비겁이 극하는 것 = 기신)
+      const gi = controls(dm);       // 재성
       const gu = controlledBy(dm);   // 관성
       const han = generates(dm);     // 식상
       return {
         method: "jonggyeok", type: "종왕격",
         yongshin: yong, heeshin: hee, gisin: gi, gusin: gu, hansin: han,
         confidence: Math.min((strengthPercent - 80) / 15 + 0.6, 1.0),
-        reason: `극신강(${strengthPercent}%): 비겁(${bigeop}개) 주도 → 종왕격, 일간(${dm}) 따라감`
+        reason: `극신강(${strengthPercent}%): 비겁(${bigeop.toFixed(1)}) 주도 → 종왕격, 일간(${dm}) 따라감`
       };
     } else {
-      // 종강격: 인성 주도 → 용신 = 인성, 희신 = 비겁
+      // 종강격: 인성 주도
       const yong = generatedBy(dm);  // 인성
       const hee = dm;                // 비겁
-      const gi = generates(dm);      // 식상 (인성을 극하는 것)
+      const gi = generates(dm);      // 식상
       const gu = controls(dm);       // 재성
       const han = controlledBy(dm);  // 관성
       return {
         method: "jonggyeok", type: "종강격",
         yongshin: yong, heeshin: hee, gisin: gi, gusin: gu, hansin: han,
         confidence: Math.min((strengthPercent - 80) / 15 + 0.6, 1.0),
-        reason: `극신강(${strengthPercent}%): 인성(${inseong}개) 주도 → 종강격, 인성(${generatedBy(dm)}) 따라감`
+        reason: `극신강(${strengthPercent}%): 인성(${inseong.toFixed(1)}) 주도 → 종강격, 인성(${generatedBy(dm)}) 따라감`
       };
     }
   }
 
   // ── 극신약 (≤20%) ──
   if (isExtreme약) {
-    const gwansal = (tenGodCounts["정관"] || 0) + (tenGodCounts["편관"] || 0);
-    const jaeseong = (tenGodCounts["정재"] || 0) + (tenGodCounts["편재"] || 0);
-    const siksang = (tenGodCounts["식신"] || 0) + (tenGodCounts["상관"] || 0);
-
     // 가장 많은 십성 카테고리를 따라감
     const categories = [
-      { name: "종살격", count: gwansal, yong: controlledBy(dm) },  // 관성
-      { name: "종재격", count: jaeseong, yong: controls(dm) },     // 재성
-      { name: "종아격", count: siksang, yong: generates(dm) },     // 식상
+      { name: "종살격", count: gwansal, yong: controlledBy(dm), label: "관살" },
+      { name: "종재격", count: jaeseong, yong: controls(dm), label: "재성" },
+      { name: "종아격", count: siksang, yong: generates(dm), label: "식상" },
     ];
     categories.sort((a, b) => b.count - a.count);
 
     const winner = categories[0];
     const yong = winner.yong;
     const hee = generates(yong);      // 용신을 생하는 것
-    const gi = dm;                     // 일간 오행 = 기신 (일간 강화는 역행)
+    const gi = dm;                     // 일간 오행 = 기신
     const gu = generatedBy(dm);        // 인성 = 구신
     const han = controlledBy(yong);    // 용신을 극하는 것
 
@@ -98,7 +107,7 @@ export function calculateJonggyeok(
       method: "jonggyeok", type: winner.name,
       yongshin: yong, heeshin: hee, gisin: gi, gusin: gu, hansin: han,
       confidence: Math.min((20 - strengthPercent) / 15 + 0.6, 1.0),
-      reason: `극신약(${strengthPercent}%): ${winner.name} — ${winner.name === "종살격" ? "관살" : winner.name === "종재격" ? "재성" : "식상"}(${winner.count}개) 주도, 용신 ${yong}`
+      reason: `극신약(${strengthPercent}%): ${winner.label}(${winner.count.toFixed(1)}) 주도 → ${winner.name}, 용신 ${yong}`
     };
   }
 
