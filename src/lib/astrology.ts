@@ -257,7 +257,7 @@ export interface AstrologyResult {
 function raToLon(raDeg: number, epsRad: number): number {
   const raRad = raDeg * Math.PI / 180;
   const cosEps = Math.cos(epsRad);
-  let lon = Math.atan2(Math.sin(raRad), Math.cos(raRad) * cosEps) * 180 / Math.PI;
+  let lon = Math.atan2(Math.sin(raRad) * cosEps, Math.cos(raRad)) * 180 / Math.PI;
   return (lon + 360) % 360;
 }
 
