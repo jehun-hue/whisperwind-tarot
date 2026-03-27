@@ -185,10 +185,21 @@ function calculatePrecisePlanetPositions(year: number, month: number, day: numbe
   const date = new Date(Date.UTC(year, month - 1, day, hour, minute));
   const time = Astronomy.MakeTime(date);
 
-  return PLANETS.map((planet) => ({
-    planet,
-    longitude: Astronomy.EclipticLongitude(BODY_MAP[planet], time),
-  }));
+  return PLANETS.map((planet) => {
+    let longitude: number;
+
+    if (planet === "태양") {
+      longitude = Astronomy.SunPosition(time).elon;
+    } else if (planet === "달") {
+      longitude = Astronomy.EclipticGeoMoon(time).lon;
+    } else {
+      const geo = Astronomy.GeoVector(BODY_MAP[planet], time, true);
+      const ecl = Astronomy.Ecliptic(geo);
+      longitude = ecl.elon;
+    }
+
+    return { planet, longitude };
+  });
 }
 
 
