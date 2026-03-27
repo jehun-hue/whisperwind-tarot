@@ -2,7 +2,9 @@
  * Western Astrology 계산 엔진 - 고급 버전
  * Julian Day 기반 정밀 계산, 에센셜 디그니티, 상세 어스펙트
  */
-import * as Astronomy from "astronomy-engine";
+import * as AstronomyImport from "astronomy-engine";
+// ESM/CJS 상호운용성 해결: default가 있으면 사용, 없으면 전체 객체 사용
+const Astronomy: any = (AstronomyImport as any).default || AstronomyImport;
 
 export const ZODIAC_SIGNS = [
   "양자리", "황소자리", "쌍둥이자리", "게자리", "사자자리", "처녀자리",
@@ -168,17 +170,17 @@ function calculateAspects(positions: { planet: Planet; absoluteDegree: number }[
 }
 
 // ========== Improved Planet Positions ==========
-const BODY_MAP: Record<Planet, Astronomy.Body> = {
-  "태양": Astronomy.Body.Sun,
-  "달": Astronomy.Body.Moon,
-  "수성": Astronomy.Body.Mercury,
-  "금성": Astronomy.Body.Venus,
-  "화성": Astronomy.Body.Mars,
-  "목성": Astronomy.Body.Jupiter,
-  "토성": Astronomy.Body.Saturn,
-  "천왕성": Astronomy.Body.Uranus,
-  "해왕성": Astronomy.Body.Neptune,
-  "명왕성": Astronomy.Body.Pluto,
+const BODY_MAP: Record<Planet, any> = {
+  "태양": "Sun",
+  "달": "Moon",
+  "수성": "Mercury",
+  "금성": "Venus",
+  "화성": "Mars",
+  "목성": "Jupiter",
+  "토성": "Saturn",
+  "천왕성": "Uranus",
+  "해왕성": "Neptune",
+  "명왕성": "Pluto",
 };
 
 function calculatePrecisePlanetPositions(year: number, month: number, day: number, hour: number, minute: number = 0) {
@@ -240,50 +242,137 @@ export interface AstrologyResult {
   keyAspects: string[];
   dignityReport: string[];
   housePositions: {
+    cusps: number[];
     ASC: string;
     MC: string;
     IC: string;
     DESC: string;
-    isConsistent: boolean;
   };
 }
 
+// RA → 황경 변환 (사분면 보정)
+function raToLon(raDeg: number, epsRad: number): number {
+  const raRad = raDeg * Math.PI / 180;
+  const cosEps = Math.cos(epsRad);
+  let lon = Math.atan2(Math.sin(raRad), Math.cos(raRad) * cosEps) * 180 / Math.PI;
+  return (lon + 360) % 360;
+}
+
+// Placidus 커스프 계산 (단일 하우스)
+function placidusCusp(
+  ramcDeg: number, epsRad: number, phiRad: number, house: number
+): number {
+  const tanPhi = Math.tan(phiRad);
+
+  let frac: number, baseDeg: number, sign: number, nocturnal: boolean;
+  switch (house) {
+    case 11: frac = 1/3; baseDeg = ramcDeg;       sign = +1; nocturnal = false; break;
+    case 12: frac = 2/3; baseDeg = ramcDeg;       sign = +1; nocturnal = false; break;
+    case 2:  frac = 2/3; baseDeg = ramcDeg + 180; sign = -1; nocturnal = true;  break;
+    case 3:  frac = 1/3; baseDeg = ramcDeg + 180; sign = -1; nocturnal = true;  break;
+    default: return 0;
+  }
+
+  let ra = baseDeg + sign * frac * 90;
+
+  for (let i = 0; i < 100; i++) {
+    const raRad = (ra * Math.PI) / 180;
+    const tanD = Math.tan(epsRad) * Math.sin(raRad);
+    const D = Math.atan(tanD);
+
+    let arc: number;
+    if (nocturnal) {
+      const cosH = tanPhi * Math.tan(D);
+      if (cosH <= -1) arc = 180;
+      else if (cosH >= 1) arc = 0;
+      else arc = Math.acos(cosH) * 180 / Math.PI;
+    } else {
+      const cosH = -tanPhi * Math.tan(D);
+      if (cosH <= -1) arc = 180;
+      else if (cosH >= 1) arc = 0;
+      else arc = Math.acos(cosH) * 180 / Math.PI;
+    }
+
+    const newRA = baseDeg + sign * frac * arc;
+    if (Math.abs(newRA - ra) < 0.0001) { ra = newRA; break; }
+    ra = newRA;
+  }
+
+  return raToLon(ra, epsRad);
+}
+
+// ASC 계산
+function calcASC(ramcRad: number, epsRad: number, phiRad: number): number {
+  const ascRad = Math.atan2(
+    Math.cos(ramcRad),
+    -(Math.sin(epsRad) * Math.tan(phiRad) + Math.cos(epsRad) * Math.sin(ramcRad))
+  );
+  return (ascRad * 180 / Math.PI + 360) % 360;
+}
+
+// MC 계산
+function calcMC(ramcRad: number, epsRad: number): number {
+  return raToLon(ramcRad * 180 / Math.PI, epsRad);
+}
+
+// 전체 Placidus 12커스프 + 앵글 계산
 function calculateHouses(
-  year: number, month: number, day: number, hour: number, minute: number = 0,
+  year: number, month: number, day: number,
+  hour: number, minute: number = 0,
   latitude: number = 37.5665, longitude: number = 126.978
 ) {
   const date = new Date(Date.UTC(year, month - 1, day, hour, minute));
-  const observer = new Astronomy.Observer(latitude, longitude, 0);
   const time = Astronomy.MakeTime(date);
-  
-  const lst = (Astronomy.SiderealTime(time) + (observer.longitude / 15.0) + 24) % 24;
-  const ramc = (lst * 15.0) % 360;
+  const gmst = Astronomy.SiderealTime(time);
+  const lst = (gmst + longitude / 15 + 24) % 24;
+  const ramc = (lst * 15) % 360;
   const tilt = Astronomy.e_tilt(time);
-  const epsRad = (tilt?.tobl || 23.43929) * Math.PI / 180;
-  const phiRad = observer.latitude * Math.PI / 180;
+  const eps = (tilt?.tobl || 23.43929) * Math.PI / 180;
+  const phi = latitude * Math.PI / 180;
   const ramcRad = ramc * Math.PI / 180;
 
-  const mcRad = Math.atan2(Math.sin(ramcRad), Math.cos(ramcRad) * Math.cos(epsRad));
-  const mcDeg = (mcRad * 180 / Math.PI + 360) % 360;
+  const mc = calcMC(ramcRad, eps);
+  const asc = calcASC(ramcRad, eps, phi);
+  const ic = (mc + 180) % 360;
+  const desc = (asc + 180) % 360;
 
-  const ascRad = Math.atan2(Math.cos(ramcRad), -(Math.sin(epsRad) * Math.tan(phiRad) + Math.cos(epsRad) * Math.sin(ramcRad)));
-  const ascDeg = (ascRad * 180 / Math.PI + 360) % 360;
+  const h11 = placidusCusp(ramc, eps, phi, 11);
+  const h12 = placidusCusp(ramc, eps, phi, 12);
+  const h2 = placidusCusp(ramc, eps, phi, 2);
+  const h3 = placidusCusp(ramc, eps, phi, 3);
 
-  const angle = (ascDeg - mcDeg + 360) % 360;
-  return {
-    asc: ascDeg,
-    mc: mcDeg,
-    ic: (mcDeg + 180) % 360,
-    desc: (ascDeg + 180) % 360,
-    isConsistent: angle > 40 && angle < 140
-  };
+  const cusps = [
+    asc, h2, h3, ic,
+    (h11 + 180) % 360,
+    (h12 + 180) % 360,
+    desc,
+    (h2 + 180) % 360,
+    (h3 + 180) % 360,
+    mc, h11, h12
+  ];
+
+  return { cusps, asc, mc, ic, desc };
+}
+
+function getHouseFromCusps(lng: number, cusps: number[]): number {
+  for (let i = 0; i < 12; i++) {
+    const next = (i + 1) % 12;
+    let start = cusps[i];
+    let end = cusps[next];
+    if (end < start) end += 360;
+    let testLng = lng;
+    if (testLng < start) testLng += 360;
+    if (testLng >= start && testLng < end) return i + 1;
+  }
+  return 1;
 }
 
 export function calculateNatalChart(
-  year: number, month: number, day: number, hour: number, minute: number = 0
+  year: number, month: number, day: number, hour: number, minute: number = 0,
+  latitude: number = 37.5665, longitude: number = 126.978
 ): AstrologyResult {
   const rawPositions = calculatePrecisePlanetPositions(year, month, day, hour, minute);
-  const houses = calculateHouses(year, month, day, hour, minute);
+  const houses = calculateHouses(year, month, day, hour, minute, latitude, longitude);
   const risingIdx = Math.floor(houses.asc / 30) % 12;
 
     const planets: PlanetPosition[] = rawPositions.map((p) => {
@@ -291,7 +380,7 @@ export function calculateNatalChart(
     const signIdx = Math.floor(lng / 30) % 12;
     const degree = Math.round((lng % 30) * 100) / 100;
     const sign = ZODIAC_SIGNS[signIdx];
-    const house = ((signIdx - risingIdx + 12) % 12) + 1;
+    const house = getHouseFromCusps(lng, houses.cusps);
     const dignity = getPlanetDignity(p.planet, signIdx);
     const meaning = PLANET_MEANINGS[p.planet];
     const signMeaning = SIGN_MEANINGS[sign]?.split(".")[0] || "";
@@ -364,11 +453,11 @@ export function calculateNatalChart(
     dominantElement, dominantQuality,
     chartSummary, keyAspects, dignityReport,
     housePositions: {
+      cusps: houses.cusps,
       ASC: risingSign,
       MC: ZODIAC_SIGNS[Math.floor(houses.mc / 30) % 12],
       IC: ZODIAC_SIGNS[Math.floor(houses.ic / 30) % 12],
       DESC: ZODIAC_SIGNS[Math.floor(houses.desc / 30) % 12],
-      isConsistent: houses.isConsistent
     }
   };
 }
