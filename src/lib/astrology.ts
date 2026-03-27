@@ -187,6 +187,7 @@ function calculatePrecisePlanetPositions(year: number, month: number, day: numbe
 
   return PLANETS.map((planet) => {
     let longitude: number;
+    let isRetrograde = false;
 
     if (planet === "태양") {
       longitude = Astronomy.SunPosition(time).elon;
@@ -196,9 +197,19 @@ function calculatePrecisePlanetPositions(year: number, month: number, day: numbe
       const geo = Astronomy.GeoVector(BODY_MAP[planet], time, true);
       const ecl = Astronomy.Ecliptic(geo);
       longitude = ecl.elon;
+
+      // 역행 판별: 1일 전 경도와 비교
+      const prevDate = new Date(date.getTime() - 86400000);
+      const prevTime = Astronomy.MakeTime(prevDate);
+      const prevGeo = Astronomy.GeoVector(BODY_MAP[planet], prevTime, true);
+      const prevEcl = Astronomy.Ecliptic(prevGeo);
+      let diff = longitude - prevEcl.elon;
+      if (diff > 180) diff -= 360;
+      if (diff < -180) diff += 360;
+      isRetrograde = diff < 0;
     }
 
-    return { planet, longitude };
+    return { planet, longitude, isRetrograde };
   });
 }
 
@@ -212,6 +223,7 @@ export interface PlanetPosition {
   house: number;
   dignity: Dignity;
   interpretation: string;
+  isRetrograde: boolean;
 }
 
 export interface AstrologyResult {
@@ -274,7 +286,7 @@ export function calculateNatalChart(
   const houses = calculateHouses(year, month, day, hour, minute);
   const risingIdx = Math.floor(houses.asc / 30) % 12;
 
-  const planets: PlanetPosition[] = rawPositions.map((p) => {
+    const planets: PlanetPosition[] = rawPositions.map((p) => {
     const lng = ((p.longitude % 360) + 360) % 360;
     const signIdx = Math.floor(lng / 30) % 12;
     const degree = Math.round((lng % 30) * 100) / 100;
@@ -290,10 +302,13 @@ export function calculateNatalChart(
     else if (dignity === "데트리먼트(detriment)") dignityNote = " [데트리먼트 - 약화됨]";
     else if (dignity === "추락(fall)") dignityNote = " [추락 - 최약화]";
 
+    const retrogradeNote = p.isRetrograde ? " [역행 ℞]" : "";
+
     return {
       planet: p.planet, sign, signEnglish: ZODIAC_ENGLISH[signIdx],
       degree, absoluteDegree: lng, house, dignity,
-      interpretation: `${p.planet}(${meaning.keyword}) ${sign} ${degree}° ${house}하우스${dignityNote} → ${meaning.domain}이 ${signMeaning}한 방식으로 표현.`,
+      isRetrograde: p.isRetrograde,
+      interpretation: `${p.planet}(${meaning.keyword}) ${sign} ${degree}° ${house}하우스${dignityNote}${retrogradeNote} → ${meaning.domain}이 ${signMeaning}한 방식으로 표현.`,
     };
   });
 
@@ -336,7 +351,7 @@ export function calculateNatalChart(
     `태양: ${sunSign}(${planets[0].degree}°) → ${SIGN_MEANINGS[sunSign].split(".")[0]}`,
     `달: ${moonSign}(${planets[1].degree}°) → 감정이 ${SIGN_MEANINGS[moonSign].split(",")[0]}`,
     `상승궁: ${risingSign} → 첫인상이 ${SIGN_MEANINGS[risingSign].split(",")[0]}`,
-    `지배 원소: ${dominantElement}(${elements[dominantElement].toFixed(1)}) / 특질: ${dominantQuality}`,
+    `지배 원소: ${dominantElement}(${elementEntries[0][1].toFixed(1)}) / 특질: ${dominantQuality}`,
     dignityReport.length > 0 ? `디그니티: ${dignityReport.join(", ")}` : "",
   ].filter(Boolean).join("\n");
 
