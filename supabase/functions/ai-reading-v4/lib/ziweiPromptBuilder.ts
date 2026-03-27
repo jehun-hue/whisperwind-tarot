@@ -16,6 +16,19 @@ export function buildZiWeiPromptSection(ziwei: ZiweiResult): string {
     lines.push(`  강점: ${ct.strengths.join(", ")}`);
     lines.push(`  약점: ${ct.weaknesses.join(", ")}`);
   }
+
+  // ── 래인궁 (Lai Yin Gong) ──
+  if ((ziwei as any).laiYinAnalysis) {
+    const la = (ziwei as any).laiYinAnalysis;
+    lines.push("");
+    lines.push("[래인궁(來因宮) — 인생의 출발점]");
+    lines.push(`  래인궁: ${la.laiYinGong} (${la.laiYinStar}의 화록이 떨어진 궁)`);
+    lines.push(`  인생 주제: ${la.lifeTheme}`);
+    lines.push(`  체궁(體): ${la.tiGong} | 용궁(用): ${la.yongGong}`);
+    lines.push(`  체용 관계: ${la.tiYongRelation}`);
+    lines.push("");
+    lines.push("★ 래인궁 해석 지침: 래인궁은 이 사람 인생의 '진짜 출발점'입니다. 명궁이 아닌 래인궁의 별과 사화를 중심으로 인생 전체의 방향을 해석하세요. 래인궁에 화기가 함께 있으면 '복과 장애가 공존하는 복잡한 인생'으로, 화록만 있으면 '순탄한 출발'로 해석합니다.");
+  }
   
   // 종합 점수 (Server version might not have overallScore yet, so we guard it)
   if ((ziwei as any).overallScore) {

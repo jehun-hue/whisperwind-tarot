@@ -86,6 +86,15 @@ export interface FlyingChain {
   meaning: string;
 }
 
+export interface LaiYinAnalysis {
+  laiYinGong: string;           // 래인궁 이름 (화록이 떨어진 궁)
+  laiYinStar: string;           // 화록 대상 별
+  tiGong: string;               // 체궁 (래인궁의 삼방사정 중 본체)
+  yongGong: string;             // 용궁 (래인궁의 대궁)
+  tiYongRelation: string;       // 체용 관계 해석
+  lifeTheme: string;            // 인생 주제 한줄 요약
+}
+
 // ─── 기존 타입 ───
 export type StarBrightness = "묘" | "왕" | "득지" | "평화" | "함지" | "낙함";
 export type Bureau = "수이국" | "목삼국" | "금사국" | "토오국" | "화육국";
@@ -145,6 +154,9 @@ export interface ZiWeiResult {
     rokChain: FlyingChain[];
     interpretation: string;
   }[];
+
+  // Tier 3: Lai Yin Gong (Origin Palace) Analysis
+  laiYinAnalysis: LaiYinAnalysis;
 
   // 격국 분석 (2단계 추가)
   starCombinations: { palace: string; name: string; rating: string; interpretation: string }[];
@@ -1172,6 +1184,57 @@ function traceSiHuaChain(
   return { giChain, rokChain };
 }
 
+// ─── Tier 3: 래인궁(來인궁) + 체용(體用) 분석 ───
+function analyzeLaiYin(
+  yearGanIdx: number,
+  mingGongIdx: number,
+  starPositionMap: Map<string, number>
+): LaiYinAnalysis {
+  // 1. 생년 천간에서 화록 대상 별 찾기
+  const yearStem = STEMS[yearGanIdx];
+  const table = TRANSFORMATION_TABLE[yearStem];
+  const rokStar = table["화록"];
+
+  // 2. 화록 별이 어느 궁에 있는지 찾기 → 래인궁
+  const rokPos = starPositionMap.get(rokStar);
+  const laiYinPalaceIdx = rokPos !== undefined ? ((mingGongIdx - rokPos + 12) % 12) : 0;
+  const laiYinGong = PALACES[laiYinPalaceIdx];
+
+  // 3. 체궁 = 래인궁 자체 (본체)
+  // 4. 용궁 = 래인궁의 대궁 (작용하는 곳)
+  const yongPalaceIdx = (laiYinPalaceIdx + 6) % 12;
+  const yongGong = PALACES[yongPalaceIdx];
+
+  // 5. 체용 관계 해석
+  const PALACE_LIFE_THEME: Record<string, string> = {
+    명궁: "자아 실현이 인생의 출발점, 스스로의 능력으로 길을 개척",
+    형제궁: "형제·동료와의 인연이 인생을 좌우, 협력이 핵심",
+    부처궁: "배우자·파트너가 인생의 전환점, 관계를 통한 성장",
+    자녀궁: "자녀·창작·투자가 인생의 중심축, 생산적 활동이 관건",
+    재백궁: "재물·경제활동이 인생의 원동력, 돈의 흐름이 운명을 결정",
+    질액궁: "건강이 모든 것의 기반, 몸을 돌보는 것이 최우선",
+    천이궁: "외부 환경·이동·변화가 인생을 움직이는 힘",
+    노복궁: "인맥·부하·사회적 관계가 성공의 열쇠",
+    관록궁: "직업·사회적 성취가 인생의 핵심 목표",
+    전택궁: "가정·부동산·안정된 기반이 인생의 토대",
+    복덕궁: "내면의 만족·정신적 풍요가 인생의 진정한 가치",
+    부모궁: "부모·스승·윗사람의 영향이 인생의 방향을 결정"
+  };
+
+  const lifeTheme = PALACE_LIFE_THEME[laiYinGong] || "다양한 요소가 복합적으로 작용";
+
+  const tiYongRelation = `체궁(${laiYinGong})은 당신의 본질이고, 용궁(${yongGong})은 그것이 실제로 발현되는 영역입니다. ${laiYinGong}의 별이 강하면 내면이 탄탄하고, ${yongGong}의 별이 강하면 외부적 성과가 두드러집니다.`;
+
+  return {
+    laiYinGong,
+    laiYinStar: rokStar,
+    tiGong: laiYinGong,
+    yongGong,
+    tiYongRelation,
+    lifeTheme
+  };
+}
+
 // ─── 사화 계산 (생년 천간 기준) ───
 function calculateNatalTransformations(
   yearGanIdx: number,
@@ -2039,6 +2102,16 @@ export function calculateZiWei(
   // 대한 인사이트
   const overallScore = calculateOverallScores(palaces, geokGuk);
 
+  // ─── 별 위치 맵 생성 (Tier 2/3 공용) ───
+  const starPositionMap = new Map<MajorStar | AuxiliaryStar, number>();
+  const stringStarPosMap = new Map<string, number>();
+  for (const [pos, stars] of totalStarMap.entries()) {
+    for (const s of stars) {
+      starPositionMap.set(s, pos);
+      stringStarPosMap.set(s, pos);
+    }
+  }
+
   const result: ZiWeiResult = {
     mingGong: BRANCHES[mingGongIdx],
     shenGong: BRANCHES[shenGongIdx],
@@ -2059,16 +2132,10 @@ export function calculateZiWei(
     chartType: classifyChartType(mingGongIdx, totalStarMap),
     palaceFlyingSiHua: [],
     siHuaChainAnalysis: [],
+    laiYinAnalysis: analyzeLaiYin(yearGanIdx, mingGongIdx, stringStarPosMap),
   };
 
   // ─── Tier 2: 궁간사화 실행 (명궁/관록궁/재백궁/부처궁/복덕궁) ───
-  const starPositionMap = new Map<MajorStar | AuxiliaryStar, number>();
-  for (const [pos, stars] of totalStarMap.entries()) {
-    for (const s of stars) {
-      starPositionMap.set(s, pos);
-    }
-  }
-
   const targetPalaceNames: PalaceName[] = ["명궁", "관록궁", "재백궁", "부처궁", "복덕궁"];
   for (const pName of targetPalaceNames) {
     const palaceIdx = ((mingGongIdx - PALACES.indexOf(pName) + 12) % 12);
@@ -2082,12 +2149,6 @@ export function calculateZiWei(
   }
 
   // ─── Tier 3: 삼대기추적 실행 (명궁/관록궁) ───
-  // starPositionMap을 Map<string, number> 형태로 변환하여 traceSiHuaChain에 전달
-  const stringStarPosMap = new Map<string, number>();
-  for (const [star, pos] of starPositionMap.entries()) {
-    stringStarPosMap.set(star, pos);
-  }
-
   for (const pName of ["명궁", "관록궁"] as PalaceName[]) {
     const palaceIdx = ((mingGongIdx - PALACES.indexOf(pName) + 12) % 12);
     const { giChain, rokChain } = traceSiHuaChain(palaceIdx, yearGanIdx, mingGongIdx, stringStarPosMap);
