@@ -1,4 +1,4 @@
-﻿console.log("[BOOT] Edge function starting...");
+console.log("[BOOT] Edge function starting...");
 /**
  * index.ts
  * - Production AI Symbolic Prediction Engine Platform (v8).
@@ -9,6 +9,8 @@ import { runFullProductionEngineV8, fetchGeminiStream } from "./integratedReadin
 import { processChat } from "./interactivityLayer.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { runCompatibilityEngine } from "./lib/compatibilityEngine.ts";
+import { calculateSaju } from "./lib/sajuEngine.ts";
+import { lunarToSolarAccurate } from "./lunarData.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -91,6 +93,33 @@ serve(async (req: Request) => {
           "X-Content-Type-Options": "nosniff",
           "Transfer-Encoding": "chunked",
         },
+      });
+    }
+
+    if (mode === "saju-only") {
+      console.log("[INFO][SajuOnly] saju-only 모드 시작");
+      const { year, month, day, hour, minute, gender, longitude, isLunar, hasTime } = payload;
+      
+      let solarYear = year, solarMonth = month, solarDay = day;
+      if (isLunar) {
+        try {
+          const converted = lunarToSolarAccurate(year, month, day);
+          solarYear = converted.year;
+          solarMonth = converted.month;
+          solarDay = converted.day;
+          console.log(`[Lunar→Solar] ${year}-${month}-${day} → ${solarYear}-${solarMonth}-${solarDay}`);
+        } catch (e: any) {
+          console.error(`[LunarError] 음력 변환 실패: ${e.message}`);
+        }
+      }
+      
+      const sajuResult = calculateSaju(
+        solarYear, solarMonth, solarDay, hour ?? 12, minute ?? 0,
+        gender || "male", longitude ?? 126.9780, hasTime ?? true
+      );
+      
+      return new Response(JSON.stringify({ status: "ok", sajuResult }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 

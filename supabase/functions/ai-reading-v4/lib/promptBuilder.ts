@@ -52,6 +52,9 @@ export function buildReadingPrompt(
 
   // ── 데이터 추출 및 정규화 (전역 사용을 위해 상단 배치) ──
   const s = saju || {} as any;
+  if (!s.dayMaster && !s.pillars) {
+    console.warn("[WARN] 서버 사주 데이터 없음 — DB 폴백 또는 클라이언트 간이엔진 데이터 사용 중. 절기 미반영으로 정확도 저하 가능.");
+  }
 
   // 일주(日柱) 프로필 주입
   const dayPillarFull = s?.fourPillars?.day?.full 

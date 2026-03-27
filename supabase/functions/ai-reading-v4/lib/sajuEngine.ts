@@ -137,48 +137,49 @@ export function calculateSaju(
     strengthScore / 100
   );
 
-  // 12. 5신(五神) 도출 (정밀 로직)
-  const isExtremeStrong = strength === "극신강";
-  const isStrong = strength === "신강";
-  const isNeutral = strength === "중화";
-  const isWeak = strength === "신약";
-  const isExtremeWeak = strength === "극신약";
-
+  // 12. 5신(五神) — 결핍 기반 도출
   const dmElement = FIVE_ELEMENTS_MAP[dayMaster];
-  const KR_EL_MAP: Record<string, string> = { wood: "木", fire: "火", earth: "土", metal: "金", water: "水" };
-  const EN_EL_MAP: Record<string, string> = { "木": "wood", "火": "fire", "土": "earth", "金": "metal", "水": "water" };
+  const KR_EL_MAP: Record<string, string> = { wood: "木", fire: "火", earth: "土", metal: "金", water: "水" };
+  const ENG_EL_MAP: Record<string, string> = { "木": "wood", "火": "fire", "土": "earth", "金": "metal", "水": "water" };
   const dmElKR = KR_EL_MAP[dmElement];
   
-  const GEN: Record<string, string> = { "木": "火", "火": "土", "土": "金", "金": "水", "水": "木" };
-  const CON: Record<string, string> = { "木": "土", "火": "金", "土": "水", "金": "木", "水": "火" };
-  const GEN_BY: Record<string, string> = { "火": "木", "土": "火", "金": "土", "水": "金", "木": "水" };
-  const CON_BY: Record<string, string> = { "土": "木", "金": "火", "수": "土", "木": "金", "火": "水" };
+  const GEN: Record<string, string> = { "木": "火", "火": "土", "土": "金", "金": "水", "水": "木" };
+  const CON: Record<string, string> = { "木": "土", "火": "金", "土": "水", "金": "木", "水": "火" };
+  const GEN_BY: Record<string, string> = { "火": "木", "土": "火", "金": "土", "水": "金", "木": "水" };
+  const CON_BY: Record<string, string> = { "土": "木", "金": "火", "水": "土", "木": "金", "火": "水" };
 
   let yongShin: string;
+
   if (gyeokResult.type === "외격" && gyeokResult.yongShinElement) {
+    // 종격: 격국 엔진 결과 우선
     yongShin = gyeokResult.yongShinElement;
+  } else if (strength === "극신약" || strength === "신약") {
+    // 신약: 비겁 vs 인성 중 사주 내 더 부족한 쪽이 용신
+    const bigyeop = dmElKR;
+    const insung = GEN_BY[dmElKR];
+    const bigyeopCount = elementsCount[ENG_EL_MAP[bigyeop]] || 0;
+    const insungCount = elementsCount[ENG_EL_MAP[insung]] || 0;
+    yongShin = bigyeopCount <= insungCount ? bigyeop : insung;
+  } else if (strength === "중화") {
+    yongShin = dmElKR;
   } else {
-    if (isWeak || isExtremeWeak) {
-      // 신약: 비겁(dmElKR) 또는 인성(GEN_BY[dmElKR]) 중 부족한 쪽
-      const biCount = elementsCount[EN_EL_MAP[dmElKR] || "wood"] || 0;
-      const inCount = elementsCount[EN_EL_MAP[GEN_BY[dmElKR]] || "wood"] || 0;
-      yongShin = (biCount <= inCount) ? dmElKR : GEN_BY[dmElKR];
-    } else if (isNeutral) {
-      yongShin = dmElKR;
-    } else {
-      // 신강: 식상(GEN[dmElKR]) 또는 관성(CON_BY[dmElKR]) 중 부족한 쪽
-      const sikCount = elementsCount[EN_EL_MAP[GEN[dmElKR]] || "wood"] || 0;
-      const gwanCount = elementsCount[EN_EL_MAP[CON_BY[dmElKR]] || "wood"] || 0;
-      yongShin = (sikCount <= gwanCount) ? GEN[dmElKR] : CON_BY[dmElKR];
-    }
+    // 신강/극신강: 식상 vs 관성 중 더 부족한 쪽
+    const sikSang = GEN[dmElKR];
+    const gwanSung = CON_BY[dmElKR];
+    const sikCount = elementsCount[ENG_EL_MAP[sikSang]] || 0;
+    const gwanCount = elementsCount[ENG_EL_MAP[gwanSung]] || 0;
+    yongShin = sikCount <= gwanCount ? sikSang : gwanSung;
   }
 
-  // 5신 순서: 용신 -> 희신(생) -> 기신(극) -> 구신(기신생) -> 한신
+  // 5신 체계: 용신 → 희신(용신을 생하는 것) → 기신(용신을 극하는 것)
+  //           → 구신(기신을 생하는 것) → 한신(나머지)
   const heeShin = GEN_BY[yongShin];
   const giShin = CON_BY[yongShin];
   const guShin = GEN_BY[giShin];
-  const allElements = ["木", "火", "土", "金", "水"];
-  const hanShin = allElements.find(e => ![yongShin, heeShin, giShin, guShin].includes(e)) || "木";
+  // 한신 = 5행 중 나머지
+  const allElements = ["木", "火", "土", "金", "水"];
+  const usedElements = [yongShin, heeShin, giShin, guShin];
+  const hanShin = allElements.find(e => !usedElements.includes(e)) || GEN[dmElKR];
 
   // 13. 운세(Fortune)
   const fortune = calculateFortune(
