@@ -30,12 +30,14 @@ for (const tc of testCases) {
 
 console.log(`\nResult: ${passed}/${testCases.length} Passed`);
 
-if (passed === testCases.length) {
-  // Check output extension
-  const sample = calculateSaju(1990, 3, 15, 23, 0);
-  console.log("\n=== Output Extension Check (Case 3) ===");
-  console.log(`TenGods:`, sample.tenGods);
-  console.log(`YongShin: ${sample.yongShin}, HeeShin: ${sample.heeShin}`);
+if (passed > 0) {
+  // Check output extension (Picking a case)
+  const sample = calculateSaju(1985, 8, 8, 15, 0);
+  console.log("\n=== Output Extension Check (Case 1) ===");
+  console.log(`Pillars: ${sample.year.stem}${sample.year.branch} ${sample.month.stem}${sample.month.branch} ${sample.day.stem}${sample.day.branch} ${sample.hour.stem}${sample.hour.branch}`);
+  console.log(`Strength: ${sample.strength}`);
   console.log(`Gyeokguk: ${sample.gyeokguk.name}`);
+  console.log(`YongShin: ${sample.yongShin}, HeeShin: ${sample.heeShin}, GiShin: ${sample.giShin}, GuShin: ${sample.guShin}, HanShin: ${sample.hanShin}`);
+  console.log(`TenGods:`, sample.tenGods);
   console.log(`Fortune Rating: ${sample.fortune.seun.rating}`);
 }

@@ -18,10 +18,6 @@ import { determineGyeokguk } from "./gyeokguk.ts";
 import { calculateFortune } from "./fortuneEngine.ts";
 
 export type YajasiMode = 'change_day' | 'keep_day';
-import { determineGyeokguk } from "./gyeokguk.ts";
-import { calculateFortune } from "./fortuneEngine.ts";
-
-export type YajasiMode = 'change_day' | 'keep_day';
 
 export interface SajuPillar {
   stem: string;
@@ -141,24 +137,48 @@ export function calculateSaju(
     strengthScore / 100
   );
 
-  // 12. 5신(五神) 도출 (사용자 규칙 기반)
-  const isStrong = strength.includes("강") || strength === "중화";
+  // 12. 5신(五神) 도출 (정밀 로직)
+  const isExtremeStrong = strength === "극신강";
+  const isStrong = strength === "신강";
+  const isNeutral = strength === "중화";
+  const isWeak = strength === "신약";
+  const isExtremeWeak = strength === "극신약";
+
   const dmElement = FIVE_ELEMENTS_MAP[dayMaster];
   const KR_EL_MAP: Record<string, string> = { wood: "木", fire: "火", earth: "土", metal: "金", water: "水" };
+  const EN_EL_MAP: Record<string, string> = { "木": "wood", "火": "fire", "土": "earth", "金": "metal", "水": "water" };
   const dmElKR = KR_EL_MAP[dmElement];
   
   const GEN: Record<string, string> = { "木": "火", "火": "土", "土": "金", "金": "水", "水": "木" };
   const CON: Record<string, string> = { "木": "土", "火": "金", "土": "水", "金": "木", "水": "火" };
   const GEN_BY: Record<string, string> = { "火": "木", "土": "火", "金": "土", "水": "金", "木": "水" };
-  const CON_BY: Record<string, string> = { "土": "木", "金": "火", "水": "土", "木": "金", "火": "水" };
+  const CON_BY: Record<string, string> = { "土": "木", "金": "火", "수": "土", "木": "金", "火": "水" };
 
-  // 신강: 용신=극하는것(관성), 기신=생하는것(인성)
-  // 신약: 용신=생하는것(인성), 기신=극하는것(관성)
-  const yongShin = gyeokResult.yongShinElement || (isStrong ? CON[dmElKR] : GEN_BY[dmElKR]);
-  const heeShin = isStrong ? GEN[dmElKR] : dmElKR; 
-  const giShin = isStrong ? GEN_BY[dmElKR] : CON[dmElKR];
-  const guShin = isStrong ? dmElKR : CON_BY[dmElKR];
-  const hanShin = isStrong ? CON_BY[dmElKR] : GEN[dmElKR];
+  let yongShin: string;
+  if (gyeokResult.type === "외격" && gyeokResult.yongShinElement) {
+    yongShin = gyeokResult.yongShinElement;
+  } else {
+    if (isWeak || isExtremeWeak) {
+      // 신약: 비겁(dmElKR) 또는 인성(GEN_BY[dmElKR]) 중 부족한 쪽
+      const biCount = elementsCount[EN_EL_MAP[dmElKR] || "wood"] || 0;
+      const inCount = elementsCount[EN_EL_MAP[GEN_BY[dmElKR]] || "wood"] || 0;
+      yongShin = (biCount <= inCount) ? dmElKR : GEN_BY[dmElKR];
+    } else if (isNeutral) {
+      yongShin = dmElKR;
+    } else {
+      // 신강: 식상(GEN[dmElKR]) 또는 관성(CON_BY[dmElKR]) 중 부족한 쪽
+      const sikCount = elementsCount[EN_EL_MAP[GEN[dmElKR]] || "wood"] || 0;
+      const gwanCount = elementsCount[EN_EL_MAP[CON_BY[dmElKR]] || "wood"] || 0;
+      yongShin = (sikCount <= gwanCount) ? GEN[dmElKR] : CON_BY[dmElKR];
+    }
+  }
+
+  // 5신 순서: 용신 -> 희신(생) -> 기신(극) -> 구신(기신생) -> 한신
+  const heeShin = GEN_BY[yongShin];
+  const giShin = CON_BY[yongShin];
+  const guShin = GEN_BY[giShin];
+  const allElements = ["木", "火", "土", "金", "水"];
+  const hanShin = allElements.find(e => ![yongShin, heeShin, giShin, guShin].includes(e)) || "木";
 
   // 13. 운세(Fortune)
   const fortune = calculateFortune(
