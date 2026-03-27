@@ -1,4 +1,4 @@
-import type { ZiweiResult } from "./ziweiEngine.ts";
+import { type ZiweiResult, STAR_PALACE_MEANINGS } from "./ziweiEngine.ts";
 
 /**
  * 자미두수 분석 결과를 AI 프롬프트용 구조화 텍스트로 변환
@@ -9,6 +9,13 @@ export function buildZiWeiPromptSection(ziwei: ZiweiResult): string {
   // ── 기본 정보 ──
   lines.push("=== 자미두수(紫微斗數) 명반 분석 ===");
   lines.push(`명궁: ${ziwei.mingGong} | 신궁: ${ziwei.shenGong} | 오행국: ${ziwei.bureau}`);
+  
+  if ((ziwei as any).chartType) {
+    const ct = (ziwei as any).chartType;
+    lines.push(`명반 유형: ${ct.name}(${ct.code}) — ${ct.description}`);
+    lines.push(`  강점: ${ct.strengths.join(", ")}`);
+    lines.push(`  약점: ${ct.weaknesses.join(", ")}`);
+  }
   
   // 종합 점수 (Server version might not have overallScore yet, so we guard it)
   if ((ziwei as any).overallScore) {
@@ -43,6 +50,22 @@ export function buildZiWeiPromptSection(ziwei: ZiweiResult): string {
     lines.push(`  ${t.type}: ${t.star} → ${t.palace} (${t.description})`);
   }
 
+  // ── 궁간사화 (Flying Star) ──
+  if ((ziwei as any).palaceFlyingSiHua && (ziwei as any).palaceFlyingSiHua.length > 0) {
+    lines.push("");
+    lines.push("[궁간사화(飛星四化) — 인과관계 분석]");
+    for (const pf of (ziwei as any).palaceFlyingSiHua) {
+      if (pf.flights.length > 0) {
+        lines.push(`  ${pf.palace}(${pf.stem}간):`);
+        for (const f of pf.flights) {
+          lines.push(`    ${f.type}: ${f.star} → ${f.toPalace} (${f.meaning})`);
+        }
+      }
+    }
+    lines.push("");
+    lines.push("★ 궁간사화 해석 지침: 화기(忌)가 날아간 궁은 '문제의 원인'이고, 화록(祿)이 날아간 궁은 '해결의 실마리'입니다. 명궁에서 화기가 재백궁으로 가면 '자기 자신의 성격이 재물 손실의 원인', 관록궁에서 화록이 부처궁으로 가면 '직업을 통해 좋은 인연을 만남'으로 해석하세요.");
+  }
+
   // ── 12궁 요약 (명궁, 재백궁, 관록궁, 부처궁, 질액궁만 핵심) ──
   lines.push("");
   lines.push("[핵심 궁위 분석]");
@@ -62,6 +85,13 @@ export function buildZiWeiPromptSection(ziwei: ZiweiResult): string {
 
       lines.push(`  ${palace.name}(${palace.branch}):`);
       if (majorStars) lines.push(`    주성: ${majorStars}`);
+      
+      // 주성 궁별 해석 추가 (Tier 2-2)
+      const firstMajorStar = (palace.stars || []).find(s => STAR_PALACE_MEANINGS[s.star])?.star;
+      if (firstMajorStar && STAR_PALACE_MEANINGS[firstMajorStar]?.[palace.name]) {
+        lines.push(`    핵심의미: ${STAR_PALACE_MEANINGS[firstMajorStar][palace.name]}`);
+      }
+
       if (auxStars) lines.push(`    보조성: ${auxStars}`);
       if (trans) lines.push(`    사화: ${trans}`);
       if (shenSha) lines.push(`    신살: ${shenSha}`);
@@ -115,9 +145,9 @@ export function buildZiWeiPromptSection(ziwei: ZiweiResult): string {
       lines.push(`  유년사화: ${ya.flowYearTransformations.map((t: any) => `${t.type}(${t.star})`).join(", ")}`);
     }
     if (ya.dahanOverlap && ya.dahanOverlap.length > 0)
-      lines.push(`  대한 겹침: ya.dahanOverlap.join(", ")`);
+      lines.push(`  대한 겹침: ${ya.dahanOverlap.join(", ")}`);
     if (ya.natalOverlap && ya.natalOverlap.length > 0)
-      lines.push(`  본명 겹침: ya.natalOverlap.join(", ")`);
+      lines.push(`  본명 겹침: ${ya.natalOverlap.join(", ")}`);
     lines.push(`  해석: ${ya.interpretation.slice(0, 200)}`);
   } else if (ziwei.annualTransformations && ziwei.annualTransformations.length > 0) {
     lines.push("");
