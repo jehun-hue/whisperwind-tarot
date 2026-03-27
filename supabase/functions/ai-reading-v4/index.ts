@@ -10,7 +10,7 @@ import { processChat } from "./interactivityLayer.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { runCompatibilityEngine } from "./lib/compatibilityEngine.ts";
 import { calculateSaju } from "./lib/sajuEngine.ts";
-import { lunarToSolarAccurate } from "./lib/lunarData.ts";
+import { lunarToSolarAccurate } from "./lunarData.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
