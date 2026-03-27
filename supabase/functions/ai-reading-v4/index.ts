@@ -9,7 +9,7 @@ import { runFullProductionEngineV8, fetchGeminiStream } from "./integratedReadin
 import { processChat } from "./interactivityLayer.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { runCompatibilityEngine } from "./lib/compatibilityEngine.ts";
-import { calculateSaju } from "./lib/sajuEngine.ts";
+import { calculateSaju } from "./calculateSaju.ts";
 import { lunarToSolarAccurate } from "./lunarData.ts";
 
 const corsHeaders = {

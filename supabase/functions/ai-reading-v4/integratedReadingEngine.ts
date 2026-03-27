@@ -771,7 +771,6 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
 
   // Step 1: Physical Calculation Pipeline
     // === 미세사항3: 음력 입력 방어 코드 ===
-    const rawBirth = input.birthInfo || {};
     const isLunarInput = rawBirth.isLunar === true || rawBirth.calendar === 'lunar' || rawBirth.calendarType === 'lunar';
     let sajuYear = rawBirth.year || rawBirth.birthYear;
     let sajuMonth = rawBirth.month || rawBirth.birthMonth;
