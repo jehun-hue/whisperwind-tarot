@@ -66,6 +66,27 @@ export function buildZiWeiPromptSection(ziwei: ZiweiResult): string {
     lines.push("★ 궁간사화 해석 지침: 화기(忌)가 날아간 궁은 '문제의 원인'이고, 화록(祿)이 날아간 궁은 '해결의 실마리'입니다. 명궁에서 화기가 재백궁으로 가면 '자기 자신의 성격이 재물 손실의 원인', 관록궁에서 화록이 부처궁으로 가면 '직업을 통해 좋은 인연을 만남'으로 해석하세요.");
   }
 
+  // ── 삼대기추적 (Chain Analysis) ──
+  if ((ziwei as any).siHuaChainAnalysis) {
+    lines.push("");
+    lines.push("[삼대기추적(三代忌追蹤) — 운명의 인과 체인]");
+    for (const chain of (ziwei as any).siHuaChainAnalysis) {
+      lines.push(`  ${chain.palace}:`);
+      if (chain.giChain && chain.giChain.length > 0) {
+        const giPath = chain.giChain.map((c: any) => `${c.fromPalace}→${c.toPalace}`).join(" → ");
+        lines.push(`    화기(忌) 경로: ${giPath}`);
+        lines.push(`    → 해석: ${chain.giChain[chain.giChain.length - 1].meaning}`);
+      }
+      if (chain.rokChain && chain.rokChain.length > 0) {
+        const rokPath = chain.rokChain.map((c: any) => `${c.fromPalace}→${c.toPalace}`).join(" → ");
+        lines.push(`    화록(祿) 경로: ${rokPath}`);
+        lines.push(`    → 해석: ${chain.rokChain[chain.rokChain.length - 1].meaning}`);
+      }
+    }
+    lines.push("");
+    lines.push("★ 삼대기추적 해석 지침: 화기 체인의 최종 도착궁이 '근본 원인'입니다. 예: 명궁→재백궁→질액궁이면 '성격 문제가 돈 문제를 일으키고, 결국 건강까지 해친다'고 해석하세요. 화록 체인의 최종 도착궁은 '궁극적 해결처'입니다.");
+  }
+
   // ── 12궁 요약 (명궁, 재백궁, 관록궁, 부처궁, 질액궁만 핵심) ──
   lines.push("");
   lines.push("[핵심 궁위 분석]");

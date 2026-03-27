@@ -77,6 +77,15 @@ export interface FlyingResult {
   meaning: string;
 }
 
+export interface FlyingChain {
+  depth: number;           // 1차, 2차, 3차
+  fromPalace: string;
+  toPalace: string;
+  type: TransformationType;
+  star: string;
+  meaning: string;
+}
+
 // ─── 기존 타입 ───
 export type StarBrightness = "묘" | "왕" | "득지" | "평화" | "함지" | "낙함";
 export type Bureau = "수이국" | "목삼국" | "금사국" | "토오국" | "화육국";
@@ -127,6 +136,14 @@ export interface ZiWeiResult {
     palace: string;
     stem: string;
     flights: FlyingResult[];
+  }[];
+
+  // Tier 3: Three Generations of Flying Stars (Chain Analysis)
+  siHuaChainAnalysis: {
+    palace: string;
+    giChain: FlyingChain[];
+    rokChain: FlyingChain[];
+    interpretation: string;
   }[];
 
   // 격국 분석 (2단계 추가)
@@ -1085,6 +1102,76 @@ function flyPalaceSiHua(
   return results;
 }
 
+// ─── Tier 3: 삼대기추적 (Chain Analysis) ───
+function traceSiHuaChain(
+  startPalaceIdx: number,
+  yearGanIdx: number,
+  mingGongIdx: number,
+  starPositionMap: Map<string, number>,
+  maxDepth: number = 3
+): { giChain: FlyingChain[], rokChain: FlyingChain[] } {
+  const giChain: FlyingChain[] = [];
+  const rokChain: FlyingChain[] = [];
+
+  let currentIdx = startPalaceIdx;
+  for (let depth = 1; depth <= maxDepth; depth++) {
+    const stem = getPalaceGan(yearGanIdx, currentIdx);
+    const table = TRANSFORMATION_TABLE[stem];
+    if (!table) break;
+
+    // 화기 추적
+    const giStar = table["화기"];
+    const giTargetPos = starPositionMap.get(giStar);
+    if (giTargetPos !== undefined) {
+      const fromName = PALACES[((mingGongIdx - currentIdx + 12) % 12)];
+      const toName = PALACES[((mingGongIdx - giTargetPos + 12) % 12)];
+      giChain.push({
+        depth,
+        fromPalace: fromName,
+        toPalace: toName,
+        type: "화기",
+        star: giStar,
+        meaning: depth === 1
+          ? `${fromName}의 문제가 ${toName}에서 발현`
+          : `${depth}차 연쇄: ${fromName}의 기운이 ${toName}까지 영향`
+      });
+      if (depth < maxDepth) {
+        currentIdx = giTargetPos;
+      } else break;
+    } else break;
+  }
+
+  // 화록도 동일하게 추적 (currentIdx를 startPalaceIdx로 리셋)
+  currentIdx = startPalaceIdx;
+  for (let depth = 1; depth <= maxDepth; depth++) {
+    const stem = getPalaceGan(yearGanIdx, currentIdx);
+    const table = TRANSFORMATION_TABLE[stem];
+    if (!table) break;
+
+    const rokStar = table["화록"];
+    const rokTargetPos = starPositionMap.get(rokStar);
+    if (rokTargetPos !== undefined) {
+      const fromName = PALACES[((mingGongIdx - currentIdx + 12) % 12)];
+      const toName = PALACES[((mingGongIdx - rokTargetPos + 12) % 12)];
+      rokChain.push({
+        depth,
+        fromPalace: fromName,
+        toPalace: toName,
+        type: "화록",
+        star: rokStar,
+        meaning: depth === 1
+          ? `${fromName}의 기회가 ${toName}에서 실현`
+          : `${depth}차 연쇄: ${fromName}의 복이 ${toName}까지 확장`
+      });
+      if (depth < maxDepth) {
+        currentIdx = rokTargetPos;
+      } else break;
+    } else break;
+  }
+
+  return { giChain, rokChain };
+}
+
 // ─── 사화 계산 (생년 천간 기준) ───
 function calculateNatalTransformations(
   yearGanIdx: number,
@@ -1971,6 +2058,7 @@ export function calculateZiWei(
     overallScore,
     chartType: classifyChartType(mingGongIdx, totalStarMap),
     palaceFlyingSiHua: [],
+    siHuaChainAnalysis: [],
   };
 
   // ─── Tier 2: 궁간사화 실행 (명궁/관록궁/재백궁/부처궁/복덕궁) ───
@@ -1990,6 +2078,26 @@ export function calculateZiWei(
       palace: pName,
       stem,
       flights,
+    });
+  }
+
+  // ─── Tier 3: 삼대기추적 실행 (명궁/관록궁) ───
+  // starPositionMap을 Map<string, number> 형태로 변환하여 traceSiHuaChain에 전달
+  const stringStarPosMap = new Map<string, number>();
+  for (const [star, pos] of starPositionMap.entries()) {
+    stringStarPosMap.set(star, pos);
+  }
+
+  for (const pName of ["명궁", "관록궁"] as PalaceName[]) {
+    const palaceIdx = ((mingGongIdx - PALACES.indexOf(pName) + 12) % 12);
+    const { giChain, rokChain } = traceSiHuaChain(palaceIdx, yearGanIdx, mingGongIdx, stringStarPosMap);
+    const giPath = giChain.map(c => c.toPalace).join("→");
+    const rokPath = rokChain.map(c => c.toPalace).join("→");
+    result.siHuaChainAnalysis.push({
+      palace: pName,
+      giChain,
+      rokChain,
+      interpretation: `화기 경로: ${giPath || "없음"}, 화록 경로: ${rokPath || "없음"}`,
     });
   }
 
