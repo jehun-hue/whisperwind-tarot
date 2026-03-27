@@ -10,3 +10,5 @@ export * from "./numerologyInterpretation.ts";
 export * from "./tarotInterpretation.ts";
 export * from "./ziweiInterpretation.ts";
 // export * from "./iljuMeanings.ts"; // ILJU_MEANINGS duplicate fix
+
+export { LIFE_PATH_MEANINGS, EXPRESSION_MEANINGS } from './numerologyInterpretation.ts';

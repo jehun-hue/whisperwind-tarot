@@ -1,5 +1,5 @@
 import { Signal, CrossSignal } from './signalExtractor.ts';
-import { ILJU_MEANINGS, TENGO_DEEP, GYEOKGUK_DEEP, TWELVE_STAGES_DEEP, YONGSIN_ADVICE, SINSAL_DEEP, DAEWOON_INTERACTION, INTERACTION_DEEP } from "./interpretations/index.ts";
+import { ILJU_MEANINGS, TENGO_DEEP, GYEOKGUK_DEEP, TWELVE_STAGES_DEEP, YONGSIN_ADVICE, SINSAL_DEEP, DAEWOON_INTERACTION, INTERACTION_DEEP, LIFE_PATH_MEANINGS, EXPRESSION_MEANINGS } from "./interpretations/index.ts";
 import { buildZiWeiPromptSection } from "./ziweiPromptBuilder.ts";
 import { runCrossValidation } from "./crossValidationEngine.ts";
 
@@ -530,23 +530,62 @@ ${topTransits}
 `;
 
   // ========================
-  // SECTION 4: NUMEROLOGY 핵심
+  // SECTION 4: NUMEROLOGY 핵심 — 🔧 FIX #5, #6 적용 가이드
   // ========================
   const currentPinnacle = (n.pinnacles || []).find((p: any) => {
     if (!p.period) return false;
     const match = p.period.match(/(\d+)세?\s*~\s*(종료|\d+)/);
     if (!match) return false;
     const start = parseInt(match[1]);
-    return start <= 40; // 현재 나이 기준 — 동적으로 계산 가능
+    const end = match[2] === '종료' ? 100 : parseInt(match[2]);
+    const age = s.currentAge || 40;
+    return age >= start && age <= end;
   }) || (n.pinnacles || []).slice(-1)[0] || {} as any;
 
-  const currentChallenge = (n.challenges || []).slice(-1)[0] || {} as any;
+  const currentChallenge = (n.challenges || []).find((p: any) => { // pinnacle과 동일한 로직 적용
+    if (!p.period) return false;
+    const match = p.period.match(/(\d+)세?\s*~\s*(종료|\d+)/);
+    if (!match) return false;
+    const start = parseInt(match[1]);
+    const end = match[2] === '종료' ? 100 : parseInt(match[2]);
+    const age = s.currentAge || 40;
+    return age >= start && age <= end;
+  }) || (n.challenges || []).slice(-1)[0] || {} as any;
+
+  // 🔧 FIX #6: 마스터넘버 심층 분석
+  const masterBlock = n.master_numbers?.length > 0 
+    ? `\n\n[보유 마스터넘버: ${n.master_numbers.join(', ')}]
+- 이분은 ${n.master_numbers.join('와 ')}의 강력한 마스터 진동을 보유하고 있습니다.
+- 이는 일반적인 수리보다 높은 차원의 영적 소명과 예민함을 의미하며, 리딩 시 이 특별한 잠재력을 반드시 언급하십시오.`
+    : '';
+
+  // 🔧 FIX #5: 카르마 부채 심층 분석
+  const karmicBlock = n.karmic_debt_details?.length > 0
+    ? `\n\n[주의: 카르마 부채(Karmic Debt) 감지]
+${n.karmic_debt_details.map((d: string) => `- ${d}`).join('\n')}
+- ★ 지시: 이 카르마적 과제는 성장을 위한 필수 관문이므로, 부정적으로만 치부하지 말고 '어떻게 행동해야 해소되는지' 조언하십시오.`
+    : '';
+
+  const lpMeaning = LIFE_PATH_MEANINGS[n.life_path_number];
+  const exMeaning = n.expressionNumber ? EXPRESSION_MEANINGS[n.expressionNumber] : null;
 
   const section4 = `
 === [SECTION 4] 수비학 (핵심) ===
 • 생명수: ${n.life_path_number || n.lifePath || '?'}${n.is_master_number ? ` (마스터넘버)` : ''} | 운명수: ${n.destiny_number || '?'} | 개인년: ${n.personal_year || '?'}
-• 현재 피너클: ${currentPinnacle.number || '?'} (${currentPinnacle.meaning || ''}) | 챌린지: ${currentChallenge.number || '?'} (${currentChallenge.meaning || ''})
-• 키워드: ${(n.vibrations || []).join(' / ') || '없음'}
+• 주요 수리: 표현수 ${n.expressionNumber || '?'}, 영혼충동수 ${n.soulUrgeNumber || '?'}, 성격수 ${n.personalityNumber || '?'}
+• 현재 피너클: ${currentPinnacle.number || '?'} (${currentPinnacle.meaning || ''} / ${currentPinnacle.period || ''})
+• 현재 챌린지: ${currentChallenge.number || '?'} (${currentChallenge.meaning || ''} / ${currentChallenge.period || ''})
+${lpMeaning ? `
+【생명수 본질: ${n.life_path_number}】
+• 핵심: ${lpMeaning.essence}
+• 성격적 특성: ${lpMeaning.personality}
+• 성장 과제: ${lpMeaning.growth}` : ''}
+${exMeaning ? `
+【표현수(사회적 활동/재능): ${n.expressionNumber}】
+• 재능: ${exMeaning.talent}
+• 인생 목표: ${exMeaning.life_purpose}
+• 도전 과제: ${exMeaning.challenge}` : ''}${masterBlock}${karmicBlock}
+• 진동/키워드: ${(n.vibrations || []).join(' / ') || '없음'}
 `;
 
   // ========================
