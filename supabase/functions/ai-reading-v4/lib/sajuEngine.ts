@@ -14,6 +14,14 @@ import { calculateTenGod, calculateTenGodBranch } from "./tenGods.ts";
 import { HIDDEN_STEMS } from "./fiveElements.ts";
 import { getKoreanTimezoneOffset } from "./timeUtils.ts";
 import { getDaewoonInfo } from "./daewoon.ts";
+import { determineGyeokguk } from "./gyeokguk.ts";
+import { calculateFortune } from "./fortuneEngine.ts";
+
+export type YajasiMode = 'change_day' | 'keep_day';
+import { determineGyeokguk } from "./gyeokguk.ts";
+import { calculateFortune } from "./fortuneEngine.ts";
+
+export type YajasiMode = 'change_day' | 'keep_day';
 
 export interface SajuPillar {
   stem: string;
@@ -30,7 +38,8 @@ export function calculateSaju(
   minute: number,
   gender: 'M' | 'F' = 'M',
   longitude: number = 127.5,
-  hasTime: boolean = true
+  hasTime: boolean = true,
+  yajasiMode: YajasiMode = 'keep_day'
 ) {
   // 1. Time correction (Handle UTC environment)
   const timezoneOffset = getKoreanTimezoneOffset(year, month, day); // 9 for KST, 10 for KDT
@@ -40,18 +49,23 @@ export function calculateSaju(
   const birthMomentUTC = wallClockUTC - (timezoneOffset * 60 * 60 * 1000);
   
   // Solar Mean Time (LMT) calculation
-  // Local Solar Time = UTC + (longitude / 15)
   const lmtMoment = birthMomentUTC + (longitude / 15) * 60 * 60 * 1000;
-  const correctedDate = new Date(lmtMoment);
+  let correctedDate = new Date(lmtMoment);
+  
+  // 야자시(夜子時) 처리: 23시 이후 날짜 변경 옵션
+  const lmtHour = correctedDate.getUTCHours();
+  if (lmtHour >= 23 && yajasiMode === 'change_day') {
+    correctedDate = new Date(lmtMoment + 2 * 60 * 60 * 1000); // 다음날로 넘기기 위해 충분한 시간(2시간) 추가
+  }
 
   const jd = calculateJulianDay(correctedDate);
   const sunLong = getSunLongitude(jd);
 
   // 2. Pillars
-  const yP = getYearPillar(correctedDate.getUTCFullYear(), jd);
+  const yP = getYearPillar(year, jd); // Year/Month depend on Solar Terms/JD
   const mP = getMonthPillar(sunLong, (yP.idx % 10));
   const dP = getDayPillar(jd);
-  const hP = getHourPillar((dP.idx % 10), correctedDate.getUTCHours());
+  const hP = getHourPillar((dP.idx % 10), lmtHour);
 
   const dayMaster = dP.stem;
 
@@ -112,6 +126,49 @@ export function calculateSaju(
                    strengthScore >= 45 ? "중화" :
                    strengthScore >= 30 ? "신약" : "극신약";
 
+  // 10. 십성 집계
+  const allTG = [yearTG.stem, yearTG.branch, monthTG.stem, monthTG.branch, dayTGBranch, hourTG.stem, hourTG.branch];
+  const tenGods: Record<string, number> = {
+    "비견": 0, "겁재": 0, "식신": 0, "상관": 0, "편재": 0, "정재": 0, "편관": 0, "정관": 0, "편인": 0, "정인": 0
+  };
+  allTG.forEach(tg => { if (tenGods[tg] !== undefined) tenGods[tg]++; });
+
+  // 11. 격국 & 용신
+  const gyeokResult = determineGyeokguk(
+    { year: [yP.stem, yP.branch], month: [mP.stem, mP.branch], day: [dP.stem, dP.branch], hour: [hP.stem, hP.branch] },
+    dayMaster,
+    tenGods,
+    strengthScore / 100
+  );
+
+  // 12. 5신(五神) 도출 (사용자 규칙 기반)
+  const isStrong = strength.includes("강") || strength === "중화";
+  const dmElement = FIVE_ELEMENTS_MAP[dayMaster];
+  const KR_EL_MAP: Record<string, string> = { wood: "木", fire: "火", earth: "土", metal: "金", water: "水" };
+  const dmElKR = KR_EL_MAP[dmElement];
+  
+  const GEN: Record<string, string> = { "木": "火", "火": "土", "土": "金", "金": "水", "水": "木" };
+  const CON: Record<string, string> = { "木": "土", "火": "金", "土": "水", "金": "木", "水": "火" };
+  const GEN_BY: Record<string, string> = { "火": "木", "土": "火", "金": "土", "水": "金", "木": "水" };
+  const CON_BY: Record<string, string> = { "土": "木", "金": "火", "水": "土", "木": "金", "火": "水" };
+
+  // 신강: 용신=극하는것(관성), 기신=생하는것(인성)
+  // 신약: 용신=생하는것(인성), 기신=극하는것(관성)
+  const yongShin = gyeokResult.yongShinElement || (isStrong ? CON[dmElKR] : GEN_BY[dmElKR]);
+  const heeShin = isStrong ? GEN[dmElKR] : dmElKR; 
+  const giShin = isStrong ? GEN_BY[dmElKR] : CON[dmElKR];
+  const guShin = isStrong ? dmElKR : CON_BY[dmElKR];
+  const hanShin = isStrong ? CON_BY[dmElKR] : GEN[dmElKR];
+
+  // 13. 운세(Fortune)
+  const fortune = calculateFortune(
+    dayMaster, yongShin, heeShin, giShin, guShin, hanShin,
+    [yP.stem, mP.stem, dP.stem, hP.stem],
+    [yP.branch, mP.branch, dP.branch, hP.branch],
+    dw.currentDaewoon?.stem || null,
+    dw.currentDaewoon?.branch || null
+  );
+
   return {
     year: { stem: yP.stem, branch: yP.branch, tenGod: yearTG },
     month: { stem: mP.stem, branch: mP.branch, tenGod: monthTG },
@@ -120,9 +177,17 @@ export function calculateSaju(
     dayMaster,
     strength,
     fiveElements: elementsCount,
+    tenGods,
+    yongShin,
+    heeShin,
+    giShin,
+    guShin,
+    hanShin,
+    gyeokguk: gyeokResult,
+    fortune: fortune,
     daewoon: dw,
     hiddenStems,
-    originalInput: { year, month, day, hour, minute, gender },
+    originalInput: { year, month, day, hour, minute, gender, yajasiMode },
     correctedDate: !isNaN(correctedDate.getTime()) ? correctedDate.toISOString() : "Invalid Date"
   };
 }

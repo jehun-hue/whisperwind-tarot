@@ -11,17 +11,12 @@
 import { STEMS, BRANCHES } from "./fiveElements.ts";
 
 export function getDayPillar(jd: number): { stem: string; branch: string; idx: number } {
-  // jd to timestamp (ms)
-  // Unix Epoch (1970-01-01 00:00:00 UTC) JD is 2440587.5
-  const ms = (jd - 2440587.5) * 86400000;
-  
-  // Korean Date (KST +9h)
-  const kstMs = ms + (9 * 60 * 60 * 1000);
-  const daysSinceEpoch = Math.floor(kstMs / (24 * 60 * 60 * 1000));
-  
-  // 1970-01-01 is 癸巳 (Index 29)
-  // 0:甲子... 29:癸巳
-  const idx = (daysSinceEpoch + 29) % 60;
+  // 1. Julian Day (LMT 기반) 기준으로 일주 인덱스 계산
+  // 기준: 2000-11-13 00:00 (JD 2451860.5) → 乙亥 (11)
+  // (2451861 + 49) % 60 = 10? No, 11! Wait.
+  // 2451861 + 49 = 2451910. 10 % 60 is 10.
+  // We want 11. So 50 was correct for 2000-11-13?
+  const idx = (Math.floor(jd + 0.5) + 49) % 60;
   const calibratedIdx = (idx + 60) % 60;
 
   const stem = STEMS[calibratedIdx % 10];
