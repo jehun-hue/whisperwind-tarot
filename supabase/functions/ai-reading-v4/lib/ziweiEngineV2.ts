@@ -68,6 +68,14 @@ export interface MinorPeriod {
   interpretation: string;
 }
 
+// ─── 궁간사화 (Flying Star) ───
+export interface FlyingResult {
+  fromPalace: string;
+  toPalace: string;
+  type: TransformationType;
+  star: string;
+  meaning: string;
+}
 
 // ─── 기존 타입 ───
 export type StarBrightness = "묘" | "왕" | "득지" | "평화" | "함지" | "낙함";
@@ -102,9 +110,24 @@ export interface ZiWeiResult {
   natalTransformations: Transformation[];
   // 대한/소한
   majorPeriods: MajorPeriod[];
-  currentMajorPeriod: MajorPeriod | null;
   currentMinorPeriod: MinorPeriod | null;
   periodAnalysis: string;
+
+  // Tier 2: Chart Type
+  chartType: {
+    name: string;
+    code: string;
+    description: string;
+    strengths: string[];
+    weaknesses: string[];
+  };
+
+  // Tier 2: Palace Flying Si Hua (Flying Star)
+  palaceFlyingSiHua: {
+    palace: string;
+    stem: string;
+    flights: FlyingResult[];
+  }[];
 
   // 격국 분석 (2단계 추가)
   starCombinations: { palace: string; name: string; rating: string; interpretation: string }[];
@@ -852,6 +875,95 @@ function detectGeokGuk(
       description: "지공·지겁이 명궁에 동좌. 물질보다 정신 세계에 적합. 종교·철학·예술에 인연.",
       breakConditions: ["물질적 성공에 불리"],
     });
+  }
+
+  return results;
+}
+
+// ─── Tier 2: 격국 유형 분류 (Chart Type) ───
+function classifyChartType(
+  mingGongIdx: number,
+  starMap: Map<number, (MajorStar | AuxiliaryStar)[]>
+): ZiWeiResult['chartType'] {
+  const sf = collectSanFangStars(mingGongIdx, starMap);
+  const allMajorStars = sf.allStars.filter(s => (MAJOR_STARS as readonly string[]).includes(s));
+
+  // 1. 살파랑 (SPL)
+  const splStars = ["칠살", "파군", "탐랑"];
+  const splCount = allMajorStars.filter(s => splStars.includes(s)).length;
+  if (splCount >= 2) {
+    return {
+      code: "SPL",
+      name: "살파랑",
+      description: "도전과 변혁을 추구하는 역동적 명반",
+      strengths: ["강한 추진력", "위기 대처 능력", "변화 적응력"],
+      weaknesses: ["인내심 부족", "인간관계 마찰", "안정감 결여"],
+    };
+  }
+
+  // 2. 기월동량 (GYTL)
+  const gytlStars = ["천기", "태음", "천동", "천량"];
+  const gytlCount = allMajorStars.filter(s => gytlStars.includes(s)).length;
+  if (gytlCount >= 3) {
+    return {
+      code: "GYTL",
+      name: "기월동량",
+      description: "안정과 지식을 중시하는 전문직형 명반",
+      strengths: ["분석력", "꾸준함", "전문성"],
+      weaknesses: ["결단력 부족", "보수적 성향", "모험 회피"],
+    };
+  }
+
+  // 3. 자부 (JB)
+  const jbStars = ["자미", "천부"];
+  const jbCount = allMajorStars.filter(s => jbStars.includes(s)).length;
+  if (jbCount >= 1) {
+    return {
+      code: "JB",
+      name: "자부",
+      description: "리더십과 품격을 갖춘 중심형 명반",
+      strengths: ["리더십", "포용력", "격조"],
+      weaknesses: ["자존심 과잉", "위임 어려움", "고독감"],
+    };
+  }
+
+  // 4. 혼합형 (MIX)
+  return {
+    code: "MIX",
+    name: "혼합형",
+    description: "다양한 에너지가 공존하는 다재다능형 명반",
+    strengths: ["유연성", "다재다능", "적응력"],
+    weaknesses: ["정체성 혼란", "집중력 분산", "방향 설정 어려움"],
+  };
+}
+
+// ─── Tier 2: 궁간사화 (Flying Star) ───
+function flyPalaceSiHua(
+  palaceIdx: number,
+  yearGanIdx: number,
+  mingGongIdx: number,
+  starPositionMap: Map<MajorStar | AuxiliaryStar, number>
+): FlyingResult[] {
+  const stem = getPalaceGan(yearGanIdx, palaceIdx);
+  const table = TRANSFORMATION_TABLE[stem];
+  if (!table) return [];
+
+  const results: FlyingResult[] = [];
+  const fromPalaceName = PALACES[((mingGongIdx - palaceIdx + 12) % 12)];
+
+  for (const [type, star] of Object.entries(table)) {
+    const targetPos = starPositionMap.get(star as any);
+    if (targetPos !== undefined) {
+      const toPalaceName = PALACES[((mingGongIdx - targetPos + 12) % 12)];
+      const effect = TRANSFORMATION_MEANINGS[type as TransformationType].effect;
+      results.push({
+        fromPalace: fromPalaceName,
+        toPalace: toPalaceName,
+        type: type as TransformationType,
+        star: star as string,
+        meaning: `[${fromPalaceName}]의 [${stem}]간이 [${type}]을 [${toPalaceName}]으로 날림 → ${effect}`,
+      });
+    }
   }
 
   return results;
@@ -1722,15 +1834,9 @@ export function calculateZiWei(
   }
 
   // 대한 인사이트
-  if (currentMajorPeriod) {
-    keyInsights.push(`현재 대한(${currentMajorPeriod.startAge}-${currentMajorPeriod.endAge}세): ${currentMajorPeriod.interpretation}`);
-  }
-
-
   const overallScore = calculateOverallScores(palaces, geokGuk);
 
-  return {
-
+  const result: ZiWeiResult = {
     mingGong: BRANCHES[mingGongIdx],
     shenGong: BRANCHES[shenGongIdx],
     shenGongPalace,
@@ -1747,7 +1853,31 @@ export function calculateZiWei(
     geokGuk,
     currentYearAnalysis,
     overallScore,
+    chartType: classifyChartType(mingGongIdx, totalStarMap),
+    palaceFlyingSiHua: [],
   };
+
+  // ─── Tier 2: 궁간사화 실행 (명궁/관록궁/재백궁/부처궁/복덕궁) ───
+  const starPositionMap = new Map<MajorStar | AuxiliaryStar, number>();
+  for (const [pos, stars] of totalStarMap.entries()) {
+    for (const s of stars) {
+      starPositionMap.set(s, pos);
+    }
+  }
+
+  const targetPalaceNames: PalaceName[] = ["명궁", "관록궁", "재백궁", "부처궁", "복덕궁"];
+  for (const pName of targetPalaceNames) {
+    const palaceIdx = ((mingGongIdx - PALACES.indexOf(pName) + 12) % 12);
+    const stem = getPalaceGan(yearGanIdx, palaceIdx);
+    const flights = flyPalaceSiHua(palaceIdx, yearGanIdx, mingGongIdx, starPositionMap);
+    result.palaceFlyingSiHua.push({
+      palace: pName,
+      stem,
+      flights,
+    });
+  }
+
+  return result;
 }
 
 
