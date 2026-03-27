@@ -989,13 +989,10 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
         // B-108 compatibility: 뱀케이스와 카멜케이스 모두 제공
         natal_transformations: serverZiwei.natalTransformations || serverZiwei.siHua || [],
         natalTransformations: serverZiwei.natalTransformations || [],
-        annual_transformations: serverZiwei.annualTransformations || [],
-        annualTransformations: serverZiwei.annualTransformations || [],
         
         ziwei_warnings: ziweiWarnings,
         annualYear: serverZiwei.annualYear || 2026,
         annualGan: serverZiwei.annualGan || "",
-        currentMinorPeriod: serverZiwei.currentMinorPeriod || serverZiwei.liunian || null,
         patterns: [],
         
         // promptBuilder용 필드

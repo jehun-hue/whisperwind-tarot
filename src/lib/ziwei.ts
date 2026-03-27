@@ -68,6 +68,32 @@ export interface MinorPeriod {
   interpretation: string;
 }
 
+// ─── 궁간사화 (Flying Star) ───
+export interface FlyingResult {
+  fromPalace: string;
+  toPalace: string;
+  type: TransformationType;
+  star: string;
+  meaning: string;
+}
+
+export interface FlyingChain {
+  depth: number;           // 1차, 2차, 3차
+  fromPalace: string;
+  toPalace: string;
+  type: TransformationType;
+  star: string;
+  meaning: string;
+}
+
+export interface LaiYinAnalysis {
+  laiYinGong: string;           // 래인궁 이름 (화록이 떨어진 궁)
+  laiYinStar: string;           // 화록 대상 별
+  tiGong: string;               // 체궁 (래인궁의 삼방사정 중 본체)
+  yongGong: string;             // 용궁 (래인궁의 대궁)
+  tiYongRelation: string;       // 체용 관계 해석
+  lifeTheme: string;            // 인생 주제 한줄 요약
+}
 
 // ─── 기존 타입 ───
 export type StarBrightness = "묘" | "왕" | "득지" | "평화" | "함지" | "낙함";
@@ -105,6 +131,33 @@ export interface ZiWeiResult {
   currentMajorPeriod: MajorPeriod | null;
   currentMinorPeriod: MinorPeriod | null;
   periodAnalysis: string;
+
+  // Tier 2: Chart Type
+  chartType: {
+    name: string;
+    code: string;
+    description: string;
+    strengths: string[];
+    weaknesses: string[];
+  };
+
+  // Tier 2: Palace Flying Si Hua (Flying Star)
+  palaceFlyingSiHua: {
+    palace: string;
+    stem: string;
+    flights: FlyingResult[];
+  }[];
+
+  // Tier 3: Three Generations of Flying Stars (Chain Analysis)
+  siHuaChainAnalysis: {
+    palace: string;
+    giChain: FlyingChain[];
+    rokChain: FlyingChain[];
+    interpretation: string;
+  }[];
+
+  // Tier 3: Lai Yin Gong (Origin Palace) Analysis
+  laiYinAnalysis: LaiYinAnalysis;
 
   // 격국 분석 (2단계 추가)
   starCombinations: { palace: string; name: string; rating: string; interpretation: string }[];
@@ -500,11 +553,14 @@ function placeSpecialShenSha(
   add((9 + lunarMonth - 1) % 12, "천형");
 
   // 천요(天姚) — 월 기준: 丑(1)에서 월만큼 순행
-  add((1 + lunarMonth - 1) % 12, "천요");
+  add(lunarMonth % 12, "천요");
 
-  // 천덕(天德) — 월 기준
-  // 정월→酉(9), 2월→戌(10), 3월→亥(11), 4월→子(0) … 순행
-  add((9 + lunarMonth - 1) % 12, "천덕");
+  // 천덕(天德) — 연지(年지) 기준 고정 테이블
+  const tianDeTable: Record<number, number> = {
+    0: 5, 1: 9, 2: 11, 3: 11, 4: 5, 5: 9,
+    6: 5, 7: 9, 8: 11, 9: 11, 10: 5, 11: 9,
+  };
+  add(tianDeTable[yearBranchIdx] ?? 5, "천덕");
 
   // 월덕(月德) — 월 기준: 巳(5)에서 월만큼 순행
   add((5 + lunarMonth - 1) % 12, "월덕");
@@ -638,6 +694,122 @@ const AUX_STAR_MEANINGS: Record<string, string> = {
   영성: "은밀한 변화, 지구력",
   지공: "공망, 허탈, 종교성",
   지겁: "손재, 투기, 도박성",
+};
+
+// ─── 주성 궁별 해석 데이터 (Tier 2-2) ───
+export const STAR_PALACE_MEANINGS: Record<string, Record<string, string>> = {
+  자미: {
+    명궁: "리더십과 품격이 높으나 자존심이 강해 고독할 수 있음",
+    재백궁: "재물운 안정적이나 과시 소비 경향",
+    관록궁: "관리직/경영에 적합, 높은 지위 가능",
+    부처궁: "배우자에 대한 기대치가 높아 만혼 경향",
+    질액궁: "전반적 건강 양호하나 심장/혈압 주의",
+    복덕궁: "내면의 자부심이 강하고 정신적 풍요"
+  },
+  천기: {
+    명궁: "두뇌 회전이 빠르고 분석적이나 우유부단한 면",
+    재백궁: "지적 활동으로 수입, 재테크에 관심 많음",
+    관록궁: "기획/연구/IT 분야 적합",
+    부처궁: "지적인 배우자, 대화가 중요한 관계",
+    질액궁: "신경계/간 관련 주의, 스트레스성 질환",
+    복덕궁: "생각이 많고 계획적이나 걱정도 많음"
+  },
+  태양: {
+    명궁: "박애정신이 강하고 외향적, 남성에게 유리",
+    재백궁: "명예로 인한 수입, 공적 활동에서 재물",
+    관록궁: "공직/교육/미디어 분야 빛남",
+    부처궁: "남명은 아내덕, 여명은 남편이 유능",
+    질액궁: "눈/심장/혈압 주의, 과로 경향",
+    복덕궁: "넓은 마음, 봉사정신이 있으나 자기희생 과다"
+  },
+  무곡: {
+    명궁: "재물에 밝고 실행력이 강한 현실주의자",
+    재백궁: "재물운 최강, 금융/투자에 재능",
+    관록궁: "금융/회계/군인/무역 적합",
+    부처궁: "배우자가 경제력 있으나 감정 표현 부족",
+    질액궁: "폐/호흡기/피부 관련 주의",
+    복덕궁: "물질적 만족을 추구, 현실적 가치관"
+  },
+  천동: {
+    명궁: "온화하고 여유롭지만 게으를 수 있음, 만발형",
+    재백궁: "중년 이후 재물운 상승, 초년은 검소",
+    관록궁: "서비스업/예술/종교 분야 적합",
+    부처궁: "다정한 배우자, 편안한 가정",
+    질액궁: "방광/신장 주의, 체력이 약한 편",
+    복덕궁: "정신적 여유가 있고 낙천적"
+  },
+  염정: {
+    명궁: "정열적이고 카리스마 있으나 감정 기복 심함",
+    재백궁: "투기/도박성 재물에 끌림, 고위험 고수익",
+    관록궁: "정치/연예/외교 분야 빛남",
+    부처궁: "열정적 연애, 삼각관계 주의",
+    질액궁: "심장/혈관/성병 관련 주의",
+    복덕궁: "내면이 불안정, 감정적 갈등 많음"
+  },
+  천부: {
+    명궁: "안정적이고 재물 관리 능력 탁월",
+    재백궁: "저축과 투자에 능함, 안정적 재물 축적",
+    관록궁: "재무/관리/부동산 분야 적합",
+    부처궁: "안정적 결혼생활, 현실적 배우자",
+    질액궁: "위장/소화기 주의, 전반적 양호",
+    복덕궁: "물질적 안정을 통해 마음의 평화"
+  },
+  태음: {
+    명궁: "섬세하고 감성적, 여성에게 유리, 밤 출생이면 더 길",
+    재백궁: "부동산/야간업종에서 수입, 서서히 축적",
+    관록궁: "부동산/인테리어/야간 근무 적합",
+    부처궁: "여명은 남편덕, 남명은 아내가 아름다움",
+    질액궁: "신장/비뇨기/부인과 주의",
+    복덕궁: "감수성이 풍부, 예술적 소양"
+  },
+  탐랑: {
+    명궁: "다재다능하고 매력적이나 욕망이 강함",
+    재백궁: "다양한 경로로 수입, 유흥/접대업 가능",
+    관록궁: "영업/접대/엔터테인먼트 분야 적합",
+    부처궁: "이성 인연 많고 매력적이나 바람기 주의",
+    질액궁: "간/비뇨기/성병 주의, 음주 절제",
+    복덕궁: "향락을 즐기며 다양한 취미, 절제 필요"
+  },
+  거문: {
+    명궁: "말재주가 뛰어나지만 시비구설에 휘말리기 쉬움",
+    재백궁: "말로 먹고삶, 교육/상담/법률 수입",
+    관록궁: "법률/언론/교수/상담 분야 적합",
+    부처궁: "대화가 많은 관계, 말다툼도 잦음",
+    질액궁: "구강/식도/위장 관련 주의",
+    복덕궁: "생각과 말이 많아 마음이 편치 않음"
+  },
+  천상: {
+    명궁: "온순하고 예절 바르나 주관이 약할 수 있음",
+    재백궁: "인맥을 통한 수입, 안정적이나 소극적",
+    관록궁: "비서/보좌/외교/행정 분야 적합",
+    부처궁: "헌신적 배우자, 조용한 가정",
+    질액궁: "피부/호흡기 관련 주의",
+    복덕궁: "차분하고 평화로운 내면"
+  },
+  천량: {
+    명궁: "어른스럽고 지혜로우며 재난을 만나도 해소하는 능력",
+    재백궁: "안정적 수입, 큰 돈보다 꾸준한 수입",
+    관록궁: "의료/공직/종교/상담 분야 적합",
+    부처궁: "나이 차이 있는 배우자, 성숙한 관계",
+    질액궁: "소화기/위장 주의, 큰 병은 넘김",
+    복덕궁: "정신적으로 성숙하고 철학적"
+  },
+  칠살: {
+    명궁: "결단력과 행동력이 강하나 충동적, 파란만장한 인생",
+    재백궁: "큰 돈이 들어오고 나가는 변동형, 투자 주의",
+    관록궁: "군인/경찰/외과의/기업가 적합",
+    부처궁: "배우자와 충돌 잦음, 강한 성격의 파트너",
+    질액궁: "외상/수술 가능성, 교통사고 주의",
+    복덕궁: "마 마음이 편치 않고 항상 긴장, 명상 필요"
+  },
+  파군: {
+    명궁: "개척정신이 강하고 파괴와 창조를 반복",
+    재백궁: "한탕주의 경향, 큰 수입과 큰 지출 반복",
+    관록궁: "창업/혁신/기술 분야 적합, 직장 변동 많음",
+    부처궁: "배우자와의 갈등, 이혼수 있으나 재혼 가능",
+    질액궁: "외상/수술/산부인과 주의",
+    복덕궁: "마음의 안정을 찾기 어려움, 끊임없이 변화 추구"
+  }
 };
 
 // ─── 성조합(星組合) 패턴 테이블 ───
@@ -855,6 +1027,224 @@ function detectGeokGuk(
   }
 
   return results;
+}
+
+// ─── Tier 2: 격국 유형 분류 (Chart Type) ───
+function classifyChartType(
+  mingGongIdx: number,
+  starMap: Map<number, (MajorStar | AuxiliaryStar)[]>
+): ZiWeiResult['chartType'] {
+  const sf = collectSanFangStars(mingGongIdx, starMap);
+  const allMajorStars = sf.allStars.filter(s => (MAJOR_STARS as readonly string[]).includes(s));
+
+  // 1. 살파랑 (SPL)
+  const splStars = ["칠살", "파군", "탐랑"];
+  const splCount = allMajorStars.filter(s => splStars.includes(s)).length;
+  if (splCount >= 2) {
+    return {
+      code: "SPL",
+      name: "살파랑",
+      description: "도전과 변혁을 추구하는 역동적 명반",
+      strengths: ["강한 추진력", "위기 대처 능력", "변화 적응력"],
+      weaknesses: ["인내심 부족", "인간관계 마찰", "안정감 결여"],
+    };
+  }
+
+  // 2. 기월동량 (GYTL)
+  const gytlStars = ["천기", "태음", "천동", "천량"];
+  const gytlCount = allMajorStars.filter(s => gytlStars.includes(s)).length;
+  if (gytlCount >= 3) {
+    return {
+      code: "GYTL",
+      name: "기월동량",
+      description: "안정과 지식을 중시하는 전문직형 명반",
+      strengths: ["분석력", "꾸준함", "전문성"],
+      weaknesses: ["결단력 부족", "보수적 성향", "모험 회피"],
+    };
+  }
+
+  // 3. 자부 (JB)
+  const jbStars = ["자미", "천부"];
+  const jbCount = allMajorStars.filter(s => jbStars.includes(s)).length;
+  if (jbCount >= 1) {
+    return {
+      code: "JB",
+      name: "자부",
+      description: "리더십과 품격을 갖춘 중심형 명반",
+      strengths: ["리더십", "포용력", "격조"],
+      weaknesses: ["자존심 과잉", "위임 어려움", "고독감"],
+    };
+  }
+
+  // 4. 혼합형 (MIX)
+  return {
+    code: "MIX",
+    name: "혼합형",
+    description: "다양한 에너지가 공존하는 다재다능형 명반",
+    strengths: ["유연성", "다재다능", "적응력"],
+    weaknesses: ["정체성 혼란", "집중력 분산", "방향 설정 어려움"],
+  };
+}
+
+// ─── Tier 2: 궁간사화 (Flying Star) ───
+function flyPalaceSiHua(
+  palaceIdx: number,
+  yearGanIdx: number,
+  mingGongIdx: number,
+  starPositionMap: Map<MajorStar | AuxiliaryStar, number>
+): FlyingResult[] {
+  const stem = getPalaceGan(yearGanIdx, palaceIdx);
+  const table = TRANSFORMATION_TABLE[stem];
+  if (!table) return [];
+
+  const results: FlyingResult[] = [];
+  const fromPalaceName = PALACES[((mingGongIdx - palaceIdx + 12) % 12)];
+
+  for (const [type, star] of Object.entries(table)) {
+    const targetPos = starPositionMap.get(star as any);
+    if (targetPos !== undefined) {
+      const toPalaceName = PALACES[((mingGongIdx - targetPos + 12) % 12)];
+      const effect = TRANSFORMATION_MEANINGS[type as TransformationType].effect;
+      results.push({
+        fromPalace: fromPalaceName,
+        toPalace: toPalaceName,
+        type: type as TransformationType,
+        star: star as string,
+        meaning: `[${fromPalaceName}]의 [${stem}]간이 [${type}]을 [${toPalaceName}]으로 날림 → ${effect}`,
+      });
+    }
+  }
+
+  return results;
+}
+
+// ─── Tier 3: 삼대기추적 (Chain Analysis) ───
+function traceSiHuaChain(
+  startPalaceIdx: number,
+  yearGanIdx: number,
+  mingGongIdx: number,
+  starPositionMap: Map<string, number>,
+  maxDepth: number = 3
+): { giChain: FlyingChain[], rokChain: FlyingChain[] } {
+  const giChain: FlyingChain[] = [];
+  const rokChain: FlyingChain[] = [];
+
+  let currentIdx = startPalaceIdx;
+  const giVisited = new Set<number>();
+  for (let depth = 1; depth <= maxDepth; depth++) {
+    if (giVisited.has(currentIdx)) break;
+    giVisited.add(currentIdx);
+    
+    const stem = getPalaceGan(yearGanIdx, currentIdx);
+    const table = TRANSFORMATION_TABLE[stem];
+    if (!table) break;
+
+    // 화기 추적
+    const giStar = table["화기"];
+    const giTargetPos = starPositionMap.get(giStar);
+    if (giTargetPos !== undefined) {
+      const fromName = PALACES[((mingGongIdx - currentIdx + 12) % 12)];
+      const toName = PALACES[((mingGongIdx - giTargetPos + 12) % 12)];
+      giChain.push({
+        depth,
+        fromPalace: fromName,
+        toPalace: toName,
+        type: "화기",
+        star: giStar,
+        meaning: depth === 1
+          ? `${fromName}의 문제가 ${toName}에서 발현`
+          : `${depth}차 연쇄: ${fromName}의 기운이 ${toName}까지 영향`
+      });
+      if (depth < maxDepth) {
+        currentIdx = giTargetPos;
+      } else break;
+    } else break;
+  }
+
+  // 화록도 동일하게 추적 (currentIdx를 startPalaceIdx로 리셋)
+  currentIdx = startPalaceIdx;
+  const rokVisited = new Set<number>();
+  for (let depth = 1; depth <= maxDepth; depth++) {
+    if (rokVisited.has(currentIdx)) break;
+    rokVisited.add(currentIdx);
+    
+    const stem = getPalaceGan(yearGanIdx, currentIdx);
+    const table = TRANSFORMATION_TABLE[stem];
+    if (!table) break;
+
+    const rokStar = table["화록"];
+    const rokTargetPos = starPositionMap.get(rokStar);
+    if (rokTargetPos !== undefined) {
+      const fromName = PALACES[((mingGongIdx - currentIdx + 12) % 12)];
+      const toName = PALACES[((mingGongIdx - rokTargetPos + 12) % 12)];
+      rokChain.push({
+        depth,
+        fromPalace: fromName,
+        toPalace: toName,
+        type: "화록",
+        star: rokStar,
+        meaning: depth === 1
+          ? `${fromName}의 기회가 ${toName}에서 실현`
+          : `${depth}차 연쇄: ${fromName}의 복이 ${toName}까지 확장`
+      });
+      if (depth < maxDepth) {
+        currentIdx = rokTargetPos;
+      } else break;
+    } else break;
+  }
+
+  return { giChain, rokChain };
+}
+
+// ─── Tier 3: 래인궁(來인궁) + 체용(體用) 분석 ───
+function analyzeLaiYin(
+  yearGanIdx: number,
+  mingGongIdx: number,
+  starPositionMap: Map<string, number>
+): LaiYinAnalysis {
+  // 1. 생년 천간에서 화록 대상 별 찾기
+  const yearStem = STEMS[yearGanIdx];
+  const table = TRANSFORMATION_TABLE[yearStem];
+  const rokStar = table["화록"];
+
+  // 2. 화록 별이 어느 궁에 있는지 찾기 → 래인궁
+  const rokPos = starPositionMap.get(rokStar);
+  const laiYinPalaceIdx = rokPos !== undefined ? ((mingGongIdx - rokPos + 12) % 12) : 0;
+  const laiYinGong = PALACES[laiYinPalaceIdx];
+
+  // 3. 체궁 = 래인궁 자체 (본체)
+  // 4. 용궁 = 래인궁의 대궁 (작용하는 곳)
+  const yongPalaceIdx = (laiYinPalaceIdx + 6) % 12;
+  const yongGong = PALACES[yongPalaceIdx];
+
+  // 5. 체용 관계 해석
+  const PALACE_LIFE_THEME: Record<string, string> = {
+    명궁: "자아 실현이 인생의 출발점, 스스로의 능력으로 길을 개척",
+    형제궁: "형제·동료와의 인연이 인생을 좌우, 협력이 핵심",
+    부처궁: "배우자·파트너가 인생의 전환점, 관계를 통한 성장",
+    자녀궁: "자녀·창작·투자가 인생의 중심축, 생산적 활동이 관건",
+    재백궁: "재물·경제활동이 인생의 원동력, 돈의 흐름이 운명을 결정",
+    질액궁: "건강이 모든 것의 기반, 몸을 돌보는 것이 최우선",
+    천이궁: "외부 환경·이동·변화가 인생을 움직이는 힘",
+    노복궁: "인맥·부하·사회적 관계가 성공의 열쇠",
+    관록궁: "직업·사회적 성취가 인생의 핵심 목표",
+    전택궁: "가정·부동산·안정된 기반이 인생의 토대",
+    복덕궁: "내면의 만족·정신적 풍요가 인생의 진정한 가치",
+    부모궁: "부모·스승·윗사람의 영향이 인생의 방향을 결정"
+  };
+
+  const lifeTheme = PALACE_LIFE_THEME[laiYinGong] || "다양한 요소가 복합적으로 작용";
+
+  const tiYongRelation = `체궁(${laiYinGong})은 당신의 본질이고, 용궁(${yongGong})은 그것이 실제로 발현되는 영역입니다. ${laiYinGong}의 별이 강하면 내면이 탄탄하고, ${yongGong}의 별이 강하면 외부적 성과가 두드러집니다.`;
+
+  return {
+    laiYinGong,
+    laiYinStar: rokStar,
+    tiGong: laiYinGong,
+    yongGong,
+    tiYongRelation,
+    lifeTheme
+  };
 }
 
 // ─── 사화 계산 (생년 천간 기준) ───
@@ -1722,15 +2112,19 @@ export function calculateZiWei(
   }
 
   // 대한 인사이트
-  if (currentMajorPeriod) {
-    keyInsights.push(`현재 대한(${currentMajorPeriod.startAge}-${currentMajorPeriod.endAge}세): ${currentMajorPeriod.interpretation}`);
-  }
-
-
   const overallScore = calculateOverallScores(palaces, geokGuk);
 
-  return {
+  // ─── 별 위치 맵 생성 (Tier 2/3 공용) ───
+  const starPositionMap = new Map<MajorStar | AuxiliaryStar, number>();
+  const stringStarPosMap = new Map<string, number>();
+  for (const [pos, stars] of totalStarMap.entries()) {
+    for (const s of stars) {
+      starPositionMap.set(s, pos);
+      stringStarPosMap.set(s, pos);
+    }
+  }
 
+  const result: ZiWeiResult = {
     mingGong: BRANCHES[mingGongIdx],
     shenGong: BRANCHES[shenGongIdx],
     shenGongPalace,
@@ -1747,7 +2141,40 @@ export function calculateZiWei(
     geokGuk,
     currentYearAnalysis,
     overallScore,
+    chartType: classifyChartType(mingGongIdx, totalStarMap),
+    palaceFlyingSiHua: [],
+    siHuaChainAnalysis: [],
+    laiYinAnalysis: analyzeLaiYin(yearGanIdx, mingGongIdx, stringStarPosMap),
   };
+
+  // ─── Tier 2: 궁간사화 실행 (명궁/관록궁/재백궁/부처궁/복덕궁) ───
+  const targetPalaceNames: PalaceName[] = ["명궁", "관록궁", "재백궁", "부처궁", "복덕궁"];
+  for (const pName of targetPalaceNames) {
+    const palaceIdx = ((mingGongIdx - PALACES.indexOf(pName) + 12) % 12);
+    const stem = getPalaceGan(yearGanIdx, palaceIdx);
+    const flights = flyPalaceSiHua(palaceIdx, yearGanIdx, mingGongIdx, starPositionMap);
+    result.palaceFlyingSiHua.push({
+      palace: pName,
+      stem,
+      flights,
+    });
+  }
+
+  // ─── Tier 3: 삼대기추적 실행 (명궁/관록궁) ───
+  for (const pName of ["명궁", "관록궁"] as PalaceName[]) {
+    const palaceIdx = ((mingGongIdx - PALACES.indexOf(pName) + 12) % 12);
+    const { giChain, rokChain } = traceSiHuaChain(palaceIdx, yearGanIdx, mingGongIdx, stringStarPosMap);
+    const giPath = giChain.map(c => c.toPalace).join("→");
+    const rokPath = rokChain.map(c => c.toPalace).join("→");
+    result.siHuaChainAnalysis.push({
+      palace: pName,
+      giChain,
+      rokChain,
+      interpretation: `화기 경로: ${giPath || "없음"}, 화록 경로: ${rokPath || "없음"}`,
+    });
+  }
+
+  return result;
 }
 
 

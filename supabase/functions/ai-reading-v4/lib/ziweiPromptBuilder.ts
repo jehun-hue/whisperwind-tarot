@@ -1,4 +1,4 @@
-import type { ZiweiResult } from "./ziweiEngine.ts";
+import { type ZiweiResult, STAR_PALACE_MEANINGS } from "./ziweiEngine.ts";
 
 /**
  * 자미두수 분석 결과를 AI 프롬프트용 구조화 텍스트로 변환
@@ -9,6 +9,26 @@ export function buildZiWeiPromptSection(ziwei: ZiweiResult): string {
   // ── 기본 정보 ──
   lines.push("=== 자미두수(紫微斗數) 명반 분석 ===");
   lines.push(`명궁: ${ziwei.mingGong} | 신궁: ${ziwei.shenGong} | 오행국: ${ziwei.bureau}`);
+  
+  if ((ziwei as any).chartType) {
+    const ct = (ziwei as any).chartType;
+    lines.push(`명반 유형: ${ct.name}(${ct.code}) — ${ct.description}`);
+    lines.push(`  강점: ${ct.strengths.join(", ")}`);
+    lines.push(`  약점: ${ct.weaknesses.join(", ")}`);
+  }
+
+  // ── 래인궁 (Lai Yin Gong) ──
+  if ((ziwei as any).laiYinAnalysis) {
+    const la = (ziwei as any).laiYinAnalysis;
+    lines.push("");
+    lines.push("[래인궁(來因宮) — 인생의 출발점]");
+    lines.push(`  래인궁: ${la.laiYinGong} (${la.laiYinStar}의 화록이 떨어진 궁)`);
+    lines.push(`  인생 주제: ${la.lifeTheme}`);
+    lines.push(`  체궁(體): ${la.tiGong} | 용궁(用): ${la.yongGong}`);
+    lines.push(`  체용 관계: ${la.tiYongRelation}`);
+    lines.push("");
+    lines.push("★ 래인궁 해석 지침: 래인궁은 이 사람 인생의 '진짜 출발점'입니다. 명궁이 아닌 래인궁의 별과 사화를 중심으로 인생 전체의 방향을 해석하세요. 래인궁에 화기가 함께 있으면 '복과 장애가 공존하는 복잡한 인생'으로, 화록만 있으면 '순탄한 출발'로 해석합니다.");
+  }
   
   // 종합 점수 (Server version might not have overallScore yet, so we guard it)
   if ((ziwei as any).overallScore) {
@@ -43,6 +63,43 @@ export function buildZiWeiPromptSection(ziwei: ZiweiResult): string {
     lines.push(`  ${t.type}: ${t.star} → ${t.palace} (${t.description})`);
   }
 
+  // ── 궁간사화 (Flying Star) ──
+  if ((ziwei as any).palaceFlyingSiHua && (ziwei as any).palaceFlyingSiHua.length > 0) {
+    lines.push("");
+    lines.push("[궁간사화(飛星四化) — 인과관계 분석]");
+    for (const pf of (ziwei as any).palaceFlyingSiHua) {
+      if (pf.flights.length > 0) {
+        lines.push(`  ${pf.palace}(${pf.stem}간):`);
+        for (const f of pf.flights) {
+          lines.push(`    ${f.type}: ${f.star} → ${f.toPalace} (${f.meaning})`);
+        }
+      }
+    }
+    lines.push("");
+    lines.push("★ 궁간사화 해석 지침: 화기(忌)가 날아간 궁은 '문제의 원인'이고, 화록(祿)이 날아간 궁은 '해결의 실마리'입니다. 명궁에서 화기가 재백궁으로 가면 '자기 자신의 성격이 재물 손실의 원인', 관록궁에서 화록이 부처궁으로 가면 '직업을 통해 좋은 인연을 만남'으로 해석하세요.");
+  }
+
+  // ── 삼대기추적 (Chain Analysis) ──
+  if ((ziwei as any).siHuaChainAnalysis) {
+    lines.push("");
+    lines.push("[삼대기추적(三代忌追蹤) — 운명의 인과 체인]");
+    for (const chain of (ziwei as any).siHuaChainAnalysis) {
+      lines.push(`  ${chain.palace}:`);
+      if (chain.giChain && chain.giChain.length > 0) {
+        const giPath = chain.giChain.map((c: any) => `${c.fromPalace}→${c.toPalace}`).join(" → ");
+        lines.push(`    화기(忌) 경로: ${giPath}`);
+        lines.push(`    → 해석: ${chain.giChain[chain.giChain.length - 1].meaning}`);
+      }
+      if (chain.rokChain && chain.rokChain.length > 0) {
+        const rokPath = chain.rokChain.map((c: any) => `${c.fromPalace}→${c.toPalace}`).join(" → ");
+        lines.push(`    화록(祿) 경로: ${rokPath}`);
+        lines.push(`    → 해석: ${chain.rokChain[chain.rokChain.length - 1].meaning}`);
+      }
+    }
+    lines.push("");
+    lines.push("★ 삼대기추적 해석 지침: 화기 체인의 최종 도착궁이 '근본 원인'입니다. 예: 명궁→재백궁→질액궁이면 '성격 문제가 돈 문제를 일으키고, 결국 건강까지 해친다'고 해석하세요. 화록 체인의 최종 도착궁은 '궁극적 해결처'입니다.");
+  }
+
   // ── 12궁 요약 (명궁, 재백궁, 관록궁, 부처궁, 질액궁만 핵심) ──
   lines.push("");
   lines.push("[핵심 궁위 분석]");
@@ -62,9 +119,42 @@ export function buildZiWeiPromptSection(ziwei: ZiweiResult): string {
 
       lines.push(`  ${palace.name}(${palace.branch}):`);
       if (majorStars) lines.push(`    주성: ${majorStars}`);
+      
+      // 주성 궁별 해석 추가 (Tier 2-2)
+      const firstMajorStar = (palace.stars || []).find(s => STAR_PALACE_MEANINGS[s.star])?.star;
+      if (firstMajorStar && STAR_PALACE_MEANINGS[firstMajorStar]?.[palace.name]) {
+        lines.push(`    핵심의미: ${STAR_PALACE_MEANINGS[firstMajorStar][palace.name]}`);
+      }
+
       if (auxStars) lines.push(`    보조성: ${auxStars}`);
       if (trans) lines.push(`    사화: ${trans}`);
       if (shenSha) lines.push(`    신살: ${shenSha}`);
+
+      // 삼방사정 분석 추가 (Tier 2-3)
+      const BRANCHES_LIST = ["자", "축", "인", "묘", "진", "사", "오", "미", "신", "유", "술", "해"];
+      const palaceBranchIdx = BRANCHES_LIST.indexOf(palace.branch);
+      if (palaceBranchIdx >= 0) {
+        const oppositeIdx = (palaceBranchIdx + 6) % 12;
+        const trine1Idx = (palaceBranchIdx + 4) % 12;
+        const trine2Idx = (palaceBranchIdx + 8) % 12;
+
+        const getStarsAtBranch = (branchIdx: number) => {
+          const p = (ziwei.palaces || []).find(pp => pp.branch === BRANCHES_LIST[branchIdx]);
+          if (!p) return "";
+          return (p.stars || [])
+            .filter(s => ["자미", "천기", "태양", "무곡", "천동", "염정", "천부", "태음", "탐랑", "거문", "천상", "천량", "칠살", "파군"].includes(s.star))
+            .map(s => s.star)
+            .join(",");
+        };
+
+        const oppStars = getStarsAtBranch(oppositeIdx);
+        const tri1Stars = getStarsAtBranch(trine1Idx);
+        const tri2Stars = getStarsAtBranch(trine2Idx);
+
+        if (oppStars || tri1Stars || tri2Stars) {
+          lines.push(`    삼방사정: 대궁[${oppStars || "빈"}] 삼합[${tri1Stars || "빈"}, ${tri2Stars || "빈"}]`);
+        }
+      }
     }
   }
 
@@ -115,14 +205,10 @@ export function buildZiWeiPromptSection(ziwei: ZiweiResult): string {
       lines.push(`  유년사화: ${ya.flowYearTransformations.map((t: any) => `${t.type}(${t.star})`).join(", ")}`);
     }
     if (ya.dahanOverlap && ya.dahanOverlap.length > 0)
-      lines.push(`  대한 겹침: ya.dahanOverlap.join(", ")`);
+      lines.push(`  대한 겹침: ${ya.dahanOverlap.join(", ")}`);
     if (ya.natalOverlap && ya.natalOverlap.length > 0)
-      lines.push(`  본명 겹침: ya.natalOverlap.join(", ")`);
+      lines.push(`  본명 겹침: ${ya.natalOverlap.join(", ")}`);
     lines.push(`  해석: ${ya.interpretation.slice(0, 200)}`);
-  } else if (ziwei.annualTransformations && ziwei.annualTransformations.length > 0) {
-    lines.push("");
-    lines.push(`[${ziwei.annualYear}년 유년 사화] 천간: ${ziwei.annualGan}`);
-    lines.push(`  유년사화: ${ziwei.annualTransformations.map(t => `${t.type}(${t.star})`).join(", ")}`);
   }
 
   return lines.join("\n");

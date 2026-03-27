@@ -1,6 +1,7 @@
 import { Signal, CrossSignal } from './signalExtractor.ts';
 import { ILJU_MEANINGS, TENGO_DEEP, GYEOKGUK_DEEP, TWELVE_STAGES_DEEP, YONGSIN_ADVICE, SINSAL_DEEP, DAEWOON_INTERACTION, INTERACTION_DEEP } from "./interpretations/index.ts";
 import { buildZiWeiPromptSection } from "./ziweiPromptBuilder.ts";
+import { runCrossValidation } from "./crossValidationEngine.ts";
 
 export interface UserInfo {
   name?: string;
@@ -171,6 +172,24 @@ ${timelineStr}
   // SECTION 0.5: 교차 패턴 분석 (코드 사전 계산)
   // ========================
   const crossPatterns: string[] = [];
+
+  const crossVal = (ziwei && saju) ? runCrossValidation(ziwei, saju) : null;
+
+  if (crossVal) {
+    crossPatterns.push(`\n[자미두수×사주 구조적 교차 검증] (일치율: ${crossVal.overallAgreement}%)`);
+    crossPatterns.push(`요약: ${crossVal.summary}`);
+    for (const item of crossVal.items) {
+      crossPatterns.push(`  ${item.label}: 자미두수(${item.ziweiSignal}) × 사주(${item.sajuSignal}) → ${item.agreement} (${item.confidence}%)`);
+      if (item.ziweiEvidence.length > 0) crossPatterns.push(`    자미: ${item.ziweiEvidence.slice(0, 2).join(", ")}`);
+      if (item.sajuEvidence.length > 0) crossPatterns.push(`    사주: ${item.sajuEvidence.slice(0, 2).join(", ")}`);
+    }
+    if (crossVal.strongSignals.length > 0) {
+      crossPatterns.push(`\n  ★ 강력 교차 확인: ${crossVal.strongSignals.join(" | ")}`);
+    }
+    if (crossVal.conflictSignals.length > 0) {
+      crossPatterns.push(`\n  ⚠ 상충 주의: ${crossVal.conflictSignals.join(" | ")}`);
+    }
+  }
 
   // 패턴 1: 관계 갈등 시그널 교차
   const sajuConflict = sewoonRels.some((r: any) => r.type === '파' || r.type === '충' || r.type === '형');
@@ -426,8 +445,18 @@ ${selectedPalaces}
 
 ${ziweiSection}
 
-★ 궁 선택 규칙: 질문="${userInfo.question || '종합운'}" → ${targetPalaceNames.join(', ')} 궁 중심 해석
-★ 자미두수 해석 지침: 빈궁이 있으면 대궁(반대편 궁)의 주성 영향으로 해석하라. 데이터가 전체적으로 부족하면 "자미두수 관점에서는 출생 시간 확인이 필요하지만, 사주와 점성술 기준으로..."라고 전환하라. 자미두수 데이터가 있는 궁은 반드시 해석에 포함할 것.
+★ 자미두수 해석 우선순위 (반드시 이 순서로):
+1. 래인궁(來因궁) — 이 사람 인생의 진짜 출발점. 래인궁의 별과 사화를 먼저 언급하며 "당신의 인생은 [래인궁 주제]에서 시작됩니다"로 리딩 시작
+2. 명반 유형(chartType) — "당신은 [살파랑/기월동량/자부/혼합]형 명반으로, [특성]이 핵심"
+3. 궁간사화 인과관계 — 화기가 어디로 날아갔는지가 "문제의 원인", 화록이 어디로 갔는지가 "해결의 실마리"
+4. 삼대기추적 — 화기 연쇄가 3단계까지 어디로 이어지는지 말해주면 고객이 "소름" 느낌
+5. 삼방사정 — 질문 관련 궁 + 대궁 + 삼합궁의 별을 종합 해석
+6. 주성 궁별 해석 — STAR_PALACE_MEANINGS 데이터를 활용하여 구체적으로
+
+★ 궁 선택 규칙: 질문="${userInfo.question || '종합운'}" → ${targetPalaceNames.join(', ')} 궁 중심
+★ 빈궁 처리: 빈궁은 대궁(반대편)의 주성으로 해석. 데이터 부족 시 "사주 기준으로" 전환.
+★ 교차 검증 활용: SECTION 0.5의 자미두수×사주 교차 검증 결과에서 "일치"인 영역은 자신있게 단언하고, "상충"인 영역은 "시기에 따라 달라질 수 있다"고 유연하게 표현.
+★ 절대 금지: 궁간사화, 삼대기추적, 래인궁 등 전문 용어를 고객에게 직접 노출하지 말 것. 자연스러운 문장으로 풀어서 설명할 것.
 `;
 
   // ========================

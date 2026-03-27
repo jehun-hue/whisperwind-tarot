@@ -14,6 +14,7 @@ import {
   type MinorPeriod,
   type TransformationType,
   type ZiWeiResult,
+  STAR_PALACE_MEANINGS,
 } from './ziweiEngineV2.ts';
 
 // V2 엔진에서 모든 것을 가져옴 (이름 매핑 포함)
@@ -27,6 +28,7 @@ export {
   type MajorPeriod,
   type MinorPeriod,
   type TransformationType,
+  STAR_PALACE_MEANINGS,
 };
 
 // 기존 integratedReadingEngine.ts 및 다른 파일에서 요구하는 인터페이스 호환성 유지
