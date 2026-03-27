@@ -72,6 +72,39 @@ export function runCrossValidation(
   ziweiResult: any,
   sajuResult: any
 ): CrossValidationResult {
+  // ── 필드 존재 방어 로직 ──
+  if (!sajuResult) {
+    console.error("[CrossValidation] sajuResult가 null/undefined");
+    return {
+      items: [],
+      overallAgreement: 0,
+      strongSignals: [],
+      conflictSignals: [],
+      summary: "교차검증 불가: 사주 데이터 없음"
+    };
+  }
+
+  // tenGods 형식 정규화 (배열 vs 객체 대응)
+  let tenGodCounts: Record<string, number> = {};
+  if (Array.isArray(sajuResult.tenGods)) {
+    for (const tg of sajuResult.tenGods) {
+      const name = tg.tenGod || tg.name || tg.type;
+      if (name) tenGodCounts[name] = (tenGodCounts[name] || 0) + 1;
+    }
+  } else if (sajuResult.tenGods && typeof sajuResult.tenGods === 'object') {
+    tenGodCounts = sajuResult.tenGods;
+  }
+
+  // 용신/기신/오행 방어
+  const yongShin = sajuResult.yongShin || sajuResult.yongsin || "";
+  const giShin = sajuResult.giShin || sajuResult.gisin || "";
+  const elements = sajuResult.elements || sajuResult.fiveElementDist || {};
+
+  // 충합/12운성/대운 방어
+  const interactions = sajuResult.interactions || sajuResult.jijiInteractions || { clashes: [], harmonies: [] };
+  const twelveStages = sajuResult.twelve_stages || sajuResult.twelveLifeStages || sajuResult.twelveStages || {};
+  const daewoon = sajuResult.daewoon || sajuResult.daewoonResult || sajuResult.currentDaeun || null;
+
   const items: CrossValidationItem[] = [];
   
   for (const [domainKey, mapping] of Object.entries(DOMAIN_MAP)) {
@@ -140,9 +173,8 @@ export function runCrossValidation(
     let sajuNegative = 0;
     
     // 십성 분포 확인
-    const tenGods = sajuResult?.tenGods || {};
     for (const tg of mapping.sajuTenGods) {
-      const count = tenGods[tg] || 0;
+      const count = tenGodCounts[tg] || 0;
       if (count > 0) {
         sajuEvidence.push(`${tg} ${count}개 활성`);
         sajuPositive += count;
@@ -157,14 +189,12 @@ export function runCrossValidation(
     }
     
     // 용신 관련 확인
-    const yongShin = sajuResult?.yongShin || "";
     if (mapping.sajuElements.some(el => yongShin.includes(el))) {
       sajuEvidence.push(`용신이 ${yongShin}으로 해당 영역에 유리`);
       sajuPositive += 2;
     }
     
     // 기신 관련 확인
-    const giShin = sajuResult?.giShin || "";
     if (mapping.sajuElements.some(el => giShin.includes(el))) {
       sajuEvidence.push(`기신이 ${giShin}으로 해당 영역에 장애`);
       sajuNegative += 2;
@@ -181,12 +211,12 @@ export function runCrossValidation(
     }
     
     // 12운성 에너지
-    const seunStage = sajuResult?.twelve_stages?.seun?.level || 50;
+    const seunStage = twelveStages.seun?.level || twelveStages.sewun?.level || 50;
     if (seunStage >= 70) {
-      sajuEvidence.push(`세운 12운성 ${seunStage}점 — 에너지 충만`);
+      sajuEvidence.push(`세운 12운성(${seunStage}점) — 에너지 충만`);
       sajuPositive += 1;
     } else if (seunStage <= 30) {
-      sajuEvidence.push(`세운 12운성 ${seunStage}점 — 에너지 저하`);
+      sajuEvidence.push(`세운 12운성(${seunStage}점) — 에너지 저하`);
       sajuNegative += 1;
     }
     
