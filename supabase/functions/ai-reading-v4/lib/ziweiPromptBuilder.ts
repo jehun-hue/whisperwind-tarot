@@ -209,10 +209,6 @@ export function buildZiWeiPromptSection(ziwei: ZiweiResult): string {
     if (ya.natalOverlap && ya.natalOverlap.length > 0)
       lines.push(`  본명 겹침: ${ya.natalOverlap.join(", ")}`);
     lines.push(`  해석: ${ya.interpretation.slice(0, 200)}`);
-  } else if (ziwei.annualTransformations && ziwei.annualTransformations.length > 0) {
-    lines.push("");
-    lines.push(`[${ziwei.annualYear}년 유년 사화] 천간: ${ziwei.annualGan}`);
-    lines.push(`  유년사화: ${ziwei.annualTransformations.map(t => `${t.type}(${t.star})`).join(", ")}`);
   }
 
   return lines.join("\n");

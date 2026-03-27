@@ -128,6 +128,7 @@ export interface ZiWeiResult {
   natalTransformations: Transformation[];
   // 대한/소한
   majorPeriods: MajorPeriod[];
+  currentMajorPeriod: MajorPeriod | null;
   currentMinorPeriod: MinorPeriod | null;
   periodAnalysis: string;
 
@@ -552,11 +553,14 @@ function placeSpecialShenSha(
   add((9 + lunarMonth - 1) % 12, "천형");
 
   // 천요(天姚) — 월 기준: 丑(1)에서 월만큼 순행
-  add((1 + lunarMonth - 1) % 12, "천요");
+  add(lunarMonth % 12, "천요");
 
-  // 천덕(天德) — 월 기준
-  // 정월→酉(9), 2월→戌(10), 3월→亥(11), 4월→子(0) … 순행
-  add((9 + lunarMonth - 1) % 12, "천덕");
+  // 천덕(天德) — 연지(年지) 기준 고정 테이블
+  const tianDeTable: Record<number, number> = {
+    0: 5, 1: 9, 2: 11, 3: 11, 4: 5, 5: 9,
+    6: 5, 7: 9, 8: 11, 9: 11, 10: 5, 11: 9,
+  };
+  add(tianDeTable[yearBranchIdx] ?? 5, "천덕");
 
   // 월덕(月德) — 월 기준: 巳(5)에서 월만큼 순행
   add((5 + lunarMonth - 1) % 12, "월덕");
@@ -1126,7 +1130,11 @@ function traceSiHuaChain(
   const rokChain: FlyingChain[] = [];
 
   let currentIdx = startPalaceIdx;
+  const giVisited = new Set<number>();
   for (let depth = 1; depth <= maxDepth; depth++) {
+    if (giVisited.has(currentIdx)) break;
+    giVisited.add(currentIdx);
+    
     const stem = getPalaceGan(yearGanIdx, currentIdx);
     const table = TRANSFORMATION_TABLE[stem];
     if (!table) break;
@@ -1155,7 +1163,11 @@ function traceSiHuaChain(
 
   // 화록도 동일하게 추적 (currentIdx를 startPalaceIdx로 리셋)
   currentIdx = startPalaceIdx;
+  const rokVisited = new Set<number>();
   for (let depth = 1; depth <= maxDepth; depth++) {
+    if (rokVisited.has(currentIdx)) break;
+    rokVisited.add(currentIdx);
+    
     const stem = getPalaceGan(yearGanIdx, currentIdx);
     const table = TRANSFORMATION_TABLE[stem];
     if (!table) break;
