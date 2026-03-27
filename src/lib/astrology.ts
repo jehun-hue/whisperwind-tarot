@@ -236,9 +236,12 @@ export interface AstrologyResult {
   };
 }
 
-function calculateHouses(year: number, month: number, day: number, hour: number, minute: number = 0) {
-  const date = new Date(Date.UTC(year, month - 1, day, hour - 9, minute));
-  const observer = new Astronomy.Observer(37.5, 127.0, 0); // User requested Seoul default
+function calculateHouses(
+  year: number, month: number, day: number, hour: number, minute: number = 0,
+  latitude: number = 37.5665, longitude: number = 126.978
+) {
+  const date = new Date(Date.UTC(year, month - 1, day, hour, minute));
+  const observer = new Astronomy.Observer(latitude, longitude, 0);
   const time = Astronomy.MakeTime(date);
   
   const lst = (Astronomy.SiderealTime(time) + (observer.longitude / 15.0) + 24) % 24;
@@ -251,9 +254,7 @@ function calculateHouses(year: number, month: number, day: number, hour: number,
   const mcRad = Math.atan2(Math.sin(ramcRad), Math.cos(ramcRad) * Math.cos(epsRad));
   const mcDeg = (mcRad * 180 / Math.PI + 360) % 360;
 
-  const x = -(Math.sin(epsRad) * Math.tan(phiRad) + Math.cos(epsRad) * Math.sin(ramcRad));
-  const y = Math.cos(ramcRad);
-  const ascRad = Math.atan2(y, x);
+  const ascRad = Math.atan2(Math.cos(ramcRad), -(Math.sin(epsRad) * Math.tan(phiRad) + Math.cos(epsRad) * Math.sin(ramcRad)));
   const ascDeg = (ascRad * 180 / Math.PI + 360) % 360;
 
   const angle = (ascDeg - mcDeg + 360) % 360;
