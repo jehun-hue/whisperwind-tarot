@@ -1,6 +1,9 @@
 /**
- * Western Astrology 계산 엔진 - 고급 버전
- * Julian Day 기반 정밀 계산, 에센셜 디그니티, 상세 어스펙트
+ * astrology.ts
+ * 서양 점성술 계산 엔진 (astronomy-engine 기반)
+ * - 행성 경도: GeoVector + Ecliptic (지구중심 황도좌표)
+ * - 하우스: Placidus Semi-Arc Trisection (Swiss Ephemeris 검증 완료)
+ * - 역행 감지: 1일 전후 경도 비교
  */
 import * as AstronomyImport from "astronomy-engine";
 // ESM/CJS 상호운용성 해결: default가 있으면 사용, 없으면 전체 객체 사용
