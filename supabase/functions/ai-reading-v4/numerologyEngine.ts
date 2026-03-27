@@ -4,12 +4,18 @@
  * - Life Path, Expression, Soul Urge, Personality, Birthday, Maturity
  * - Personal Year, Month, Day
  * - Pinnacles & Challenges
+ * 
+ * 🔧 FIX: fix/numerology-engine 브랜치 수정사항
+ * - Pinnacle 1 종료 나이 Master Number 보정 (최소 27세 보장)
+ * - 한글 이름 전용 시 Expression/SoulUrge/Personality 한글 획수 기반 폴백
+ * - Karmic Debt 상세 정보 반환 강화
+ * - Master Number 상세 정보 반환 강화
  */
 
 export interface NumerologyResult {
   life_path_number: number;
-  destiny_number: number | null; // Hangul fallback
-  expressionNumber: number | null; // English
+  destiny_number: number | null;
+  expressionNumber: number | null;
   soulUrgeNumber: number | null;
   personalityNumber: number | null;
   birthdayNumber: number;
@@ -21,11 +27,13 @@ export interface NumerologyResult {
   challenges: any[];
   is_master_number: boolean;
   master_number_type: string | null;
+  master_numbers: number[];           // 🔧 FIX #6: 보유 마스터넘버 배열
   compound_number: number;
   numberMeanings: any;
   vibrations: string[];
   karmic_debts: number[];
   has_karmic_debt: boolean;
+  karmic_debt_details: string[];      // 🔧 FIX #5: 카르마 부채 상세 설명
 }
 
 const PYTHAGOREAN_MAP: Record<string, number> = {
@@ -57,8 +65,15 @@ const NUMBER_MEANINGS: Record<number, any> = {
   33: { keyword: "치유자", description: "무조건적 사랑, 희생, 교육", energy: "봉사", master: true }
 };
 
+// 🔧 FIX #5: Karmic Debt 상세 설명 매핑
+const KARMIC_DEBT_DETAILS: Record<number, string> = {
+  13: "게으름과 무책임에 대한 카르마 — 근면과 집중력으로 극복해야 합니다",
+  14: "자유의 남용에 대한 카르마 — 절제와 균형이 필요합니다",
+  16: "자아의 오만함에 대한 카르마 — 겸손을 배우는 것이 과제입니다",
+  19: "이기심에 대한 카르마 — 타인을 위한 봉사와 나눔이 성장의 열쇠입니다"
+};
+
 function reduceToSingle(n: number): number {
-  // B-43R: 마스터 넘버(11, 22, 33) 예외 처리
   while (n > 9 && n !== 11 && n !== 22 && n !== 33) {
     n = n.toString().split('').reduce((acc, d) => acc + parseInt(d), 0);
   }
@@ -96,10 +111,16 @@ const COMPLEX_JONG_STROKE: Record<string, number> = {
   'ㅄ':6
 };
 
-export function calculateDestinyNumber(name: string): { value: number; rawTotal: number } | null {
-  if (!name || name.trim() === "" || name === "이름없음") return null;
-  let totalStrokes = 0;
+// 🔧 FIX #4: 한글 이름 초·중·종성 분리 함수 (Expression/SoulUrge/Personality 폴백용)
+function decomposeHangul(name: string): { choStrokes: number; jungStrokes: number; jongStrokes: number; totalStrokes: number } | null {
+  let choStrokes = 0;
+  let jungStrokes = 0;
+  let jongStrokes = 0;
   let hasHangul = false;
+
+  const CHO = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+  const JUNG = ['ㅏ','ㅐ','ㅑ','ㅒ','ㅓ','ㅔ','ㅕ','ㅖ','ㅗ','ㅘ','ㅙ','ㅚ','ㅛ','ㅜ','ㅝ','ㅞ','ㅟ','ㅠ','ㅡ','ㅢ','ㅣ'];
+  const JONG = ['','ㄱ','ㄲ','ㄳ','ㄴ','ㄵ','ㄶ','ㄷ','ㄹ','ㄺ','ㄻ','ㄼ','ㄽ','ㄾ','ㄿ','ㅀ','ㅁ','ㅂ','ㅄ','ㅅ','ㅆ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
 
   for (const char of name) {
     const code = char.charCodeAt(0);
@@ -110,20 +131,33 @@ export function calculateDestinyNumber(name: string): { value: number; rawTotal:
       const jungIdx = Math.floor((offset % (21 * 28)) / 28);
       const jongIdx = offset % 28;
 
-      const CHO = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
-      const JUNG = ['ㅏ','ㅐ','ㅑ','ㅒ','ㅓ','ㅔ','ㅕ','ㅖ','ㅗ','ㅘ','ㅙ','ㅚ','ㅛ','ㅜ','ㅝ','ㅞ','ㅟ','ㅠ','ㅡ','ㅢ','ㅣ'];
-      const JONG = ['','ㄱ','ㄲ','ㄳ','ㄴ','ㄵ','ㄶ','ㄷ','ㄹ','ㄺ','ㄻ','ㄼ','ㄽ','ㄾ','ㄿ','ㅀ','ㅁ','ㅂ','ㅄ','ㅅ','ㅆ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
-
-      totalStrokes += CONSONANT_STROKE[CHO[choIdx]] || 0;
-      totalStrokes += VOWEL_STROKE[JUNG[jungIdx]] || 0;
+      choStrokes += CONSONANT_STROKE[CHO[choIdx]] || 0;
+      jungStrokes += VOWEL_STROKE[JUNG[jungIdx]] || 0;
       if (jongIdx > 0) {
         const jong = JONG[jongIdx];
-        totalStrokes += CONSONANT_STROKE[jong] || COMPLEX_JONG_STROKE[jong] || 0;
+        jongStrokes += CONSONANT_STROKE[jong] || COMPLEX_JONG_STROKE[jong] || 0;
       }
     }
   }
   if (!hasHangul) return null;
-  return { value: reduceToSingle(totalStrokes), rawTotal: totalStrokes };
+  return { choStrokes, jungStrokes, jongStrokes, totalStrokes: choStrokes + jungStrokes + jongStrokes };
+}
+
+export function calculateDestinyNumber(name: string): { value: number; rawTotal: number } | null {
+  if (!name || name.trim() === "" || name === "이름없음") return null;
+  const decomposed = decomposeHangul(name);
+  if (!decomposed) return null;
+  return { value: reduceToSingle(decomposed.totalStrokes), rawTotal: decomposed.totalStrokes };
+}
+
+// 🔧 FIX #1: Pinnacle 1 종료 나이 안전 계산 (Master Number 보정)
+function calculatePinnacle1EndAge(lifePath: number): number {
+  // 전통: 36 - lifePath. 
+  // Master Number(11,22,33)는 환원 후 계산하되 최소 27세 보장
+  const base = lifePath > 9 ? reduceToSingle(lifePath) : lifePath;
+  const endAge = 36 - base;
+  // 안전장치: 최소 27세 (현실적인 첫 피너클 종료 나이)
+  return Math.max(endAge, 27);
 }
 
 export function calculateNumerology(
@@ -148,7 +182,7 @@ export function calculateNumerology(
   const rDay = reduceToSingle(day);
   const rYear = reduceToSingle(sumDigits(yearStr));
 
-  // 1. Life Path: Reduced Month + Reduced Day + Reduced Year
+  // 1. Life Path
   const lifePath = reduceToSingle(rMonth + rDay + rYear);
   const lpSum = rMonth + rDay + rYear;
 
@@ -173,25 +207,35 @@ export function calculateNumerology(
     }
   }
 
+  // 🔧 FIX #4: 한글 이름만 있을 때 Expression/SoulUrge/Personality 폴백
+  if (expression === null && name) {
+    const decomposed = decomposeHangul(name);
+    if (decomposed) {
+      // 초성(자음) → Personality(외면), 중성(모음) → Soul Urge(내면), 전체 → Expression
+      expression = reduceToSingle(decomposed.totalStrokes);
+      soulUrge = reduceToSingle(decomposed.jungStrokes);
+      personality = reduceToSingle(decomposed.choStrokes + decomposed.jongStrokes);
+    }
+  }
+
   // 3. Birthday Number
   const birthdayNumber = reduceToSingle(day);
 
   // 4. Maturity Number
   const maturityNumber = expression ? reduceToSingle(lifePath + expression) : null;
 
-  // 5. Personal Year, Month, Day (based on current date)
+  // 5. Personal Year, Month, Day
   const now = new Date();
   const personalYear = reduceToSingle(sumDigits(monthStr) + sumDigits(dayStr) + sumDigits(currentYear.toString()));
   const personalMonth = reduceToSingle(personalYear + (now.getMonth() + 1));
   const personalDay = reduceToSingle(personalMonth + now.getDate());
 
-  // 6. Destiny (Hangul fallback)
+  // 6. Destiny (Hangul)
   const destinyResult = calculateDestinyNumber(name || "");
   const destiny = destinyResult ? destinyResult.value : null;
   const destinyRawTotal = destinyResult ? destinyResult.rawTotal : 0;
 
-  // 7. Pinnacles & Challenges
-
+  // 7. Pinnacles & Challenges — 🔧 FIX #1 적용
   const p1 = reduceToSingle(rMonth + rDay);
   const p2 = reduceToSingle(rDay + rYear);
   const p3 = reduceToSingle(p1 + p2);
@@ -202,7 +246,8 @@ export function calculateNumerology(
   const c3 = reduceToSingle(Math.abs(c1 - c2));
   const c4 = reduceToSingle(Math.abs(rMonth - rYear));
 
-  const endAge1 = 36 - lifePath;
+  const endAge1 = calculatePinnacle1EndAge(lifePath); // 🔧 FIX #1
+
   const pinnacles = [
     { period: `출생 ~ ${endAge1}세`, number: p1, meaning: (NUMBER_MEANINGS[p1]?.energy || "변화") + "의 시기" },
     { period: `${endAge1 + 1} ~ ${endAge1 + 9}세`, number: p2, meaning: (NUMBER_MEANINGS[p2]?.energy || "변화") + "의 시기" },
@@ -228,19 +273,29 @@ export function calculateNumerology(
   const vibrations: string[] = [];
   vibrations.push(`생명수 ${lifePath}(${NUMBER_MEANINGS[lifePath]?.keyword}): ${NUMBER_MEANINGS[lifePath]?.description}`);
   vibrations.push(`개인년 ${personalYear}(${NUMBER_MEANINGS[personalYear]?.keyword}): ${NUMBER_MEANINGS[personalYear]?.energy} 에너지가 강한 해`);
-  if (expression) vibrations.push(`표현수 ${expression}: 대외적인 이미지와 삶의 목적`);
+  if (expression) vibrations.push(`표현수 ${expression}(${NUMBER_MEANINGS[expression]?.keyword || ''}): 대외적인 이미지와 삶의 목적`);
+  if (soulUrge) vibrations.push(`영혼충동수 ${soulUrge}(${NUMBER_MEANINGS[soulUrge]?.keyword || ''}): 내면의 진정한 욕구`);  // 🔧 FIX: 추가 정보
 
-  const masterNumbers = [11, 22, 33];
-  const isMasterNumber = masterNumbers.includes(lifePath) || masterNumbers.includes(personalYear) || (expression !== null && masterNumbers.includes(expression!));
-  
+  // 🔧 FIX #6: 마스터넘버 상세 수집
+  const masterNumbersList: number[] = [];
+  if ([11, 22, 33].includes(lifePath)) masterNumbersList.push(lifePath);
+  if (expression !== null && [11, 22, 33].includes(expression!) && !masterNumbersList.includes(expression!)) masterNumbersList.push(expression!);
+  if ([11, 22, 33].includes(personalYear) && !masterNumbersList.includes(personalYear)) masterNumbersList.push(personalYear);
+  if (soulUrge !== null && [11, 22, 33].includes(soulUrge!) && !masterNumbersList.includes(soulUrge!)) masterNumbersList.push(soulUrge!);
+
+  const isMasterNumber = masterNumbersList.length > 0;
+
   let masterNumberType = null;
-  if (masterNumbers.includes(lifePath)) masterNumberType = `생명수 ${lifePath}`;
-  else if (expression && masterNumbers.includes(expression)) masterNumberType = `표현수 ${expression}`;
-  else if (masterNumbers.includes(personalYear)) masterNumberType = `개인년 ${personalYear}`;
+  if ([11, 22, 33].includes(lifePath)) masterNumberType = `생명수 ${lifePath}`;
+  else if (expression && [11, 22, 33].includes(expression)) masterNumberType = `표현수 ${expression}`;
+  else if ([11, 22, 33].includes(personalYear)) masterNumberType = `개인년 ${personalYear}`;
 
-  // Karmic Debt 감지 (환원 전 원시 합계에서 체크)
+  // Karmic Debt
   const lpRawSum = rMonth + rDay + rYear;
   const karmicDebts = detectKarmicDebt(lpRawSum, eSum, sSum, pSum, day, destinyRawTotal);
+  
+  // 🔧 FIX #5: Karmic Debt 상세 설명
+  const karmicDebtDetails = karmicDebts.map(d => KARMIC_DEBT_DETAILS[d] || `카르마 부채 ${d}`);
 
   return {
     life_path_number: lifePath,
@@ -257,11 +312,13 @@ export function calculateNumerology(
     challenges,
     is_master_number: isMasterNumber,
     master_number_type: masterNumberType,
+    master_numbers: masterNumbersList,              // 🔧 FIX #6
     compound_number: lpSum,
     numberMeanings,
     vibrations,
     karmic_debts: karmicDebts,
-    has_karmic_debt: karmicDebts.length > 0
+    has_karmic_debt: karmicDebts.length > 0,
+    karmic_debt_details: karmicDebtDetails           // 🔧 FIX #5
   };
 }
 
@@ -271,7 +328,7 @@ export interface PinnacleResult {
 }
 
 /**
- * A22: Pinnacle & Challenge 계산
+ * A22: Pinnacle & Challenge 계산 — 🔧 FIX #1 적용
  */
 export function calculatePinnacles(birthDate: Date): PinnacleResult {
   const month = birthDate.getMonth() + 1;
@@ -297,7 +354,7 @@ export function calculatePinnacles(birthDate: Date): PinnacleResult {
   const c3 = reduceToSingle(Math.abs(c1 - c2));
   const c4 = reduceToSingle(Math.abs(rMonth - rYear));
 
-  const p1End = 36 - (lifePath > 9 ? reduceToSingle(lifePath) : lifePath);
+  const p1End = calculatePinnacle1EndAge(lifePath); // 🔧 FIX #1: 통일된 함수 사용
 
   return {
     pinnacles: [
