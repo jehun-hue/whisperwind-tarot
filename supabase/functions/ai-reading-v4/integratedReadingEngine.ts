@@ -481,6 +481,9 @@ export function buildEnginePrompts(input: any, sajuRaw: any, sajuAnalysis: any, 
   }
 
   
+  if (!sajuRaw?.dayMaster && !sajuRaw?.pillars) {
+    console.warn("[WARN][buildEnginePrompts] sajuRaw 데이터 부족 — DB 폴백 경로 사용 중");
+  }
   const sajuDisplay = {
     fourPillars: sajuRaw?.year ? 
       `년주 ${sajuRaw.year.stem}${sajuRaw.year.branch}, 월주 ${sajuRaw.month.stem}${sajuRaw.month.branch}, 일주 ${sajuRaw.day.stem}${sajuRaw.day.branch}, 시주 ${sajuRaw.hour.stem}${sajuRaw.hour.branch}` :
@@ -767,11 +770,33 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
   }
 
   // Step 1: Physical Calculation Pipeline
+    // === 미세사항3: 음력 입력 방어 코드 ===
+    const rawBirth = input.birthInfo || {};
+    const isLunarInput = rawBirth.isLunar === true || rawBirth.calendar === 'lunar' || rawBirth.calendarType === 'lunar';
+    let sajuYear = rawBirth.year || rawBirth.birthYear;
+    let sajuMonth = rawBirth.month || rawBirth.birthMonth;
+    let sajuDay = rawBirth.day || rawBirth.birthDay;
+
+    if (isLunarInput) {
+      try {
+        const solarConverted = lunarToSolarAccurate(sajuYear, sajuMonth, sajuDay, rawBirth.isLeapMonth || false);
+        console.log(`[SAJU][음력→양력] ${sajuYear}-${sajuMonth}-${sajuDay} → ${solarConverted.year}-${solarConverted.month}-${solarConverted.day}`);
+        sajuYear = solarConverted.year;
+        sajuMonth = solarConverted.month;
+        sajuDay = solarConverted.day;
+      } catch (lunarErr: any) {
+        console.error(`[SAJU][음력변환실패] ${lunarErr.message} — 원본 양력 가정으로 진행`);
+      }
+    } else {
+      console.log(`[SAJU] 양력 입력: ${sajuYear}-${sajuMonth}-${sajuDay}`);
+    }
+    // === 음력 방어 코드 끝 ===
+
     // 사주 계산 (동기)
     let sajuRaw: any = null;
     try {
       sajuRaw = calculateSaju(
-        solarBirthInfo.year, solarBirthInfo.month, solarBirthInfo.day, 
+        sajuYear, sajuMonth, sajuDay, 
         solarBirthInfo.hour, solarBirthInfo.minute, solarBirthInfo.gender,
         solarBirthInfo.longitude,
         !!(solarBirthInfo.hour !== undefined && solarBirthInfo.hour !== null && solarBirthInfo.hour >= 0)
