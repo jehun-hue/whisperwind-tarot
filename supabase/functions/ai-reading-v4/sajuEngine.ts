@@ -54,10 +54,12 @@ export function calculateSaju(
   }
 
   const jd = calculateJulianDay(correctedDate);
-  const sunLong = getSunLongitude(jd);
+  // 1.5. Prepare UTC JD for astronomical calculations (Year/Month/Solar Terms)
+  const utcJD = calculateJulianDay(new Date(birthMomentUTC));
+  const sunLong = getSunLongitude(utcJD);
 
   // 2. Pillars
-  const yP = getYearPillar(year, jd);
+  const yP = getYearPillar(year, utcJD);
   const mP = getMonthPillar(sunLong, (yP.idx % 10));
   const dP = getDayPillar(jd);
   const hP = getHourPillar((dP.idx % 10), lmtHour);
