@@ -95,6 +95,32 @@ export function buildZiWeiPromptSection(ziwei: ZiweiResult): string {
       if (auxStars) lines.push(`    보조성: ${auxStars}`);
       if (trans) lines.push(`    사화: ${trans}`);
       if (shenSha) lines.push(`    신살: ${shenSha}`);
+
+      // 삼방사정 분석 추가 (Tier 2-3)
+      const BRANCHES_LIST = ["자", "축", "인", "묘", "진", "사", "오", "미", "신", "유", "술", "해"];
+      const palaceBranchIdx = BRANCHES_LIST.indexOf(palace.branch);
+      if (palaceBranchIdx >= 0) {
+        const oppositeIdx = (palaceBranchIdx + 6) % 12;
+        const trine1Idx = (palaceBranchIdx + 4) % 12;
+        const trine2Idx = (palaceBranchIdx + 8) % 12;
+
+        const getStarsAtBranch = (branchIdx: number) => {
+          const p = (ziwei.palaces || []).find(pp => pp.branch === BRANCHES_LIST[branchIdx]);
+          if (!p) return "";
+          return (p.stars || [])
+            .filter(s => ["자미", "천기", "태양", "무곡", "천동", "염정", "천부", "태음", "탐랑", "거문", "천상", "천량", "칠살", "파군"].includes(s.star))
+            .map(s => s.star)
+            .join(",");
+        };
+
+        const oppStars = getStarsAtBranch(oppositeIdx);
+        const tri1Stars = getStarsAtBranch(trine1Idx);
+        const tri2Stars = getStarsAtBranch(trine2Idx);
+
+        if (oppStars || tri1Stars || tri2Stars) {
+          lines.push(`    삼방사정: 대궁[${oppStars || "빈"}] 삼합[${tri1Stars || "빈"}, ${tri2Stars || "빈"}]`);
+        }
+      }
     }
   }
 
