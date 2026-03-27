@@ -112,10 +112,17 @@ export function calculateSaju(
   if (powerElements.includes(FIVE_ELEMENTS_MAP[dP.branch])) strengthScore += weights.dayBranch;
   if (powerElements.includes(FIVE_ELEMENTS_MAP[hP.branch])) strengthScore += weights.hourBranch;
 
+  const strengthPercent = Math.round((strengthScore / 100) * 100);
   const strength = strengthScore >= 80 ? "극신강" :
                    strengthScore >= 55 ? "신강" :
                    strengthScore >= 45 ? "중화" :
                    strengthScore >= 30 ? "신약" : "극신약";
+
+  const strength_detail = {
+    score: strengthScore,
+    percent: strengthPercent,
+    overall: strength
+  };
 
   const allTG = [yearTG.stem, yearTG.branch, monthTG.stem, monthTG.branch, dayTGBranch, hourTG.stem, hourTG.branch];
   const tenGods: Record<string, number> = {
@@ -179,6 +186,8 @@ export function calculateSaju(
     hour: { stem: hP.stem, branch: hP.branch, tenGod: hourTG },
     dayMaster,
     strength,
+    strength_detail,
+    sunLong,
     fiveElements: elementsCount,
     tenGods,
     yongShin,
