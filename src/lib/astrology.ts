@@ -167,57 +167,30 @@ function calculateAspects(positions: { planet: Planet; absoluteDegree: number }[
   return aspects;
 }
 
-// ========== Julian Day Calculation ==========
-function toJulianDay(year: number, month: number, day: number, hour: number = 12, minute: number = 0): number {
-  let y = year, m = month;
-  if (m <= 2) { y--; m += 12; }
-  const A = Math.floor(y / 100);
-  const B = 2 - A + Math.floor(A / 4);
-  const decimalHour = hour + minute / 60;
-  return Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (m + 1)) + day + decimalHour / 24 + B - 1524.5;
-}
-
 // ========== Improved Planet Positions ==========
+const BODY_MAP: Record<Planet, Astronomy.Body> = {
+  "태양": Astronomy.Body.Sun,
+  "달": Astronomy.Body.Moon,
+  "수성": Astronomy.Body.Mercury,
+  "금성": Astronomy.Body.Venus,
+  "화성": Astronomy.Body.Mars,
+  "목성": Astronomy.Body.Jupiter,
+  "토성": Astronomy.Body.Saturn,
+  "천왕성": Astronomy.Body.Uranus,
+  "해왕성": Astronomy.Body.Neptune,
+  "명왕성": Astronomy.Body.Pluto,
+};
+
 function calculatePrecisePlanetPositions(year: number, month: number, day: number, hour: number, minute: number = 0) {
-  const jd = toJulianDay(year, month, day, hour, minute);
-  const T = (jd - 2451545.0) / 36525; // centuries from J2000
+  const date = new Date(Date.UTC(year, month - 1, day, hour, minute));
+  const time = Astronomy.MakeTime(date);
 
-  // More precise orbital elements
-  const sunLong = (280.46646 + 36000.76983 * T + 0.0003032 * T * T) % 360;
-  const sunAnomaly = (357.52911 + 35999.05029 * T - 0.0001537 * T * T) % 360;
-  const sunCenter = (1.9146 - 0.004817 * T) * Math.sin(sunAnomaly * Math.PI / 180)
-    + 0.019993 * Math.sin(2 * sunAnomaly * Math.PI / 180);
-  const sunTrue = ((sunLong + sunCenter) % 360 + 360) % 360;
-
-  // Moon
-  const moonLong = (218.3165 + 481267.8813 * T) % 360;
-  const moonAnomaly = (134.9634 + 477198.8676 * T) % 360;
-  const moonEv = 1.2739 * Math.sin((2 * (moonLong - sunTrue) - moonAnomaly) * Math.PI / 180);
-  const moonTrue = ((moonLong + moonEv + 6.2886 * Math.sin(moonAnomaly * Math.PI / 180)) % 360 + 360) % 360;
-
-  // Other planets - improved mean longitude + perturbation
-  const mercuryLong = ((168.6562 + 4.0923344368 * jd + 0.3 * Math.sin((sunAnomaly + 30) * Math.PI / 180)) % 360 + 360) % 360;
-  const venusLong = ((76.6799 + 1.6021302244 * jd + 0.2 * Math.sin((sunAnomaly * 0.6 + 45) * Math.PI / 180)) % 360 + 360) % 360;
-  const marsLong = ((49.5574 + 0.5240207766 * jd + 0.15 * Math.sin(sunAnomaly * Math.PI / 180)) % 360 + 360) % 360;
-  const jupiterLong = ((34.40438 + 0.0831 * (jd - 2451545)) % 360 + 360) % 360;
-  const saturnLong = ((49.94432 + 0.0335 * (jd - 2451545)) % 360 + 360) % 360;
-  const uranusLong = ((313.23218 + 0.01173 * (jd - 2451545)) % 360 + 360) % 360;
-  const neptuneLong = ((304.88003 + 0.006 * (jd - 2451545)) % 360 + 360) % 360;
-  const plutoLong = ((238.92881 + 0.004 * (jd - 2451545)) % 360 + 360) % 360;
-
-  return [
-    { planet: "태양" as Planet, longitude: sunTrue },
-    { planet: "달" as Planet, longitude: moonTrue },
-    { planet: "수성" as Planet, longitude: mercuryLong },
-    { planet: "금성" as Planet, longitude: venusLong },
-    { planet: "화성" as Planet, longitude: marsLong },
-    { planet: "목성" as Planet, longitude: jupiterLong },
-    { planet: "토성" as Planet, longitude: saturnLong },
-    { planet: "천왕성" as Planet, longitude: uranusLong },
-    { planet: "해왕성" as Planet, longitude: neptuneLong },
-    { planet: "명왕성" as Planet, longitude: plutoLong },
-  ];
+  return PLANETS.map((planet) => ({
+    planet,
+    longitude: Astronomy.EclipticLongitude(BODY_MAP[planet], time),
+  }));
 }
+
 
 export interface PlanetPosition {
   planet: Planet;
@@ -285,7 +258,6 @@ function calculateHouses(year: number, month: number, day: number, hour: number,
 export function calculateNatalChart(
   year: number, month: number, day: number, hour: number, minute: number = 0
 ): AstrologyResult {
-  const jd = toJulianDay(year, month, day, hour, minute);
   const rawPositions = calculatePrecisePlanetPositions(year, month, day, hour, minute);
   const houses = calculateHouses(year, month, day, hour, minute);
   const risingIdx = Math.floor(houses.asc / 30) % 12;
