@@ -265,7 +265,7 @@ ${signalText}
 • 약점: ${gyeokProfile.weakness}
 • 용신 작용: ${gyeokProfile.with_yongsin}` : '';
 
-  const seunTengo = s?.fortune?.tenGodStem || '';
+  const seunTengo = s?.fortune?.seun?.tenGodStem || s?.daewoon?.current_seun?.tenGodStem || '';
   const tengoProfile = seunTengo ? TENGO_DEEP[seunTengo] : null;
   const tengoBlock = tengoProfile ? `
 【올해 십성 심리: ${seunTengo}】
@@ -273,7 +273,7 @@ ${signalText}
 • 영향 영역: ${tengoProfile.life_area}
 • 조언: ${tengoProfile.advice}` : '';
 
-  const stageName = s?.twelve_stages?.seun?.stage || s?.fortune?.twelveStage || '';
+  const stageName = s?.twelve_stages?.seun?.stage || s?.fortune?.seun?.twelveStage || '';
   const stageProfile = stageName ? TWELVE_STAGES_DEEP[stageName] : null;
   const stageBlock = stageProfile ? `
 【12운성 심층: ${stageName}】
@@ -371,8 +371,8 @@ ${interactionLines}` : '';
 • 오행: ${elSummary}
 • 현재 대운: ${currentDw.full || '?'} (${currentDw.startAge || '?'}~${currentDw.endAge || '?'}세) — 십성: ${currentDw.tenGodStem || ''}/${currentDw.tenGodBranch || ''}${s.is_daewoon_changing_year ? ' [★교운기: 환경/심경 급변기]' : ''} — 에너지: ${dwTwelveStage.level || '?'}점(${dwTwelveStage.description || ''})
 • 세운(${currentSeun.year || '?'}): ${currentSeun.full || '?'} — 십성: ${currentSeun.tenGodStem || ''}/${currentSeun.tenGodBranch || ''}
-• 올해 운세(세운): [${s.fortune?.rating || '평'}] ${s.fortune?.interpretation || ''} (점수: ${s.fortune?.score || 0})
-• 이번 달(월운): [${s.fortune?.currentMonthFortune?.rating || '평'}] ${s.fortune?.currentMonthFortune?.interpretation || ''}
+• 올해 운세(세운): [${s.fortune?.seun?.rating || '평'}] ${s.fortune?.seun?.summary || s.fortune?.yearOverview || ''} (점수: ${s.fortune?.seun?.score || 0})
+• 이번 달(월운): [${s.fortune?.currentMonthFortune?.rating || '평'}] ${s.fortune?.currentMonthFortune?.summary || ''}
 • 세운-원국 교차: ${sewoonTop3}
 • 공망: ${s.gongmang?.emptied?.join(', ') || '없음'} (${s.gongmang?.affectedPillars?.join(', ') || ''})
 ${iljuBlock}
