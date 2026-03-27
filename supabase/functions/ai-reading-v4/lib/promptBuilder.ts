@@ -1,6 +1,7 @@
 import { Signal, CrossSignal } from './signalExtractor.ts';
 import { ILJU_MEANINGS, TENGO_DEEP, GYEOKGUK_DEEP, TWELVE_STAGES_DEEP, YONGSIN_ADVICE, SINSAL_DEEP, DAEWOON_INTERACTION, INTERACTION_DEEP } from "./interpretations/index.ts";
 import { buildZiWeiPromptSection } from "./ziweiPromptBuilder.ts";
+import { runCrossValidation } from "./crossValidationEngine.ts";
 
 export interface UserInfo {
   name?: string;
@@ -171,6 +172,24 @@ ${timelineStr}
   // SECTION 0.5: 교차 패턴 분석 (코드 사전 계산)
   // ========================
   const crossPatterns: string[] = [];
+
+  const crossVal = (ziwei && saju) ? runCrossValidation(ziwei, saju) : null;
+
+  if (crossVal) {
+    crossPatterns.push(`\n[자미두수×사주 구조적 교차 검증] (일치율: ${crossVal.overallAgreement}%)`);
+    crossPatterns.push(`요약: ${crossVal.summary}`);
+    for (const item of crossVal.items) {
+      crossPatterns.push(`  ${item.label}: 자미두수(${item.ziweiSignal}) × 사주(${item.sajuSignal}) → ${item.agreement} (${item.confidence}%)`);
+      if (item.ziweiEvidence.length > 0) crossPatterns.push(`    자미: ${item.ziweiEvidence.slice(0, 2).join(", ")}`);
+      if (item.sajuEvidence.length > 0) crossPatterns.push(`    사주: ${item.sajuEvidence.slice(0, 2).join(", ")}`);
+    }
+    if (crossVal.strongSignals.length > 0) {
+      crossPatterns.push(`\n  ★ 강력 교차 확인: ${crossVal.strongSignals.join(" | ")}`);
+    }
+    if (crossVal.conflictSignals.length > 0) {
+      crossPatterns.push(`\n  ⚠ 상충 주의: ${crossVal.conflictSignals.join(" | ")}`);
+    }
+  }
 
   // 패턴 1: 관계 갈등 시그널 교차
   const sajuConflict = sewoonRels.some((r: any) => r.type === '파' || r.type === '충' || r.type === '형');
