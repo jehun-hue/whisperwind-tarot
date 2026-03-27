@@ -386,7 +386,8 @@ export function calculatePersonalMonth(
     return n.toString().split("").reduce((acc, digit) => acc + (parseInt(digit) || 0), 0);
   };
   
-  const py = reduceToSingle(sumDigitsValue(targetYear) + bMonth + bDay);
+  // 🔧 FIX #10: sumDigits로 통일 (10월=1+0=1, 12월=1+2=3)
+  const py = reduceToSingle(sumDigitsValue(targetYear) + sumDigitsValue(bMonth) + sumDigitsValue(bDay));
   return reduceToSingle(py + targetMonth);
 }
 
