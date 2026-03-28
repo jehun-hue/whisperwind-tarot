@@ -45,11 +45,12 @@ export function calculateSaju(
   const birthMomentUTC = wallClockUTC - (KST_OFFSET * 60 * 60 * 1000);
   
   // [B-1 FIX] 년·월·일주는 벽시계시(KST) 기준으로 계산
-  // 벽시계시 기준 Date 객체 (UTC 환경에서 KST 날짜를 얻기 위해)
-  const wallClockDate = new Date(Date.UTC(year, month - 1, day, hour, minute));
-  const wallClockJD = calculateJulianDay(
-    new Date(Date.UTC(year, month - 1, day, 12, 0)) // 해당 날짜의 정오(noon) UTC — KST 날짜 기준
-  );
+  // 야자시(夜子時) 보정: 23시 이후면 일주용 날짜를 다음 날로 취급
+  const dayPillarDate = new Date(Date.UTC(year, month - 1, day, 12, 0));
+  if (hour >= 23) {
+    dayPillarDate.setUTCDate(dayPillarDate.getUTCDate() + 1);
+  }
+  const wallClockJD = calculateJulianDay(dayPillarDate);
   
   // 시주용 시간: 벽시계시 그대로 사용 (DST 미적용)
   // ※ LMT 보정을 원할 경우 아래 주석 해제

@@ -828,7 +828,17 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
       ziweiSource = "원본음력";
     } else {
       // 양력 입력이면 양력->음력 역변환
-      const lunarResult = solarToLunar(solarBirthInfo.year, solarBirthInfo.month, solarBirthInfo.day);
+      // [B-42/T-3 FIX] 야자시(23시~)인 경우 음력일도 다음 날로 계산 (사주와 동일한 기준)
+      let sY = solarBirthInfo.year;
+      let sM = solarBirthInfo.month;
+      let sD = solarBirthInfo.day;
+      if (birthInfo.hour >= 23) {
+        const nextDay = new Date(Date.UTC(sY, sM - 1, sD + 1));
+        sY = nextDay.getUTCFullYear();
+        sM = nextDay.getUTCMonth() + 1;
+        sD = nextDay.getUTCDate();
+      }
+      const lunarResult = solarToLunar(sY, sM, sD);
       ziweiLunarMonth = lunarResult.lunarMonth;
       ziweiLunarDay = lunarResult.lunarDay;
       ziweiIsLeapMonth = lunarResult.is_leap_month;
