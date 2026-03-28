@@ -106,7 +106,10 @@ export async function crossValidate(
 
   // 2. 타이밍 교차검증
   // 2-1) 사주 대운 ↔ 자미두수 대한
-  const sajuDaewoonGood = saju.daewoon?.is_good || false; // 임의 필드 (실제는 분석 필요)
+  // 대운 길흉 판단: 현재 대운 천간 십성이 정관/정인/식신/정재면 길로 판단
+  const goodTenGods = ["정관", "정인", "식신", "정재", "편재"];
+  const currentDaewoonTenGod = (saju as any).fullDaewoon?.currentDaewoon?.tenGodStem || "";
+  const sajuDaewoonGood = goodTenGods.includes(currentDaewoonTenGod);
   const ziweiMajorGood = ziwei?.currentMajorPeriod?.interpretation.includes("길") || false;
   const timingMatch1 = sajuDaewoonGood === ziweiMajorGood;
 
