@@ -1,6 +1,10 @@
 /**
  * sajuEngine.ts
  * Main coordinator for Saju (Four Pillars) calculation.
+ * 
+ * [B-1 FIX] dayPillar: 벽시계시(KST) 기준 JD 사용. DST/LMT 보정 없음.
+ * [B-2 FIX] DST 보정 제거 — 사주학은 KST(+9) 고정 기준.
+ * [B-3 FIX] LMT 보정은 시주(hourPillar)에만 선택적 적용 가능 (현재 비활성).
  */
 
 import { calculateJulianDay } from "./julianDay.ts";
@@ -12,7 +16,7 @@ import { getDayPillar } from "./dayPillar.ts";
 import { getHourPillar } from "./hourPillar.ts";
 import { calculateTenGod, calculateTenGodBranch } from "./tenGods.ts";
 import { HIDDEN_STEMS } from "./fiveElements.ts";
-import { getKoreanTimezoneOffset } from "./timeUtils.ts";
+// import { getKoreanTimezoneOffset } from "./timeUtils.ts"; // DST 비활성
 import { getDaewoonInfo } from "./daewoon.ts";
 
 export interface SajuPillar {
@@ -32,36 +36,54 @@ export function calculateSaju(
   longitude: number = 127.5,
   hasTime: boolean = true
 ) {
-  // 1. Time correction (Handle UTC environment)
-  const timezoneOffset = getKoreanTimezoneOffset(year, month, day); // 9 for KST, 10 for KDT
+  // ─── 1. 시간 보정 ───
+  // [B-2 FIX] 사주학 표준: DST 무시, KST(+9) 고정
+  const KST_OFFSET = 9;
   
-  // Create a Date object in the system's UTC context, representing KST/KDT wall clock
+  // 벽시계시(wall-clock KST)를 UTC로 변환
   const wallClockUTC = Date.UTC(year, month - 1, day, hour, minute);
-  const birthMomentUTC = wallClockUTC - (timezoneOffset * 60 * 60 * 1000);
+  const birthMomentUTC = wallClockUTC - (KST_OFFSET * 60 * 60 * 1000);
   
-  // Solar Mean Time (LMT) calculation
-  // Local Solar Time = UTC + (longitude / 15)
-  const lmtMoment = birthMomentUTC + (longitude / 15) * 60 * 60 * 1000;
-  const correctedDate = new Date(lmtMoment);
+  // [B-1 FIX] 년·월·일주는 벽시계시(KST) 기준으로 계산
+  // 벽시계시 기준 Date 객체 (UTC 환경에서 KST 날짜를 얻기 위해)
+  const wallClockDate = new Date(Date.UTC(year, month - 1, day, hour, minute));
+  const wallClockJD = calculateJulianDay(
+    new Date(Date.UTC(year, month - 1, day, 12, 0)) // 해당 날짜의 정오(noon) UTC — KST 날짜 기준
+  );
+  
+  // 시주용 시간: 벽시계시 그대로 사용 (DST 미적용)
+  // ※ LMT 보정을 원할 경우 아래 주석 해제
+  // const lmtCorrection = ((longitude - 127.5) / 15) * 60; // 분 단위
+  // const lmtMinutes = hour * 60 + minute + lmtCorrection;
+  // const hourForPillar = Math.floor(lmtMinutes / 60);
+  const hourForPillar = hour; // 벽시계시 그대로
 
-  const jd = calculateJulianDay(correctedDate);
-  const sunLong = getSunLongitude(jd);
+  // 절기 계산용 JD & 태양 황경 (UTC 기준)
+  const jdForSolarTerm = calculateJulianDay(new Date(birthMomentUTC));
+  const sunLong = getSunLongitude(jdForSolarTerm);
 
-  // 2. Pillars
-  const yP = getYearPillar(correctedDate.getUTCFullYear(), jd);
+  // ─── 2. 사주 기둥 ───
+  // 년주: 입춘 기준 (절기용 JD 사용)
+  const yP = getYearPillar(year, jdForSolarTerm);
+  
+  // 월주: 태양 황경 기준
   const mP = getMonthPillar(sunLong, (yP.idx % 10));
-  const dP = getDayPillar(jd);
-  const hP = getHourPillar((dP.idx % 10), correctedDate.getUTCHours());
+  
+  // [B-1 FIX] 일주: 벽시계시 KST 날짜의 JD 사용 (DST/LMT 보정 없음)
+  const dP = getDayPillar(wallClockJD);
+  
+  // 시주: 벽시계시 시간 사용
+  const hP = getHourPillar((dP.idx % 10), hourForPillar);
 
   const dayMaster = dP.stem;
 
-  // 3. Stats & Ten Gods
+  // ─── 3. 십성 & 통계 ───
   const yearTG = { stem: calculateTenGod(dayMaster, yP.stem), branch: calculateTenGodBranch(dayMaster, yP.branch) };
   const monthTG = { stem: calculateTenGod(dayMaster, mP.stem), branch: calculateTenGodBranch(dayMaster, mP.branch) };
   const dayTGBranch = calculateTenGodBranch(dayMaster, dP.branch);
   const hourTG = { stem: calculateTenGod(dayMaster, hP.stem), branch: calculateTenGodBranch(dayMaster, hP.branch) };
 
-  // Five Elements
+  // 오행 카운트
   const chars = [yP.stem, yP.branch, mP.stem, mP.branch, dP.stem, dP.branch, hP.stem, hP.branch];
   const elementsCount: Record<string, number> = { wood: 0, fire: 0, earth: 0, metal: 0, water: 0 };
   chars.forEach(c => {
@@ -69,10 +91,10 @@ export function calculateSaju(
     if (el) elementsCount[el]++;
   });
 
-  // Daewoon
-  const dw = getDaewoonInfo(yP.idx % 10, gender, sunLong, jd, correctedDate.getUTCFullYear());
+  // 대운
+  const dw = getDaewoonInfo(yP.idx % 10, gender, sunLong, jdForSolarTerm, year);
 
-  // Hidden Stems
+  // 지장간
   const hiddenStems = {
     year: HIDDEN_STEMS[yP.branch],
     month: HIDDEN_STEMS[mP.branch],
@@ -80,8 +102,7 @@ export function calculateSaju(
     hour: HIDDEN_STEMS[hP.branch],
   };
 
-  // Strength (Simple dummy logic based on count for now, but user asks for a return - "중신약")
-  // Strength Calculation (Precision 100-point system)
+  // ─── 4. 신강/신약 ───
   const dmEl = FIVE_ELEMENTS_MAP[dayMaster];
   const powerElements = dmEl === "wood" ? ["wood", "water"] :
                         dmEl === "fire" ? ["fire", "wood"] :
@@ -93,8 +114,8 @@ export function calculateSaju(
     monthStem: 9,
     hourStem: 8,
     yearBranch: 10,
-    monthBranch: 40, // Deuk-Ryeong (Core)
-    dayBranch: 15,   // Deuk-Ji
+    monthBranch: 40,
+    dayBranch: 15,
     hourBranch: 10
   };
 
@@ -123,6 +144,6 @@ export function calculateSaju(
     daewoon: dw,
     hiddenStems,
     originalInput: { year, month, day, hour, minute, gender },
-    correctedDate: !isNaN(correctedDate.getTime()) ? correctedDate.toISOString() : "Invalid Date"
+    correctedDate: new Date(birthMomentUTC).toISOString()
   };
 }
