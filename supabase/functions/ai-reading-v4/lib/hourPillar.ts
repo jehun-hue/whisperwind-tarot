@@ -14,6 +14,6 @@ export function getHourPillar(dayStemIdx: number, hour: number): { stem: string;
   return {
     stem: STEMS[stemIdx],
     branch: BRANCHES[branchIdx],
-    idx: (stemIdx * 12 + branchIdx) % 60
+    idx: (36 * stemIdx + 25 * branchIdx) % 60
   }
 }

@@ -20,6 +20,6 @@ export function getMonthPillar(sunLong: number, yearStemIdx: number): { stem: st
   return {
     stem: STEMS[monthStemIdx],
     branch: BRANCHES[monthBranchIdx],
-    idx: (monthStemIdx * 12 + monthBranchIdx) % 60 // Placeholder idx?
+    idx: (36 * monthStemIdx + 25 * monthBranchIdx) % 60
   };
 }
