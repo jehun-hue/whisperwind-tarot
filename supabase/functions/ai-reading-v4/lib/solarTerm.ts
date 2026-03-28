@@ -40,16 +40,26 @@ export function getSunLongitude(jd: number): number {
 }
 
 /**
- * Finds the exact JD when sun reaches target longitude (e.g. 15, 30, 45...)
+ * Finds the exact JD when sun reaches target longitude.
+ * 
+ * [B-4 FIX] 초기 추정치를 춘분(3/20, 0°) 기준으로 계산하여
+ * targetLong > 180° (입춘 315°, 소한 285° 등)일 때
+ * 1년 오프셋 버그를 방지합니다.
  */
 export function findSolarTermJD(year: number, targetLong: number): number {
-  const startDay = new Date(Date.UTC(year, 0, 1)).getTime() / (1000 * 60 * 60 * 24) + 2440587.5;
-  let jd = startDay + (targetLong / 360) * 365.25 + 80; // Rough offset around Chun-bun
+  // 춘분(0°) ≈ 3월 20일 정오 JD 기준
+  const chunBunEstimate = new Date(Date.UTC(year, 2, 20, 12, 0)).getTime() / (1000 * 60 * 60 * 24) + 2440587.5;
+  
+  // 춘분(0°)과의 경도 차이를 [-180, 180] 범위로 정규화
+  const diffFromChunBun = (targetLong + 180) % 360 - 180;
+  
+  // 초기 추정치: 춘분 JD + (경도 차이 / 하루 평균 이동량)
+  let jd = chunBunEstimate + (diffFromChunBun / 0.9856);
   
   // Newton's method
   for (let i = 0; i < 10; i++) {
     const currentLong = getSunLongitude(jd);
-    let diff = (currentLong - targetLong + 180) % 360 - 180; // wrap to [-180, 180]
+    let diff = (currentLong - targetLong + 180) % 360 - 180;
     
     // Gradient: Sun moves ~0.9856 deg per day
     jd -= diff / 0.9856;
