@@ -57,11 +57,10 @@ export function findSolarTermJD(year: number, targetLong: number): number {
   let jd = marchEquinoxJD + (degFromVE / 0.9856);
   
   // Newton's method
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 50; i++) {
     const currentLong = getSunLongitude(jd);
     let diff = (currentLong - targetLong + 180) % 360 - 180;
-    
-    // Gradient: Sun moves ~0.9856 deg per day
+    if (Math.abs(diff) < 0.0001) break;
     jd -= diff / 0.9856;
   }
   
