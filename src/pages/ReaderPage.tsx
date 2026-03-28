@@ -835,19 +835,20 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
     const hanna = src.ai_reading.tarot_reading.choihanna;
     const monad = src.ai_reading.tarot_reading.monad;
     
-    const linesH = hanna.story.split('\n').filter((l: string) => l.trim());
-    const linesM = monad.story.split('\n').filter((l: string) => l.trim());
+    // 문단 단위로 병합 (줄 단위 잘림 방지)
+    const parasH = hanna.story.split('\n\n').filter((p: string) => p.trim());
+    const parasM = monad.story.split('\n\n').filter((p: string) => p.trim());
     
     let ratioH = 0.5;
     if (style === 'e7l3') ratioH = 0.7;
     if (style === 'l7e3') ratioH = 0.3;
 
-    const sliceH = Math.ceil(linesH.length * ratioH);
-    const sliceM = linesM.length - Math.ceil(linesM.length * ratioH);
-    
+    const sliceParaH = Math.ceil(parasH.length * ratioH);
+    const sliceParaM = parasM.length - Math.ceil(parasM.length * ratioH);
     const mergedStory = [
-      ...linesH.slice(0, sliceH),
-      ...linesM.slice(linesM.length - sliceM)
+      ...parasH.slice(0, sliceParaH),
+      '---',
+      ...parasM.slice(parasM.length - sliceParaM)
     ].join('\n\n');
 
     const mergedKeyMessage = ratioH >= 0.5 ? hanna.key_message : monad.key_message;
