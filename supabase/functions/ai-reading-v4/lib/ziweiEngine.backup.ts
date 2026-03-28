@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ziweiEngine.ts
  * 자미두수(紫微斗數) 명반 계산 엔진 - Edge Function 서버사이드
  */
@@ -172,7 +172,10 @@ function determineBureau(mingGongIdx: number, yearGanIdx: number): Bureau {
   const dist = (mingGongIdx - 2 + 12) % 12;
   const mingGanIdx = (yinStartGan[ohoGroup] + dist) % 10;
 
-  if (mingGanIdx % 2 !== mingGongIdx % 2) return "목삼국";
+  if (mingGanIdx % 2 !== mingGongIdx % 2) {
+    console.warn("[B-42 FIX] Bureau Yin-Yang mismatch, falling back to 수이국");
+    return "수이국";
+  }
 
   const NAPEUM: string[] = [
     "금","금","화","화","목","목","토","토","금","금","화","화",
@@ -261,7 +264,7 @@ export function calculateServerZiWei(
   birthYear: number, lunarMonth: number, lunarDay: number,
   birthHour: number, _birthMinute: number, gender: "male" | "female"
 ): ServerZiWeiResult {
-  const yearGanIdx = (birthYear - 4) % 10;
+  const yearGanIdx = ((birthYear - 4) % 10 + 10) % 10;
   const birthHourBranch = Math.floor((birthHour + 1) / 2) % 12;
   const mingGongIdx = calculateMingGong(lunarMonth, birthHourBranch);
   const shenGongIdx = calculateShenGong(lunarMonth, birthHourBranch);
@@ -340,8 +343,8 @@ export function calculateZiwei(
     const formatter = new Intl.DateTimeFormat('ko-KR-u-ca-chinese', { day: 'numeric', month: 'numeric', year: 'numeric' });
     const parts = formatter.formatToParts(dateObj);
     let lunarMonth = 1; let lunarDay = 1; for (const part of parts) { if (part.type === 'month') lunarMonth = parseInt(part.value.replace(/\D/g, '')) || 1; if (part.type === 'day') lunarDay = parseInt(part.value.replace(/\D/g, '')) || 1; }
-    const offset = getKoreanTimezoneOffset(arg1, arg2, arg3);
-    const standardHour = arg4 - (offset - 9);
+    /* [B-2 FIX] Standardizing to fixed KST (+9) wall-clock time */
+    const standardHour = arg4;
     return calculateServerZiWei(arg1, lunarMonth, lunarDay, standardHour, arg5, arg6);
   } else {
     const HANJA_TO_HANGUL: Record<string, string> = {

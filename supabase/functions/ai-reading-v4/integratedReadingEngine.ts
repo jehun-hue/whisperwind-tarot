@@ -24,7 +24,7 @@ import { calculateZiwei, ServerZiWeiResult } from "./lib/ziweiEngine.ts";
 import { classifyWithFallback, classifyQuestion, TOPIC_SYSTEM_FOCUS, DECISION_AXES } from "./questionClassifier.ts";
 import { detectCombinations, aggregateCombinationScore, processCardVector, SPREAD_POSITION_WEIGHTS } from "./tarotCombinationDB.ts";
 import { getCardVector, getCardWuxing, getElementCompatibility } from "./tarotVectorDB.ts";
-import { lunarToSolarAccurate } from "./lunarData.ts";
+import { lunarToSolarAccurate, solarToLunarAccurate } from "./lunarData.ts";
 
 /** New Phase 2 Analysis Modules */
 import { 
@@ -388,58 +388,14 @@ interface LunarResult {
 }
 
 function solarToLunar(solarYear: number, solarMonth: number, solarDay: number): LunarResult {
-  try {
-    const dateObj = new Date(solarYear, solarMonth - 1, solarDay);
-    const formatter = new Intl.DateTimeFormat('ko-KR-u-ca-chinese', {
-      year: 'numeric', month: 'numeric', day: 'numeric'
-    });
-    const parts = formatter.formatToParts(dateObj);
-    
-    let lunarMonth = 1;
-    let lunarDay = 1;
-    let lunarYear = solarYear;
-    
-    for (const part of parts) {
-      if (part.type === 'month') {
-        lunarMonth = parseInt(part.value.replace(/\D/g, '')) || 1;
-      }
-      if (part.type === 'day') {
-        lunarDay = parseInt(part.value.replace(/\D/g, '')) || 1;
-      }
-      if (part.type === 'year') {
-        lunarYear = parseInt(part.value.replace(/\D/g, '')) || solarYear;
-      }
-    }
-    
-    // 윤달 감지: 같은 음력 월이 연속으로 나오는지 확인
-    const prevDay = new Date(solarYear, solarMonth - 1, solarDay - 30);
-    const prevParts = new Intl.DateTimeFormat('ko-KR-u-ca-chinese', {
-      month: 'numeric'
-    }).formatToParts(prevDay);
-    const prevMonth = parseInt((prevParts.find(p => p.type === 'month')?.value || '').replace(/\D/g, '')) || 0;
-    
-    const nextDay = new Date(solarYear, solarMonth - 1, solarDay + 30);
-    const nextParts = new Intl.DateTimeFormat('ko-KR-u-ca-chinese', {
-      month: 'numeric'
-    }).formatToParts(nextDay);
-    const nextMonth = parseInt((nextParts.find(p => p.type === 'month')?.value || '').replace(/\D/g, '')) || 0;
-    
-    // 윤달이면 전후 30일에 같은 월이 반복됨
-    const isLeapMonth = (prevMonth === lunarMonth) || (nextMonth === lunarMonth && lunarDay <= 15);
-    
-    console.log(`[LUNAR→SOLAR] 양력 ${solarYear}-${solarMonth}-${solarDay} → 음력 ${lunarMonth}월 ${lunarDay}일 (윤달: ${isLeapMonth})`);
-    
-    return {
-      lunarYear,
-      lunarMonth,
-      lunarDay,
-      is_leap_month: isLeapMonth,
-      is_leap_month_adjusted: false
-    };
-  } catch (e) {
-    console.error("[solarToLunar] Intl 변환 실패, 기본값 반환:", e);
-    return { lunarYear: solarYear, lunarMonth: solarMonth, lunarDay: solarDay, is_leap_month: false, is_leap_month_adjusted: false };
-  }
+  const result = solarToLunarAccurate(solarYear, solarMonth, solarDay);
+  return {
+    lunarYear: result.lunarYear,
+    lunarMonth: result.lunarMonth,
+    lunarDay: result.lunarDay,
+    is_leap_month: result.isLeap,
+    is_leap_month_adjusted: false
+  };
 }
 
 /** 24절기 한국어 매핑 (입춘 기준) */

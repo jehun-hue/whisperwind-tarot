@@ -96,3 +96,63 @@ export function lunarToSolarAccurate(
     day: resultDate.getUTCDate()
   };
 }
+
+/**
+ * [B-42/B-57 FIX] 양력 -> 음력 사영 정밀 변환
+ * Intl API 대신 LUNAR_DATA 테이블을 사용하여 환경에 무관한 정확도를 보장합니다.
+ */
+export function solarToLunarAccurate(
+  sYear: number, sMonth: number, sDay: number
+): { lunarYear: number; lunarMonth: number; lunarDay: number; isLeap: boolean } {
+  const solarDate = new Date(Date.UTC(sYear, sMonth - 1, sDay));
+  let curYear = sYear;
+  let data = LUNAR_DATA[curYear];
+  
+  if (!data) {
+    return { lunarYear: sYear, lunarMonth: sMonth, lunarDay: sDay, isLeap: false };
+  }
+
+  let [sy, sm, sd] = data.solarNewYear;
+  let lunarNewYear = new Date(Date.UTC(sy, sm - 1, sd));
+
+  // 해당 연도 설날보다 이전이면 작년 데이터로 이동
+  if (solarDate < lunarNewYear) {
+    curYear--;
+    data = LUNAR_DATA[curYear];
+    if (!data) return { lunarYear: curYear + 1, lunarMonth: sMonth, lunarDay: sDay, isLeap: false };
+    [sy, sm, sd] = data.solarNewYear;
+    lunarNewYear = new Date(Date.UTC(sy, sm - 1, sd));
+  }
+
+  let diff = Math.floor((solarDate.getTime() - lunarNewYear.getTime()) / 86400000);
+  let lunarMonth = 1;
+  let isLeap = false;
+
+  for (let m = 1; m <= 12; m++) {
+    const days = data.monthDays[m - 1];
+    
+    if (diff < days) {
+      lunarMonth = m;
+      break;
+    }
+    diff -= days;
+
+    // 해당 월이 윤달을 포함하는 경우
+    if (data.leapMonth === m) {
+      const lDays = data.leapDays;
+      if (diff < lDays) {
+        lunarMonth = m;
+        isLeap = true;
+        break;
+      }
+      diff -= lDays;
+    }
+  }
+
+  return {
+    lunarYear: curYear,
+    lunarMonth,
+    lunarDay: diff + 1,
+    isLeap
+  };
+}

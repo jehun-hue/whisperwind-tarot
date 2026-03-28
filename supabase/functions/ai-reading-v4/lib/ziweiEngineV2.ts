@@ -211,6 +211,7 @@ function determineBureau(mingGongIdx: number, yearGanIdx: number): Bureau {
   if (element && NAYIN_TO_BUREAU[element]) {
     return NAYIN_TO_BUREAU[element];
   }
+  console.warn(`[B-42 FIX] determineBureau: key ${key} not found in NAYIN_TABLE, falling back to 수이국`);
   return "수이국"; // fallback
 }
 
@@ -1505,18 +1506,18 @@ export function calculateZiWei(
   birthMinute: number,
   gender: "male" | "female"
 ): ZiWeiResult {
-  const yearGanIdx = (birthYear - 4) % 10;
-
   const birthHourBranch = Math.floor((birthHour + 1) / 2) % 12;
 
   const mingGongIdx = calculateMingGong(lunarMonth, birthHourBranch);
   const shenGongIdx = calculateShenGong(lunarMonth, birthHourBranch);
+  
+  // ─── 보조성 배치 ───
+  const yearBranchIdx = (birthYear - 4) % 12;
+  const yearGanIdx = ((birthYear - 4) % 10 + 10) % 10;
+  
   const bureau = determineBureau(mingGongIdx, yearGanIdx);
   const ziWeiPos = calculateZiWeiPosition(lunarDay, bureau);
   const starMap = placeMajorStars(ziWeiPos);
-
-  // ─── 보조성 배치 ───
-  const yearBranchIdx = (birthYear - 4) % 12;
   const auxMaps = [
     placeZuoBiStars(lunarMonth),
     placeMunStars(birthHourBranch),
