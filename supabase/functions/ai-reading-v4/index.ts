@@ -1,4 +1,4 @@
-﻿console.log("[BOOT] Edge function starting...");
+console.log("[BOOT] Edge function starting...");
 /**
  * index.ts
  * - Production AI Symbolic Prediction Engine Platform (v8).
@@ -12,7 +12,7 @@ import { runCompatibilityEngine } from "./lib/compatibilityEngine.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-app-secret',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
@@ -23,6 +23,18 @@ import { safeParseGeminiJSON } from "./jsonUtils.ts";
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
+  }
+
+  // ── 커스텀 시크릿 검증 (JWT 대체) ──
+  const APP_SECRET = Deno.env.get("APP_SECRET");
+  if (APP_SECRET) {
+    const clientSecret = req.headers.get("x-app-secret");
+    if (clientSecret !== APP_SECRET) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
   }
 
   const url = new URL(req.url);

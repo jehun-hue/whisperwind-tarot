@@ -678,7 +678,10 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       let aiData: any = null;
       let fnError: any = null;
       for (let attempt = 0; attempt < 2; attempt++) {
-        const result = await supabase.functions.invoke("ai-reading-v4", { body: fnBody });
+        const result = await supabase.functions.invoke("ai-reading-v4", {
+          body: fnBody,
+          headers: { "x-app-secret": import.meta.env.VITE_APP_SECRET || "" },
+        });
         aiData = result.data;
         fnError = result.error;
         if (!fnError || !fnError.message?.includes("503")) break;
@@ -953,6 +956,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       for (let attempt = 0; attempt < 2; attempt++) {
         const result = await supabase.functions.invoke("ai-reading-v4", {
           body: fnBody,
+          headers: { "x-app-secret": import.meta.env.VITE_APP_SECRET || "" },
         });
         aiData = result.data;
         fnError = result.error;
