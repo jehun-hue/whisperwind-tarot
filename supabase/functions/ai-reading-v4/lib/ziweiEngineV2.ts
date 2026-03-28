@@ -369,9 +369,10 @@ function placeHuoLingStars(yearBranchIdx: number, birthHourBranch: number): Map<
   else huoStart = 9; // 해묘미
   
   // 년지 삼합 기준 영성 시작궁
-  // 인오술→술(10), 신자진→술(10), 사유축→술(10), 해묘미→술(10)
-  // 영성은 모든 경우 戌(10)에서 시작하여 시지만큼 순행
-  const lingStart = 10;
+  // 인오술(2,6,10)→묘(3), 신자진(8,0,4)→술(10), 사유축(5,9,1)→술(10), 해묘미(11,3,7)→술(10)
+  let lingStart: number;
+  if ([2, 6, 10].includes(yearBranchIdx)) lingStart = 3;  // 寅午戌 → 卯
+  else lingStart = 10;  // 나머지 → 戌
   
   const huoPos = (huoStart + birthHourBranch) % 12;
   const lingPos = (lingStart + birthHourBranch) % 12;
@@ -389,10 +390,8 @@ function placeHuoLingStars(yearBranchIdx: number, birthHourBranch: number): Map<
 function placeKongJieStars(birthHourBranch: number): Map<number, AuxiliaryStar[]> {
   const placements = new Map<number, AuxiliaryStar[]>();
   
-  // 지공(地空): 시지의 다음 궁 (순행 +1)
-  const kongPos = (birthHourBranch + 1) % 12;
-  // 지겁(地劫): 시지의 이전 궁 (역행 -1)
-  const jiePos = (birthHourBranch - 1 + 12) % 12;
+  const jiePos = (11 + birthHourBranch) % 12;           // 지겁: 亥 순행
+  const kongPos = (11 - birthHourBranch + 12) % 12;     // 지공: 亥 역행
   
   if (!placements.has(kongPos)) placements.set(kongPos, []);
   placements.get(kongPos)!.push("지공");
