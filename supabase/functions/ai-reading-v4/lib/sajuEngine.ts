@@ -18,6 +18,7 @@ import { calculateTenGod, calculateTenGodBranch } from "./tenGods.ts";
 import { HIDDEN_STEMS } from "./fiveElements.ts";
 // import { getKoreanTimezoneOffset } from "./timeUtils.ts"; // DST 비활성
 import { getDaewoonInfo } from "./daewoon.ts";
+import { calculateTwelveStage } from "./twelveStages.ts";
 
 export interface SajuPillar {
   stem: string;
@@ -144,6 +145,12 @@ export function calculateSaju(
     fiveElements: elementsCount,
     daewoon: dw,
     hiddenStems,
+    twelveStages: {
+      year: calculateTwelveStage(dP.stem, yP.branch),
+      month: calculateTwelveStage(dP.stem, mP.branch),
+      day: calculateTwelveStage(dP.stem, dP.branch),
+      hour: calculateTwelveStage(dP.stem, hP.branch),
+    },
     originalInput: { year, month, day, hour, minute, gender },
     correctedDate: new Date(birthMomentUTC).toISOString()
   };
