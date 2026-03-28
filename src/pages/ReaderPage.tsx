@@ -672,61 +672,24 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
 
       console.log(`[DEBUG] birthInfo payload for ${style}:`, JSON.stringify(birthInfo));
 
-      // 스트리밍: UI 체감 속도 향상용 (병렬 실행)
-      setStreamingText("");
+      // ── A모드: 단일 호출 (B 확장 대비) ──
+      setStreamingText("분석 중입니다...");
       setIsStreaming(true);
-
-      const supabaseUrl = (supabase as any).supabaseUrl || import.meta.env.VITE_SUPABASE_URL;
-      // [Phase 4-2] 보안 강화: Anon Key 대신 세션 JWT 사용
-      const { data: { session: authSession } } = await supabase.auth.getSession();
-      const authToken = authSession?.access_token || (supabase as any).supabaseKey || import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-      // 스트리밍(UI용)과 full 분석(DB 저장용)을 병렬 실행
-      const [aiResult] = await Promise.all([
-        (async () => {
-          let lastData: any = null;
-          let lastError: any = null;
-          for (let attempt = 0; attempt < 2; attempt++) {
-            const result = await supabase.functions.invoke("ai-reading-v4", {
-              body: fnBody,
-            });
-            lastData = result.data;
-            lastError = result.error;
-            if (!lastError || !lastError.message?.includes("503")) break;
-            if (attempt === 0) {
-              console.log("[ReaderPage] 503 BOOT_ERROR 감지, 3초 후 재시도...");
-              await new Promise(r => setTimeout(r, 3000));
-            }
-          }
-          return { data: lastData, error: lastError };
-        })(),
-        // 스트리밍: UI에 실시간 텍스트 표시용
-        fetch(
-          `${supabaseUrl}/functions/v1/ai-reading-v4`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${authToken}`,
-              "apikey": (supabase as any).supabaseKey || import.meta.env.VITE_SUPABASE_ANON_KEY,
-            },
-            body: JSON.stringify({ ...fnBody, mode: "stream", modelInput: fnBody.question }),
-          }
-        ).then(async (streamRes) => {
-          if (streamRes.ok && streamRes.body) {
-            const reader = streamRes.body.getReader();
-            const decoder = new TextDecoder();
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) break;
-              const chunk = decoder.decode(value, { stream: true });
-              setStreamingText(prev => prev + chunk);
-            }
-          }
-          setIsStreaming(false);
-        }).catch(() => { setIsStreaming(false); }),
-      ]);
-      const { data: aiData, error: fnError } = aiResult;
+      let aiData: any = null;
+      let fnError: any = null;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const result = await supabase.functions.invoke("ai-reading-v4", { body: fnBody });
+        aiData = result.data;
+        fnError = result.error;
+        if (!fnError || !fnError.message?.includes("503")) break;
+        if (attempt === 0) {
+          console.log("[ReaderPage] 503 BOOT_ERROR 감지, 3초 후 재시도...");
+          setStreamingText("서버 준비 중...");
+          await new Promise(r => setTimeout(r, 3000));
+        }
+      }
+      if (aiData?.text) { setStreamingText(aiData.text); }
+      setIsStreaming(false);
 
       console.log(`[runAIAnalysisV2] Edge function response received for ${style}`);
 
