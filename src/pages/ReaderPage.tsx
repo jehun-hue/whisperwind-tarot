@@ -20,7 +20,7 @@ import { toast } from "sonner";
 // 모든 사주 데이터는 session.saju_data를 통해서만 전달합니다.
 // ============================================================
 
-const READER_PIN = "1234";
+const READER_PIN = import.meta.env.VITE_READER_PIN || "";
 
 type QuestionType = "연애" | "재회" | "사업" | "직업" | "금전" | "종합";
 
