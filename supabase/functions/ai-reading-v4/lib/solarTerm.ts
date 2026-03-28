@@ -48,13 +48,13 @@ export function getSunLongitude(jd: number): number {
  */
 export function findSolarTermJD(year: number, targetLong: number): number {
   // 춘분(0°) ≈ 3월 20일 정오 JD 기준
-  const chunBunEstimate = new Date(Date.UTC(year, 2, 20, 12, 0)).getTime() / (1000 * 60 * 60 * 24) + 2440587.5;
+  const marchEquinoxJD = new Date(Date.UTC(year, 2, 20, 12, 0)).getTime() / (1000 * 60 * 60 * 24) + 2440587.5;
   
   // 춘분(0°)과의 경도 차이를 [-180, 180] 범위로 정규화
-  const diffFromChunBun = (targetLong + 180) % 360 - 180;
+  const degFromVE = (targetLong + 180) % 360 - 180;
   
   // 초기 추정치: 춘분 JD + (경도 차이 / 하루 평균 이동량)
-  let jd = chunBunEstimate + (diffFromChunBun / 0.9856);
+  let jd = marchEquinoxJD + (degFromVE / 0.9856);
   
   // Newton's method
   for (let i = 0; i < 10; i++) {
