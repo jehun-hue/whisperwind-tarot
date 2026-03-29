@@ -2,7 +2,7 @@
  * sajuAccuracy.test.ts
  */
 
-import { calculateSaju } from "../lib/sajuEngine.ts";
+import { calculateSaju } from "../calculateSaju.ts";
 
 async function runTests() {
   const data = await Deno.readTextFile("./testCases.json");

@@ -8,6 +8,8 @@ export interface GeminiRequest {
   systemPrompt: string;      // 데이터 + 지시사항 (promptBuilder 출력)
   userPrompt?: string;        // 스타일 지시 (styleLayer)
   temperature?: number;
+  topK?: number;
+  topP?: number;
   maxOutputTokens?: number;
   timeoutMs?: number;
   retryOn503?: boolean;
@@ -79,7 +81,9 @@ export type StyleName = keyof typeof STYLE_PRESETS;
 // ── Core API Call ──
 export async function callGemini(req: GeminiRequest): Promise<GeminiResponse> {
   const model = req.model || 'gemini-2.5-flash';
-  const temperature = req.temperature ?? 0.2;
+  const temperature = req.temperature ?? 0.7;
+  const topK = req.topK ?? 30;
+  const topP = req.topP ?? 0.85;
   const maxTokens = req.maxOutputTokens ?? 16384;
   const timeoutMs = req.timeoutMs ?? 35000;
   const retryOn503 = req.retryOn503 !== false; // default true
@@ -94,7 +98,7 @@ export async function callGemini(req: GeminiRequest): Promise<GeminiResponse> {
 
   const body = JSON.stringify({
     contents: [{ parts: [{ text: combinedText }] }],
-    generationConfig: { maxOutputTokens: maxTokens, temperature }
+    generationConfig: { maxOutputTokens: maxTokens, temperature, topK, topP }
   });
 
   const start = Date.now();

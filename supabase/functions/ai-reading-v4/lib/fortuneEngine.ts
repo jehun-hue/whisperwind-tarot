@@ -196,6 +196,13 @@ function generateWolwoonSummary(wol: Omit<WolwoonFortune, "summary">, yearRating
   return `${name}: 특별한 변동 없이 평온한 시기입니다.`;
 }
 
+function getSolarToJeolMonth(solarMonth: number, solarDay: number): number {
+  const APPROX_JEOL_DAY = 6;
+  let adjusted = solarDay < APPROX_JEOL_DAY ? solarMonth - 1 : solarMonth;
+  if (adjusted <= 0) adjusted += 12;
+  return adjusted <= 1 ? 12 : adjusted - 1;
+}
+
 // ═══════════════════════════════════════
 // 메인 함수
 // ═══════════════════════════════════════
@@ -342,7 +349,9 @@ export function calculateFortune(
 
   // 현재 월운
   const currentSolarMonth = month;
-  const currentMonthFortune = monthly.find(m => m.solarMonth === currentSolarMonth) || null;
+  const currentSolarDay = new Date().getDate();
+  const currentJeolMonth = getSolarToJeolMonth(currentSolarMonth, currentSolarDay);
+  const currentMonthFortune = monthly.find(m => m.month === currentJeolMonth) || null;
 
   // 연간 총평
   const yearParts: string[] = [];
@@ -356,7 +365,7 @@ export function calculateFortune(
   }
 
   if (currentMonthFortune) {
-    yearParts.push(`현재 ${currentSolarMonth}월은 '${currentMonthFortune.rating}' 흐름입니다.`);
+    yearParts.push(`현재 ${currentSolarMonth}월(절기 ${currentJeolMonth}월)은 '${currentMonthFortune.rating}' 흐름입니다.`);
   }
 
   const yearOverview = yearParts.join(" ");

@@ -4,7 +4,7 @@
  * - Computes consensus based on system weighted alignment across 5 systems.
  */
 
-import { SymbolicVector } from "./symbolicPatternEngine.ts";
+import type { SymbolicVector } from "./symbolicPatternEngine.ts";
 import { cosineSimilarity } from "./mathUtils.ts";
 
 const SYSTEM_WEIGHTS: Record<string, number> = {

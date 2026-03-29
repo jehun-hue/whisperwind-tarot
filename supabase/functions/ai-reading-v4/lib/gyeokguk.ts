@@ -6,6 +6,7 @@ import {
   BRANCH_ELEMENT_HANJA as BRANCH_ELEMENT,
   BRANCH_MAIN_STEM,
   STEM_POLARITY,
+  HIDDEN_STEMS,
   GENERATES_HANJA as GENERATES,
   CONTROLS_HANJA as CONTROLS,
   GENERATED_BY_HANJA as GENERATED_BY,
@@ -97,32 +98,59 @@ function checkJongGyeok(
   return null;
 }
 
-// === 내격 판별 (월지 정기 기준, 음양 구분) ===
+// === 내격 판별 (월지 투간 기준) ===
 function checkNaegyeok(
   pillars: { year: string[]; month: string[]; day: string[]; hour: string[] },
   dayMaster: string
 ): GyeokgukResult {
   const monthBranch = pillars.month[1] || "子";
-  const monthMainStem = BRANCH_MAIN_STEM[monthBranch] || "甲";
-  const relation = getRelationByStem(dayMaster, monthMainStem);
+  const hiddenStems = HIDDEN_STEMS[monthBranch] || []; // [본기, 중기, 여기]
+  
+  // 투간(透干) 확인: 월지 지장간이 다른 기둥(년, 월, 시) 천간에 나타났는지 확인
+  const heavenStems = [
+    { stem: pillars.year[0], label: "년" },
+    { stem: pillars.month[0], label: "월" },
+    { stem: pillars.hour[0], label: "시" }
+  ];
+
+  let selectedStem = "";
+  let priority = 4; // 1: 본기투간, 2: 중기투간, 3: 초기투간, 4: 본기(불투간)
+
+  // 1. 투간 우선순위 판정
+  for (const { stem } of heavenStems) {
+    if (!stem) continue;
+    const idx = hiddenStems.indexOf(stem);
+    if (idx === 0 && priority > 1) { selectedStem = stem; priority = 1; }
+    else if (idx === 1 && priority > 2) { selectedStem = stem; priority = 2; }
+    else if (idx === 2 && priority > 3) { selectedStem = stem; priority = 3; }
+  }
+
+  // 2. 투간된 것이 없으면 월지 본기(정기)를 기준으로 정함
+  if (priority === 4) {
+    selectedStem = hiddenStems[0] || "甲";
+  }
+
+  const relation = getRelationByStem(dayMaster, selectedStem);
 
   const GYEOK_NAMES: Record<string, { name: string; desc: string }> = {
     "비견": { name: "건록격(建祿格)", desc: "월지가 일간과 같은 오행의 양간입니다. 자립심이 강합니다." },
     "겁재": { name: "양인격(羊刃格)", desc: "월지가 일간과 같은 오행의 음간입니다. 결단력이 있습니다." },
-    "식신": { name: "식신격(食神格)", desc: "월지 본기가 식신에 해당합니다. 재능과 표현력이 뛰어납니다." },
-    "상관": { name: "상관격(傷官格)", desc: "월지 본기가 상관에 해당합니다. 창의성과 비판력이 강합니다." },
-    "편재": { name: "편재격(偏財格)", desc: "월지 본기가 편재에 해당합니다. 재물 운용 능력이 좋습니다." },
-    "정재": { name: "정재격(正財格)", desc: "월지 본기가 정재에 해당합니다. 안정적 재물 축적에 유리합니다." },
-    "편관": { name: "편관격(偏官格)", desc: "월지 본기가 편관(칠살)에 해당합니다. 권위와 추진력이 있습니다." },
-    "정관": { name: "정관격(正官格)", desc: "월지 본기가 정관에 해당합니다. 명예와 질서를 중시합니다." },
-    "편인": { name: "편인격(偏印格)", desc: "월지 본기가 편인에 해당합니다. 학문적 깊이와 독창성이 있습니다." },
-    "정인": { name: "정인격(正印格)", desc: "월지 본기가 정인에 해당합니다. 학문과 인덕이 풍부합니다." },
+    "식신": { name: "식신격(食神格)", desc: "월지 기운이 투간되거나 본기가 식신에 해당합니다. 재능과 표현력이 뛰어납니다." },
+    "상관": { name: "상관격(傷관格)", desc: "월지 기운이 투간되거나 본기가 상관에 해당합니다. 창의성과 비판력이 강합니다." },
+    "편재": { name: "편재격(偏財格)", desc: "월지 기운이 투간되거나 본기가 편재에 해당합니다. 재물 운용 능력이 좋습니다." },
+    "정재": { name: "정재격(正財格)", desc: "월지 기운이 투간되거나 본기가 정재에 해당합니다. 안정적 재물 축적에 유리합니다." },
+    "편관": { name: "편관격(偏官格)", desc: "월지 기운이 투간되거나 본기가 편관(칠살)에 해당합니다. 권위와 추진력이 있습니다." },
+    "정관": { name: "정관격(正官格)", desc: "월지 기운이 투간되거나 본기가 정관에 해당합니다. 명예와 질서를 중시합니다." },
+    "편인": { name: "편인격(偏印格)", desc: "월지 기운이 투간되거나 본기가 편인에 해당합니다. 학문적 깊이와 독창성이 있습니다." },
+    "정인": { name: "정인격(正印格)", desc: "월지 기운이 투간되거나 본기가 정인에 해당합니다. 학문과 인덕이 풍부합니다." },
   };
 
   const gyeok = GYEOK_NAMES[relation] || GYEOK_NAMES["비견"]!;
+  const tugangSuffix = priority < 4 ? ` (월지 ${priority === 1 ? "본기" : (priority === 2 ? "중기" : "초기")} 투간)` : "";
+
   return {
     type: "내격",
-    name: gyeok.name,
+    name: gyeok.name + tugangSuffix,
     description: gyeok.desc
   };
 }

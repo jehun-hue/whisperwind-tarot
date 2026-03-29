@@ -68,7 +68,7 @@ import { determineGyeokguk, type GyeokgukResult } from "./lib/gyeokguk.ts";
 import { getAllPillarJijanggan } from "./lib/jijanggan.ts";
 import { getAllPillarNapeum } from "./lib/napeum.ts";
 import { calculateTenGod } from "./lib/tenGods.ts";
-import { getFullSaju } from "./sajuEngine.ts";
+import { calculateSaju } from "./sajuEngine.ts";
 import { calculateJonggyeok } from "./lib/jonggyeokEngine.ts";
 import { calculateFortune, type FortuneResult } from "./lib/fortuneEngine.ts";
 
@@ -1182,7 +1182,7 @@ export async function analyzeSajuStructure(
   let daily_pillar: any = null;
   try {
     const today = new Date("2026-03-19T12:00:00+09:00");
-    const todaySaju = getFullSaju(today.getFullYear(), today.getMonth() + 1, today.getDate(), today.getHours(), today.getMinutes());
+    const todaySaju = calculateSaju(today.getFullYear(), today.getMonth() + 1, today.getDate(), today.getHours(), today.getMinutes());
     const dailyStem = todaySaju.pillars.day.stem;
     const dailyBranch = todaySaju.pillars.day.branch;
     const stemTenGod = calculateTenGod(dm, dailyStem);

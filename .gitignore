@@ -28,3 +28,11 @@ debug_*.ts
 debug_*.mjs
 check_*.mjs
 supabase/.temp/
+
+# Temp debug/test files
+check_*.js
+debug_*.js
+phase*_*.js
+final_*.js
+diff_*.patch
+lint_*.json

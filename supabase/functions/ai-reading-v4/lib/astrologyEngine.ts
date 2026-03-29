@@ -1,4 +1,4 @@
-﻿import * as Astronomy from "https://esm.sh/astronomy-engine@2.1.19";
+import * as Astronomy from "https://esm.sh/astronomy-engine@2.1.19";
 
 const {
   Body,
@@ -276,80 +276,95 @@ function getHighPrecisionPositions(date: Date, observer: Observer) {
   return planetPositions;
 }
 
-/**
- * Manual Calculation of ASC, MC, IC, DESC
- * Formulas from Jean Meeus, Astronomical Algorithms
- */
+function raToLon(raDeg: number, epsRad: number): number {
+  const raRad = raDeg * Math.PI / 180;
+  const cosEps = Math.cos(epsRad);
+  let lon = Math.atan2(Math.sin(raRad), Math.cos(raRad) * cosEps) * 180 / Math.PI;
+  return (lon + 360) % 360;
+}
+
+function placidusCusp(ramcDeg: number, epsRad: number, phiRad: number, house: number): number {
+  const tanPhi = Math.tan(phiRad);
+  let frac: number, baseDeg: number, sign: number, nocturnal: boolean;
+  switch (house) {
+    case 11: frac = 1/3; baseDeg = ramcDeg;       sign = +1; nocturnal = false; break;
+    case 12: frac = 2/3; baseDeg = ramcDeg;       sign = +1; nocturnal = false; break;
+    case 2:  frac = 2/3; baseDeg = ramcDeg + 180; sign = -1; nocturnal = true;  break;
+    case 3:  frac = 1/3; baseDeg = ramcDeg + 180; sign = -1; nocturnal = true;  break;
+    default: return 0;
+  }
+  let ra = baseDeg + sign * frac * 90;
+  for (let i = 0; i < 100; i++) {
+    const raRad = (ra * Math.PI) / 180;
+    const tanD = Math.tan(epsRad) * Math.sin(raRad);
+    const D = Math.atan(tanD);
+    let arc: number;
+    if (nocturnal) {
+      const cosH = tanPhi * Math.tan(D);
+      if (cosH <= -1) arc = 180;
+      else if (cosH >= 1) arc = 0;
+      else arc = Math.acos(cosH) * 180 / Math.PI;
+    } else {
+      const cosH = -tanPhi * Math.tan(D);
+      if (cosH <= -1) arc = 180;
+      else if (cosH >= 1) arc = 0;
+      else arc = Math.acos(cosH) * 180 / Math.PI;
+    }
+    const newRA = baseDeg + sign * frac * arc;
+    if (Math.abs(newRA - ra) < 0.0001) { ra = newRA; break; }
+    ra = newRA;
+  }
+  return raToLon(ra, epsRad);
+}
+
 function calculateHousesManual(date: Date, observer: any) {
   const time = MakeTime(date);
-
-  // LST (Local Sidereal Time) in hours
   const gst = SiderealTime(time);
   const lst = ((gst + observer.longitude / 15.0) % 24 + 24) % 24;
-
-  // RAMC in degrees
   const ramc = lst * 15.0;
-
-  // Obliquity
   const tilt = e_tilt(time);
   const epsRad = (tilt?.tobl || 23.43929) * Math.PI / 180;
   const phiRad = observer.latitude * Math.PI / 180;
   const ramcRad = ramc * Math.PI / 180;
-
-
-  // MC (Midheaven): tan(MC) = tan(RAMC) / cos(eps)
-  // Must handle quadrant correctly
-  let mcDeg = Math.atan2(Math.sin(ramcRad), Math.cos(ramcRad) * Math.cos(epsRad)) * 180 / Math.PI;
-  mcDeg = (mcDeg + 360) % 360;
-
-  // Quadrant correction for MC: MC must be in same half as RAMC
-  // If RAMC is 0-180, MC should be 0-180; if RAMC is 180-360, MC should be 180-360
-  if (ramc >= 0 && ramc < 180 && mcDeg >= 180) mcDeg -= 180;
-  if (ramc >= 180 && ramc < 360 && mcDeg < 180) mcDeg += 180;
-
-  // ASC (Ascendant)
-  // ASC = atan2(cos(RAMC), -(sin(eps)*tan(phi) + cos(eps)*sin(RAMC)))
+  const mcDeg = raToLon(ramc, epsRad);
   const y = Math.cos(ramcRad);
   const x = -(Math.sin(epsRad) * Math.tan(phiRad) + Math.cos(epsRad) * Math.sin(ramcRad));
   let ascDeg = Math.atan2(y, x) * 180 / Math.PI;
   ascDeg = (ascDeg + 360) % 360;
-
-
   const icDeg = (mcDeg + 180) % 360;
   const descDeg = (ascDeg + 180) % 360;
-
   return {
-    asc: ascDeg,
-    mc: mcDeg,
-    ic: icDeg,
-    desc: descDeg,
-    isConsistent: true,
-    angleBetween: (ascDeg - mcDeg + 360) % 360
+    asc: ascDeg, mc: mcDeg, ic: icDeg, desc: descDeg,
+    ramc: ramc, eps: epsRad, phi: phiRad,
+    isConsistent: true, angleBetween: (ascDeg - mcDeg + 360) % 360
   };
 }
 
-function calculateHouseCuspsPlacidus(asc: number, mc: number) {
+function calculateHouseCuspsPlacidus(asc: number, mc: number, ramc?: number, eps?: number, phi?: number) {
   const ic = (mc + 180) % 360;
   const desc = (asc + 180) % 360;
-
-  const q1Dist = (asc - mc + 360) % 360;
-  const q2Dist = (ic - asc + 360) % 360;
-  const q3Dist = (desc - ic + 360) % 360;
-  const q4Dist = (mc - desc + 360) % 360;
-
+  if (ramc !== undefined && eps !== undefined && phi !== undefined) {
+    const h11 = placidusCusp(ramc, eps, phi, 11);
+    const h12 = placidusCusp(ramc, eps, phi, 12);
+    const h2  = placidusCusp(ramc, eps, phi, 2);
+    const h3  = placidusCusp(ramc, eps, phi, 3);
+    return [
+      asc, h2, h3, ic,
+      (h11 + 180) % 360, (h12 + 180) % 360,
+      desc,
+      (h2 + 180) % 360, (h3 + 180) % 360,
+      mc, h11, h12
+    ];
+  }
+  const q1 = (asc - mc + 360) % 360;
+  const q2 = (ic - asc + 360) % 360;
+  const q3 = (desc - ic + 360) % 360;
+  const q4 = (mc - desc + 360) % 360;
   return [
-    asc,                         // 1
-    (asc + q2Dist / 3) % 360,    // 2
-    (asc + 2 * q2Dist / 3) % 360, // 3
-    ic,                          // 4
-    (ic + q3Dist / 3) % 360,     // 5
-    (ic + 2 * q3Dist / 3) % 360, // 6
-    desc,                        // 7
-    (desc + q4Dist / 3) % 360,   // 8
-    (desc + 2 * q4Dist / 3) % 360, // 9
-    mc,                          // 10
-    (mc + q1Dist / 3) % 360,     // 11
-    (mc + 2 * q1Dist / 3) % 360  // 12
+    asc, (asc + q2/3) % 360, (asc + 2*q2/3) % 360, ic,
+    (ic + q3/3) % 360, (ic + 2*q3/3) % 360, desc,
+    (desc + q4/3) % 360, (desc + 2*q4/3) % 360, mc,
+    (mc + q1/3) % 360, (mc + 2*q1/3) % 360
   ];
 }
 
@@ -389,7 +404,7 @@ function calculateSolarReturn(natalSunLon: number, birthMonth: number, birthDay:
   const srDate = srTime.date;
   const srPositions = getHighPrecisionPositions(srDate, observer);
   const houseData = calculateHousesManual(srDate, observer);
-  const cusps = calculateHouseCuspsPlacidus(houseData.asc, houseData.mc);
+  const cusps = calculateHouseCuspsPlacidus(houseData.asc, houseData.mc, houseData.ramc, houseData.eps, houseData.phi);
 
   const srPlanets = srPositions?.map(p => {
     const lng = ((p.longitude % 360) + 360) % 360;
@@ -567,7 +582,7 @@ export function calculateServerAstrology(
   const icSign = ZODIAC_SIGNS[Math.floor(houseData.ic / 30) % 12];
   const descSign = ZODIAC_SIGNS[Math.floor(houseData.desc / 30) % 12];
 
-  const cusps = hasTime ? calculateHouseCuspsPlacidus(houseData.asc, houseData.mc) : [];
+  const cusps = hasTime ? calculateHouseCuspsPlacidus(houseData.asc, houseData.mc, houseData.ramc, houseData.eps, houseData.phi) : [];
 
   const planets = rawPositions?.map((p, i) => {
     const lng = ((p.longitude % 360) + 360) % 360;

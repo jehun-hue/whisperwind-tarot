@@ -1,6 +1,7 @@
 import { Signal, CrossSignal } from './signalExtractor.ts';
-import { ILJU_MEANINGS, TENGO_DEEP, GYEOKGUK_DEEP, TWELVE_STAGES_DEEP, YONGSIN_ADVICE, SINSAL_DEEP, DAEWOON_INTERACTION, INTERACTION_DEEP } from "./interpretations/index.ts";
+import { ILJU_MEANINGS, TENGO_DEEP, GYEOKGUK_DEEP, TWELVE_STAGES_DEEP, YONGSIN_ADVICE, SINSAL_DEEP, DAEWOON_INTERACTION, INTERACTION_DEEP, LIFE_PATH_MEANINGS, EXPRESSION_MEANINGS } from "./interpretations/index.ts";
 import { buildZiWeiPromptSection } from "./ziweiPromptBuilder.ts";
+import { runCrossValidation } from "./crossValidationEngine.ts";
 
 function line(label: string, value: any): string {
   if (!value || value === '?' || value === '없음' || value === '') return '';
@@ -56,6 +57,9 @@ export function buildReadingPrompt(
 
   // ── 데이터 추출 및 정규화 (전역 사용을 위해 상단 배치) ──
   const s = saju || {} as any;
+  if (!s.dayMaster && !s.pillars) {
+    console.warn("[WARN] 서버 사주 데이터 없음 — DB 폴백 또는 클라이언트 간이엔진 데이터 사용 중. 절기 미반영으로 정확도 저하 가능.");
+  }
 
   // 일주(日柱) 프로필 주입
   const dayPillarFull = s?.fourPillars?.day?.full 
@@ -177,6 +181,24 @@ ${timelineStr}
   // ========================
   const crossPatterns: string[] = [];
 
+  const crossVal = (ziwei && saju) ? runCrossValidation(ziwei, saju) : null;
+
+  if (crossVal) {
+    crossPatterns.push(`\n[자미두수×사주 구조적 교차 검증] (일치율: ${crossVal.overallAgreement}%)`);
+    crossPatterns.push(`요약: ${crossVal.summary}`);
+    for (const item of crossVal.items) {
+      crossPatterns.push(`  ${item.label}: 자미두수(${item.ziweiSignal}) × 사주(${item.sajuSignal}) → ${item.agreement} (${item.confidence}%)`);
+      if (item.ziweiEvidence.length > 0) crossPatterns.push(`    자미: ${item.ziweiEvidence.slice(0, 2).join(", ")}`);
+      if (item.sajuEvidence.length > 0) crossPatterns.push(`    사주: ${item.sajuEvidence.slice(0, 2).join(", ")}`);
+    }
+    if (crossVal.strongSignals.length > 0) {
+      crossPatterns.push(`\n  ★ 강력 교차 확인: ${crossVal.strongSignals.join(" | ")}`);
+    }
+    if (crossVal.conflictSignals.length > 0) {
+      crossPatterns.push(`\n  ⚠ 상충 주의: ${crossVal.conflictSignals.join(" | ")}`);
+    }
+  }
+
   // 패턴 1: 관계 갈등 시그널 교차
   const sajuConflict = sewoonRels.some((r: any) => r.type === '파' || r.type === '충' || r.type === '형');
   const astroConflict = aspects.some((asp: any) =>
@@ -266,7 +288,7 @@ ${signalText ? `[시스템별 개별 신호 근거]\n${signalText}\n` : ''}` : '
 • 약점: ${gyeokProfile.weakness}
 • 용신 작용: ${gyeokProfile.with_yongsin}` : '';
 
-  const seunTengo = s?.fortune?.tenGodStem || '';
+  const seunTengo = s?.fortune?.seun?.tenGodStem || s?.daewoon?.current_seun?.tenGodStem || '';
   const tengoProfile = seunTengo ? TENGO_DEEP[seunTengo] : null;
   const tengoBlock = tengoProfile ? `
 【올해 십성 심리: ${seunTengo}】
@@ -274,7 +296,7 @@ ${signalText ? `[시스템별 개별 신호 근거]\n${signalText}\n` : ''}` : '
 • 영향 영역: ${tengoProfile.life_area}
 • 조언: ${tengoProfile.advice}` : '';
 
-  const stageName = s?.twelve_stages?.seun?.stage || s?.fortune?.twelveStage || '';
+  const stageName = s?.twelve_stages?.seun?.stage || s?.fortune?.seun?.twelveStage || '';
   const stageProfile = stageName ? TWELVE_STAGES_DEEP[stageName] : null;
   const stageBlock = stageProfile ? `
 【12운성 심층: ${stageName}】
@@ -366,8 +388,18 @@ ${interactionLines}` : '';
   const section1 = `
 === [SECTION 1] 사주 명리 (핵심) ===
 • 일간: ${s.dayMaster || '?'} | 신강/약: ${s.strength || '?'} | 격국: ${s.gyeokguk?.name || '?'} (${s.gyeokguk?.type || ''})
-${line('강약 상세', `${s.strength_detail?.deukryeong?.result || ''}/${s.strength_detail?.deukji?.result || ''}/${s.strength_detail?.deukse?.result || ''} — ${s.strength_detail?.overall_reason || ''}`)}• 용신: ${s.yongShin || '?'} | ${line('희신', s.heeShin)}${line('기신', s.giShin)}${line('용신 근거', s.yongsin_detail?.final?.reason)}${line('오행', elSummary)}${line('현재 대운', `${currentDw.full || ''} (${currentDw.startAge || ''}~${currentDw.endAge || ''}세) — 십성: ${currentDw.tenGodStem || ''}/${currentDw.tenGodBranch || ''}${s.is_daewoon_changing_year ? ' [★교운기]' : ''} — 에너지: ${dwTwelveStage.level || ''}점(${dwTwelveStage.description || ''})`)}${line(`세운(${currentSeun.year || ''})`, `${currentSeun.full || ''} — 십성: ${currentSeun.tenGodStem || ''}/${currentSeun.tenGodBranch || ''}`)}${line('올해 운세(세운)', `[${s.fortune?.rating || ''}] ${s.fortune?.interpretation || ''} (점수: ${s.fortune?.score || 0})`)}${line('이번 달(월운)', `[${s.fortune?.currentMonthFortune?.rating || ''}] ${s.fortune?.currentMonthFortune?.interpretation || ''}`)}${line('세운-원국 교차', sewoonTop3)}${line('공망', `${s.gongmang?.emptied?.join(', ') || ''} (${s.gongmang?.affectedPillars?.join(', ') || ''})`)}${iljuBlock}• 주요 신살:
-${sortedShinsal.slice(0, 5).map((ss: any) => 
+• 강약 상세: ${s.strength_detail?.deukryeong?.result || '?'}/${s.strength_detail?.deukji?.result || '?'}/${s.strength_detail?.deukse?.result || '?'} — ${s.strength_detail?.overall_reason || ''}
+• 용신: ${s.yongShin || '?'} | ${line('희신', s.heeShin)}${line('기신', s.giShin)}${line('용신 근거', s.yongsin_detail?.final?.reason || '')}
+• 오행: ${elSummary}
+• 현재 대운: ${currentDw.full || '?'} (${currentDw.startAge || '?'}~${currentDw.endAge || '?'}세) — 십성: ${currentDw.tenGodStem || ''}/${currentDw.tenGodBranch || ''}${s.is_daewoon_changing_year ? ' [★교운기: 환경/심경 급변기]' : ''} — 에너지: ${dwTwelveStage.level || '?'}점(${dwTwelveStage.description || ''})
+• 세운(${currentSeun.year || '?'}): ${currentSeun.full || '?'} — 십성: ${currentSeun.tenGodStem || ''}/${currentSeun.tenGodBranch || ''}
+• 올해 운세(세운): [${s.fortune?.seun?.rating || s.fortune?.rating || '평'}] ${s.fortune?.seun?.interpretation || s.fortune?.interpretation || ''} (점수: ${s.fortune?.seun?.score || s.fortune?.score || 0})
+• 이번 달(월운): [${s.fortune?.currentMonthFortune?.rating || '평'}] ${s.fortune?.currentMonthFortune?.interpretation || s.fortune?.currentMonthFortune?.summary || ''}
+• 세운-원국 교차: ${sewoonTop3}
+• 공망: ${s.gongmang?.emptied?.join(', ') || '없음'} (${s.gongmang?.affectedPillars?.join(', ') || ''})
+${iljuBlock}
+• 주요 신살:
+${sortedShinsal.slice(0, 10).map((ss: any) => 
   `  - ${ss.name}${ss.hanja ? `(${ss.hanja})` : ''}[${ss.location || ss.pillar || ''}]: ${ss.effect || ss.description || ss.name} (강도: ${ss.strength || '중'})`
 ).join('\n') || (s.characteristics || []).filter((c: string) => !c.startsWith('격국')).slice(0, 8).join(' | ')}
 
@@ -411,8 +443,18 @@ ${selectedPalaces}
 
 ${ziweiSection}
 
-★ 궁 선택 규칙: 질문="${userInfo.question || '종합운'}" → ${targetPalaceNames.join(', ')} 궁 중심 해석
-★ 자미두수 해석 지침: 빈궁이 있으면 대궁(반대편 궁)의 주성 영향으로 해석하라. 데이터가 전체적으로 부족하면 "자미두수 관점에서는 출생 시간 확인이 필요하지만, 사주와 점성술 기준으로..."라고 전환하라. 자미두수 데이터가 있는 궁은 반드시 해석에 포함할 것.
+★ 자미두수 해석 우선순위 (반드시 이 순서로):
+1. 래인궁(來因궁) — 이 사람 인생의 진짜 출발점. 래인궁의 별과 사화를 먼저 언급하며 "당신의 인생은 [래인궁 주제]에서 시작됩니다"로 리딩 시작
+2. 명반 유형(chartType) — "당신은 [살파랑/기월동량/자부/혼합]형 명반으로, [특성]이 핵심"
+3. 궁간사화 인과관계 — 화기가 어디로 날아갔는지가 "문제의 원인", 화록이 어디로 갔는지가 "해결의 실마리"
+4. 삼대기추적 — 화기 연쇄가 3단계까지 어디로 이어지는지 말해주면 고객이 "소름" 느낌
+5. 삼방사정 — 질문 관련 궁 + 대궁 + 삼합궁의 별을 종합 해석
+6. 주성 궁별 해석 — STAR_PALACE_MEANINGS 데이터를 활용하여 구체적으로
+
+★ 궁 선택 규칙: 질문="${userInfo.question || '종합운'}" → ${targetPalaceNames.join(', ')} 궁 중심
+★ 빈궁 처리: 빈궁은 대궁(반대편)의 주성으로 해석. 데이터 부족 시 "사주 기준으로" 전환.
+★ 교차 검증 활용: SECTION 0.5의 자미두수×사주 교차 검증 결과에서 "일치"인 영역은 자신있게 단언하고, "상충"인 영역은 "시기에 따라 달라질 수 있다"고 유연하게 표현.
+★ 절대 금지: 궁간사화, 삼대기추적, 래인궁 등 전문 용어를 고객에게 직접 노출하지 말 것. 자연스러운 문장으로 풀어서 설명할 것.
 `;
 
   // ========================
@@ -478,21 +520,62 @@ ${line('프로그레션(내적 변화)', `달 ${aRaw.progression?.moon || ''} ($
 `;
 
   // ========================
-  // SECTION 4: NUMEROLOGY 핵심
+  // SECTION 4: NUMEROLOGY 핵심 — 🔧 FIX #5, #6 적용 가이드
   // ========================
   const currentPinnacle = (n.pinnacles || []).find((p: any) => {
     if (!p.period) return false;
     const match = p.period.match(/(\d+)세?\s*~\s*(종료|\d+)/);
     if (!match) return false;
     const start = parseInt(match[1]);
-    return start <= 40; // 현재 나이 기준 — 동적으로 계산 가능
+    const end = match[2] === '종료' ? 100 : parseInt(match[2]);
+    const age = s.currentAge || 40;
+    return age >= start && age <= end;
   }) || (n.pinnacles || []).slice(-1)[0] || {} as any;
 
-  const currentChallenge = (n.challenges || []).slice(-1)[0] || {} as any;
+  const currentChallenge = (n.challenges || []).find((p: any) => { // pinnacle과 동일한 로직 적용
+    if (!p.period) return false;
+    const match = p.period.match(/(\d+)세?\s*~\s*(종료|\d+)/);
+    if (!match) return false;
+    const start = parseInt(match[1]);
+    const end = match[2] === '종료' ? 100 : parseInt(match[2]);
+    const age = s.currentAge || 40;
+    return age >= start && age <= end;
+  }) || (n.challenges || []).slice(-1)[0] || {} as any;
+
+  // 🔧 FIX #6: 마스터넘버 심층 분석
+  const masterBlock = n.master_numbers?.length > 0 
+    ? `\n\n[보유 마스터넘버: ${n.master_numbers.join(', ')}]
+- 이분은 ${n.master_numbers.join('와 ')}의 강력한 마스터 진동을 보유하고 있습니다.
+- 이는 일반적인 수리보다 높은 차원의 영적 소명과 예민함을 의미하며, 리딩 시 이 특별한 잠재력을 반드시 언급하십시오.`
+    : '';
+
+  // 🔧 FIX #5: 카르마 부채 심층 분석
+  const karmicBlock = n.karmic_debt_details?.length > 0
+    ? `\n\n[주의: 카르마 부채(Karmic Debt) 감지]
+${n.karmic_debt_details.map((d: string) => `- ${d}`).join('\n')}
+- ★ 지시: 이 카르마적 과제는 성장을 위한 필수 관문이므로, 부정적으로만 치부하지 말고 '어떻게 행동해야 해소되는지' 조언하십시오.`
+    : '';
+
+  const lpMeaning = LIFE_PATH_MEANINGS[n.life_path_number];
+  const exMeaning = n.expressionNumber ? EXPRESSION_MEANINGS[n.expressionNumber] : null;
 
   const section4 = `
 === [SECTION 4] 수비학 (핵심) ===
-• 생명수: ${n.life_path_number || n.lifePath || '?'}${n.is_master_number ? ` (마스터넘버)` : ''}${line('운명수', n.destiny_number)}${line('개인년', n.personal_year)}${line('현재 피너클', `${currentPinnacle.number || ''} (${currentPinnacle.meaning || ''})`)}${line('챌린지', `${currentChallenge.number || ''} (${currentChallenge.meaning || ''})`)}${line('키워드', (n.vibrations || []).join(' / '))}
+• 생명수: ${n.life_path_number || n.lifePath || '?'}${n.is_master_number ? ` (마스터넘버)` : ''} | 운명수: ${n.destiny_number || '?'} | 개인년: ${n.personal_year || '?'}
+• 주요 수리: 표현수 ${n.expressionNumber || '?'}, 영혼충동수 ${n.soulUrgeNumber || '?'}, 성격수 ${n.personalityNumber || '?'}
+• 현재 피너클: ${currentPinnacle.number || '?'} (${currentPinnacle.meaning || ''} / ${currentPinnacle.period || ''})
+• 현재 챌린지: ${currentChallenge.number || '?'} (${currentChallenge.meaning || ''} / ${currentChallenge.period || ''})
+${lpMeaning ? `
+【생명수 본질: ${n.life_path_number}】
+• 핵심: ${lpMeaning.essence}
+• 성격적 특성: ${lpMeaning.personality}
+• 성장 과제: ${lpMeaning.growth}` : ''}
+${exMeaning ? `
+【표현수(사회적 활동/재능): ${n.expressionNumber}】
+• 재능: ${exMeaning.talent}
+• 인생 목표: ${exMeaning.life_purpose}
+• 도전 과제: ${exMeaning.challenge}` : ''}${masterBlock}${karmicBlock}
+• 진동/키워드: ${(n.vibrations || []).join(' / ') || '없음'}
 `;
 
   // ========================

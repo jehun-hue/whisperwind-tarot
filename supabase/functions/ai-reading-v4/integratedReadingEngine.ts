@@ -8,7 +8,8 @@
 import { calculateSaju } from "./calculateSaju.ts";
 import { analyzeSajuStructure } from "./aiSajuAnalysis.ts";
 import { runTarotSymbolicEngine, tcveCrossCheck } from "./tarotSymbolicEngine.ts";
-import { generatePatternVectors, SymbolicVector } from "./symbolicPatternEngine.ts";
+import { generatePatternVectors } from "./symbolicPatternEngine.ts";
+import type { SymbolicVector } from "./symbolicPatternEngine.ts";
 import { calculateConsensusV8, calculateConsensusWithTopic, getTopicWeights, type QuestionTopic } from "./consensusEngine.ts";
 import { runLifeTimelineEngine, type LifeTimelineResult } from "./lifeTimelineEngine.ts";
 import { analyzeSpreadCCM, lookupCCM, type CCMResult } from "./cardContextMatrix.ts";
@@ -20,7 +21,8 @@ import { calculateNumerology, calculateDestinyNumber, detectKarmicDebt } from ".
 import { validateV3Schema, patchMissingFields, logMonitoringEvent } from "./monitoringLayer.ts";
 import { safeParseGeminiJSON } from "./jsonUtils.ts";
 import { calculateServerAstrology } from "./lib/astrologyEngine.ts";
-import { calculateZiwei, ServerZiWeiResult } from "./lib/ziweiEngine.ts";
+import { calculateZiwei } from "./lib/ziweiEngine.ts";
+import type { ServerZiWeiResult } from "./lib/ziweiEngine.ts";
 import { calculateFortune } from "./lib/fortuneEngine.ts";
 import { classifyWithFallback, classifyQuestion, TOPIC_SYSTEM_FOCUS, DECISION_AXES } from "./questionClassifier.ts";
 import { detectCombinations, aggregateCombinationScore, processCardVector, SPREAD_POSITION_WEIGHTS } from "./tarotCombinationDB.ts";
@@ -384,6 +386,9 @@ export function buildEnginePrompts(input: any, sajuRaw: any, sajuAnalysis: any, 
   }
 
   
+  if (!sajuRaw?.dayMaster && !sajuRaw?.pillars) {
+    console.warn("[WARN][buildEnginePrompts] sajuRaw 데이터 부족 — DB 폴백 경로 사용 중");
+  }
   const sajuDisplay = {
     fourPillars: sajuRaw?.year ? 
       `년주 ${sajuRaw.year.stem}${sajuRaw.year.branch}, 월주 ${sajuRaw.month.stem}${sajuRaw.month.branch}, 일주 ${sajuRaw.day.stem}${sajuRaw.day.branch}, 시주 ${sajuRaw.hour.stem}${sajuRaw.hour.branch}` :
@@ -670,17 +675,19 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
   }
 
   // Step 1: Physical Calculation Pipeline
-    // 사주 계산 (동기)
+    // 사주 계산 (동기 버전 v9)
     let sajuRaw: any = null;
     try {
-      sajuRaw = await calculateSaju(
+      sajuRaw = calculateSaju(
         solarBirthInfo.year, solarBirthInfo.month, solarBirthInfo.day, 
         solarBirthInfo.hour, solarBirthInfo.minute, solarBirthInfo.gender,
         solarBirthInfo.longitude,
-        !!(solarBirthInfo.hour !== undefined && solarBirthInfo.hour !== null && solarBirthInfo.hour >= 0),
-        birthInfo.isLunar,
-        birthInfo.isLeapMonth
+        hasTime,
+        rawBirth.yajasiMode || 'keep_day',
+        false, // isLunar: false (이미 solarBirthInfo가 양력 변환됨)
+        false
       );
+      if (!sajuRaw) throw new Error("사주 계산 결과가 유효하지 않습니다.");
       if (!sajuRaw) throw new Error("사주 계산 결과가 유효하지 않습니다.");
     } catch (e: any) {
       console.error("[ENGINE-SAFE] 사주 계산 실패:", e);

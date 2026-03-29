@@ -93,7 +93,7 @@ async function runAllTests() {
   for (const tc of TEST_CASES) {
     const saju = calculateSaju(tc.year, tc.month, tc.day, tc.hour, tc.minute, tc.gender);
     const analysis = await analyzeSajuStructure(saju);
-    assert(`${tc.id} strength 유효`, ["극신강","중신강","중신약","극신약"].includes(analysis.strength), `invalid strength: ${analysis.strength}`);
+    assert(`${tc.id} strength 유효`, ["극신강","신강","약변강","중화","강변약","신약","극신약"].includes(analysis.strength), `invalid strength: ${analysis.strength}`);
     assert(`${tc.id} characteristics 생성`, analysis.characteristics.length > 0, `no characteristics for ${tc.id}`);
     assert(`${tc.id} 일간 특성 태깅`, analysis.characteristics.some(c => c.includes("일간의")), `no dayMaster tag for ${tc.id}`);
     assert(`${tc.id} narrative 존재`, analysis.narrative.length > 20, `narrative too short for ${tc.id}`);
@@ -188,13 +188,13 @@ async function runAllTests() {
 
   // ── TEST 7: Validation Layer ──
   console.log("[7/10] Validation Layer...");
-  const validResult = validateEngineOutput(con1, vec1);
+  const validResult = validateEngineOutput(con1, vec1, sys1);
   assert("정상 데이터 validation pass", validResult.isValid, validResult.reasons.join(", "));
   
-  const emptyVecResult = validateEngineOutput(con1, []);
+  const emptyVecResult = validateEngineOutput(con1, [], sys1);
   assert("빈 벡터 → validation fail", !emptyVecResult.isValid, "should fail with empty vectors");
   
-  const lowConfResult = validateEngineOutput({ consensus_score: 0, confidence_score: 0.1, prediction_strength: 0 }, vec1);
+  const lowConfResult = validateEngineOutput({ consensus_score: 0, confidence_score: 0.1, prediction_strength: 0 }, vec1, sys1);
   assert("낮은 confidence → validation fail", !lowConfResult.isValid, "should fail with low confidence");
 
   // ── TEST 8: 하이브리드 타로 ──
@@ -245,7 +245,7 @@ async function runAllTests() {
       const vectors = generatePatternVectors(systemResults);
       const consensus = calculateConsensusV8(vectors);
       const timeline = predictTemporalV8(consensus, systemResults);
-      const validation = validateEngineOutput(consensus, vectors);
+      const validation = validateEngineOutput(consensus, vectors, systemResults);
       
       if (vectors.length > 0 && consensus.consensus_score !== undefined && timeline.length === 3) {
         pipelinePass++;
