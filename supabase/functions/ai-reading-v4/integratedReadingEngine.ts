@@ -24,7 +24,7 @@ import { calculateZiwei, ServerZiWeiResult } from "./lib/ziweiEngine.ts";
 import { classifyWithFallback, classifyQuestion, TOPIC_SYSTEM_FOCUS, DECISION_AXES } from "./questionClassifier.ts";
 import { detectCombinations, aggregateCombinationScore, processCardVector, SPREAD_POSITION_WEIGHTS } from "./tarotCombinationDB.ts";
 import { getCardVector, getCardWuxing, getElementCompatibility } from "./tarotVectorDB.ts";
-import { lunarToSolarAccurate, solarToLunarAccurate } from "./lunarData.ts";
+import { solarToLunar as solarToLunarCore } from "./lib/lunarConverter.ts";
 
 /** New Phase 2 Analysis Modules */
 import { 
@@ -324,60 +324,6 @@ const TOPIC_PATTERNS: Record<string, Record<string, string[]>> = {
   }
 };
 
-// 음력→양력 변환 함수
-/**
- * @deprecated Use lunarToSolarAccurate from lunarData.ts instead.
- * This internal version is kept for reference but not used in the main pipeline.
- */
-function _deprecated_lunarToSolar(year: number, month: number, day: number, isLeapMonth: boolean = false): { year: number; month: number; day: number } {
-  // 1900~2100년 음력→양력 변환 테이블 (주요 절입일 기준)
-  const lunarNewYearSolar: Record<number, [number, number, number]> = {
-    1970: [1970, 1, 27], 1971: [1971, 1, 15], 1972: [1972, 2, 3],
-    1973: [1973, 1, 23], 1974: [1974, 1, 23], 1975: [1975, 2, 11],
-    1976: [1976, 1, 31], 1977: [1977, 2, 18], 1978: [1978, 2, 7],
-    1979: [1979, 1, 28], 1980: [1980, 2, 16], 1981: [1981, 2, 5],
-    1982: [1982, 1, 25], 1983: [1983, 2, 13], 1984: [1984, 2, 2],
-    1985: [1985, 2, 20], 1986: [1986, 2, 9], 1987: [1987, 1, 29],
-    1988: [1988, 2, 17], 1989: [1989, 2, 6], 1990: [1990, 1, 27],
-    1991: [1991, 2, 15], 1992: [1992, 2, 4], 1993: [1993, 1, 23],
-    1994: [1994, 2, 10], 1995: [1995, 1, 31], 1996: [1996, 2, 19],
-    1997: [1997, 2, 7],  1998: [1998, 1, 28], 1999: [1999, 2, 16],
-    2000: [2000, 2, 5],  2001: [2001, 1, 24], 2002: [2002, 2, 12],
-    2003: [2003, 2, 1],  2004: [2004, 1, 22], 2005: [2005, 2, 9],
-    2006: [2006, 1, 29], 2007: [2007, 2, 18], 2008: [2008, 2, 7],
-    2009: [2009, 1, 26], 2010: [2010, 2, 14], 2011: [2011, 2, 3],
-    2012: [2012, 1, 23], 2013: [2013, 2, 10], 2014: [2014, 1, 31],
-    2015: [2015, 2, 19], 2016: [2016, 2, 8],  2017: [2017, 1, 28],
-    2018: [2018, 2, 16], 2019: [2019, 2, 5],  2020: [2020, 1, 25],
-    2021: [2021, 2, 12], 2022: [2022, 2, 1],  2023: [2023, 1, 22],
-    2024: [2024, 2, 10], 2025: [2025, 1, 29], 2026: [2026, 2, 17]
-  };
-
-  const newYear = lunarNewYearSolar[year];
-  if (!newYear) return { year, month, day };
-
-  const baseDate = new Date(Date.UTC(newYear[0], newYear[1] - 1, newYear[2]));
-  const lunarMonthDays = [29, 30, 29, 30, 29, 30, 29, 30, 29, 30, 29, 30];
-
-  let totalDays = 0;
-  for (let m = 1; m < month; m++) {
-    totalDays += lunarMonthDays[m - 1];
-  }
-
-  if (isLeapMonth) {
-    totalDays += lunarMonthDays[month - 1]; 
-  }
-
-  totalDays += day - 1;
-
-  const resultDate = new Date(baseDate.getTime() + totalDays * 86400000);
-
-  return {
-    year: resultDate.getUTCFullYear(),
-    month: resultDate.getUTCMonth() + 1,
-    day: resultDate.getUTCDate()
-  };
-}
 // B-57 + B-42 개선: 양력→음력 정밀 변환 (월별 날 수 테이블 기반, 윤달 지원)
 interface LunarResult {
   lunarYear: number;
@@ -388,12 +334,12 @@ interface LunarResult {
 }
 
 function solarToLunar(solarYear: number, solarMonth: number, solarDay: number): LunarResult {
-  const result = solarToLunarAccurate(solarYear, solarMonth, solarDay);
+  const result = solarToLunarCore(solarYear, solarMonth, solarDay);
   return {
-    lunarYear: result.lunarYear,
-    lunarMonth: result.lunarMonth,
-    lunarDay: result.lunarDay,
-    is_leap_month: result.isLeap,
+    lunarYear: result.year,
+    lunarMonth: result.month,
+    lunarDay: result.day,
+    is_leap_month: result.isLeapMonth,
     is_leap_month_adjusted: false
   };
 }
