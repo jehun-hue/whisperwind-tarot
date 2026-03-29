@@ -24,7 +24,7 @@ import { calculateZiwei, ServerZiWeiResult } from "./lib/ziweiEngine.ts";
 import { classifyWithFallback, classifyQuestion, TOPIC_SYSTEM_FOCUS, DECISION_AXES } from "./questionClassifier.ts";
 import { detectCombinations, aggregateCombinationScore, processCardVector, SPREAD_POSITION_WEIGHTS } from "./tarotCombinationDB.ts";
 import { getCardVector, getCardWuxing, getElementCompatibility } from "./tarotVectorDB.ts";
-import { solarToLunar as solarToLunarCore } from "./lib/lunarConverter.ts";
+import { solarToLunar as solarToLunarCore, lunarToSolar as lunarToSolarCore } from "./lib/lunarConverter.ts";
 
 /** New Phase 2 Analysis Modules */
 import { 
@@ -640,7 +640,7 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
   
   const solarBirthInfo = isLunar
     ? (() => {
-        const converted = lunarToSolarAccurate(
+        const converted = lunarToSolarCore(
           birthInfo.year,
           birthInfo.month,
           birthInfo.day,
