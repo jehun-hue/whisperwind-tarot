@@ -73,10 +73,57 @@ export const STYLE_PRESETS = {
 - "지배벡터", "합의점수", "심각 충돌", "조율" 같은 시스템 내부 용어 절대 금지.
 - 마크다운 금지. 순수 텍스트만.
 - 친구에게 핵심만 알려주듯 자연스럽고 따뜻하게.`
+  },
+  compatibility: {
+    temperature: 0.4,
+    timeoutMs: 40000,
+    maxOutputTokens: 8192,
+    instruction: `당신은 "인연의 다리" 스타일의 위스퍼윈드입니다.
+
+[인연의 다리 스타일 규칙]
+- 두 사람 각각의 장점을 먼저 인정한 후, 관계 역학을 풀어가는 톤.
+- "두 분 사이에는", "이 관계의 특별한 점은" 같은 관계 중심 표현 사용.
+- 갈등 요소를 언급할 때 "다만 서로 이해가 필요한 부분이 있어요"처럼 부드럽게 전환.
+- 반드시 "함께 노력하면" 류의 성장 가능성 메시지로 마무리.
+- 한쪽을 비난하거나 우열을 나누지 말 것. 철저히 균형 잡힌 시각.
+- 자연스러운 문단 흐름. 리스트/번호 매기기 금지.
+- 마크다운 금지. 순수 텍스트만.`
+  },
+  serious: {
+    temperature: 0.2,
+    timeoutMs: 40000,
+    maxOutputTokens: 8192,
+    instruction: `당신은 "신중한 조언자" 스타일의 위스퍼윈드입니다.
+
+[신중한 조언자 스타일 규칙]
+- 건강, 법률, 이사 등 민감한 주제에 특화. 위로보다 정확성 우선.
+- "현재 흐름을 보면" "데이터가 가리키는 방향은"처럼 근거 기반 표현.
+- 과장된 긍정 금지. 리스크는 명확히 언급하되 공포 조성하지 말 것.
+- "전문가와 상의하시는 것도 좋겠습니다" 같은 안전 조언 포함.
+- 부드러운 존댓말이되 감성적 공감보다 실질적 조언 비중을 높임.
+- 자연스러운 문단 흐름. 리스트/번호 매기기 금지.
+- 마크다운 금지. 순수 텍스트만.`
   }
 } as const;
 
 export type StyleName = keyof typeof STYLE_PRESETS;
+
+// ── 질문 유형 → 스타일 자동 매핑 ──
+const TOPIC_STYLE_MAP: Record<string, StyleName> = {
+  career: 'choihanna',
+  relationship: 'choihanna',
+  finance: 'monad',
+  health: 'serious',
+  migration: 'serious',
+  life_change: 'choihanna',
+  general_future: 'choihanna',
+  compatibility: 'compatibility',
+  family: 'choihanna',
+};
+
+export function getStyleForTopic(questionType?: string): StyleName {
+  return TOPIC_STYLE_MAP[questionType || ''] || 'choihanna';
+}
 
 // ── Core API Call ──
 export async function callGemini(req: GeminiRequest): Promise<GeminiResponse> {
@@ -159,7 +206,10 @@ export async function callGemini(req: GeminiRequest): Promise<GeminiResponse> {
         .replace(/^#{1,6}\s+/gm, '')
         .replace(/^-{3,}/gm, '')
         .replace(/`{1,3}/g, '')
-        .replace(/^\s*[\*\-]\s+/gm, '')
+        .replace(/^\s*[\*\-•]\s+/gm, '')
+        .replace(/^\s*\d+\.\s+/gm, '')
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+        .replace(/\n{3,}/g, '\n\n')
         .trim();
 
       console.log(`[INFO][GeminiClient:success] ${cleaned.slice(0, 80)}... (${cleaned.length}chars, ${Date.now() - start}ms, retried=${retried})`);
