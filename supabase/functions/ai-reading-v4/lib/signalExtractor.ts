@@ -1,4 +1,4 @@
-﻿/**
+/**
  * lib/signalExtractor.ts
  * 비정형 점술 데이터를 정형화된 Signal 객체로 변환하고 교차 검증하는 모듈
  */
@@ -26,6 +26,15 @@ export interface CrossSignal {
 }
 
 // === 1. 사주 신호 추출 ===
+function mapElementToCategory(element: string): Signal['category'] {
+  if (['재성', '편재', '정재', '금', '金'].some(k => element.includes(k))) return 'wealth';
+  if (['관성', '편관', '정관'].some(k => element.includes(k))) return 'career';
+  if (['인성', '편인', '정인'].some(k => element.includes(k))) return 'career';
+  if (['비겁', '비견', '겁재'].some(k => element.includes(k))) return 'relationship';
+  if (['식상', '식신', '상관'].some(k => element.includes(k))) return 'career';
+  return 'general';
+}
+
 export function extractSajuSignals(sajuResult: any): Signal[] {
   const signals: Signal[] = [];
   
@@ -34,7 +43,7 @@ export function extractSajuSignals(sajuResult: any): Signal[] {
     for (const [element, count] of Object.entries(elements)) {
       if ((count as number) === 0) {
         signals.push({
-          source: 'saju', type: 'warning', category: 'general',
+          source: 'saju', type: 'warning', category: mapElementToCategory(element),
           severity: 2, title: `오행 결핍: ${element}`,
           description: `${element} 기운이 원국에 없어 해당 영역의 보완이 필요합니다`,
           rawData: { element, count }
@@ -42,7 +51,7 @@ export function extractSajuSignals(sajuResult: any): Signal[] {
       }
       if ((count as number) >= 4) {
         signals.push({
-          source: 'saju', type: 'warning', category: 'general',
+          source: 'saju', type: 'warning', category: mapElementToCategory(element),
           severity: 2, title: `오행 과다: ${element}`,
           description: `${element} 기운이 과도하여 균형 조절이 필요합니다`,
           rawData: { element, count }
@@ -132,16 +141,26 @@ function mapPalaceToCategory(palace: string): Signal['category'] {
 }
 
 // === 3. 점성술 신호 추출 ===
+function mapPlanetToCategory(planet: string): Signal['category'] {
+  const p = (planet || '').toLowerCase();
+  if (['venus', '금성'].some(k => p.includes(k))) return 'relationship';
+  if (['mars', '화성', 'saturn', '토성'].some(k => p.includes(k))) return 'career';
+  if (['jupiter', '목성'].some(k => p.includes(k))) return 'wealth';
+  if (['moon', '달'].some(k => p.includes(k))) return 'health';
+  return 'general';
+}
+
 export function extractAstrologySignals(astroResult: any): Signal[] {
   const signals: Signal[] = [];
 
   if (astroResult?.planets) {
     for (const planet of astroResult.planets) {
       if (planet.is_retrograde) {
+        const pName = planet.planet || planet.name;
         signals.push({
-          source: 'astrology', type: 'warning', category: 'general',
-          severity: 1, title: `${planet.planet || planet.name} 역행`,
-          description: `${planet.planet || planet.name}이 역행 중이라 소통/재정 등 해당 영역에서 재검토가 필요합니다`,
+          source: 'astrology', type: 'warning', category: mapPlanetToCategory(pName),
+          severity: 1, title: `${pName} 역행`,
+          description: `${pName}이 역행 중이라 소통/재정 등 해당 영역에서 재검토가 필요합니다`,
           rawData: planet
         });
       }
@@ -152,7 +171,7 @@ export function extractAstrologySignals(astroResult: any): Signal[] {
     for (const aspect of astroResult.aspects) {
       if (aspect.isHarmonious === false) {
         signals.push({
-          source: 'astrology', type: 'warning', category: 'general',
+          source: 'astrology', type: 'warning', category: mapPlanetToCategory(aspect.planet1 || aspect.planet2),
           severity: aspect.type?.includes('opposition') ? 3 : 2,
           title: `${aspect.planet1}-${aspect.planet2} ${aspect.type}`,
           description: `${aspect.planet1}과 ${aspect.planet2} 사이에 긴장이 있어 마찰이 예상됩니다`,
@@ -161,7 +180,7 @@ export function extractAstrologySignals(astroResult: any): Signal[] {
       }
       if (aspect.isHarmonious === true) {
         signals.push({
-          source: 'astrology', type: 'opportunity', category: 'general',
+          source: 'astrology', type: 'opportunity', category: mapPlanetToCategory(aspect.planet1 || aspect.planet2),
           severity: 1, title: `${aspect.planet1}-${aspect.planet2} ${aspect.type}`,
           description: `${aspect.planet1}과 ${aspect.planet2}의 조화로운 흐름이 있습니다`,
           rawData: aspect
@@ -190,6 +209,14 @@ export function extractNumerologySignals(numResult: any): Signal[] {
 }
 
 // === 5. 타로 신호 추출 ===
+function mapCardToCategory(name: string): Signal['category'] {
+  if (name.includes('Cups')) return 'relationship';
+  if (name.includes('Pentacles')) return 'wealth';
+  if (name.includes('Swords')) return 'career';
+  if (name.includes('Wands')) return 'career';
+  return 'general';
+}
+
 const OPPORTUNITY_CARDS: Record<string, { severity: 1 | 2 | 3; description: string }> = {
   'The Sun': { severity: 3, description: '성공과 활력의 강한 긍정 에너지' },
   'The World': { severity: 3, description: '완성과 성취의 최종 단계' },
@@ -240,14 +267,14 @@ export function extractTarotSignals(cards: any[], insights: any): Signal[] {
     if (!isReversed && OPPORTUNITY_CARDS[name]) {
       const info = OPPORTUNITY_CARDS[name];
       signals.push({
-        source: 'tarot', type: 'opportunity', category: 'general',
+        source: 'tarot', type: 'opportunity', category: mapCardToCategory(name),
         severity: info.severity, title: `기회: ${name}`,
         description: info.description, rawData: card
       });
     } else if (isReversed && WARNING_CARDS[name]) {
       const info = WARNING_CARDS[name];
       signals.push({
-        source: 'tarot', type: 'opportunity', category: 'general',
+        source: 'tarot', type: 'opportunity', category: mapCardToCategory(name),
         severity: Math.max(1, info.severity - 1) as 1|2|3, 
         title: `기회: ${name}(역)`,
         description: '위기 극복의 가능성과 서서히 나아지는 흐름입니다', rawData: card
@@ -260,14 +287,14 @@ export function extractTarotSignals(cards: any[], insights: any): Signal[] {
     if (!isReversed && WARNING_CARDS[name]) {
       const info = WARNING_CARDS[name];
       signals.push({
-        source: 'tarot', type: 'warning', category: 'general',
+        source: 'tarot', type: 'warning', category: mapCardToCategory(name),
         severity: info.severity, title: `주의: ${name}`,
         description: info.description, rawData: card
       });
     } else if (isReversed && OPPORTUNITY_CARDS[name]) {
       const info = OPPORTUNITY_CARDS[name];
       signals.push({
-        source: 'tarot', type: 'warning', category: 'general',
+        source: 'tarot', type: 'warning', category: mapCardToCategory(name),
         severity: Math.max(1, info.severity - 1) as 1|2|3,
         title: `주의: ${name}(역)`,
         description: '긍정적인 에너지의 흐름이 다소 지연되거나 왜곡될 수 있습니다', rawData: card
