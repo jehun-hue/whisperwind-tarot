@@ -49,8 +49,8 @@ function checkJongGyeok(
 
   // 극신강 (balance >= 0.80) → 종강격/종왕격
   if (balance >= 0.80) {
-    const bigyeop = (tenGods["비견"] || 0) + (tenGods["겁재"] || 0);
-    const insung = (tenGods["편인"] || 0) + (tenGods["정인"] || 0);
+    const bigyeop = tenGods["비겁"] || 0;
+    const insung = tenGods["인성"] || 0;
 
     if (bigyeop >= insung) {
       return {
@@ -69,9 +69,9 @@ function checkJongGyeok(
 
   // 극신약 (balance <= 0.20) → 종재/종살/종아격
   if (balance <= 0.20) {
-    const jaeSung = (tenGods["편재"] || 0) + (tenGods["정재"] || 0);
-    const gwanSal = (tenGods["편관"] || 0) + (tenGods["정관"] || 0);
-    const sikSang = (tenGods["식신"] || 0) + (tenGods["상관"] || 0);
+    const jaeSung = tenGods["재성"] || 0;
+    const gwanSal = tenGods["관성"] || 0;
+    const sikSang = tenGods["식상"] || 0;
 
     if (gwanSal >= jaeSung && gwanSal >= sikSang) {
       return {
@@ -132,25 +132,21 @@ function checkSpecialTrait(
   dayMaster: string,
   tenGods: Record<string, number>
 ): { name: string; description: string } | null {
-  const siksin = (tenGods["식신"] || 0);
-  const sangwan = (tenGods["상관"] || 0);
-  const pyeonGwan = (tenGods["편관"] || 0);
-  const jeongGwan = (tenGods["정관"] || 0);
-  const pyeonIn = (tenGods["편인"] || 0);
-  const jeongIn = (tenGods["정인"] || 0);
-  const pyeonJae = (tenGods["편재"] || 0);
-  const jeongJae = (tenGods["정재"] || 0);
+  const sikSang = tenGods["식상"] || 0;
+  const gwanSal = tenGods["관성"] || 0;
+  const insung = tenGods["인성"] || 0;
+  const jaeSung = tenGods["재성"] || 0;
 
-  if (siksin >= 1 && pyeonGwan >= 1)
+  if (sikSang >= 1 && gwanSal >= 1)
     return { name: "식신제살(食神制殺)", description: "식신이 칠살을 제어하여 흉을 길로 바꿉니다." };
-  if ((pyeonGwan >= 1 || jeongGwan >= 1) && (pyeonIn >= 1 || jeongIn >= 1))
+  if (gwanSal >= 1 && insung >= 1)
     return { name: "관인상생(官印相生)", description: "관성과 인성이 상생하여 학문과 명예가 함께합니다." };
-  if (sangwan >= 1 && (pyeonIn >= 1 || jeongIn >= 1))
+  if (sikSang >= 1 && insung >= 1)
     return { name: "상관배인(傷官佩印)", description: "상관의 날카로움을 인성이 다스려 균형을 이룬다." };
-  if ((pyeonJae >= 1 || jeongJae >= 1) && (pyeonGwan >= 1 || jeongGwan >= 1))
+  if (jaeSung >= 1 && gwanSal >= 1)
     return { name: "재관쌍미(財官雙美)", description: "재성과 관성이 함께하여 부와 명예를 겸합니다." };
-  if (siksin >= 1 && (pyeonJae >= 1 || jeongJae >= 1))
-    return { name: "식신생재(食신生財)", description: "식신이 재성을 생하여 재물 복이 풍부합니다." };
+  if (sikSang >= 1 && jaeSung >= 1)
+    return { name: "식신생재(식신생재)", description: "식신이 재성을 생하여 재물 복이 풍부합니다." };
 
   return null;
 }
