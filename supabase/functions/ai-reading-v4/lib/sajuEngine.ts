@@ -27,7 +27,7 @@ export interface SajuPillar {
   elements: string[];
 }
 
-export function calculateSaju(
+export async function calculateSaju(
   year: number,
   month: number,
   day: number,
@@ -35,8 +35,22 @@ export function calculateSaju(
   minute: number,
   gender: 'M' | 'F' = 'M',
   longitude: number = 127.5,
-  hasTime: boolean = true
+  hasTime: boolean = true,
+  isLunar: boolean = false,
+  isLeapMonth: boolean = false
 ) {
+  // ─── 0. 음력→양력 변환 ───
+  if (isLunar) {
+    try {
+      const { lunarToSolar } = await import("./lunarConverter.ts");
+      const solar = lunarToSolar(year, month, day, isLeapMonth);
+      year = solar.year;
+      month = solar.month;
+      day = solar.day;
+    } catch (e) {
+      console.error("[sajuEngine] 음력 변환 실패, 원본 날짜 사용:", e);
+    }
+  }
   // ─── 1. 시간 보정 ───
   // [B-2 FIX] 사주학 표준: DST 무시, KST(+9) 고정
   const KST_OFFSET = 9;
