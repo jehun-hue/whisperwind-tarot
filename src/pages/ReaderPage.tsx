@@ -673,7 +673,20 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
       console.log(`[DEBUG] birthInfo payload for ${style}:`, JSON.stringify(birthInfo));
 
       // ── A모드: 단일 호출 (B 확장 대비) ──
-      setStreamingText("분석 중입니다...");
+      // ── 단계별 로딩 메시지 ──
+      const loadingMessages = [
+        "사주 명리 분석 중...",
+        "자미두수 궁위 해석 중...",
+        "점성술 트랜짓 계산 중...",
+        "교차 검증 수행 중...",
+        "통합 리딩 생성 중...",
+      ];
+      let msgIdx = 0;
+      setStreamingText(loadingMessages[0]);
+      const loadingInterval = setInterval(() => {
+        msgIdx = Math.min(msgIdx + 1, loadingMessages.length - 1);
+        setStreamingText(loadingMessages[msgIdx]);
+      }, 5000);
       setIsStreaming(true);
       let aiData: any = null;
       let fnError: any = null;
@@ -692,6 +705,7 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
         }
       }
       if (aiData?.text) { setStreamingText(aiData.text); }
+      clearInterval(loadingInterval);
       setIsStreaming(false);
 
       console.log(`[runAIAnalysisV2] Edge function response received for ${style}`);
