@@ -36,6 +36,76 @@ const ZIWEI_PALACE_MAP: Record<string, string[]> = {
   default: ['명궁', '관록궁', '재백궁'],
 };
 
+// ═══════════════════════════════════════════════════════
+// P-1: 질문 유형별 섹션 예산 시스템 (TOPIC_SECTION_BUDGET)
+// ═══════════════════════════════════════════════════════
+type SectionBudget = 'full' | 'summary' | 'skip';
+
+interface TopicSectionConfig {
+  saju: SectionBudget;
+  ziwei: SectionBudget;
+  astrology: SectionBudget;
+  numerology: SectionBudget;
+  tarot: SectionBudget;
+}
+
+const TOPIC_SECTION_BUDGET: Record<string, TopicSectionConfig> = {
+  career:         { saju: 'full',    ziwei: 'full',    astrology: 'summary', numerology: 'summary', tarot: 'full' },
+  relationship:   { saju: 'full',    ziwei: 'full',    astrology: 'full',    numerology: 'skip',    tarot: 'full' },
+  finance:        { saju: 'full',    ziwei: 'full',    astrology: 'summary', numerology: 'full',    tarot: 'summary' },
+  health:         { saju: 'summary', ziwei: 'full',    astrology: 'summary', numerology: 'skip',    tarot: 'summary' },
+  general_future: { saju: 'full',    ziwei: 'full',    astrology: 'full',    numerology: 'full',    tarot: 'full' },
+  life_change:    { saju: 'full',    ziwei: 'full',    astrology: 'full',    numerology: 'summary', tarot: 'full' },
+  migration:      { saju: 'summary', ziwei: 'full',    astrology: 'full',    numerology: 'summary', tarot: 'summary' },
+};
+
+// ─── 정규식 스크래퍼 방식 요약 함수들 ───
+function summarizeSaju(full: string): string {
+  const lines = full.split('\n');
+  const keyPatterns = [/일간/, /용신/, /올해 운세/, /대운/, /세운/, /격국/];
+  const picked = lines.filter(l => keyPatterns.some(p => p.test(l)));
+  return picked.length > 0
+    ? `=== [SECTION 1] 사주 명리 (요약) ===\n${picked.join('\n')}\n★ 이 섹션은 요약 모드입니다. 핵심 데이터만 참조하십시오.`
+    : '';
+}
+
+function summarizeZiwei(full: string): string {
+  const lines = full.split('\n');
+  const keyPatterns = [/명궁/, /사화/, /대한/, /핵심 궁/, /래인궁/];
+  const picked = lines.filter(l => keyPatterns.some(p => p.test(l)));
+  return picked.length > 0
+    ? `=== [SECTION 2] 자미두수 (요약) ===\n${picked.join('\n')}\n★ 이 섹션은 요약 모드입니다.`
+    : '';
+}
+
+function summarizeAstrology(full: string): string {
+  const lines = full.split('\n');
+  const keyPatterns = [/태양/, /달/, /ASC/, /트랜짓/, /토성/];
+  const picked = lines.filter(l => keyPatterns.some(p => p.test(l)));
+  return picked.length > 0
+    ? `=== [SECTION 3] 서양 점성술 (요약) ===\n${picked.join('\n')}\n★ 이 섹션은 요약 모드입니다.`
+    : '';
+}
+
+function summarizeNumerology(full: string): string {
+  const lines = full.split('\n');
+  const keyPatterns = [/생명경로/, /운명수/, /개인년/, /라이프패스/, /life_path/];
+  const picked = lines.filter(l => keyPatterns.some(p => p.test(l)));
+  return picked.length > 0
+    ? `=== [SECTION 4] 수비학 (요약) ===\n${picked.join('\n')}\n★ 이 섹션은 요약 모드입니다.`
+    : '';
+}
+
+function summarizeTarot(full: string): string {
+  const lines = full.split('\n');
+  const picked = lines.filter(l => /\d+\./.test(l)).slice(0, 3);
+  return picked.length > 0
+    ? `=== [SECTION 5] 타로 (요약) ===\n${picked.join('\n')}\n★ 상위 3장만 참조.`
+    : '';
+}
+
+// ═══════════════════════════════════════════════════════
+
 export function buildReadingPrompt(
   userInfo: UserInfo,
   saju: SajuAnalysisResult,
@@ -132,7 +202,6 @@ export function buildReadingPrompt(
 
   // ═══ 타임라인: 대운/세운/월운 3단 구조 ═══
   const tl = timeline || {} as any;
-  // s is already defined as saju above.
   
   // 대운 정보
   const dwInfo = s.currentDaewoon || s.daewoon || {};
@@ -174,6 +243,50 @@ ${consistencyInfo ? `▶ ${consistencyInfo}` : ''}
 ${timelineStr}
 
 ★ 지시: 위 결론을 기반으로 리딩 첫머리에 (1) 올해의 핵심 방향을 요약한 한 문장, (2) 가장 주의할 점을 요약한 한 문장을 자연스러운 문장으로 제시하라. 합의도가 70% 이상이면 "여러 관점이 일치합니다"라고 신뢰를 강조하고, 50% 미만이면 "다양한 가능성이 열려 있습니다"라고 유연하게 표현하라. 내부 수치나 용어(합의도, 지배벡터 등)는 절대 노출하지 말 것.
+`;
+
+  // ═══════════════════════════════════════════════════════
+  // P-3: 의사결정 레이블 기반 사전 결론 (preBuiltConclusion)
+  // ═══════════════════════════════════════════════════════
+  const signals = signalData?.signals || [];
+  const crossSignals = signalData?.crossSignals || [];
+
+  const consistencyPct = cv.consistencyScore !== undefined 
+    ? Math.round(cv.consistencyScore * 100) : 50;
+  
+  const fortuneScore = s.fortune?.seun?.score || s.fortune?.score || 50;
+  
+  const decisionLabel = fortuneScore >= 75 ? '긍정적 흐름'
+    : fortuneScore >= 55 ? '안정적 흐름'
+    : fortuneScore >= 35 ? '주의 필요'
+    : '신중 대응 권장';
+
+  const coreDirection = fortuneScore >= 70
+    ? `올해는 적극적으로 기회를 잡아도 좋은 시기입니다. 특히 ${qType === 'career' ? '커리어 확장' : qType === 'relationship' ? '새로운 관계' : qType === 'finance' ? '재무 투자' : '전반적 성장'}에 유리합니다.`
+    : fortuneScore >= 45
+    ? `올해는 안정을 유지하면서 내실을 다지는 시기입니다. 큰 변화보다는 준비와 기반 강화에 집중하세요.`
+    : `올해는 보수적 접근이 현명합니다. 기존 것을 지키면서 내면의 성찰에 집중하는 것이 좋습니다.`;
+
+  // 시스템 간 합의된 가장 심각한 경고 추출
+  const criticalWarning = signals
+    .filter(sig => sig.severity === 'high' || sig.severity === 'critical')
+    .sort((a, b) => {
+      const order: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
+      return (order[a.severity] ?? 3) - (order[b.severity] ?? 3);
+    })[0];
+
+  const warningLine = criticalWarning 
+    ? `⚠ 최우선 주의: ${criticalWarning.title} — ${criticalWarning.description}`
+    : '';
+
+  const preBuiltConclusion = `
+=== [PRE-ANALYSIS CONCLUSION] 사전 분석 결론 ===
+▶ 흐름 판정: ${decisionLabel} (운세 점수: ${fortuneScore}, 합의도: ${consistencyPct}%)
+▶ 핵심 방향: ${coreDirection}
+${warningLine ? `${warningLine}` : ''}
+${decisionResult ? `▶ 의사결정 코드: ${decisionResult.decision} (신뢰도: ${decisionResult.confidence}%)` : ''}
+
+★ 지시: 이 사전 결론의 방향성(${decisionLabel})을 리딩의 뼈대로 삼되, 내부 수치는 절대 노출하지 마십시오.
 `;
 
   // ========================
@@ -254,9 +367,6 @@ ${crossPatterns.join('\n')}
     : '';
 
   // ─── 추출된 리스크/기회 신호 (Phase 2-1) ───
-  const signals = signalData?.signals || [];
-  const crossSignals = signalData?.crossSignals || [];
-
   const signalText = signals?.map(sig => 
     `- [${sig.source.toUpperCase()}] ${sig.title}: ${sig.description} (심각도:${sig.severity})`
   ).join('\n') || '';
@@ -305,9 +415,6 @@ ${signalText ? `[시스템별 개별 신호 근거]\n${signalText}\n` : ''}` : '
 • 조언: ${stageProfile.advice}` : '';
 
   const deepSajuProfile = [gyeokBlock, tengoBlock, stageBlock].filter(Boolean).join('\n');
-  // === Phase 2 끝 ===
-
-
 
   // SECTION 1: SAJU 핵심
   // ========================
@@ -379,7 +486,6 @@ ${deepShinsalLines}` : '';
 ${interactionLines}` : '';
 
   const finalDeepSajuProfile = [deepSajuProfile, yongBlock, deepShinsalBlock, dwDeepBlock, interactionBlock].filter(Boolean).join('\n');
-  // === Phase 3 끝 ===
 
   const sewoonTop3 = sortedSewoonRels.slice(0, 3)
     .map((r: any) => `${r.pair} ${r.type}: ${r.description}`)
@@ -472,13 +578,12 @@ ${ziweiSection}
   const dignityPlanets = planets.filter((p: any) => p.dignity && p.dignity !== '없음');
 
   // 주요 어스펙트 TOP 5 (orb 작은 순 + 주제별 정렬)
-  // === 주제별 점성술 데이터 우선 정렬 ===
   const astroKw = topicFocus?.astrology || [];
   const sortAstroByRelevance = (arr: any[], fields: string[]) => {
     if (!astroKw.length || !arr?.length) return arr;
     return [...arr].sort((a, b) => {
       const aText = typeof a === 'string' ? a : fields?.map(f => String(a[f] || '')).join(' ');
-      const bText = typeof b === 'string' ? b : fields?.map(f => String(b[f] || '')).join(' ');
+      const bText = typeof b === 'string' ? b : fields?.map(f => String(a[f] || '')).join(' ');
       const aMatch = astroKw.some(kw => aText.includes(kw));
       const bMatch = astroKw.some(kw => bText.includes(kw));
       if (aMatch && !bMatch) return -1;
@@ -520,7 +625,7 @@ ${line('프로그레션(내적 변화)', `달 ${aRaw.progression?.moon || ''} ($
 `;
 
   // ========================
-  // SECTION 4: NUMEROLOGY 핵심 — 🔧 FIX #5, #6 적용 가이드
+  // SECTION 4: NUMEROLOGY 핵심
   // ========================
   const currentPinnacle = (n.pinnacles || []).find((p: any) => {
     if (!p.period) return false;
@@ -532,7 +637,7 @@ ${line('프로그레션(내적 변화)', `달 ${aRaw.progression?.moon || ''} ($
     return age >= start && age <= end;
   }) || (n.pinnacles || []).slice(-1)[0] || {} as any;
 
-  const currentChallenge = (n.challenges || []).find((p: any) => { // pinnacle과 동일한 로직 적용
+  const currentChallenge = (n.challenges || []).find((p: any) => {
     if (!p.period) return false;
     const match = p.period.match(/(\d+)세?\s*~\s*(종료|\d+)/);
     if (!match) return false;
@@ -542,102 +647,119 @@ ${line('프로그레션(내적 변화)', `달 ${aRaw.progression?.moon || ''} ($
     return age >= start && age <= end;
   }) || (n.challenges || []).slice(-1)[0] || {} as any;
 
-  // 🔧 FIX #6: 마스터넘버 심층 분석
+  // 마스터넘버 심층 분석
   const masterBlock = n.master_numbers?.length > 0 
     ? `\n\n[보유 마스터넘버: ${n.master_numbers.join(', ')}]
 - 이분은 ${n.master_numbers.join('와 ')}의 강력한 마스터 진동을 보유하고 있습니다.
 - 이는 일반적인 수리보다 높은 차원의 영적 소명과 예민함을 의미하며, 리딩 시 이 특별한 잠재력을 반드시 언급하십시오.`
     : '';
 
-  // 🔧 FIX #5: 카르마 부채 심층 분석
+  // 카르마 부채 심층 분석
   const karmicBlock = n.karmic_debt_details?.length > 0
     ? `\n\n[주의: 카르마 부채(Karmic Debt) 감지]
 ${n.karmic_debt_details.map((d: string) => `- ${d}`).join('\n')}
-- ★ 지시: 이 카르마적 과제는 성장을 위한 필수 관문이므로, 부정적으로만 치부하지 말고 '어떻게 행동해야 해소되는지' 조언하십시오.`
+- ★ 지시: 이 카르마적 과제는 성장을 위한 필수 관문이므로, 부정적으로만 표현하지 말고 "이 과제를 통해 더 깊은 성숙에 이를 수 있다"는 관점에서 해석하라.`
     : '';
 
-  const lpMeaning = LIFE_PATH_MEANINGS[n.life_path_number];
-  const exMeaning = n.expressionNumber ? EXPRESSION_MEANINGS[n.expressionNumber] : null;
+  // 생명경로수 + 표현수 심층 의미 주입
+  const lpMeaning = n.life_path_number ? LIFE_PATH_MEANINGS[String(n.life_path_number)] : null;
+  const exMeaning = n.expression_number ? EXPRESSION_MEANINGS[String(n.expression_number)] : null;
+  
+  const lpBlock = lpMeaning ? `
+【생명경로수 ${n.life_path_number} 심층】
+• 핵심: ${lpMeaning.core}
+• 강점: ${lpMeaning.strength}
+• 약점: ${lpMeaning.weakness}
+• 올해 조언: ${lpMeaning.advice}` : '';
+
+  const exBlock = exMeaning ? `
+【표현수 ${n.expression_number} 심층】
+• 외적 에너지: ${exMeaning.core}
+• 사회적 역할: ${exMeaning.strength}` : '';
 
   const section4 = `
 === [SECTION 4] 수비학 (핵심) ===
-• 생명수: ${n.life_path_number || n.lifePath || '?'}${n.is_master_number ? ` (마스터넘버)` : ''} | 운명수: ${n.destiny_number || '?'} | 개인년: ${n.personal_year || '?'}
-• 주요 수리: 표현수 ${n.expressionNumber || '?'}, 영혼충동수 ${n.soulUrgeNumber || '?'}, 성격수 ${n.personalityNumber || '?'}
-• 현재 피너클: ${currentPinnacle.number || '?'} (${currentPinnacle.meaning || ''} / ${currentPinnacle.period || ''})
-• 현재 챌린지: ${currentChallenge.number || '?'} (${currentChallenge.meaning || ''} / ${currentChallenge.period || ''})
-${lpMeaning ? `
-【생명수 본질: ${n.life_path_number}】
-• 핵심: ${lpMeaning.essence}
-• 성격적 특성: ${lpMeaning.personality}
-• 성장 과제: ${lpMeaning.growth}` : ''}
-${exMeaning ? `
-【표현수(사회적 활동/재능): ${n.expressionNumber}】
-• 재능: ${exMeaning.talent}
-• 인생 목표: ${exMeaning.life_purpose}
-• 도전 과제: ${exMeaning.challenge}` : ''}${masterBlock}${karmicBlock}
-• 진동/키워드: ${(n.vibrations || []).join(' / ') || '없음'}
+• 라이프패스: ${n.life_path_number || n.lifePath || '?'}${n.is_master_number ? ` (마스터넘버)` : ''} | 운명수: ${n.destiny_number || '?'} | 개인년: ${n.personal_year || '?'}
+• 표현수: ${n.expression_number || '?'} | 영혼수: ${n.soul_urge_number || '?'}
+• 피너클: ${currentPinnacle.number || '?'} (${currentPinnacle.meaning || ''}) | 챌린지: ${currentChallenge.number || '?'} (${currentChallenge.meaning || ''})
+• 진동: ${(n.vibrations || []).join(' / ') || ''}
+${lpBlock}${exBlock}${masterBlock}${karmicBlock}
 `;
 
-  // ========================
-  // SECTION 5: TAROT (있을 경우만)
-  // ========================
+  // ═══════════════════════════════════════════════════════
+  // P-8: SECTION 5 타로 카드 분석 (고도화)
+  // ═══════════════════════════════════════════════════════
   const tarotCards = tarot?.cards || [];
+  const tarotVectors = tarot?.vectors || {} as any;
+  const tarotCombinations = tarot?.combinations || [];
+  const tarotPolarity = tarot?.polarity || {} as any;
+
   let section5 = '';
   if (tarotCards.length > 0) {
-    const cardList = (tarotCards||[]).map((c: any, i: number) =>
-      `${c.position || i + 1}. ${c.name || '?'}${c.reversed ? '(역방향)' : '(정방향)'}`
-    ).join('\n');
+    const cardDetails = tarotCards.map((c: any, i: number) => {
+      const base = `${c.position || i + 1}. ${c.name || '?'} ${c.reversed ? '(역방향)' : '(정방향)'}`;
+      
+      // 벡터 차원 점수 (0.3 이상만 노출)
+      const dims = c.vectorDimensions || {};
+      const topDims = Object.entries(dims)
+        .filter(([_, v]) => typeof v === 'number' && (v as number) > 0.3)
+        .sort(([, a], [, b]) => (b as number) - (a as number))
+        .slice(0, 3)
+        .map(([k, v]) => `${k}(${(v as number).toFixed(2)})`)
+        .join(', ');
+
+      return topDims ? `${base}\n   벡터: ${topDims}` : base;
+    }).join('\n');
+
+    // 조합 패턴 인사이트
+    const comboLines = tarotCombinations.slice(0, 5)
+      .map((cb: any) => `  • ${cb.cards?.join(' + ') || cb.name || '?'}: ${cb.insight || cb.meaning || ''}`)
+      .join('\n');
+
+    // 전체 극성 판정
+    const polarityScore = tarotPolarity.score;
+    const polarityLabel = polarityScore !== undefined
+      ? (polarityScore >= 0.6 ? '긍정 우세' : polarityScore <= -0.6 ? '부정 우세' : '중립/혼합')
+      : '';
+
     section5 = `
-=== [SECTION 5] 타로 ===
-${cardList}
+=== [SECTION 5] 타로 카드 분석 (고도화) ===
+${cardDetails}
+${comboLines ? `\n[조합 패턴 인사이트]\n${comboLines}` : ''}
+${polarityLabel ? `\n[전체 극성]: ${polarityLabel} (점수: ${polarityScore?.toFixed(2)})` : ''}
+
+★ 타로 해석 지시:
+- 벡터 차원 점수가 높은 키워드를 해당 카드의 핵심 메시지로 우선 채택하라.
+- 조합 패턴이 있으면 개별 카드보다 조합 의미를 우선하라.
+- 극성이 '부정 우세'이면 경고와 조언 비중을 높이고, '긍정 우세'이면 기회와 확신 비중을 높여라.
+- 역방향 카드는 "차단된 에너지" 또는 "내면화된 주제"로 해석하라.
 `;
   }
 
-  // Phase 3-2: 질문 주제별 핵심 분석 데이터 지시
-  const topicFocusInstruction = topicFocus
-    ? `\n\n[질문 주제별 핵심 분석 포인트]
-이 질문에 가장 관련 깊은 데이터를 우선적으로 활용하여 리딩하라:
-${Object.entries(topicFocus)
-  .map(([system, keywords]) => {
-    const label: Record<string, string> = {
-      saju: '기질/운세 핵심',
-      ziwei: '내면 궁위 핵심',
-      astrology: '에너지 흐름 핵심',
-      numerology: '수리적 상징 핵심',
-      tarot: '카드 해석 핵심'
-    };
-    return `- ${label[system] || system}: ${keywords.join(', ')}`;
-  })
-  .join('\n')}
-★ 주의: 위 키워드는 분석의 '근거'로만 사용하고, 자미두수/점성술/수비학 체계 이름이나 전문 용어는 직접 언급하지 말 것.`
-    : '';
+  // Phase 3-2: 주제별 포커스
+  const topicFocusInstruction = topicFocus ? `\n\n[주제별 포커스 데이터] 아래 키워드를 해당 시스템 해석 시 우선 반영:${Object.entries(topicFocus)
+    .map(([system, keywords]) => {
+      const label: Record<string, string> = { saju: '사주/명리 포커스', ziwei: '자미두수 포커스', astrology: '점성술 포커스', numerology: '수비학 포커스', tarot: '타로 포커스' };
+      return `- ${label[system] || system}: ${keywords.join(', ')}`;
+    })
+    .join('\n')}
+★ 지시: 위 키워드가 등장하는 데이터를 우선 인용하되, 키워드 자체를 고객에게 노출하지 말 것.` : '';
 
-  // Phase 3-3: 의사결정 프레임워크 — 분석 축 주입
-  const axisPrompt = decisionResult
-    ? `\n\n[데이터 기반 최종 의사결정 가이드라인]
-- 이번 질문에 대해 시스템이 도출한 최종 결정은 **"${decisionResult.decision}"**입니다. (신뢰도: ${decisionResult.confidence}%)
-- 분석 근거: ${decisionResult.reason}
-- ★ 지시: 상담사는 반드시 이 "${decisionResult.decision}" 결정을 전체 리딩의 결론이자 중심축으로 삼아야 합니다. 이 결정에 반하는 해석을 하지 마십시오.`
-    : decisionAxes
-    ? `\n\n========================
-[의사결정 분석 항목: ${qType || '종합운'}]
-========================
-이 질문에 대해 다음 3가지 핵심 요소를 깊이 있게 분석하라:
-${decisionAxes.axes?.map((a, i) => {
-  // '타이밍 (지금이 적기인가)' 형태에서 '(지금이 적기인가)'만 추출
-  const match = a.match(/\(([^)]+)\)/);
-  const desc = match ? match[1] : a;
-  return `${i + 1}. ${desc}`;
-}).join('\n')}
-
-${decisionAxes.axisInstruction}
-`
-    : `\n\n[의사결정 판단 기준]
-- 4개 이상 체계가 긍정 → "확신을 가지고 진행하셔도 좋습니다"
-- 3:2로 긍정 우세 → "가능하지만 [부정 체계의 경고 영역]에 주의하세요"  
-- 2:3 또는 그 이하 → "지금은 준비 기간으로 삼고, [긍정 전환 시기]를 기다리세요"
-- 강력한 경고 합의 → "현재는 보류하고, 구체적으로 [회피 방법]을 실천하세요"`;
-
+  // Phase 3-3: 의사결정 축
+  const axisPrompt = decisionResult ? `\n\n[의사결정 프레임]
+- **"${decisionResult.decision}"**이 최종 판정입니다. (신뢰도: ${decisionResult.confidence}%)
+- 근거: ${decisionResult.reason}
+- 지시: "${decisionResult.decision}" 방향으로 리딩을 구성하되, 조건이나 유의점을 함께 제시하라.` 
+    : decisionAxes ? `\n\n========================\n[의사결정 축: ${qType || '종합'}]\n========================\n아래 3가지 축을 분석하라:\n${decisionAxes.axes?.map((a, i) => {
+      const match = a.match(/\(([^)]+)\)/);
+      const desc = match ? match[1] : a;
+      return `${i + 1}. ${desc}`;
+    }).join('\n')}\n\n${decisionAxes.axisInstruction}` 
+    : `\n\n[의사결정 기본 프레임]
+- 4개 엔진 데이터를 종합하여 "진행 vs 보류" 방향성을 제시
+- 긍정 3:부정 2이면 "기회가 있지만 [구체적 리스크]를 주의하세요" 형태
+- 부정 2:긍정 3이면 "신중하게 접근하되, [구체적 기회]를 놓치지 마세요" 형태
+- "종합적으로 보면, [핵심 한 문장]이 올해의 방향입니다" 형태로 마무리`;
 
   // ========================
   // INSTRUCTIONS
@@ -647,158 +769,176 @@ ${decisionAxes.axisInstruction}
 MASTER READING PROTOCOL V4
 ========================
 
-당신은 타로와 사주를 중심으로 자미두수, 점성술, 수비학의 다각적 데이터를 통합 해석하는 최상위 점술가입니다.
-아래 엔진 데이터를 기반으로 ${name}님에게 깊이 있는 통합 리딩을 작성하세요.
+당신은 동양 명리학, 자미두수, 서양 점성술, 수비학을 융합하는 최고의 상담사입니다. ${name}님에게 따뜻하고 구체적인 리딩을 제공하세요.
 
 ========================
-STEP 1: 질문 맥락 파악 (최우선)
+STEP 1: 질문 파악(필수)
 ========================
-${userInfo.question ? `
-${name}님의 질문: "${userInfo.question}"
-질문 분류: ${userInfo.questionType || 'general_future'}
-→ 이 질문이 해석의 중심축이다. 모든 엔진 데이터를 이 질문에 답하는 방향으로 해석하라.
+${userInfo.question ? `${name}님의 질문: "${userInfo.question}"
+질문 유형: ${userInfo.questionType || 'general_future'}
+이 질문에 직접적으로 답하는 것을 최우선으로 하세요.
 ${(() => {
   const qt = userInfo.questionType || 'general_future';
-  if (qt.includes('love') || qt.includes('연애') || qt.includes('relationship') || qt.includes('재회') || qt.includes('궁합'))
-    return `→ [연애/관계 특화] 사주: 일지·월지 관계, 도화살, 합충 중심. 자미두수: 부처궁·복덕궁 중심. 점성술: 7하우스·금성·달 어스펙트 중심. 수비학: 관계수·개인년. 해석 비중: 관계 데이터 60%, 일반 운세 20%, 시기 조언 20%.`;
-  if (qt.includes('career') || qt.includes('직업') || qt.includes('이직') || qt.includes('취업') || qt.includes('승진'))
-    return `→ [직업/커리어 특화] 사주: 관성·식상·재성 관계, 세운 12운성 중심. 자미두수: 관록궁·천이궁 중심. 점성술: 10하우스·6하우스·토성·목성 어스펙트 중심. 수비학: 생명수·개인년. 해석 비중: 직업 데이터 60%, 관계 영향 20%, 시기 조언 20%.`;
-  if (qt.includes('finance') || qt.includes('재물') || qt.includes('사업') || qt.includes('투자'))
-    return `→ [재물/사업 특화] 사주: 재성·식상생재, 용신 활용 중심. 자미두수: 재백궁·전택궁 중심. 점성술: 2하우스·8하우스·목성 어스펙트 중심. 수비학: 생명수·개인년 재물 사이클. 해석 비중: 재물 데이터 60%, 리스크 분석 20%, 시기 조언 20%.`;
+  if (qt.includes('love') || qt.includes('연애') || qt.includes('relationship') || qt.includes('결혼') || qt.includes('이별'))
+    return `\n[연애/관계 특화 지시]
+비중 지시: 사주 부처궁/복덕궁 중심, 자미두수 부처궁/천이궁 교차. 점성술: 금성·달·7하우스 어스펙트 우선.
+비중: 사주 60%, 자미두수 20%, 점성술 20%.`;
+  if (qt.includes('career') || qt.includes('직업') || qt.includes('이직') || qt.includes('사업') || qt.includes('취업'))
+    return `\n[직업/경력 특화 지시]
+비중 지시: 사주 관록·식상 중심, 자미두수 관록궁/재백궁 교차. 점성술: 토성·목성·10하우스·6하우스 우선.
+비중: 사주 60%, 자미두수 20%, 점성술 20%.`;
+  if (qt.includes('finance') || qt.includes('재물') || qt.includes('투자') || qt.includes('돈'))
+    return `\n[재물/투자 특화 지시]
+비중 지시: 사주 재성·편재 중심, 자미두수 재백궁/전택궁 교차. 점성술: 목성·2하우스·8하우스 우선.
+비중: 사주 60%, 자미두수 20%, 점성술 20%.`;
   if (qt.includes('health') || qt.includes('건강'))
-    return `→ [건강 특화] 사주: 오행 균형·과다/부족 원소, 용신 중심. 자미두수: 질액궁 중심. 점성술: 6하우스·12하우스 중심. 해석 비중: 건강 데이터 60%, 생활 조언 20%, 시기 조언 20%.`;
-  return `→ [종합운] 모든 엔진을 균등하게 활용하되, 가장 임팩트 큰 변화에 집중하라.`;
-})()}
-` : `
-별도 질문이 없으므로 올해 전반적 운세를 해석하되, 가장 임팩트 큰 변화에 집중하라.
-`}
+    return `\n[건강 특화 지시]
+비중 지시: 사주 오행 과부족/질액궁 중심, 자미두수 질액궁/복덕궁 교차. 점성술: 6하우스·12하우스 우선.
+비중: 사주 60%, 자미두수 20%, 점성술 20%.`;
+  return `\n[종합운]
+모든 시스템을 균형있게 활용하여 종합적인 리딩을 제공하세요.`;
+})()}` : `종합 운세를 분석해 주세요. 모든 시스템을 균형있게 활용하세요.`}
 
-${(readingHistory && readingHistory.length > 0) ? `
+${(readingHistory && readingHistory.length > 0) ? `========================
+STEP 1.5: 이전 상담 이력 (맥락 연결)
 ========================
-STEP 1.5: 과거 상담 이력 (재방문 맥락)
-========================
-${name}님은 이전에 다음과 같은 상담을 받은 적이 있습니다:
+${name}님의 이전 상담 기록:
 ${readingHistory?.map((h: any, i: number) => 
-  `[${i+1}] ${h.date} - 질문: "${h.question}" → 핵심: ${h.summary.slice(0, 150)}`
+  `[${i+1}] ${h.date} - 질문: "${h.question}" 요약: ${h.summary.slice(0, 150)}`
 ).join('\n')}
 
-→ 이전 상담 내용을 참고하여:
-- 이전과 현재의 운세 변화를 자연스럽게 언급하라 (예: "지난번에는 신중함이 필요했지만, 이번에는...")
-- 이전 조언이 현재도 유효한지 평가하라
-- 단, 이전 내용을 그대로 반복하지 말고, 변화와 흐름에 초점을 맞춰라
-` : ''}
+활용 지시:
+- 이전 상담과의 연결고리를 자연스럽게 언급 (예: "지난번에 말씀드린 흐름이 이제 구체화되고 있습니다...")
+- 반복되는 주제가 있으면 패턴으로 짚어주기
+- 이전 조언의 후속 진행 상황을 확인하는 톤` : ''}
 
 ${(() => {
   const hasBirthTime = userInfo.birthTime && userInfo.birthTime !== "" && userInfo.birthTime !== "모름";
-  return hasBirthTime
-    ? `========================
-[엔진 신뢰도 - 출생 시간 확인됨]
+  return hasBirthTime ? `========================
+[출생 시간 있음 - 전체 시스템 활용]
 ========================
-자미두수: 높음 (명궁/관록궁/재백궁 데이터 활용 가능)
-사주: 높음 (시주까지 완전한 사주 팔자)
-서양 점성술: 높음 (하우스 배치 정확)
-수비학: 보통
-타로: 보조 참고`
-    : `========================
-[엔진 신뢰도 - 출생 시간 미확인]
+사주: 시주 포함 정밀 분석(격국/용신/신살 전부 활용)
+자미두수: 12궁 전체 활용 가능(궁간사화 추적 가능)
+점성술: ASC/하우스 정밀 배치 활용
+수비학: 전체 프로필 활용` : `========================
+[출생 시간 없음 - 제한된 분석]
 ========================
-사주: 최우선 (일주 중심 해석, 시주 제외)
-서양 점성술: 높음 (하우스 배치 불확실하므로 행성 어스펙트 중심)
-수비학: 높음 (출생 시간 불필요)
-자미두수: 참고 수준 (명궁 추정치이므로 보조적으로만 활용)
-타로: 보조 참고
-→ 자미두수 해석 시 "출생 시간에 따라 달라질 수 있습니다"를 반드시 언급하라.`;
+사주: 시주 제외 3주 기반(격국 추정, 용신 보수적 판단)
+자미두수: 명궁 미확정(대략적 해석만 가능)
+점성술: ASC 미확정(태양/달 중심 해석)
+수비학: 전체 프로필 활용 가능
+★ 출생 시간이 없어 일부 분석이 제한적일 수 있다는 점을 자연스럽게 언급하세요.`;
 })()}
 
 ========================
-STEP 2.5: 신살 해석 (사주 심층)
+STEP 2.5: 교차 검증 우선 원칙 (필수)
 ========================
-위 신살 목록에서:
-- 귀인(천을귀인, 천덕귀인 등)이 있으면 → 해당 영역에서 도움을 받을 수 있음을 강조
-- 흉살(도화살, 역마살, 백호대살 등)이 있으면 → 구체적 주의사항과 활용법을 제시
-- 귀인과 흉살이 동시에 있으면 → 흉살의 부정적 영향이 귀인에 의해 완화될 수 있음을 설명
-- 신살의 위치(년주/월주/일주/시주)에 따라 영향 범위가 다름을 반영하라
-
-========================
-STEP 2: 엔진 간 교차 검증 (핵심)
-========================
-아래 절차를 반드시 수행하라:
-
-(A) 합치 찾기: 2개 이상 엔진이 같은 방향을 가리키는 신호를 찾아라.
-    예: "사주 세운 건록(확장) + 점성술 목성 육분(기회) = 확장 신호 강함"
-
-(B) 모순 해결: 엔진 간 반대 신호가 있으면 반드시 해석하라. 무시하지 마라.
-    예: "대운 30점(내면 성찰) vs 세운 90점(활발한 확장)"
-    → "장기적으로는 내면을 다지는 흐름이지만, 올해만큼은 세운의 강한 에너지를 활용해 구체적 행동으로 옮기기 좋은 타이밍입니다. 다만 무리한 확장보다는 내면의 확신이 선 것부터 실행하세요."
-    이런 식으로 모순을 통합하는 해석을 반드시 제시하라.
-
-(C) 강도 판별: 합치가 3개 이상이면 "확정적 흐름", 2개면 "유력한 흐름", 1개면 "참고 수준"으로 표현.
+해석 시 반드시:
+- 교차 패턴(SECTION 0.5)을 개별 엔진보다 우선 인용
+- 여러 시스템이 동일한 방향을 가리키면 자신있게 단언
+- 시스템 간 상충이 있으면 시기별로 구분하여 유연하게 표현
+- 단일 시스템의 극단적 해석은 다른 시스템으로 균형 조정
 
 ========================
-STEP 3: 개인화 추론 (차별화 핵심)
+STEP 2: 데이터 해석(내부)
 ========================
-${name}님의 고유 데이터를 반드시 성격/행동 패턴과 연결하라:
+해석 원칙:
 
-○ "${name}님의 ${s.dayMaster || ''} 일간은 ~한 성향이므로, 이 시기에 ~하게 반응할 가능성이 높습니다"
-○ "${name}님의 ${s.dayMaster || ''} 일간이 ${currentSeun?.full || ''} 세운을 만나면 ~한 현상이 생기는데, 구체적으로 직장에서는 ~, 관계에서는 ~"
-○ "생명수 ${n.life_path_number || ''}인 ${name}님은 ~한 성향이 있어서, 올해 개인년 ${n.personal_year_number || ''}의 에너지와 만나면 ~"
-○ 자미두수 명궁 주성이 있다면: "${name}님의 명궁 주성 ~는 ~한 기질을 의미하며, 올해 ~"
+(A) 대운·세운 융합: 반드시 2개 이상의 시스템 데이터를 결합. 형식: "사주(근거) + 점성술(근거) = 종합 해석"
 
-반드시 "누구에게나 해당되는 말"이 아닌, ${name}님에게만 해당되는 해석을 하라.
-검증: 해석에서 이름과 데이터를 빼면 의미가 달라져야 한다. 달라지지 않으면 일반론이다.
+(B) 구체적 시기 제시: 월 단위로 구체적 시기를 특정. 형식: "3월 말(토성 정점) vs 9월 초(세운 교차)" "상반기에는 준비하고, 하반기에 실행하세요." 같은 구체적 시기 조언.
+
+(C) 우선순위: 교차 합의 3건 이상은 "핵심 흐름", 2건은 "주요 참고", 1건은 "보조 관점" 으로 분류.
 
 ========================
-STEP 4: 글 구조
+STEP 3: 톤 앤 매너 (상담사 페르소나)
 ========================
-다음 순서로 작성하라:
+${name}님의 성향/격국 기반 말투:
 
-[도입 10%] ${name}님의 현재 상태를 공감하며 시작. 질문이 있으면 질문을 언급.
-[핵심 흐름 40%] STEP 2에서 찾은 합치/모순을 중심으로 올해의 핵심 흐름 서술.
-  - 리딩은 **타로와 사주를 중심축**으로 서술하십시오.
-  - **자미두수, 점성술, 수비학은 체계 이름을 본문에서 직접 언급하지 마십시오.** 또한 다음 전문 용어를 리딩 본문에 절대 사용하지 마십시오: **자미두수, 명궁, 화록, 명궁주성, 점성술, 상승궁, 트랜짓, 수비학, 생명수, 표현수**. 이들은 사용자에게 보이지 않는 '객관적 분석 근거'로만 활용하여 전체적인 해석의 신뢰도를 높이는 데 사용하십시오.
-  - 다음 표현은 사용하지 말고 괄호 안의 표현으로 자연스럽게 바꿔 쓸 것:
-    "판단됩니다" → "보입니다" 또는 "읽힙니다"
-    "분석됩니다" → "느껴집니다" 또는 "그려집니다"
-    "해석됩니다" → "읽힙니다" 또는 "다가옵니다"
-    "변동성" → "변화의 폭" 또는 "흔들림"
-    "대안" → "다른 방향" 또는 "선택지"
-  - 모순이 있으면 여기서 해결.
-[시기별 조언 30%] '지금이 적기인가'에 대해 명확히 답하십시오.
-  - 대운은 '배경(Weather)', 세운은 '이벤트(Major Event)', 월운은 '타이밍(Action Point)'입니다.
-  - 대운이 불리해도 세운이 좋으면 "조건부 진행", 둘 다 좋으면 "적극 실행", 둘 다 불리하면 "철저 대기"로 판단하십시오.
-  - **교운기(대운 교체 1-2년 전후)**는 항로가 바뀌는 시기이므로, 이 정보가 있는 경우 반드시 "급격한 환경 변화나 심경 변화에 주의"하라고 경고하십시오.
-  - 트랜짓 날짜나 점성술 프로그레션 달의 이동을 활용해 '구체적인 월(Month)'을 지목하여 조언하십시오.
-  - 각 시기마다 "무엇을 하라/하지 마라" 명확히.
-[의사결정 분석] 
-  - ${decisionAxes ? '위에서 제시한 3가지 분석 축을 바탕으로 현 상황을 심층 진단하십시오.' : '종합적인 의사결정 포인트를 짚어주십시오.'}
-[주의사항 10%] 가장 큰 리스크 1~2개. 구체적 상황으로 표현.
-[마무리 10%] ${name}님의 강점을 언급하며 격려.
+기본 톤: "${name}님은 ${s.dayMaster || ''}일간의 기운을 가지신 분으로~ 올해는~, ~하시면 좋겠습니다~"
+세운 반영: "${name}님의 ${s.dayMaster || ''} 일간에 ${currentSeun?.full || ''} 세운이 들어오면서~ 이 시기에는~, ~한 변화가 예상됩니다~"
+수비학 연결: "생명경로수 ${n.life_path_number || ''} 에너지를 가진 ${name}님은~ 올해 개인년 ${n.personal_year_number || ''} 시기와 맞물려~"
+마무리: "${name}님~ 전체적으로 보면~ 이렇게 해보시면 좋겠습니다~"
+
+★ "점성술에서는" "사주에서는" 같은 시스템 구분 표현은 최소화하고, ${name}님의 이야기로 자연스럽게 녹여내세요.
+★ 학문적 분석이 아닌 따뜻한 상담입니다. 전문 용어는 풀어서 설명하세요.
 
 ========================
-[STEP 5: 의사결정 어드바이저 원칙]
+STEP 4: 출력 구조
 ========================
-당신은 단순한 점술가가 아니라 '운명 기반 의사결정 어드바이저'입니다. 다음 6가지 원칙을 반드시 따르세요:
+아래 구조를 따르세요:
 
-원칙1 - 타로 중심 스토리텔링: 타로 카드가 질문에 대한 핵심 방향을 제시하고, 나머지 체계는 그 방향을 검증하고 보강하는 구조로 서술하세요.
-원칙2 - 타이밍 검증: 사주(세운/월운), 자미두수(유년/유월), 점성술(트랜짓)의 시간축 데이터가 있다면, "언제"가 적기인지 구체적 시기를 제시하세요. 없다면 원국 기반으로 방향성만 제시하세요.
-원칙3 - 합의 강조: 3개 이상의 체계가 같은 방향을 가리키면, "여러 체계가 동의합니다"라고 명시하여 내담자에게 확신을 부여하세요.
-원칙4 - 불일치 활용: 체계 간 의견이 갈리면, "기회는 있지만 조건이 붙습니다" 또는 "가능하지만 시기 조정이 필요합니다"처럼 조건부 해석으로 전환하세요. 절대 무시하지 마세요.
-원칙5 - 경고는 구체적으로: 위험 신호가 감지되면 반드시 (1) 어떤 영역인지 (2) 언제인지 (3) 어떻게 피하거나 완화할 수 있는지 세 가지를 모두 포함하세요.
-원칙6 - 행동 지침 마무리: 리딩의 마지막은 반드시 "지금 당장 할 수 있는 구체적 행동 1~2가지"로 끝내세요. 막연한 조언이 아니라 실행 가능한 지침이어야 합니다.
+[도입 10%] ${name}님을 환영하며 핵심 한 문장으로 올해의 방향을 제시합니다.
+[본문 40%] STEP 2의 해석을 자연스러운 상담 어조로 풀어냅니다.
+- **교차 확인된 패턴**을 먼저 서술합니다.
+- **구체적 시기, 월별 흐름, 주의 시점**을 명시합니다.
+참고: **아래 나열된 모든 키워드들은 내부 분석 태그이며, 리딩 텍스트에는 절대 그대로 노출하지 마세요. 반드시 자연스러운 상담 문장으로 풀어서 표현하세요.**
+[월별 흐름 30%] 월별 타임라인을 자연스러운 이야기로 풀어냅니다.
+- '날씨(Weather)', '주요 이벤트(Major Event)', '실행 포인트(Action Point)' 프레임 사용.
+- "1월은 씨앗을 심는 시기", "5월은 결실의 달", "9월은 점검 시기" 같은 은유 활용.
+- **꼭 구체적인 행동 조언(1~2가지)을** 함께 제시하고, "이 시기에는 이런 활동을 해보세요" 형태로 구성.
+- '특정 월(Month)만' 언급하는 것이 아니라 전체 흐름을 짚어주세요.
+- "상반기 / 하반기" 큰 틀도 제시하세요.
+[의사결정]  질문에 대한 직접적인 답변을 제시합니다.
+  - ${decisionAxes ? '의사결정 축 3가지를 근거와 함께 분석합니다.' : '종합적 방향성을 제시합니다.'}
+[행운 요소 10%] 행운의 색상·방향·숫자 등을 1~2줄로 간결히 제시합니다.
+[마무리 10%] ${name}님을 격려하는 따뜻한 마무리 멘트.
+
+========================
+[STEP 5: 품질 검증 체크리스트]
+========================
+응답 생성 전 반드시 아래를 확인하세요. 6가지 항목을 모두 통과해야 합니다:
+
+1번 - 교차 인용 검증: 본문에서 반드시 교차 패턴을 인용했는지 확인.
+2번 - 구체성 검증: 추상적 표현(좋습니다/나쁩니다) 대신 구체적 시기(월/분기), 구체적 행동(무엇을) 포함 여부 확인. "조심하세요" 대신 "어떤 상황에서 어떻게" 구체적으로.
+3번 - 균형 검증: 긍정 3건 이상, 주의점 2건 이상 포함했는지 확인. "장밋빛 전망"만 있으면 안 됨.
+4번 - 시기 구체성 검증: 월별 흐름에서 최소 3개 월에 대해 구체적 행동 조언이 있는지, "좋은 달" "나쁜 달" 같은 추상적 표현 대신 실질적 조언이 있는지 확인.
+5번 - 시스템 출처 확인: 본문에 (1)사주 근거 (2)자미두수 근거 (3)점성술 또는 수비학 근거가 최소 1건씩은 있는지 확인.
+6번 - 마무리 완성도 검증: "올해 1~2줄 핵심 요약"이 존재하는지 확인. 마무리가 허공에 뜬 응원이 아닌 구체적 조언인지 확인.
 
 ${axisPrompt}
 
 ========================
-STEP 6: 금지 사항
+STEP 6: 포맷 규칙
 ========================
-- 마크다운(#, **, -, \`\`\`) 절대 금지. 순수 텍스트만.
+- 마크다운 기호(#, **, -, \`\`\`) 절대 금지. 순수 텍스트만 출력.
 - JSON 형식 금지.
-- "기운이 감돈다", "에너지가 흐른다" 같은 모호한 표현 → 구체적 상황으로 번역.
-  예: "직장에서 승진 기회가 올 수 있다", "연인과 깊은 대화가 필요한 시점이다"
-- "지배벡터", "합의점수", "교차 검증" 같은 시스템 내부 용어 절대 금지.
-- "final_one_line", "risk_one_line", "SECTION", "STEP" 같은 프롬프트 라벨 출력 금지.
-- 동일한 문장/표현을 2회 이상 반복 금지.
+- "분석 결과", "해석 결과" 같은 딱딱한 표현 금지. 대신: "보여드리면", "말씀드리면"
+- "운세", "점괘", "사주 풀이" 같은 직접적 점술 용어 최소화.
+- "final_one_line", "risk_one_line", "SECTION", "STEP" 등 내부 태그 노출 절대 금지.
+- 전체 출력 길이는 한국어 기준 2000자 이상.`;
+
+  // ═══════════════════════════════════════════════════════
+  // P-6: 동적 프롬프트 조립 (pickSection + TOKEN BUDGET)
+  // ═══════════════════════════════════════════════════════
+  const budget = TOPIC_SECTION_BUDGET[qType] || TOPIC_SECTION_BUDGET.general_future;
+
+  function pickSection(
+    level: SectionBudget,
+    fullContent: string,
+    summarizer: (s: string) => string
+  ): string {
+    if (level === 'skip') return '';
+    if (level === 'summary') return summarizer(fullContent);
+    return fullContent; // 'full'
+  }
+
+  const finalSaju = pickSection(budget.saju, section1, summarizeSaju);
+  const finalZiwei = pickSection(budget.ziwei, section2, summarizeZiwei);
+  const finalAstrology = pickSection(budget.astrology, section3, summarizeAstrology);
+  const finalNumerology = pickSection(budget.numerology, section4, summarizeNumerology);
+  const finalTarot = pickSection(budget.tarot, section5, summarizeTarot);
+
+  const budgetEntries = Object.entries(budget)
+    .map(([sys, level]) => `${sys}: ${level}`)
+    .join(', ');
+
+  const tokenBudgetNote = `
+[TOKEN BUDGET 안내] 질문 유형="${qType}" → ${budgetEntries}
+- full: 해당 섹션의 모든 데이터를 깊이있게 활용하십시오.
+- summary: 핵심 포인트만 간략히 참조하십시오.
+- skip: 이 섹션은 생략되었습니다. 언급하지 마십시오.
 `;
 
-  return `${section0}${sectionSignals}${section05}${section1}${section2}${section3}${section4}${section5}${topicFocusInstruction}${instructions}`;
+  return `${preBuiltConclusion}${tokenBudgetNote}${section0}${sectionSignals}${section05}${finalSaju}${finalZiwei}${finalAstrology}${finalNumerology}${finalTarot}${topicFocusInstruction}${instructions}`;
 }
