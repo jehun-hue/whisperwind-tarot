@@ -230,6 +230,16 @@ serve(async (req: Request) => {
       });
     }
 
+    const userMessage = err.message?.includes("API_KEY")
+      ? "API 키 설정을 확인해 주세요. 관리자에게 문의하세요."
+      : err.message?.includes("timeout") || err.message?.includes("DEADLINE")
+      ? "AI 서버 응답 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요."
+      : err.message?.includes("quota") || err.message?.includes("429")
+      ? "AI 요청 한도에 도달했습니다. 몇 분 후 다시 시도해 주세요."
+      : err.message?.includes("parse") || err.message?.includes("JSON")
+      ? "AI 응답 형식에 문제가 있었습니다. 다시 시도해 주세요."
+      : "분석 중 일시적 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.";
+
     // Final defensive return: ALWAYS HTTP 200 with degraded status for engine exceptions
     const recoveryPayload = {
       status: "success",
@@ -243,7 +253,7 @@ serve(async (req: Request) => {
         reading_info: { grade: "C", date: new Date().toISOString().slice(0, 10), card_count: 0 },
         final_message: { 
           title: "운세 분석 안내", 
-          summary: "현재 인공지능 분석 가동량이 많아 심층 분석이 일시적으로 제한되었습니다. 상담 내용을 바탕으로 요약된 결과를 제공해 드립니다." 
+          summary: userMessage 
         },
         action_guide: { do_list: [], dont_list: [], lucky: {} }
       }

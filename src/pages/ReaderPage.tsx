@@ -406,8 +406,14 @@ function SessionDetail({ session, onUpdate }: { session: ReadingSession; onUpdat
     } else {
       str = String(val);
     }
-    // Handle literal \n or \\n from JSON/LLM output
-    return str.replace(/\\n/g, "\n");
+    // [B-7] Markdown Stripping (Strip tables, links and bold)
+    str = str
+      .replace(/\|.*\|/g, " ") // Strip tables
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") // Strip links
+      .replace(/\*\*([^*]+)\*\*/g, "$1") // Strip Bold
+      .replace(/\\n/g, "\n"); // Handle literal \n
+
+    return str;
   };
 
   useEffect(() => {
