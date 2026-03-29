@@ -21,6 +21,7 @@ import { validateV3Schema, patchMissingFields, logMonitoringEvent } from "./moni
 import { safeParseGeminiJSON } from "./jsonUtils.ts";
 import { calculateServerAstrology } from "./lib/astrologyEngine.ts";
 import { calculateZiwei, ServerZiWeiResult } from "./lib/ziweiEngine.ts";
+import { calculateFortune } from "./lib/fortuneEngine.ts";
 import { classifyWithFallback, classifyQuestion, TOPIC_SYSTEM_FOCUS, DECISION_AXES } from "./questionClassifier.ts";
 import { detectCombinations, aggregateCombinationScore, processCardVector, SPREAD_POSITION_WEIGHTS } from "./tarotCombinationDB.ts";
 import { getCardVector, getCardWuxing, getElementCompatibility } from "./tarotVectorDB.ts";
@@ -932,7 +933,7 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
         return {
           characteristics: [], narrative: "분석 실패", elements: {}, tenGods: {},
           yongShin: "Unknown", heeShin: "Unknown", daewoon: null, interactions: [], shinsal: [],
-          health_risk_tags: [], topic_shinsal_map: {}, strength: "Unknown"
+          health_risk_tags: [], topic_shinsal_map: {}, strength: "Unknown", fortune: null
         } as any;
       }),
       classifyWithFallback(input.question || "", apiKey).catch(e => {
@@ -940,6 +941,32 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
         return classifyQuestion(input.question || "");
       })
     ]);
+
+    // B-268: fortune 연결 확인 및 누락 시 세이프티 계산 (fortuneEngine v3 통합)
+    if (!sajuAnalysis.fortune && sajuAnalysis.dayMaster && sajuAnalysis.dayMaster !== "Unknown" && sajuAnalysis.yongShin !== "Unknown") {
+      try {
+        const pillars = sajuRaw.pillars || { year: sajuRaw.year, month: sajuRaw.month, day: sajuRaw.day, hour: sajuRaw.hour };
+        const stems = [pillars.year?.stem, pillars.month?.stem, pillars.day?.stem, pillars.hour?.stem].filter(Boolean);
+        const branches = [pillars.year?.branch, pillars.month?.branch, pillars.day?.branch, pillars.hour?.branch].filter(Boolean);
+        const currentDaewoon = sajuAnalysis.daewoon?.currentDaewoon;
+
+        sajuAnalysis.fortune = calculateFortune(
+          sajuAnalysis.dayMaster,
+          sajuAnalysis.yongShin,
+          sajuAnalysis.heeShin,
+          sajuAnalysis.giShin,
+          sajuAnalysis.guShin,
+          sajuAnalysis.hanShin,
+          stems,
+          branches,
+          currentDaewoon?.stem || null,
+          currentDaewoon?.branch || null
+        );
+        console.log(`[ENGINE-SAFE] fortune fallback 산출 완료: ${sajuAnalysis.fortune.rating}`);
+      } catch (e) {
+        console.error("[ENGINE-SAFE] fortune fallback calculation failed:", e);
+      }
+    }
 
     const finalTopic = topicResult?.primary_topic || input.questionType || "general_future";
     const secondaryTopic = topicResult?.secondary_topic || null;

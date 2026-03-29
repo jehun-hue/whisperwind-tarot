@@ -325,6 +325,7 @@ export async function analyzeSajuStructure(
       napeum: null,
       strength_detail: null,
       cross_interactions: null,
+      fortune: null,
     };
   }
 
