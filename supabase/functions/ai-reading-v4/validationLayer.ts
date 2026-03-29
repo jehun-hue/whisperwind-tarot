@@ -4,7 +4,7 @@
  * - PART 11: Validation Layer.
  */
 
-const CONFIDENCE_THRESHOLD = 0.35; // Adjusted for 2-3 system setups
+const CONFIDENCE_THRESHOLD = 0.35; // Raised from 0.20 to 0.35 for stricter validation
 
 export interface ValidationResult {
   isValid: boolean;
