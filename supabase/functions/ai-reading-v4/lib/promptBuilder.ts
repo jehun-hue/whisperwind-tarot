@@ -2,6 +2,11 @@ import { Signal, CrossSignal } from './signalExtractor.ts';
 import { ILJU_MEANINGS, TENGO_DEEP, GYEOKGUK_DEEP, TWELVE_STAGES_DEEP, YONGSIN_ADVICE, SINSAL_DEEP, DAEWOON_INTERACTION, INTERACTION_DEEP } from "./interpretations/index.ts";
 import { buildZiWeiPromptSection } from "./ziweiPromptBuilder.ts";
 
+function line(label: string, value: any): string {
+  if (!value || value === '?' || value === '없음' || value === '') return '';
+  return `• ${label}: ${value}\n`;
+}
+
 export interface UserInfo {
   name?: string;
   birthDate?: string;
@@ -232,23 +237,19 @@ ${crossPatterns.join('\n')}
 
   const signalText = signals?.map(sig => 
     `- [${sig.source.toUpperCase()}] ${sig.title}: ${sig.description} (심각도:${sig.severity})`
-  ).join('\n') || '추출된 개별 신호 없음';
+  ).join('\n') || '';
 
   const crossSignalText = crossSignals?.map(cs => 
     `- [${cs.category.toUpperCase()} ${cs.type.toUpperCase()}] 합의도:${cs.agreementCount} (${cs.confidence}) -> 상세:${cs.sources?.map(s=>s.title).join(', ')}`
-  ).join('\n') || '교차 합의된 강력한 신호 없음';
+  ).join('\n') || '';
 
-  const sectionSignals = `
+  const sectionSignals = (signals.length > 0 || crossSignals.length > 0) ? `
 === [SECTION 0.1] 리스크 및 기회 정밀 신호 (RISK & OPPORTUNITY SIGNALS) ===
 여기에 나열된 신호는 엔진들이 직접 계산한 가장 확실한 근거입니다. 
 특히 합의도가 높은 중복 신호는 리딩에서 반드시 강조하십시오.
 
-[강력한 교차 합의 신호]
-${crossSignalText}
-
-[시스템별 개별 신호 근거]
-${signalText}
-`;
+${crossSignalText ? `[강력한 교차 합의 신호]\n${crossSignalText}\n` : ''}
+${signalText ? `[시스템별 개별 신호 근거]\n${signalText}\n` : ''}` : '';
 
   // 자미두수 구조화 데이터 주입
   const ziweiSection = ziwei ? buildZiWeiPromptSection(ziwei as any) : "";
@@ -365,19 +366,8 @@ ${interactionLines}` : '';
   const section1 = `
 === [SECTION 1] 사주 명리 (핵심) ===
 • 일간: ${s.dayMaster || '?'} | 신강/약: ${s.strength || '?'} | 격국: ${s.gyeokguk?.name || '?'} (${s.gyeokguk?.type || ''})
-• 강약 상세: ${s.strength_detail?.deukryeong?.result || '?'}/${s.strength_detail?.deukji?.result || '?'}/${s.strength_detail?.deukse?.result || '?'} — ${s.strength_detail?.overall_reason || ''}
-• 용신: ${s.yongShin || '?'} (판정법: ${s.yongShinMethod || ''}) | 희신: ${s.heeShin || '?'} | 기신: ${s.giShin || '?'}
-• 용신 근거: ${s.yongsin_detail?.final?.reason || ''}
-• 오행: ${elSummary}
-• 현재 대운: ${currentDw.full || '?'} (${currentDw.startAge || '?'}~${currentDw.endAge || '?'}세) — 십성: ${currentDw.tenGodStem || ''}/${currentDw.tenGodBranch || ''}${s.is_daewoon_changing_year ? ' [★교운기: 환경/심경 급변기]' : ''} — 에너지: ${dwTwelveStage.level || '?'}점(${dwTwelveStage.description || ''})
-• 세운(${currentSeun.year || '?'}): ${currentSeun.full || '?'} — 십성: ${currentSeun.tenGodStem || ''}/${currentSeun.tenGodBranch || ''}
-• 올해 운세(세운): [${s.fortune?.rating || '평'}] ${s.fortune?.interpretation || ''} (점수: ${s.fortune?.score || 0})
-• 이번 달(월운): [${s.fortune?.currentMonthFortune?.rating || '평'}] ${s.fortune?.currentMonthFortune?.interpretation || ''}
-• 세운-원국 교차: ${sewoonTop3}
-• 공망: ${s.gongmang?.emptied?.join(', ') || '없음'} (${s.gongmang?.affectedPillars?.join(', ') || ''})
-${iljuBlock}
-• 주요 신살:
-${sortedShinsal.slice(0, 10).map((ss: any) => 
+${line('강약 상세', `${s.strength_detail?.deukryeong?.result || ''}/${s.strength_detail?.deukji?.result || ''}/${s.strength_detail?.deukse?.result || ''} — ${s.strength_detail?.overall_reason || ''}`)}• 용신: ${s.yongShin || '?'} | ${line('희신', s.heeShin)}${line('기신', s.giShin)}${line('용신 근거', s.yongsin_detail?.final?.reason)}${line('오행', elSummary)}${line('현재 대운', `${currentDw.full || ''} (${currentDw.startAge || ''}~${currentDw.endAge || ''}세) — 십성: ${currentDw.tenGodStem || ''}/${currentDw.tenGodBranch || ''}${s.is_daewoon_changing_year ? ' [★교운기]' : ''} — 에너지: ${dwTwelveStage.level || ''}점(${dwTwelveStage.description || ''})`)}${line(`세운(${currentSeun.year || ''})`, `${currentSeun.full || ''} — 십성: ${currentSeun.tenGodStem || ''}/${currentSeun.tenGodBranch || ''}`)}${line('올해 운세(세운)', `[${s.fortune?.rating || ''}] ${s.fortune?.interpretation || ''} (점수: ${s.fortune?.score || 0})`)}${line('이번 달(월운)', `[${s.fortune?.currentMonthFortune?.rating || ''}] ${s.fortune?.currentMonthFortune?.interpretation || ''}`)}${line('세운-원국 교차', sewoonTop3)}${line('공망', `${s.gongmang?.emptied?.join(', ') || ''} (${s.gongmang?.affectedPillars?.join(', ') || ''})`)}${iljuBlock}• 주요 신살:
+${sortedShinsal.slice(0, 5).map((ss: any) => 
   `  - ${ss.name}${ss.hanja ? `(${ss.hanja})` : ''}[${ss.location || ss.pillar || ''}]: ${ss.effect || ss.description || ss.name} (강도: ${ss.strength || '중'})`
 ).join('\n') || (s.characteristics || []).filter((c: string) => !c.startsWith('격국')).slice(0, 8).join(' | ')}
 
@@ -416,12 +406,7 @@ ${finalDeepSajuProfile}
 
   const section2 = `
 === [SECTION 2] 자미두수 (핵심) ===
-• 명궁(${zRaw.lifePalace || '?'}): ${mingStars} | 신궁: ${zRaw.shenGong || '?'} | 오행국: ${zRaw.fiveElementFrame || zRaw.bureau || '?'}
-• 생년사화: ${natalSiHua}
-• 유년사화(${zRaw.annualYear || '?'}년 ${zRaw.annualGan || '?'}년간): ${annualSiHua}
-• 현재 대한(${currentMajor.startAge || '?'}~${currentMajor.endAge || '?'}세): ${currentMajor.palace || '?'}궁 — 주성: ${majorStars}
-• 올해 유년/소한: ${zRaw.currentMinorPeriod?.palace || '?'}궁(${zRaw.currentMinorPeriod?.branch || '?'}지) — ${zRaw.currentMinorPeriod?.interpretation || ''}
-• 질문 관련 핵심 궁:
+• 명궁(${zRaw.lifePalace || '?'})${line('주성', mingStars)}${line('신궁', zRaw.shenGong)}${line('오행국', zRaw.fiveElementFrame || zRaw.bureau)}${line('생년사화', natalSiHua)}${line(`유년사화(${zRaw.annualYear || '?'}년 ${zRaw.annualGan || '?'}년간)`, annualSiHua)}${line(`현재 대한(${currentMajor.startAge || '?'}~${currentMajor.endAge || '?'}세)`, `${currentMajor.palace || ''}궁 — 주성: ${majorStars}`)}${line('올해 유년/소한', `${zRaw.currentMinorPeriod?.palace || ''}궁(${zRaw.currentMinorPeriod?.branch || ''}지) — ${zRaw.currentMinorPeriod?.interpretation || ''}`)}• 질문 관련 핵심 궁:
 ${selectedPalaces}
 
 ${ziweiSection}
@@ -484,17 +469,12 @@ ${ziweiSection}
 
   const section3 = `
 === [SECTION 3] 서양 점성술 (핵심) ===
-• 태양: ${formatPlanet(sun)}
-• 달: ${formatPlanet(moon)}
-• 토성: ${formatPlanet(saturn)}
-• ASC: ${ascSign} ${ascDeg}°
-${dignityPlanets.length > 0 ? `• 디그니티: ${dignityPlanets?.map((p: any) => `${p.planet} ${p.sign} [${p.dignity}]`).join(', ')}` : ''}
-• 주요 어스펙트 (orb 순):
+${line('태양', formatPlanet(sun))}${line('달', formatPlanet(moon))}${line('토성', formatPlanet(saturn))}• ASC: ${ascSign} ${ascDeg}°
+${dignityPlanets.length > 0 ? `• 디그니티: ${dignityPlanets?.map((p: any) => `${p.planet} ${p.sign} [${p.dignity}]`).join(', ')}\n` : ''}• 주요 어스펙트 (orb 순):
 ${topAspects}
 • 트랜짓 핵심:
 ${topTransits}
-• 프로그레션(내적 변화): 달 ${aRaw.progression?.moon || '?'} (${aRaw.progression?.moon_house || '?'}하우스) — 어스펙트: ${aRaw.progression?.moon_aspects?.map((ma: any) => `${ma.aspect} to ${ma.planet}`).join(', ') || '없음'}
-• 솔라리턴(${sr.year || '?'}): ASC ${srAsc}, 달 ${srMoonHouse}하우스
+${line('프로그레션(내적 변화)', `달 ${aRaw.progression?.moon || ''} (${aRaw.progression?.moon_house || ''}하우스) — 어스펙트: ${aRaw.progression?.moon_aspects?.map((ma: any) => `${ma.aspect} to ${ma.planet}`).join(', ') || ''}`)}${line(`솔라리턴(${sr.year || ''})`, `ASC ${srAsc}, 달 ${srMoonHouse}하우스`)}
 `;
 
   // ========================
@@ -512,9 +492,7 @@ ${topTransits}
 
   const section4 = `
 === [SECTION 4] 수비학 (핵심) ===
-• 생명수: ${n.life_path_number || n.lifePath || '?'}${n.is_master_number ? ` (마스터넘버)` : ''} | 운명수: ${n.destiny_number || '?'} | 개인년: ${n.personal_year || '?'}
-• 현재 피너클: ${currentPinnacle.number || '?'} (${currentPinnacle.meaning || ''}) | 챌린지: ${currentChallenge.number || '?'} (${currentChallenge.meaning || ''})
-• 키워드: ${(n.vibrations || []).join(' / ') || '없음'}
+• 생명수: ${n.life_path_number || n.lifePath || '?'}${n.is_master_number ? ` (마스터넘버)` : ''}${line('운명수', n.destiny_number)}${line('개인년', n.personal_year)}${line('현재 피너클', `${currentPinnacle.number || ''} (${currentPinnacle.meaning || ''})`)}${line('챌린지', `${currentChallenge.number || ''} (${currentChallenge.meaning || ''})`)}${line('키워드', (n.vibrations || []).join(' / '))}
 `;
 
   // ========================
