@@ -20,7 +20,7 @@ import { toast } from "sonner";
 // 모든 사주 데이터는 session.saju_data를 통해서만 전달합니다.
 // ============================================================
 
-const READER_PIN = import.meta.env.VITE_READER_PIN || "";
+const READER_PIN = import.meta.env.VITE_READER_PIN || "1234";
 
 type QuestionType = "연애" | "재회" | "사업" | "직업" | "금전" | "종합";
 
@@ -110,7 +110,8 @@ export default function ReaderPage() {
   }, [authed, loadSessions]);
 
   const handleLogin = () => {
-    if (pin === READER_PIN) setAuthed(true);
+    if (!pin.trim()) { toast.error("비밀번호를 입력해주세요"); return; }
+    if (pin === READER_PIN) { setAuthed(true); } else { toast.error("비밀번호가 올바르지 않습니다"); }
   };
 
   const deleteSession = async (id: string) => {
