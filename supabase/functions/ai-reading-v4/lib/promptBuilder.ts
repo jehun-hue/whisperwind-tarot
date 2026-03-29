@@ -583,7 +583,7 @@ ${ziweiSection}
     if (!astroKw.length || !arr?.length) return arr;
     return [...arr].sort((a, b) => {
       const aText = typeof a === 'string' ? a : fields?.map(f => String(a[f] || '')).join(' ');
-      const bText = typeof b === 'string' ? b : fields?.map(f => String(a[f] || '')).join(' ');
+      const bText = typeof b === 'string' ? b : fields?.map(f => String(b[f] || '')).join(' ');
       const aMatch = astroKw.some(kw => aText.includes(kw));
       const bMatch = astroKw.some(kw => bText.includes(kw));
       if (aMatch && !bMatch) return -1;
