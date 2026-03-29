@@ -57,6 +57,7 @@ const TOPIC_SECTION_BUDGET: Record<string, TopicSectionConfig> = {
   general_future: { saju: 'full',    ziwei: 'full',    astrology: 'full',    numerology: 'full',    tarot: 'full' },
   life_change:    { saju: 'full',    ziwei: 'full',    astrology: 'full',    numerology: 'summary', tarot: 'full' },
   migration:      { saju: 'summary', ziwei: 'full',    astrology: 'full',    numerology: 'summary', tarot: 'summary' },
+  compatibility:   { saju: 'full',    ziwei: 'full',    astrology: 'full',    numerology: 'skip',    tarot: 'full' },
 };
 
 // ─── 정규식 스크래퍼 방식 요약 함수들 ───
@@ -71,7 +72,7 @@ function summarizeSaju(full: string): string {
 
 function summarizeZiwei(full: string): string {
   const lines = full.split('\n');
-  const keyPatterns = [/명궁/, /사화/, /대한/, /핵심 궁/, /래인궁/];
+  const keyPatterns = [/명궁/, /사화/, /대한/, /핵심 궁/, /래인궁|來因궁/];
   const picked = lines.filter(l => keyPatterns.some(p => p.test(l)));
   return picked.length > 0
     ? `=== [SECTION 2] 자미두수 (요약) ===\n${picked.join('\n')}\n★ 이 섹션은 요약 모드입니다.`
@@ -254,7 +255,7 @@ ${timelineStr}
   const consistencyPct = cv.consistencyScore !== undefined 
     ? Math.round(cv.consistencyScore * 100) : 50;
   
-  const fortuneScore = s.fortune?.seun?.score || s.fortune?.score || 50;
+  const fortuneScore = s.fortune?.seun?.score ?? s.fortune?.score ?? 50;
   
   const decisionLabel = fortuneScore >= 75 ? '긍정적 흐름'
     : fortuneScore >= 55 ? '안정적 흐름'
@@ -269,9 +270,9 @@ ${timelineStr}
 
   // 시스템 간 합의된 가장 심각한 경고 추출
   const criticalWarning = signals
-    .filter(sig => sig.severity === 'high' || sig.severity === 'critical')
+    .filter(sig => sig.severity >= 2)
     .sort((a, b) => {
-      const order: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
+      const order: Record<number | string, number> = { 3: 0, 2: 1, 1: 2, critical: 0, high: 1, medium: 2, low: 3 };
       return (order[a.severity] ?? 3) - (order[b.severity] ?? 3);
     })[0];
 
@@ -294,21 +295,38 @@ ${decisionResult ? `▶ 의사결정 코드: ${decisionResult.decision} (신뢰�
   // ========================
   const crossPatterns: string[] = [];
 
-  const crossVal = (ziwei && saju) ? runCrossValidation(ziwei, saju) : null;
+  // ──────────────────────────────────────────────
+  // TODO [Phase 3]: 현재 교차 패턴은 사주×점성술, 사주×자미, 사주×수비학 조합만
+  // 수동 조건문으로 처리. crossValidationEngine.ts를 5-system matrix로 확장 후
+  // 이 수동 패턴 블록을 engine 결과로 교체할 것.
+  // ──────────────────────────────────────────────
 
-  if (crossVal) {
-    crossPatterns.push(`\n[자미두수×사주 구조적 교차 검증] (일치율: ${crossVal.overallAgreement}%)`);
-    crossPatterns.push(`요약: ${crossVal.summary}`);
-    for (const item of crossVal.items) {
+  const crossVal = (crossValidation && Object.keys(crossValidation).length > 0)
+    ? crossValidation
+    : ((ziwei && saju) ? runCrossValidation(ziwei, saju) : null);
+
+  const crossValNormalized = crossVal ? {
+    ...crossVal,
+    overallAgreement: crossVal.overallAgreement ?? 0,
+    items: crossVal.items || [],
+    summary: crossVal.summary || '',
+    strongSignals: crossVal.strongSignals || [],
+    conflictSignals: crossVal.conflictSignals || [],
+  } : null;
+
+  if (crossValNormalized) {
+    crossPatterns.push(`\n[자미두수×사주 구조적 교차 검증] (일치율: ${crossValNormalized.overallAgreement}%)`);
+    crossPatterns.push(`요약: ${crossValNormalized.summary}`);
+    for (const item of crossValNormalized.items) {
       crossPatterns.push(`  ${item.label}: 자미두수(${item.ziweiSignal}) × 사주(${item.sajuSignal}) → ${item.agreement} (${item.confidence}%)`);
       if (item.ziweiEvidence.length > 0) crossPatterns.push(`    자미: ${item.ziweiEvidence.slice(0, 2).join(", ")}`);
       if (item.sajuEvidence.length > 0) crossPatterns.push(`    사주: ${item.sajuEvidence.slice(0, 2).join(", ")}`);
     }
-    if (crossVal.strongSignals.length > 0) {
-      crossPatterns.push(`\n  ★ 강력 교차 확인: ${crossVal.strongSignals.join(" | ")}`);
+    if (crossValNormalized.strongSignals.length > 0) {
+      crossPatterns.push(`\n  ★ 강력 교차 확인: ${crossValNormalized.strongSignals.join(" | ")}`);
     }
-    if (crossVal.conflictSignals.length > 0) {
-      crossPatterns.push(`\n  ⚠ 상충 주의: ${crossVal.conflictSignals.join(" | ")}`);
+    if (crossValNormalized.conflictSignals.length > 0) {
+      crossPatterns.push(`\n  ⚠ 상충 주의: ${crossValNormalized.conflictSignals.join(" | ")}`);
     }
   }
 
@@ -404,7 +422,7 @@ ${signalText ? `[시스템별 개별 신호 근거]\n${signalText}\n` : ''}` : '
 【올해 십성 심리: ${seunTengo}】
 • 심리 변화: ${tengoProfile.psychology}
 • 영향 영역: ${tengoProfile.life_area}
-• 조언: ${tengoProfile.advice}` : '';
+• 운세 흐름: ${tengoProfile.in_daewoon}` : '';
 
   const stageName = s?.twelve_stages?.seun?.stage || s?.fortune?.seun?.twelveStage || '';
   const stageProfile = stageName ? TWELVE_STAGES_DEEP[stageName] : null;
@@ -456,7 +474,7 @@ ${signalText ? `[시스템별 개별 신호 근거]\n${signalText}\n` : ''}` : '
   const deepShinsalLines = (sortedShinsal || []).slice(0, 3)
     .map(ss => {
       const p = SINSAL_DEEP[ss.name];
-      return p ? `  • ${ss.name}: ${p.meaning} (${p.effect})` : null;
+      return p ? `  • ${ss.name}: ${p.positive} (조언: ${p.advice})` : null;
     })
     .filter(Boolean)
     .join('\n');
@@ -614,6 +632,11 @@ ${ziweiSection}
 
   const formatPlanet = (p: any) => p ? `${p.planet} ${p.sign} ${p.degree}° ${p.house}하우스${p.dignity && p.dignity !== '없음' ? ` [${p.dignity}]` : ''}` : '?';
 
+  const progressionBlock = aRaw.progression?.moon
+    ? `• 진행 (프로그레션 문): ${aRaw.progression.moon} (${aRaw.progression.moon_house || '?'}하우스)
+• 프로그레션 어스펙트: ${aRaw.progression.moon_aspects?.map((ma: any) => `${ma.aspect} to ${ma.planet}`).join(', ') || '없음'}\n`
+    : '';
+
   const section3 = `
 === [SECTION 3] 서양 점성술 (핵심) ===
 ${line('태양', formatPlanet(sun))}${line('달', formatPlanet(moon))}${line('토성', formatPlanet(saturn))}• ASC: ${ascSign} ${ascDeg}°
@@ -621,30 +644,29 @@ ${dignityPlanets.length > 0 ? `• 디그니티: ${dignityPlanets?.map((p: any) 
 ${topAspects}
 • 트랜짓 핵심:
 ${topTransits}
-${line('프로그레션(내적 변화)', `달 ${aRaw.progression?.moon || ''} (${aRaw.progression?.moon_house || ''}하우스) — 어스펙트: ${aRaw.progression?.moon_aspects?.map((ma: any) => `${ma.aspect} to ${ma.planet}`).join(', ') || ''}`)}${line(`솔라리턴(${sr.year || ''})`, `ASC ${srAsc}, 달 ${srMoonHouse}하우스`)}
+${progressionBlock}${line(`솔라리턴(${sr.year || ''})`, `ASC ${srAsc}, 달 ${srMoonHouse}하우스`)}
 `;
 
   // ========================
   // SECTION 4: NUMEROLOGY 핵심
   // ========================
+  const userAge = s.currentAge || 40;
   const currentPinnacle = (n.pinnacles || []).find((p: any) => {
     if (!p.period) return false;
-    const match = p.period.match(/(\d+)세?\s*~\s*(종료|\d+)/);
+    const match = p.period.match(/(\d+)?\s*~\s*(종료|\d+)/);
     if (!match) return false;
-    const start = parseInt(match[1]);
+    const start = parseInt(match[1] || '0');
     const end = match[2] === '종료' ? 100 : parseInt(match[2]);
-    const age = s.currentAge || 40;
-    return age >= start && age <= end;
+    return userAge >= start && userAge <= end;
   }) || (n.pinnacles || []).slice(-1)[0] || {} as any;
 
   const currentChallenge = (n.challenges || []).find((p: any) => {
     if (!p.period) return false;
-    const match = p.period.match(/(\d+)세?\s*~\s*(종료|\d+)/);
+    const match = p.period.match(/(\d+)?\s*~\s*(종료|\d+)/);
     if (!match) return false;
-    const start = parseInt(match[1]);
+    const start = parseInt(match[1] || '0');
     const end = match[2] === '종료' ? 100 : parseInt(match[2]);
-    const age = s.currentAge || 40;
-    return age >= start && age <= end;
+    return userAge >= start && userAge <= end;
   }) || (n.challenges || []).slice(-1)[0] || {} as any;
 
   // 마스터넘버 심층 분석
@@ -662,20 +684,21 @@ ${n.karmic_debt_details.map((d: string) => `- ${d}`).join('\n')}
     : '';
 
   // 생명경로수 + 표현수 심층 의미 주입
-  const lpMeaning = n.life_path_number ? LIFE_PATH_MEANINGS[String(n.life_path_number)] : null;
-  const exMeaning = n.expression_number ? EXPRESSION_MEANINGS[String(n.expression_number)] : null;
-  
+  const lpMeaning = n.life_path_number ? (LIFE_PATH_MEANINGS as any)[n.life_path_number] : null;
+  const expMeaning = n.expression_number ? (EXPRESSION_MEANINGS as any)[n.expression_number] : null;
+
   const lpBlock = lpMeaning ? `
 【생명경로수 ${n.life_path_number} 심층】
-• 핵심: ${lpMeaning.core}
-• 강점: ${lpMeaning.strength}
-• 약점: ${lpMeaning.weakness}
-• 올해 조언: ${lpMeaning.advice}` : '';
+• 본질: ${lpMeaning.essence}
+• 성장 과제: ${lpMeaning.growth}
+• 성격적 기조: ${lpMeaning.personality}
+• 그림자(경계): ${lpMeaning.shadow}` : '';
 
-  const exBlock = exMeaning ? `
+  const exBlock = expMeaning ? `
 【표현수 ${n.expression_number} 심층】
-• 외적 에너지: ${exMeaning.core}
-• 사회적 역할: ${exMeaning.strength}` : '';
+• 재능/수단: ${expMeaning.talent}
+• 인생 목표: ${expMeaning.life_purpose}
+• 극복 과제: ${expMeaning.challenge}` : '';
 
   const section4 = `
 === [SECTION 4] 수비학 (핵심) ===
