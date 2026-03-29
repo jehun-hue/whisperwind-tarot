@@ -75,8 +75,8 @@ const TOPIC_KEYWORDS: Record<string, string[]> = {
   compatibility: [
     "궁합", "궁합운", "우리 궁합", "상성", "잘 맞", "맞을까",
     "어울리", "케미", "천생연분", "인연이", "운명적", "전생", "소울메이트",
-    "궁합 보", "궁합 봐", "상대방", "상대", "우리 둘", "함께", "같이 살",
-    "성격 차이", "가치관", "맞는 사람", "안 맞", "맞지 않"
+    "궁합 보", "궁합 봐", "상대방", "상대", "우리 둘", "함께",
+    "성격 차이", "가치관", "맞는 사람", "안 맞"
   ]
 };
 
@@ -112,7 +112,7 @@ export const TOPIC_SYSTEM_FOCUS: Record<string, Record<string, string[]>> = {
     saju:      ["재성", "편재", "정재", "식신"],
     ziwei:     ["재백궁", "복덕궁"],
     astrology: ["2하우스", "8하우스", "목성트랜짓"],
-    tarot:     ["finance", "stability", "growth"]
+    tarot:     ["money", "stability", "growth"]
   },
   life_change: {
     saju:      ["대운전환", "세운충형", "신살"],
@@ -339,7 +339,7 @@ export function classifyQuestion(question: string): ClassificationResult {
 
   // 상위 카테고리 매핑
   const CATEGORY_MAP: Record<string, string> = {
-    career: "life_work", relationship: "life_love", finance: "life_wealth",
+    career: "life_work", relationship: "life_love", finance: "life_wealth", compatibility: "life_love",
     life_change: "life_transition", migration: "life_transition",
     health: "life_wellbeing", family: "life_family", general_future: "general"
   };
@@ -408,7 +408,7 @@ export async function classifyWithFallback(
       const parsed = JSON.parse(match[0]);
       if (parsed.primary_topic) {
         const CATEGORY_MAP: Record<string, string> = {
-          career: "life_work", relationship: "life_love", finance: "life_wealth",
+          career: "life_work", relationship: "life_love", finance: "life_wealth", compatibility: "life_love",
           life_change: "life_transition", migration: "life_transition",
           health: "life_wellbeing", family: "life_family", general_future: "general"
         };
