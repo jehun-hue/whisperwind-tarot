@@ -33,7 +33,7 @@ const TOPIC_KEYWORDS: Record<string, string[]> = {
     "전 여자친구", "복잡한 관계", "삼각관계", "양다리", "바람", "외도",
     "이혼", "별거", "화해", "만남", "호감", "연락", "문자", "카톡"
   ],
-  money: [
+  finance: [
     "돈", "재물", "재정", "투자", "주식", "부동산", "수입", "지출",
     "빚", "대출", "저축", "재테크", "금전", "횡재", "손실", "이익",
     "재물운", "금전운", "경제", "월급", "보너스", "수익", "매출",
@@ -71,6 +71,12 @@ const TOPIC_KEYWORDS: Record<string, string[]> = {
     "시어머니", "장모", "장인", "시아버지", "며느리", "사위",
     "손자", "손녀", "할머니", "할아버지", "친척", "명절", "제사",
     "상속", "유언", "노부모", "간병", "돌봄", "보육"
+  ],
+  compatibility: [
+    "궁합", "궁합운", "우리 궁합", "상성", "잘 맞", "맞을까",
+    "어울리", "케미", "천생연분", "인연이", "운명적", "전생", "소울메이트",
+    "궁합 보", "궁합 봐", "상대방", "상대", "우리 둘", "함께", "같이 살",
+    "성격 차이", "가치관", "맞는 사람", "안 맞", "맞지 않"
   ]
 };
 
@@ -102,11 +108,11 @@ export const TOPIC_SYSTEM_FOCUS: Record<string, Record<string, string[]>> = {
     astrology: ["7하우스", "5하우스", "금성트랜짓"],
     tarot:     ["emotion", "relationship", "transition"]
   },
-  money: {
+  finance: {
     saju:      ["재성", "편재", "정재", "식신"],
     ziwei:     ["재백궁", "복덕궁"],
     astrology: ["2하우스", "8하우스", "목성트랜짓"],
-    tarot:     ["money", "stability", "growth"]
+    tarot:     ["finance", "stability", "growth"]
   },
   life_change: {
     saju:      ["대운전환", "세운충형", "신살"],
@@ -131,6 +137,12 @@ export const TOPIC_SYSTEM_FOCUS: Record<string, Record<string, string[]>> = {
     ziwei:     ["천이궁", "명궁", "부모궁"],
     astrology: ["9하우스", "4하우스", "천왕성트랜짓"],
     tarot:     ["migration", "transition", "adventure"]
+  },
+  compatibility: {
+    saju:      ["일간합", "천간합", "지지합", "재성", "관성", "도화살"],
+    ziwei:     ["부처궁", "복덕궁", "명궁"],
+    astrology: ["7하우스", "5하우스", "금성시너스트리"],
+    tarot:     ["relationship", "harmony", "compatibility"]
   },
   general_future: {
     saju:      ["일간강약", "세운천간", "월운"],
@@ -172,7 +184,7 @@ export const DECISION_AXES: Record<string, {
 2문장: 가장 결정적인 요소에 대한 판단 근거
 3문장: 지금 당장 해야 할 구체적 행동 1가지`
   },
-  money: {
+  finance: {
     axes: ['들어오는 흐름 (유입되는 재물)', '나가는 위험 (누수되는 자금)', '예상 밖 변수 (변동성 체크)'],
     axisInstruction: `각 축의 내용을 반드시 1회 이상 다루되, 다음 규칙을 지켜라:
 - ★금지어 규칙: 축 이름(타이밍, 리스크, 대안, 유입, 누수, 변동성, 감정, 현실, 지속성)을 단어 그대로 문장 내에서 절대 사용하지 마십시오. 대신 '시기', '위험 요소', '다른 선택지', '들어오는 흐름', '나가는 구멍', '예상 밖의 변화', '마음', '실제 여건', '오래 이어질 가능성' 등으로 완전히 치환하여 서술하십시오.
@@ -236,6 +248,19 @@ export const DECISION_AXES: Record<string, {
 1문장: 최종 판단 (해결 가능하다/시간이 필요하다/거리두기가 낫다 중 택1)
 2문장: 가장 결정적인 요소에 대한 판단 근거
 3문장: 지금 당장 해야 할 구체적 행동 1가지`
+  },
+  compatibility: {
+    axes: ['상성 (서로의 기질이 맞는가)', '보완성 (부족한 부분을 채워주는가)', '지속성 (오래 유지될 관계인가)'],
+    axisInstruction: `각 축의 내용을 반드시 1회 이상 다루되, 다음 규칙을 지켜라:
+- ★금지어 규칙: 축 이름을 단어 그대로 문장 내에서 절대 사용하지 마십시오.
+- "좋음/보통/나쁨"이라는 판정어 대신 자연어 표현을 사용하라.
+- 각 축마다: 현재 상태에 대한 자연어 판단 + 엔진 데이터 기반 근거 1개 + 구체적 해석 1개를 포함하라.
+- 전체적으로 상담사가 대면으로 이야기하는 톤을 유지하라.
+★ 결론을 내리지 말고, 판단 근거까지만 정리하라.`,
+    conclusionTemplate: `최종 결론은 반드시 3문장 구조로 작성하라:
+1문장: 최종 판단 (잘 맞는다/보완이 필요하다/신중해야 한다 중 택1)
+2문장: 가장 결정적인 요소에 대한 판단 근거
+3문장: 관계 발전을 위해 지금 해야 할 구체적 행동 1가지`
   },
   general_future: {
     axes: ['현재 흐름 (지금 어떤 시기인가)', '주의 사항 (조심할 요소)', '기회 포인트 (잡아야 할 포인트)'],
@@ -314,7 +339,7 @@ export function classifyQuestion(question: string): ClassificationResult {
 
   // 상위 카테고리 매핑
   const CATEGORY_MAP: Record<string, string> = {
-    career: "life_work", relationship: "life_love", money: "life_wealth",
+    career: "life_work", relationship: "life_love", finance: "life_wealth",
     life_change: "life_transition", migration: "life_transition",
     health: "life_wellbeing", family: "life_family", general_future: "general"
   };
@@ -361,7 +386,7 @@ export async function classifyWithFallback(
 
   // 신뢰도 낮으면 Gemini AI 폴백
   try {
-    const prompt = `다음 질문의 주제를 분류해주세요. career, relationship, money, life_change, health, family, general_future 중 최대 2개를 JSON으로 반환하세요. 복합 질문이면 두 개 모두 반환하세요.
+    const prompt = `다음 질문의 주제를 분류해주세요. career, relationship, finance, life_change, health, family, compatibility, migration, general_future 중 최대 2개를 JSON으로 반환하세요. 복합 질문이면 두 개 모두 반환하세요.
 질문: "${question}"
 응답 형식: {"primary_topic": "career", "secondary_topic": "relationship"}`;
 
@@ -383,7 +408,7 @@ export async function classifyWithFallback(
       const parsed = JSON.parse(match[0]);
       if (parsed.primary_topic) {
         const CATEGORY_MAP: Record<string, string> = {
-          career: "life_work", relationship: "life_love", money: "life_wealth",
+          career: "life_work", relationship: "life_love", finance: "life_wealth",
           life_change: "life_transition", migration: "life_transition",
           health: "life_wellbeing", family: "life_family", general_future: "general"
         };

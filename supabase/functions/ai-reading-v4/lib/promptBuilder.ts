@@ -29,9 +29,14 @@ interface UnifiedTimeline { [key: string]: any; }
 // ─── 질문 유형별 자미두수 핵심 궁 매핑 ───
 const ZIWEI_PALACE_MAP: Record<string, string[]> = {
   relationship: ['부처궁', '복덕궁', '천이궁'],
-  finance: ['재백궁', '전택궁', '관록궁'],
   career: ['관록궁', '천이궁', '재백궁'],
   health: ['질액궁', '복덕궁', '명궁'],
+  finance:      ['재백궁', '전택궁', '관록궁'],
+  money:        ['재백궁', '전택궁', '관록궁'],
+  life_change:  ['천이궁', '명궁', '관록궁'],
+  migration:    ['천이궁', '명궁', '부모궁'],
+  compatibility:['부처궁', '복덕궁', '명궁'],
+  family:       ['부모궁', '자녀궁', '형제궁', '부처궁'],
   general_future: ['명궁', '관록궁', '재백궁', '부처궁'],
   default: ['명궁', '관록궁', '재백궁'],
 };
@@ -58,6 +63,7 @@ const TOPIC_SECTION_BUDGET: Record<string, TopicSectionConfig> = {
   life_change:    { saju: 'full',    ziwei: 'full',    astrology: 'full',    numerology: 'summary', tarot: 'full' },
   migration:      { saju: 'summary', ziwei: 'full',    astrology: 'full',    numerology: 'summary', tarot: 'summary' },
   compatibility:   { saju: 'full',    ziwei: 'full',    astrology: 'full',    numerology: 'skip',    tarot: 'full' },
+  family:          { saju: 'full',    ziwei: 'full',    astrology: 'summary', numerology: 'skip',    tarot: 'summary' },
 };
 
 // ─── 정규식 스크래퍼 방식 요약 함수들 ───
@@ -935,7 +941,7 @@ STEP 6: 포맷 규칙
   // ═══════════════════════════════════════════════════════
   // P-6: 동적 프롬프트 조립 (pickSection + TOKEN BUDGET)
   // ═══════════════════════════════════════════════════════
-  const budget = TOPIC_SECTION_BUDGET[qType] || TOPIC_SECTION_BUDGET.general_future;
+  const budget = TOPIC_SECTION_BUDGET[qType] || TOPIC_SECTION_BUDGET['general_future'];
 
   function pickSection(
     level: SectionBudget,
