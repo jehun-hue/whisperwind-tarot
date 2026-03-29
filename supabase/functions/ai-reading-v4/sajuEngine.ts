@@ -304,11 +304,45 @@ export async function getFullSaju(
   const dayMasterElement = ELEMENT_KOREAN[FIVE_ELEMENTS_MAP[dayMaster]];
   const generatingElement = SUPPORT_ELEM[dayMasterElement];
 
-  function mainElOf(char: string, kind: 'S'|'B'): string {
-    if (kind === 'S') return ELEMENT_KOREAN[FIVE_ELEMENTS_MAP[char]] || "";
-    const h = HIDDEN_STEMS[char];
-    if (!h || h.length === 0) return "";
-    return ELEMENT_KOREAN[FIVE_ELEMENTS_MAP[h[0]]] || "";  // h[0] = 정기
+  /**
+   * 지지의 지장간 가중치를 합산하여 일간을 돕는 비율을 반환
+   * 천간은 기존처럼 단일 오행 판정 (도움이면 1, 아니면 0)
+   */
+  function calcHelpRatio(
+    char: string,
+    kind: 'S' | 'B',
+    dmEl: string,
+    genEl: string,
+    branchWeights?: number[]
+  ): number {
+    if (kind === 'S') {
+      const el = ELEMENT_KOREAN[FIVE_ELEMENTS_MAP[char]] || "";
+      return (el === dmEl || el === genEl) ? 1.0 : 0;
+    }
+    const hidden = HIDDEN_STEMS[char] || [];
+    if (hidden.length === 0) return 0;
+    const w = branchWeights || [0.05, 0.15, 0.80]; // [여기, 중기, 본기]
+    let helpSum = 0;
+    let totalSum = 0;
+    hidden.forEach((hs, hIdx) => {
+      const el = ELEMENT_KOREAN[FIVE_ELEMENTS_MAP[hs]] || "";
+      // HIDDEN_STEMS 순서: [0]=본기, [1]=중기, [2]=여기
+      // weights 순서: [0]=여기, [1]=중기, [2]=본기
+      let weight = 0;
+      if (hidden.length === 3) {
+        if (hIdx === 0) weight = w[2];
+        else if (hIdx === 1) weight = w[1];
+        else weight = w[0];
+      } else if (hidden.length === 2) {
+        if (hIdx === 0) weight = w[2];
+        else weight = w[0];
+      } else {
+        weight = w[2];
+      }
+      totalSum += weight;
+      if (el === dmEl || el === genEl) helpSum += weight;
+    });
+    return totalSum > 0 ? helpSum / totalSum : 0;
   }
 
   const posArr = [
@@ -324,12 +358,21 @@ export async function getFullSaju(
   let strengthScore = 0;
   const bd: Record<string, {el:string; help:boolean; sc:number}> = {};
 
+  const branchWeightMap: Record<string, number[]> = {};
+  pillarWeights.forEach((w, idx) => {
+    const br = pillarBranches[idx];
+    branchWeightMap[br] = w;
+  });
+
   for (const p of posArr) {
-    const el = mainElOf(p.c, p.t);
-    const help = (el === dayMasterElement || el === generatingElement);
-    const sc = help ? POS_W[p.k] : 0;
+    const bw = (p.t === 'B') ? (branchWeightMap[p.c] || [0.05, 0.15, 0.80]) : undefined;
+    const ratio = calcHelpRatio(p.c, p.t, dayMasterElement, generatingElement, bw);
+    const sc = Math.round(POS_W[p.k] * ratio * 10) / 10;
     strengthScore += sc;
-    bd[p.k] = { el, help, sc };
+    const mainEl = (p.t === 'S')
+      ? (ELEMENT_KOREAN[FIVE_ELEMENTS_MAP[p.c]] || "")
+      : (ELEMENT_KOREAN[FIVE_ELEMENTS_MAP[(HIDDEN_STEMS[p.c] || [])[0]]] || "");
+    bd[p.k] = { el: mainEl, help: ratio > 0, sc };
   }
 
   // 진술축미 보정: 습토(丑辰)는 목·금·수 일간에게 반점 가산
@@ -338,7 +381,8 @@ export async function getFullSaju(
   for (const p of posArr) {
     if (p.t !== 'B') continue;
     if (!WET.includes(p.c)) continue;
-    if (mainElOf(p.c, 'B') !== '토') continue;
+    const mainBrEl = ELEMENT_KOREAN[FIVE_ELEMENTS_MAP[(HIDDEN_STEMS[p.c] || [])[0]]] || "";
+    if (mainBrEl !== '토') continue;
     if (!WET_FAV.includes(dayMasterElement)) continue;
     const bonus = Math.floor(POS_W[p.k] * 0.5);
     strengthScore += bonus;
