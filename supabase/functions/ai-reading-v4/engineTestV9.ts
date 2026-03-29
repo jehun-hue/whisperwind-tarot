@@ -188,7 +188,14 @@ async function runAllTests() {
 
   // ── TEST 7: Validation Layer ──
   console.log("[7/10] Validation Layer...");
-  const validResult = validateEngineOutput(con1, vec1, sys1);
+  const sysV = [
+    { system: "saju", elements: { "목": 3, "화": 2, "토": 1, "금": 0, "수": 2 } },
+    { system: "tarot", characteristics: ["Sun", "World", "Star"], cards: [1, 2, 3, 4, 5] },
+    { system: "numerology", vibrations: ["growth", "opportunity"] }
+  ];
+  const vecV = generatePatternVectors(sysV);
+  const conV = calculateConsensusV8(vecV, true, true, undefined, sysV);
+  const validResult = validateEngineOutput(conV, vecV, sysV);
   assert("정상 데이터 validation pass", validResult.isValid, validResult.reasons.join(", "));
   
   const emptyVecResult = validateEngineOutput(con1, [], sys1);

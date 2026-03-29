@@ -248,7 +248,14 @@ async function runFallbackCompatibility(
   const stems = ["甲","乙","丙","丁","戊","己","庚","辛","壬","癸"];
   const getSimpleDayMaster = (bd: string) => {
     const [y, m, d] = bd.split("-").map(Number);
-    return stems[(y * 365 + m * 30 + d + 4) % 10];
+    // 정확한 일진 계산 (Julian Day 방식)
+    let year = y, month = m;
+    if (month <= 2) { year -= 1; month += 12; }
+    const a = Math.floor(year / 100);
+    const b = 2 - a + Math.floor(a / 4);
+    const jd = Math.floor(365.25 * (year + 4716)) + Math.floor(30.6001 * (month + 1)) + d + b - 1524.5;
+    const stems = ["甲","乙","丙","丁","戊","己","庚","辛","壬","癸"];
+    return stems[Math.floor(jd + 0.5 + 9) % 10]; 
   };
 
   const elemMap: Record<string, string> = {

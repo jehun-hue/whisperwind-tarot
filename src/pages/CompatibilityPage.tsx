@@ -30,58 +30,35 @@ export default function CompatibilityPage() {
       // MVP: 두 사람 각각 분석 후 궁합 비교
       const question = `${personA.name}님과 ${personB.name}님의 궁합을 분석해주세요.`;
 
-      const [resA, resB] = await Promise.all([
-        supabase.functions.invoke("ai-reading-v4", {
-          body: {
-            birthInfo: {
-              birthDate: personA.birthDate,
-              birthTime: personA.birthTime,
-              gender: personA.gender,
-              isLunar: personA.isLunar,
-              userName: personA.name,
-            },
-            partnerInfo: {
-              birthDate: personB.birthDate,
-              birthTime: personB.birthTime,
-              gender: personB.gender,
-              isLunar: personB.isLunar,
-              userName: personB.name,
-            },
-            question,
-            mode: "compatibility",
-            cards: [],
+      const res = await supabase.functions.invoke("ai-reading-v4", {
+        body: {
+          birthInfo: {
+            birthDate: personA.birthDate,
+            birthTime: personA.birthTime,
+            gender: personA.gender,
+            isLunar: personA.isLunar,
+            userName: personA.name,
           },
-        }),
-        supabase.functions.invoke("ai-reading-v4", {
-          body: {
-            birthInfo: {
-              birthDate: personB.birthDate,
-              birthTime: personB.birthTime,
-              gender: personB.gender,
-              isLunar: personB.isLunar,
-              userName: personB.name,
-            },
-            partnerInfo: {
-              birthDate: personA.birthDate,
-              birthTime: personA.birthTime,
-              gender: personA.gender,
-              isLunar: personA.isLunar,
-              userName: personA.name,
-            },
-            question,
-            mode: "compatibility",
-            cards: [],
+          partnerInfo: {
+            birthDate: personB.birthDate,
+            birthTime: personB.birthTime,
+            gender: personB.gender,
+            isLunar: personB.isLunar,
+            userName: personB.name,
           },
-        }),
-      ]);
+          question,
+          mode: "compatibility",
+          cards: [],
+        },
+      });
 
-      if (resA.error || resB.error) {
-        throw new Error(resA.error?.message || resB.error?.message || "분석 실패");
+      if (res.error) {
+        throw new Error(res.error?.message || "분석 실패");
       }
 
       setResult({
-        personA: resA.data,
-        personB: resB.data,
+        personA: res.data,
+        personB: null, // 단일 호출로 통합
       });
       setState("done");
     } catch (e: any) {
@@ -153,8 +130,36 @@ export default function CompatibilityPage() {
             <h2 className="text-2xl font-bold text-center mb-4 text-yellow-400">
               궁합 결과
             </h2>
+
+            {/* 종합 점수 */}
+            {result.personA?.compatibility && (
+              <div className="text-center mb-6">
+                <div className="text-5xl font-bold text-pink-400">
+                  {result.personA.compatibility.totalScore}점
+                </div>
+                <div className="text-xl text-purple-300 mt-1">
+                  {result.personA.compatibility.grade}
+                </div>
+              </div>
+            )}
+
+            {/* 카테고리별 점수 */}
+            {result.personA?.compatibility?.categories && (
+              <div className="grid grid-cols-2 gap-3 mb-6">
+                {result.personA.compatibility.categories.map((cat: any) => (
+                  <div key={cat.name} className="bg-gray-700/50 rounded-lg p-3">
+                    <div className="text-sm text-gray-400">{cat.name}</div>
+                    <div className="text-lg font-bold text-white">{cat.score}점</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* AI 리딩 전문 */}
             <div className="space-y-4 text-gray-200 leading-relaxed whitespace-pre-wrap">
-              {result.personA?.integrated_summary || result.personA?.final_message?.summary || "분석 결과를 불러오는 중..."}
+              {result.personA?.compatibility?.reading
+                || result.personA?.integrated_summary
+                || "분석 결과를 불러오는 중..."}
             </div>
           </div>
         )}
