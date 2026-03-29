@@ -726,11 +726,13 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     // 사주 계산 (동기)
     let sajuRaw: any = null;
     try {
-      sajuRaw = calculateSaju(
+      sajuRaw = await calculateSaju(
         solarBirthInfo.year, solarBirthInfo.month, solarBirthInfo.day, 
         solarBirthInfo.hour, solarBirthInfo.minute, solarBirthInfo.gender,
         solarBirthInfo.longitude,
-        !!(solarBirthInfo.hour !== undefined && solarBirthInfo.hour !== null && solarBirthInfo.hour >= 0)
+        !!(solarBirthInfo.hour !== undefined && solarBirthInfo.hour !== null && solarBirthInfo.hour >= 0),
+        birthInfo.isLunar,
+        birthInfo.isLeapMonth
       );
       if (!sajuRaw) throw new Error("사주 계산 결과가 유효하지 않습니다.");
     } catch (e: any) {

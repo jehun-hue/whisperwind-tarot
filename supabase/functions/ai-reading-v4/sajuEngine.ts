@@ -69,7 +69,7 @@ function getHiddenWeights(
   }
 }
 
-export function getFullSaju(
+export async function getFullSaju(
   year: number,
   month: number,
   day: number,
@@ -77,8 +77,23 @@ export function getFullSaju(
   minute: number,
   gender: 'M' | 'F' = 'M',
   longitude: number = 127.5,
-  hasTime: boolean = true
+  hasTime: boolean = true,
+  isLunar: boolean = false,
+  isLeapMonth: boolean = false
 ) {
+  // ─── 0. 음력→양력 변환 ───
+  if (isLunar) {
+    try {
+      const { lunarToSolar } = await import("./lib/lunarConverter.ts");
+      const solar = lunarToSolar(year, month, day, isLeapMonth);
+      year = solar.year;
+      month = solar.month;
+      day = solar.day;
+      console.log(`[sajuEngine] 음력→양력 변환: ${year}-${month}-${day}`);
+    } catch (e) {
+      console.error("[sajuEngine] 음력 변환 실패, 원본 날짜 사용:", e);
+    }
+  }
 
   // 1. Longitude & DST Correction
   // B-66new: 한국 시간대 히스토리 완전 반영
