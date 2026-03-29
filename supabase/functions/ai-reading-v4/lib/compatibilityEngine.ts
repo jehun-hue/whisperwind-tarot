@@ -90,7 +90,14 @@ function lifePathCompatibility(lpA: number, lpB: number): string {
 export async function runCompatibilityEngine(
   _supabase: any,
   apiKey: string,
-  payload: CompatibilityPayload
+  payload: CompatibilityPayload,
+  extraEngines?: {
+    ziweiA?: any;
+    ziweiB?: any;
+    astrologyA?: any;
+    astrologyB?: any;
+    tarotResult?: any;
+  }
 ) {
   const { birthInfo, partnerInfo, question } = payload;
   const nameA = birthInfo.userName || "나";
@@ -123,6 +130,75 @@ export async function runCompatibilityEngine(
     const lpB = calcLifePath(partnerInfo.birthDate);
     const lpCompat = lifePathCompatibility(lpA, lpB);
 
+    // ── 4.5 다엔진 데이터 추출 ──
+    const ziweiA = extraEngines?.ziweiA || {};
+    const ziweiB = extraEngines?.ziweiB || {};
+    const astroA = extraEngines?.astrologyA || {};
+    const astroB = extraEngines?.astrologyB || {};
+    const tarot = extraEngines?.tarotResult || {};
+
+    // 자미두수: 부처궁 비교
+    const palacesA = (ziweiA.rawData || ziweiA)?.palaces || [];
+    const palacesB = (ziweiB.rawData || ziweiB)?.palaces || [];
+    const bucheA = palacesA.find((p: any) => p.name === '부처궁');
+    const bucheB = palacesB.find((p: any) => p.name === '부처궁');
+    const bokdeokA = palacesA.find((p: any) => p.name === '복덕궁');
+    const bokdeokB = palacesB.find((p: any) => p.name === '복덕궁');
+
+    const ziweiCompatBlock = (bucheA || bucheB) ? `
+[자미두수 궁합 분석]
+- ${nameA} 부처궁: ${bucheA?.main_stars?.join(', ') || '빈궁'} | 복덕궁: ${bokdeokA?.main_stars?.join(', ') || '빈궁'}
+- ${nameB} 부처궁: ${bucheB?.main_stars?.join(', ') || '빈궁'} | 복덕궁: ${bokdeokB?.main_stars?.join(', ') || '빈궁'}
+- 해석 포인트: 부처궁은 배우자 성향과 결혼 운, 복덕궁은 내면 정서 안정을 나타냄.
+` : '';
+
+    // 점성술: 시나스트리 핵심 어스펙트
+    const synastryAspects: string[] = [];
+    const planetsA = (astroA.rawData || astroA)?.planets || [];
+    const planetsB = (astroB.rawData || astroB)?.planets || [];
+    const sunA = planetsA.find((p: any) => p.name === '태양' || p.name === 'Sun');
+    const moonA = planetsA.find((p: any) => p.name === '달' || p.name === 'Moon');
+    const venusA = planetsA.find((p: any) => p.name === '금성' || p.name === 'Venus');
+    const marsA = planetsA.find((p: any) => p.name === '화성' || p.name === 'Mars');
+    const sunB = planetsB.find((p: any) => p.name === '태양' || p.name === 'Sun');
+    const moonB = planetsB.find((p: any) => p.name === '달' || p.name === 'Moon');
+    const venusB = planetsB.find((p: any) => p.name === '금성' || p.name === 'Venus');
+    const marsB = planetsB.find((p: any) => p.name === '화성' || p.name === 'Mars');
+
+    if (sunA?.sign && moonB?.sign) synastryAspects.push(`${nameA} 태양(${sunA.sign}) ↔ ${nameB} 달(${moonB.sign})`);
+    if (sunB?.sign && moonA?.sign) synastryAspects.push(`${nameB} 태양(${sunB.sign}) ↔ ${nameA} 달(${moonA.sign})`);
+    if (venusA?.sign && marsB?.sign) synastryAspects.push(`${nameA} 금성(${venusA.sign}) ↔ ${nameB} 화성(${marsB.sign})`);
+    if (venusB?.sign && marsA?.sign) synastryAspects.push(`${nameB} 금성(${venusB.sign}) ↔ ${nameA} 화성(${marsA.sign})`);
+
+    const astroCompatBlock = synastryAspects.length > 0 ? `
+[점성술 시나스트리 (핵심)]
+${synastryAspects.map(a => `- ${a}`).join('\n')}
+- 태양↔달: 의식과 무의식의 조화. 금성↔화성: 끌림과 열정의 균형.
+` : '';
+
+    // 타로: 관계 카드 해석
+    const tarotCards = tarot?.cards || tarot?.selectedCards || [];
+    const tarotCompatBlock = tarotCards.length > 0 ? `
+[타로 관계 리딩]
+${tarotCards.slice(0, 3).map((c: any, i: number) => `- ${i + 1}번: ${c.name || c.card_name} (${c.isReversed ? '역방향' : '정방향'}) — ${c.keywords?.join(', ') || c.meaning || ''}`).join('\n')}
+` : '';
+
+    // 교차 검증 요약
+    const crossCompatPatterns: string[] = [];
+    // 사주 천간합 + 자미 부처궁 길성 = 강력 긍정
+    if (compatResult.stemRelation?.type === '천간합' && bucheA?.main_stars?.some((s: string) => ['자미', '천부', '태양', '태음', '천동'].includes(s))) {
+      crossCompatPatterns.push('✅ 천간합 + 부처궁 길성: 사주와 자미 모두 관계 길신호 — 강한 인연');
+    }
+    // 사주 충 + 자미 화기 = 이중 경고
+    if (compatResult.crossClashes.length >= 2 && palacesA.some((p: any) => p.name === '부처궁' && (ziweiA.rawData || ziweiA)?.natalTransformations?.some((t: any) => t.type === '화기' && t.palace === '부처궁'))) {
+      crossCompatPatterns.push('⚠️ 사주 지지충 다수 + 부처궁 화기: 관계 마찰 강화 패턴');
+    }
+
+    const crossCompatBlock = crossCompatPatterns.length > 0 ? `
+[엔진 간 교차 검증]
+${crossCompatPatterns.join('\n')}
+` : '';
+
     // ── 5. 오행 정보 ──
     const elemA = STEM_ELEMENT_KR[sajuA.dayMaster] || "미상";
     const elemB = STEM_ELEMENT_KR[sajuB.dayMaster] || "미상";
@@ -133,41 +209,48 @@ export async function runCompatibilityEngine(
       .join("\n");
 
     const compatPrompt = `
-당신은 사주명리학 기반 궁합 전문가입니다. 아래 구조적 분석 데이터를 바탕으로 두 사람의 궁합을 자연스럽게 해설하세요.
+당신은 사주명리학·자미두수·서양점성술을 통합하는 궁합 전문 상담사입니다. 아래 다중 엔진 분석 데이터를 바탕으로 두 사람의 관계를 입체적으로 해설하세요.
 
-[두 사람의 정보]
+=== [A] 인물 정보 ===
 - ${nameA}: ${birthInfo.birthDate} 출생, ${birthInfo.gender === "male" ? "남" : "여"}성
   일간 ${sajuA.dayMaster}(${elemA}), 강약 ${analysisA.strength}, 용신 ${analysisA.yongShin}
 - ${nameB}: ${partnerInfo.birthDate} 출생, ${partnerInfo.gender === "male" ? "남" : "여"}성
   일간 ${sajuB.dayMaster}(${elemB}), 강약 ${analysisB.strength}, 용신 ${analysisB.yongShin}
 
-[정밀 궁합 분석 결과]
+=== [B] 사주 정밀 궁합 ===
 종합점수: ${compatResult.totalScore}점 (${compatResult.grade})
-
 ${categoryDetails}
-
 천간 관계: ${compatResult.stemRelation ? `${compatResult.stemRelation.type} — ${compatResult.stemRelation.description}` : "특별한 천간합극 없음"}
 십성 관계: ${nameA}에게 ${nameB}는 ${compatResult.tenGodAtoB}, ${nameB}에게 ${nameA}는 ${compatResult.tenGodBtoA}
 지지 합: ${compatResult.crossHarmonies.length > 0 ? compatResult.crossHarmonies.join(", ") : "없음"}
 지지 충: ${compatResult.crossClashes.length > 0 ? compatResult.crossClashes.join(", ") : "없음"}
 용신 보완: ${compatResult.yongsinComplement.details.join("; ")}
 
-[보조 지표 - 수비학]
-${nameA} 생명수 ${lpA}, ${nameB} 생명수 ${lpB}: ${lpCompat}
+${ziweiCompatBlock}
+${astroCompatBlock}
+${tarotCompatBlock}
+${crossCompatBlock}
 
-${question ? `[질문] ${question}` : ""}
+=== [C] 보조 지표 ===
+수비학: ${nameA} 생명수 ${lpA}, ${nameB} 생명수 ${lpB} — ${lpCompat}
 
-[작성 지침]
-1. 위 데이터를 자연스러운 상담 언어로 풀어서 설명하라.
-2. 관계의 강점 3가지, 주의점 2가지를 구체적으로 제시하라.
-3. 시기별 관계 흐름 (올해 기준)을 간략히 안내하라.
-4. 종합 점수 ${compatResult.totalScore}점(${compatResult.grade})의 근거를 함께 설명하라.
-5. 수비학은 보조 참고로만 언급하라 (1~2문장).
+${question ? `=== [D] 질문 === ${question}` : ""}
 
-[금지]
-- 마크다운, JSON, 내부 용어 직접 노출 금지.
+=== [E] 작성 지침 ===
+1. 리딩 첫머리에 두 사람 관계의 핵심을 한 문장으로 요약하라.
+2. [B] 사주 궁합을 중심으로 관계의 강점 3가지, 주의점 2가지를 구체적으로 제시하라.
+3. [B]와 다른 엔진([자미두수]/[점성술]/[타로]) 결과가 일치하면 "여러 관점이 같은 방향을 가리킵니다"로 신뢰를 강조하라.
+4. [B]와 다른 엔진 결과가 상충하면 "다양한 측면에서 보완의 여지가 있습니다"로 유연하게 표현하라.
+5. 올해(${new Date().getFullYear()}) 기준 관계 흐름을 간략히 안내하라 (용신 계절 활성 시기 언급).
+6. 종합 점수 ${compatResult.totalScore}점(${compatResult.grade})의 근거를 자연스럽게 녹여 설명하라.
+7. 타로 데이터가 있으면 카드 이미지를 활용해 감성적 메시지를 추가하라.
+8. 수비학은 보조 참고로만 1~2문장 언급하라.
+
+=== [F] 금지 ===
+- 마크다운(#, **, -), JSON, 내부 용어(십성, 천간합, 화기 등) 직접 노출 금지.
 - "${nameA}님", "${nameB}님"으로 호칭.
-- 자연스럽고 따뜻한 상담 톤으로 작성.
+- 자연스럽고 따뜻한 상담 톤. 분석 근거를 쉬운 비유로 전환하라.
+- 내부 점수, 합의도, 엔진명 절대 노출 금지.
 `;
 
     // ── 7. Gemini 호출 ──
