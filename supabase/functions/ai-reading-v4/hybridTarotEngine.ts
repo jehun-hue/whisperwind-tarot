@@ -1,4 +1,4 @@
-﻿/**
+/**
  * hybridTarotEngine.ts (v9)
  * - Monad 구조 분석 + 최한나 스타일 서사 해석 통합
  * - v9: 3장 → 메이저 22장 + 코트 16장 = 38장 패턴 완성
@@ -31,7 +31,48 @@ const STRUCTURE_RULES: Record<string, Record<string, string>> = {
   "The Moon":             { past: "past_illusion", present: "confusion_peak", future: "truth_emerges", "현재 상황": "confusion_peak", "핵심 문제": "self_deception", "조언": "face_fears", "가까운 결과": "truth_emerges" },
   "The Sun":              { past: "joyful_origin", present: "radiant_energy", future: "success_guaranteed", "현재 상황": "radiant_energy", "핵심 문제": "overconfidence", "조언": "shine_authentically", "가까운 결과": "success_guaranteed" },
   "Judgement":            { past: "karmic_review", present: "awakening_call", future: "final_reckoning", "현재 상황": "awakening_call", "핵심 문제": "avoiding_truth", "조언": "answer_the_call", "가까운 결과": "final_reckoning" },
-  "The World":            { past: "cycle_completed", present: "integration_peak", future: "new_world_opens", "현재 상황": "integration_peak", "핵심 문제": "completion_anxiety", "조언": "celebrate_and_move", "가까운 결과": "new_world_opens" }
+  "The World":            { past: "cycle_completed", present: "integration_peak", future: "new_world_opens", "현재 상황": "integration_peak", "핵심 문제": "completion_anxiety", "조언": "celebrate_and_move", "가까운 결과": "new_world_opens" },
+  // ─── Minor Number Cards (40장) ───
+  "Ace of Wands":       { past: "inspiration_seed", present: "creative_ignition", future: "potential_flame", "현재 상황": "creative_ignition", "핵심 문제": "unfocused_passion", "조언": "channel_the_fire", "가까운 결과": "potential_flame" },
+  "Two of Wands":       { past: "planning_roots", present: "crossroads_vision", future: "expansion_awaits", "현재 상황": "crossroads_vision", "핵심 문제": "fear_of_unknown", "조언": "choose_and_commit", "가까운 결과": "expansion_awaits" },
+  "Three of Wands":     { past: "exploration_start", present: "vision_expansion", future: "arrival_prep", "현재 상황": "vision_expansion", "핵심 문제": "delayed_vision", "조언": "expand_horizons", "가까운 결과": "arrival_prep" },
+  "Four of Wands":      { past: "foundation_built", present: "stable_joy", future: "shared_celebration", "현재 상황": "stable_joy", "핵심 문제": "foundation_shake", "조언": "celebrate_stability", "가까운 결과": "shared_celebration" },
+  "Five of Wands":      { past: "inner_tension", present: "competitive_clash", future: "struggle_clarity", "현재 상황": "competitive_clash", "핵심 문제": "pointless_conflict", "조언": "handle_friction", "가까운 결과": "struggle_clarity" },
+  "Six of Wands":       { past: "effort_made", present: "public_victory", future: "leadership_peak", "현재 상황": "public_victory", "핵심 문제": "fallen_pride", "조언": "maintain_confidence", "가까운 결과": "leadership_peak" },
+  "Seven of Wands":     { past: "challenge_faced", present: "defensive_stand", future: "mental_fortress", "현재 상황": "defensive_stand", "핵심 문제": "overwhelm_risk", "조언": "stand_ground", "가까운 결과": "mental_fortress" },
+  "Eight of Wands":     { past: "movement_start", present: "rapid_action", future: "accelerated_result", "현재 상황": "rapid_action", "핵심 문제": "chaotic_speed", "조언": "maintain_trajectory", "가까운 결과": "accelerated_result" },
+  "Nine of Wands":      { past: "long_struggle", present: "final_guard", future: "resilience_test", "현재 상황": "final_guard", "핵심 문제": "paranoia_risk", "조언": "keep_guard", "가까운 결과": "resilience_test" },
+  "Ten of Wands":       { past: "heavy_burden", present: "physical_limit", future: "coming_release", "현재 상황": "physical_limit", "핵심 문제": "stress_overload", "조언": "delegate_tasks", "가까운 결과": "coming_release" },
+  "Ace of Cups":        { past: "emotional_seed", present: "heart_overflow", future: "spiritual_bliss", "현재 상황": "heart_overflow", "핵심 문제": "emotional_block", "조언": "let_it_flow", "가까운 결과": "spiritual_bliss" },
+  "Two of Cups":        { past: "initial_attract", present: "heart_union", future: "divine_partnership", "현재 상황": "heart_union", "핵심 문제": "broken_connection", "조언": "build_bridges", "가까운 결과": "divine_partnership" },
+  "Three of Cups":      { past: "social_seed", present: "shared_celebration", future: "communal_joy", "현재 상황": "shared_celebration", "핵심 문제": "exclusion_risk", "조언": "share_the_joy", "가까운 결과": "communal_joy" },
+  "Four of Cups":       { past: "boredom_roots", present: "emotional_stasis", future: "inner_focus", "현재 상황": "emotional_stasis", "핵심 문제": "ignoring_gifts", "조언": "look_within", "가까운 결과": "inner_focus" },
+  "Five of Cups":       { past: "grief_origin", present: "focusing_on_loss", future: "acceptance_start", "현재 상황": "focusing_on_loss", "핵심 문제": "stuck_in_past", "조언": "look_at_remaining", "가까운 결과": "acceptance_start" },
+  "Six of Cups":        { past: "past_memories", present: "nostalgic_comfort", future: "innocence_reborn", "현재 상황": "nostalgic_comfort", "핵심 문제": "stuck_in_nostalgia", "조언": "honor_past", "가까운 결과": "innocence_reborn" },
+  "Seven of Cups":      { past: "multiple_options", present: "fantasy_illusion", future: "real_choice_needed", "현재 상황": "fantasy_illusion", "핵심 문제": "option_overload", "조언": "ground_your_dreams", "가까운 결과": "real_choice_needed" },
+  "Eight of Cups":      { past: "unfulfilled_past", present: "somatic_departure", future: "spiritual_search", "현재 상황": "somatic_departure", "핵심 문제": "fear_of_leaving", "조언": "keep_moving", "가까운 결과": "spiritual_search" },
+  "Nine of Cups":       { past: "wish_made", present: "soul_satisfaction", future: "emotional_mastery", "현재 상황": "soul_satisfaction", "핵심 문제": "empty_success", "조언": "enjoy_your_fruit", "가까운 결과": "emotional_mastery" },
+  "Ten of Cups":        { past: "family_roots", present: "total_bliss", future: "eternal_legacy", "현재 상황": "total_bliss", "핵심 문제": "home_tension", "조언": "cherish_harmony", "가까운 결과": "eternal_legacy" },
+  "Ace of Swords":      { past: "mental_clarity_seed", present: "truth_cutting", future: "decisive_insight", "현재 상황": "truth_cutting", "핵심 문제": "logic_overload", "조언": "seek_truth", "가까운 결과": "decisive_insight" },
+  "Two of Swords":      { past: "past_hesitation", present: "mental_deadlock", future: "forced_choice", "현재 상황": "mental_deadlock", "핵심 문제": "denial_trap", "조언": "face_the_decision", "가까운 결과": "forced_choice" },
+  "Three of Swords":    { past: "heartbreak_origin", present: "deep_grief", future: "healing_process", "현재 상황": "deep_grief", "핵심 문제": "repressed_pain", "조언": "accept_the_truth", "가까운 결과": "healing_process" },
+  "Four of Swords":     { past: "past_battle", present: "sacred_rest", future: "quiet_recovery", "현재 상황": "sacred_rest", "핵심 문제": "burnout_risk", "조언": "take_a_break", "가까운 결과": "quiet_recovery" },
+  "Five of Swords":     { past: "conflict_seed", present: "poisonous_win", future: "hollow_victory", "현재 상황": "poisonous_win", "핵심 문제": "resentment_buildup", "조언": "let_it_go", "가까운 결과": "hollow_victory" },
+  "Six of Swords":      { past: "troubled_past", present: "calm_passage", future: "arrival_hope", "현재 상황": "calm_passage", "핵심 문제": "mental_baggage", "조언": "leave_the_trouble", "가까운 결과": "arrival_hope" },
+  "Seven of Swords":    { past: "hidden_motives", present: "strategic_diversion", future: "truth_reveal", "현재 상황": "strategic_diversion", "핵심 문제": "web_of_lies", "조언": "act_honestly", "가까운 결과": "truth_reveal" },
+  "Eight of Swords":    { past: "mental_traps", present: "self_imposed_limit", future: "mental_freedom", "현재 상황": "self_imposed_limit", "핵심 문제": "paralysis_risk", "조언": "open_your_eyes", "가까운 결과": "mental_freedom" },
+  "Nine of Swords":     { past: "worry_cycle", present: "mental_nightmare", future: "morning_clarity", "현재 상황": "mental_nightmare", "핵심 문제": "fear_projection", "조언": "share_the_anxiety", "가까운 결과": "morning_clarity" },
+  "Ten of Swords":      { past: "complete_defeat", present: "final_blow", future: "morning_after", "현재 상황": "final_blow", "핵심 문제": "victim_mentality", "조언": "accept_the_end", "가까운 결과": "morning_after" },
+  "Ace of Pentacles":   { past: "material_seed", present: "physical_foundation", future: "earthy_reward", "현재 상황": "physical_foundation", "핵심 문제": "missed_gold", "조언": "build_foundation", "가까운 결과": "earthy_reward" },
+  "Two of Pentacles":   { past: "busy_past", present: "juggling_act", future: "unstable_balance", "현재 상황": "juggling_act", "핵심 문제": "priority_loss", "조언": "find_the_rhytm", "가까운 결과": "unstable_balance" },
+  "Three of Pentacles": { past: "skill_learned", present: "collaboration_peak", future: "professional_fame", "현재 상황": "collaboration_peak", "핵심 문제": "poor_quality", "조언": "coordinate_efforts", "가까운 결과": "professional_fame" },
+  "Four of Pentacles":  { past: "saving_phase", present: "guarding_stability", future: "rigid_safety", "현재 상황": "guarding_stability", "핵심 문제": "greed_trap", "조언": "allow_flow", "가까운 결과": "rigid_safety" },
+  "Five of Pentacles":  { past: "past_poverty", present: "material_struggle", future: "finding_shelter", "현재 상황": "material_struggle", "핵심 문제": "pride_barrier", "조언": "ask_for_help", "가까운 결과": "finding_shelter" },
+  "Six of Pentacles":   { past: "past_service", present: "fair_exchange", future: "wealth_flow", "현재 상황": "fair_exchange", "핵심 문제": "power_imbalance", "조언": "maintain_balance", "가까운 결과": "wealth_flow" },
+  "Seven of Pentacles": { past: "long_labor", present: "midterm_review", future: "patient_harvest", "현재 상황": "midterm_review", "핵심 문제": "impatient_quit", "조언": "trust_the_growth", "가까운 결과": "patient_harvest" },
+  "Eight of Pentacles": { past: "apprentice_phase", present: "skill_focused", future: "master_work_peak", "현재 상황": "skill_focused", "핵심 문제": "repetitve_boredom", "조언": "keep_refining", "가까운 결과": "master_work_peak" },
+  "Nine of Pentacles":  { past: "independent_work", present: "solo_success", future: "total_security", "현재 상황": "solo_success", "핵심 문제": "gilded_cage", "조언": "enjoy_independence", "가까운 결과": "total_security" },
+  "Ten of Pentacles":   { past: "family_foundation", present: "generational_wealth", future: "eternal_security", "현재 상황": "generational_wealth", "핵심 문제": "legacy_burden", "조언": "value_tradition", "가까운 결과": "eternal_security" }
 };
 
 export function analyzeTarotStructure(card: string, position: string, isReversed: boolean = false): string {
@@ -206,6 +247,167 @@ const NARRATIVE_PATTERNS: Record<string, NarrativeEntry> = {
   "King of Pentacles": {
     upright: "물질적 성공과 안정의 정점에 있는 에너지입니다. 축적한 것을 현명하게 관리하고 나누세요.",
     reversed: "탐욕이 판단을 흐리거나, 돈에 대한 집착이 관계를 파괴하고 있습니다."
+  },
+  // ─── Minor Number Cards (40장) ───
+  "Ace of Wands": {
+    upright: "불꽃 하나가 피어올랐습니다. 아직 형태는 없지만, 이 뜨거운 영감을 따라가면 놀라운 시작이 됩니다.",
+    reversed: "번뜻이는 아이디어가 많지만 어느 것도 불을 붙이지 못하고 있습니다. 한 가지에 집중하세요."
+  },
+  "Two of Wands": {
+    upright: "세상의 지도가 손 안에 있습니다. 안전한 성 안에 머물 것인가, 미지의 바다로 나갈 것인가 — 선택의 순간입니다.",
+    reversed: "계획은 거창하지만 첫발을 내딛지 못하고 있습니다. 완벽한 타이밍은 오지 않습니다."
+  },
+  "Three of Wands": {
+    upright: "씨앗이 싹을 틔웠고, 이제 수확선이 수평선에 보이기 시작합니다. 기다림이 결실로 바뀌는 시기입니다.",
+    reversed: "기대한 결과가 지연되고 있어 초조함이 밀려옵니다. 시야를 넓혀보면 다른 항로가 보입니다."
+  },
+  "Four of Wands": {
+    upright: "축하할 일이 있습니다. 노력이 결실을 맺고, 사랑하는 사람들과 기쁨을 나눌 수 있는 안정적인 순간입니다.",
+    reversed: "기쁜 일이 있어도 마음 한편이 불안합니다. 완벽한 행복에 대한 강박을 내려놓으세요."
+  },
+  "Five of Wands": {
+    upright: "의견 충돌과 경쟁이 치열합니다. 그러나 이 마찰은 더 강한 결과물을 만들기 위한 연마 과정입니다.",
+    reversed: "불필요한 다툼에 에너지를 소모하고 있습니다. 이길 수 없는 싸움은 피하는 것이 전략입니다."
+  },
+  "Six of Wands": {
+    upright: "승리의 행진입니다. 주변의 인정과 지지를 받으며 앞으로 나아가는 자신감의 절정기입니다.",
+    reversed: "겉으로는 성공했지만 내면의 공허함이 있거나, 인정받지 못한 것에 상처받고 있습니다."
+  },
+  "Seven of Wands": {
+    upright: "높은 곳에 올라온 만큼 도전자가 많습니다. 물러서지 않는 의지가 지금 당신의 가장 큰 무기입니다.",
+    reversed: "사방의 압박에 지쳐가고 있습니다. 모든 전선에서 싸울 필요는 없습니다. 핵심을 골라 지키세요."
+  },
+  "Eight of Wands": {
+    upright: "정체되었던 모든 것이 일시에 움직이기 시작합니다. 속도가 빨라지니 방향만 잘 잡으면 됩니다.",
+    reversed: "서두른 일이 오히려 꼬이고 있습니다. 급할수록 돌아가세요."
+  },
+  "Nine of Wands": {
+    upright: "지치고 상처투성이지만, 포기하기엔 너무 많이 왔습니다. 마지막 고비를 넘기면 끝이 보입니다.",
+    reversed: "버티는 것과 고집을 부리는 것은 다릅니다. 더 이상 의미 없는 전투라면 내려놓을 용기도 필요합니다."
+  },
+  "Ten of Wands": {
+    upright: "짊어진 짐이 너무 무겁습니다. 혼자 다 하려는 책임감이 오히려 발목을 잡고 있습니다.",
+    reversed: "드디어 짐을 내려놓기 시작했습니다. 또는 필요한 위임과 분배를 통해 길이 보이기 시작합니다."
+  },
+  "Ace of Cups": {
+    upright: "마음속에서 샘물이 솟아오릅니다. 새로운 감정, 새로운 사랑, 새로운 영감의 문이 열리고 있습니다.",
+    reversed: "감정의 통로가 막혀 있습니다. 주는 것도, 받는 것도 두려워하고 있지는 않은지 돌아보세요."
+  },
+  "Two of Cups": {
+    upright: "두 마음이 하나로 만나는 순간입니다. 진정한 파트너십과 상호 존중의 에너지가 흐르고 있습니다.",
+    reversed: "관계에 균열이 생기고 있습니다. 주고받는 것의 불균형이 원인일 수 있습니다."
+  },
+  "Three of Cups": {
+    upright: "함께할 때 더 빛나는 시기입니다. 우정, 축하, 연대의 기운이 삶에 활력을 불어넣고 있습니다.",
+    reversed: "겉으로는 즐거워 보이지만 관계 안에 시기나 소외감이 숨어 있을 수 있습니다."
+  },
+  "Four of Cups": {
+    upright: "눈앞에 새로운 기회가 놓여 있는데 보지 못하고 있습니다. 무기력과 권태 뒤에 가려진 선물을 찾으세요.",
+    reversed: "무기력에서 벗어나기 시작합니다. 새로운 자극에 마음을 열 준비가 된 시점입니다."
+  },
+  "Five of Cups": {
+    upright: "엎질러진 물에 시선이 고정되어 있습니다. 잃은 것은 슬프지만, 아직 남아 있는 것도 있습니다.",
+    reversed: "상실의 슬픔에서 서서히 고개를 들고 있습니다. 남은 것에서 다시 시작할 힘을 찾으세요."
+  },
+  "Six of Cups": {
+    upright: "과거의 따뜻한 기억이 현재를 치유합니다. 순수했던 시절의 마음으로 돌아가 보세요.",
+    reversed: "과거에 대한 향수가 현재의 발목을 잡고 있습니다. 추억은 간직하되 앞으로 나아가세요."
+  },
+  "Seven of Cups": {
+    upright: "눈앞에 수많은 선택지가 펼쳐져 있습니다. 그러나 환상과 현실을 구분해야 합니다. 모두 진짜는 아닙니다.",
+    reversed: "환상에서 깨어나 현실적인 선택을 할 준비가 되고 있습니다. 하나만 골라 집중하세요."
+  },
+  "Eight of Cups": {
+    upright: "더 이상 채워지지 않는 것을 알면서 떠나는 것은 포기가 아니라 성장입니다. 더 깊은 의미를 찾아 길을 나서세요.",
+    reversed: "떠나야 할 것을 알면서도 떠나지 못하고 있습니다. 익숙한 것이 옳은 것은 아닙니다."
+  },
+  "Nine of Cups": {
+    upright: "소원성취의 카드입니다. 바라던 것이 이루어지고 있으니, 이 만족을 온전히 누리세요.",
+    reversed: "겉으로는 다 가진 것 같지만 내면의 공허함이 있습니다. 진짜 원하는 것이 무엇인지 다시 물어보세요."
+  },
+  "Ten of Cups": {
+    upright: "감정적 풍요와 가정적 행복의 절정입니다. 사랑하는 사람들과 함께하는 것이 최고의 축복입니다.",
+    reversed: "이상적인 관계에 대한 기대가 현실과 맞지 않아 실망하고 있습니다. 완벽한 행복은 없지만, 좋은 행복은 가능합니다."
+  },
+  "Ace of Swords": {
+    upright: "안개를 가르는 한 줄기 빛처럼 명확한 진실이 드러나는 순간입니다. 지금의 통찰을 놓치지 마세요.",
+    reversed: "진실을 알면서도 외면하고 있거나, 혼란 속에서 잘못된 결론을 내릴 위험이 있습니다."
+  },
+  "Two of Swords": {
+    upright: "눈을 가리고 있지만 마음은 이미 답을 알고 있습니다. 결정을 미루는 것 자체가 하나의 선택입니다.",
+    reversed: "미뤄왔던 결정을 더 이상 피할 수 없습니다. 불완전하더라도 선택해야 나아갈 수 있습니다."
+  },
+  "Three of Swords": {
+    upright: "가슴을 관통하는 슬픔이지만, 이 아픔은 진실을 직면한 대가입니다. 고통을 통과해야 치유가 시작됩니다.",
+    reversed: "상처에서 회복되고 있지만 흉터가 남아 있습니다. 완전한 치유를 위해 감정을 억누르지 마세요."
+  },
+  "Four of Swords": {
+    upright: "전쟁터에서 잠시 물러나 쉬어야 합니다. 지금의 멈춤은 다음 전투를 위한 전략적 후퇴입니다.",
+    reversed: "충분히 쉬지 못한 채 다시 일어서고 있습니다. 회복이 완료되지 않은 출전은 위험합니다."
+  },
+  "Five of Swords": {
+    upright: "이겼지만 잃은 것이 더 많은 승리입니다. 이 싸움이 정말 그만한 가치가 있었는지 돌아보세요.",
+    reversed: "불필요한 자존심 싸움에서 물러나기 시작합니다. 때로는 양보가 진짜 승리입니다."
+  },
+  "Six of Swords": {
+    upright: "폭풍우 뒤의 잔잔한 물살을 따라 새로운 곳으로 향하고 있습니다. 과거를 뒤로 하고 전진하는 여정입니다.",
+    reversed: "떠나야 할 곳에서 발이 묶여 있습니다. 또는 도착지가 기대만큼 평화롭지 않을 수 있습니다."
+  },
+  "Seven of Swords": {
+    upright: "정면 돌파가 아닌 지혜로운 우회가 필요한 때입니다. 다만 전략과 기만의 경계를 넘지 않도록 주의하세요.",
+    reversed: "숨겨진 진실이 드러나고 있습니다. 비밀이 오래가지 않으니, 정직한 접근을 택하세요."
+  },
+  "Eight of Swords": {
+    upright: "묶여 있는 것은 실제 사슬이 아니라 자기 안의 두려움입니다. 눈가리개를 벗으면 길이 보입니다.",
+    reversed: "스스로 만든 감옥에서 벗어나기 시작합니다. 시야가 넓어지면서 탈출구가 보이기 시작합니다."
+  },
+  "Nine of Swords": {
+    upright: "한밤의 불안이 현실보다 더 크게 느껴지는 시기입니다. 두려움의 대부분은 상상이 만든 그림자입니다.",
+    reversed: "최악의 밤이 지나가고 있습니다. 마음의 짐을 나눌 사람을 찾으면 회복이 빨라집니다."
+  },
+  "Ten of Swords": {
+    upright: "가장 바닥입니다. 하지만 바닥을 찍었다는 것은 이제 올라갈 일만 남았다는 뜻이기도 합니다.",
+    reversed: "최악의 상황에서 서서히 일어나고 있습니다. 완전한 끝이 완전한 시작을 가능하게 합니다."
+  },
+  "Ace of Pentacles": {
+    upright: "단단한 현실적 기회가 손에 들어오고 있습니다. 이 씨앗을 잘 심으면 큰 수확으로 돌아올 것입니다.",
+    reversed: "기회가 왔지만 준비가 되지 않았거나, 눈앞의 이익에 급급해 본질을 놓치고 있습니다."
+  },
+  "Two of Pentacles": {
+    upright: "두 가지 이상의 일을 동시에 저글링하고 있습니다. 유연하게 균형을 잡되, 우선순위를 정하세요.",
+    reversed: "너무 많은 것을 감당하려다 모든 공을 떨어뜨릴 위험이 있습니다. 무언가를 내려놓아야 합니다."
+  },
+  "Three of Pentacles": {
+    upright: "혼자서는 완성할 수 없는 일입니다. 전문성과 협업이 만날 때 최고의 결과가 나옵니다.",
+    reversed: "팀워크에 문제가 있거나, 역할 분담이 불명확합니다. 소통 부재가 결과물의 질을 떨어뜨립니다."
+  },
+  "Four of Pentacles": {
+    upright: "가진 것을 단단히 지키는 것도 중요하지만, 너무 꽉 쥐면 새로운 것이 들어올 공간이 없습니다.",
+    reversed: "집착을 놓기 시작합니다. 또는 갑작스러운 지출로 안정감이 흔들리고 있습니다."
+  },
+  "Five of Pentacles": {
+    upright: "경제적·정서적으로 추위에 떨고 있는 시기입니다. 하지만 문 하나를 열면 도움이 있다는 사실을 잊지 마세요.",
+    reversed: "고난의 터널 끝에 빛이 보이기 시작합니다. 자존심을 내려놓고 도움을 받아들이세요."
+  },
+  "Six of Pentacles": {
+    upright: "주는 기쁨과 받는 감사가 순환하는 시기입니다. 균형 잡힌 나눔이 더 큰 풍요를 부릅니다.",
+    reversed: "주고받음의 균형이 무너져 있습니다. 일방적인 희생이나 의존적 관계를 점검하세요."
+  },
+  "Seven of Pentacles": {
+    upright: "지금까지의 노력을 되돌아보는 중간 점검의 시기입니다. 성급한 수확보다 인내가 더 큰 열매를 맺습니다.",
+    reversed: "투자한 시간 대비 성과가 보이지 않아 초조합니다. 방향을 재점검할 필요가 있습니다."
+  },
+  "Eight of Pentacles": {
+    upright: "묵묵히 한 땀 한 땀 실력을 갈고닦는 시기입니다. 화려하지 않지만, 이 성실함이 결국 대가를 만듭니다.",
+    reversed: "반복되는 작업에 질려 의미를 잃어가고 있습니다. 또는 완벽주의가 진전을 막고 있습니다."
+  },
+  "Nine of Pentacles": {
+    upright: "오랜 노력 끝에 찾아온 풍요와 독립의 시기입니다. 스스로 일군 안정감을 자부심으로 여기세요.",
+    reversed: "물질적으로는 풍족하지만 외로움이 있거나, 자립을 위해 너무 많은 것을 포기한 것은 아닌지 돌아보세요."
+  },
+  "Ten of Pentacles": {
+    upright: "세대를 관통하는 안정과 유산의 에너지입니다. 가정의 평화와 장기적인 재정적 안정이 보장되는 시기입니다.",
+    reversed: "가족 내 갈등이나 재정 문제가 안정을 위협하고 있습니다. 유산보다 관계가 먼저입니다."
   }
 };
 
