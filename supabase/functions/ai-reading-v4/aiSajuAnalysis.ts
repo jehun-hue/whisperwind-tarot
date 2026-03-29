@@ -1249,6 +1249,38 @@ export async function analyzeSajuStructure(
     console.error("[fortuneEngine] error:", e);
   }
 
+  // ── fortune → sewoon/wolwoon 파생 (단일 출처 보장) ──
+  let derivedSewoon = daewoon?.current_seun || (sajuRaw as any).seun || null;
+  let derivedWolwoon = current_wolwoon;
+
+  if (fortuneResult) {
+    derivedSewoon = {
+      score: fortuneResult.seun.score,
+      rating: fortuneResult.seun.rating,
+      stem: fortuneResult.seun.stem,
+      branch: fortuneResult.seun.branch,
+      summary: fortuneResult.seun.summary || fortuneResult.yearOverview || "",
+      is_good: fortuneResult.seun.score >= 15,
+      is_clash: fortuneResult.seun.score <= -15,
+      _source: "fortuneEngine",
+    };
+
+    derivedWolwoon = fortuneResult.monthly.map((mf: any, idx: number) => ({
+      month: idx + 1,
+      score: mf.score,
+      rating: mf.rating,
+      stem: mf.stem,
+      branch: mf.branch,
+      summary: mf.summary || "",
+      is_good: mf.score >= 15,
+      is_clash: mf.score <= -15,
+      _source: "fortuneEngine",
+    }));
+
+    console.log(`[aiSajuAnalysis] fortune 파생 완료: 세운=${derivedSewoon.rating}(${derivedSewoon.score}), 월운 ${derivedWolwoon.length}개월`);
+  }
+
+  // fortune이 성공한 경우, sewoon/wolwoon을 fortune에서 파생 (단일 출처 보장)
   return {
     _analysis_ver: "v4.1.2",
     dayMaster: dm,
@@ -1270,8 +1302,8 @@ export async function analyzeSajuStructure(
     yongShinMethod,
     heeShin: heeShin,
     daewoon,
-    sewoon: daewoon?.current_seun || (sajuRaw as any).seun || null,
-    wolwoon: current_wolwoon,
+    sewoon: derivedSewoon,
+    wolwoon: derivedWolwoon,
     interactions,
     shinsal,
     health_risk_tags,

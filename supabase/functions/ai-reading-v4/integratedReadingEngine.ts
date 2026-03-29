@@ -1247,7 +1247,8 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     { 
       daewoon: sajuAnalysis?.daewoon || [], 
       sewoon: sajuAnalysis?.sewoon || [], 
-      wolwoon: sajuAnalysis?.wolwoon || [] 
+      wolwoon: sajuAnalysis?.wolwoon || [], fortune: sajuAnalysis?.fortune || null,
+      fortune: sajuAnalysis?.fortune || null
     },
     { 
       transits: astrologyAnalysis?.transits || [] || [], 
