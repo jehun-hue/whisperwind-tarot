@@ -3,7 +3,7 @@ import { type ZiweiResult, STAR_PALACE_MEANINGS } from "./ziweiEngine.ts";
 /**
  * 자미두수 분석 결과를 AI 프롬프트용 구조화 텍스트로 변환
  */
-export function buildZiWeiPromptSection(ziwei: ZiweiResult): string {
+export function buildZiWeiPromptSection(ziwei: ZiweiResult, questionType?: string): string {
   const lines: string[] = [];
 
   // ── 기본 정보 ──
@@ -102,38 +102,61 @@ export function buildZiWeiPromptSection(ziwei: ZiweiResult): string {
 
   // ── 12궁 요약 (명궁, 재백궁, 관록궁, 부처궁, 질액궁만 핵심) ──
   lines.push("");
-  lines.push("[핵심 궁위 분석]");
-  const keyPalaces = ["명궁", "재백궁", "관록궁", "부처궁", "질액궁", "복덕궁"];
-  for (const palace of ziwei.palaces || []) {
-    if (keyPalaces.includes(palace.name)) {
-      const majorStars = (palace.stars || [])
-        .filter(s => ["자미","천기","태양","무곡","천동","염정","천부","태음","탐랑","거문","천상","천량","칠살","파군"].includes(s.star))
-        .map(s => `${s.star}(${s.brightness})`)
-        .join(", ");
-      const auxStars = (palace.stars || [])
-        .filter(s => !["자미","천기","태양","무곡","천동","염정","천부","태음","탐랑","거문","천상","천량","칠살","파군"].includes(s.star))
-        .map(s => s.star)
-        .join(", ");
-      const shenSha = ((palace as any).shenSha || []).slice(0, 4).join(", ");
-      const trans = (palace.transformations || []).map(t => t.type).join(",");
+  // ── P1-3: 질문 유형별 핵심 궁 우선순위 ──
+  const ZIWEI_PRIORITY_MAP: Record<string, string[]> = {
+    relationship:    ["부처궁", "복덕궁", "천이궁", "명궁", "재백궁", "관록궁"],
+    career:          ["관록궁", "천이궁", "재백궁", "명궁", "복덕궁", "부처궁"],
+    health:          ["질액궁", "복덕궁", "명궁", "부모궁", "재백궁", "관록궁"],
+    finance:         ["재백궁", "전택궁", "관록궁", "명궁", "복덕궁", "부처궁"],
+    life_change:     ["천이궁", "명궁", "관록궁", "복덕궁", "재백궁", "부처궁"],
+    family:          ["부모궁", "자녀궁", "형제궁", "부처궁", "명궁", "복덕궁"],
+    compatibility:   ["부처궁", "복덕궁", "명궁", "천이궁", "재백궁", "관록궁"],
+    general_future:  ["명궁", "관록궁", "재백궁", "부처궁", "질액궁", "복덕궁"],
+  };
+  const keyPalaces = ZIWEI_PRIORITY_MAP[questionType || ""] || ZIWEI_PRIORITY_MAP.general_future;
+  const primaryPalaces = keyPalaces.slice(0, 3); // 상위 3궁은 상세 분석
 
-      lines.push(`  ${palace.name}(${palace.branch}):`);
-      if (majorStars) lines.push(`    주성: ${majorStars}`);
-      
-      // 주성 궁별 해석 추가 (Tier 2-2)
-      const firstMajorStar = (palace.stars || []).find(s => STAR_PALACE_MEANINGS[s.star])?.star;
-      if (firstMajorStar && STAR_PALACE_MEANINGS[firstMajorStar]?.[palace.name]) {
-        lines.push(`    핵심의미: ${STAR_PALACE_MEANINGS[firstMajorStar][palace.name]}`);
-      }
+  lines.push(`[핵심 궁위 분석] (질문 유형: ${questionType || "종합"}, 우선궁: ${primaryPalaces.join("→")})`);
 
-      if (auxStars) lines.push(`    보조성: ${auxStars}`);
-      if (trans) lines.push(`    사화: ${trans}`);
-      if (shenSha) lines.push(`    신살: ${shenSha}`);
+  // P1-3: keyPalaces 순서대로 출력
+  for (const palaceName of keyPalaces) {
+    const palace = (ziwei.palaces || []).find(p => p.name === palaceName);
+    if (!palace) continue;
 
-      // 삼방사정 분석 추가 (Tier 2-3)
-      const BRANCHES_LIST = ["자", "축", "인", "묘", "진", "사", "오", "미", "신", "유", "술", "해"];
-      const palaceBranchIdx = BRANCHES_LIST.indexOf(palace.branch);
-      if (palaceBranchIdx >= 0) {
+    const majorStars = (palace.stars || [])
+      .filter(s => ["자미","천기","태양","무곡","천동","염정","천부","태음","탐랑","거문","천상","천량","칠살","파군"].includes(s.star))
+      .map(s => `${s.star}(${s.brightness})`)
+      .join(", ");
+    const auxStars = (palace.stars || [])
+      .filter(s => !["자미","천기","태양","무곡","천동","염정","천부","태음","탐랑","거문","천상","천량","칠살","파군"].includes(s.star))
+      .map(s => s.star)
+      .join(", ");
+    const shenSha = ((palace as any).shenSha || []).slice(0, 4).join(", ");
+    const trans = (palace.transformations || []).map(t => t.type).join(",");
+
+    lines.push(`  ${palace.name}(${palace.branch}):`);
+
+    // ── P1-3: 상위 3궁 표시 ──
+    if (primaryPalaces.includes(palace.name)) {
+      lines.push(`    ◆ 이 궁은 질문의 핵심 궁입니다. 상세하게 해석하세요.`);
+    }
+
+    if (majorStars) lines.push(`    주성: ${majorStars}`);
+    
+    // 주성 궁별 해석 추가 (Tier 2-2)
+    const firstMajorStar = (palace.stars || []).find(s => STAR_PALACE_MEANINGS[s.star])?.star;
+    if (firstMajorStar && STAR_PALACE_MEANINGS[firstMajorStar]?.[palace.name]) {
+      lines.push(`    핵심의미: ${STAR_PALACE_MEANINGS[firstMajorStar][palace.name]}`);
+    }
+
+    if (auxStars) lines.push(`    보조성: ${auxStars}`);
+    if (trans) lines.push(`    사화: ${trans}`);
+    if (shenSha) lines.push(`    신살: ${shenSha}`);
+
+    // 삼방사정 분석 추가 (Tier 2-3)
+    const BRANCHES_LIST = ["자", "축", "인", "묘", "진", "사", "오", "미", "신", "유", "술", "해"];
+    const palaceBranchIdx = BRANCHES_LIST.indexOf(palace.branch);
+    if (palaceBranchIdx >= 0) {
       // ── P1-1: 공궁 차성(借星) 처리 ──
       const isMajorEmpty = !majorStars;
       if (isMajorEmpty) {
@@ -155,28 +178,27 @@ export function buildZiWeiPromptSection(ziwei: ZiweiResult): string {
         }
       }
 
-        const oppositeIdx = (palaceBranchIdx + 6) % 12;
-        const trine1Idx = (palaceBranchIdx + 4) % 12;
-        const trine2Idx = (palaceBranchIdx + 8) % 12;
+      const oppositeIdx = (palaceBranchIdx + 6) % 12;
+      const trine1Idx = (palaceBranchIdx + 4) % 12;
+      const trine2Idx = (palaceBranchIdx + 8) % 12;
 
-        const getStarsAtBranch = (branchIdx: number) => {
-          const p = (ziwei.palaces || []).find(pp => pp.branch === BRANCHES_LIST[branchIdx]);
-          if (!p) return "";
-          return (p.stars || [])
-            .filter(s => ["자미", "천기", "태양", "무곡", "천동", "염정", "천부", "태음", "탐랑", "거문", "천상", "천량", "칠살", "파군"].includes(s.star))
-            .map(s => s.star)
-            .join(",");
-        };
+      const getStarsAtBranch = (branchIdx: number) => {
+        const p = (ziwei.palaces || []).find(pp => pp.branch === BRANCHES_LIST[branchIdx]);
+        if (!p) return "";
+        return (p.stars || [])
+          .filter(s => ["자미", "천기", "태양", "무곡", "천동", "염정", "천부", "태음", "탐랑", "거문", "천상", "천량", "칠살", "파군"].includes(s.star))
+          .map(s => s.star)
+          .join(",");
+      };
 
-        const oppStars = getStarsAtBranch(oppositeIdx);
-        const tri1Stars = getStarsAtBranch(trine1Idx);
-        const tri2Stars = getStarsAtBranch(trine2Idx);
+      const oppStars = getStarsAtBranch(oppositeIdx);
+      const tri1Stars = getStarsAtBranch(trine1Idx);
+      const tri2Stars = getStarsAtBranch(trine2Idx);
 
-        if (oppStars || tri1Stars || tri2Stars) {
-          lines.push(`    삼방사정: 대궁[${oppStars || "빈"}] 삼합[${tri1Stars || "빈"}, ${tri2Stars || "빈"}]`);
-          // ── P1-1: 삼방사정 해석 지침 ──
-          lines.push(`    ★ 삼방사정 해석: 본궁의 주성이 약하거나 빈궁이더라도, 삼방사정의 길성(좌보/우필/문창/문곡/록존/천괴/천월)이 많으면 외부 도움과 기회가 풍부합니다. 흉성(경양/타라/화성/영성/지공/지겁)이 집중되면 장애와 변동이 큽니다.`);
-        }
+      if (oppStars || tri1Stars || tri2Stars) {
+        lines.push(`    삼방사정: 대궁[${oppStars || "빈"}] 삼합[${tri1Stars || "빈"}, ${tri2Stars || "빈"}]`);
+        // ── P1-1: 삼방사정 해석 지침 ──
+        lines.push(`    ★ 삼방사정 해석: 본궁의 주성이 약하거나 빈궁이더라도, 삼방사정의 길성(좌보/우필/문창/문곡/록존/천괴/천월)이 많으면 외부 도움과 기회가 풍부합니다. 흉성(경양/타라/화성/영성/지공/지겁)이 집중되면 장애와 변동이 큽니다.`);
       }
     }
   }

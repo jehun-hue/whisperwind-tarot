@@ -411,7 +411,7 @@ ${crossSignalText ? `[강력한 교차 합의 신호]\n${crossSignalText}\n` : '
 ${signalText ? `[시스템별 개별 신호 근거]\n${signalText}\n` : ''}` : '';
 
   // 자미두수 구조화 데이터 주입
-  const ziweiSection = ziwei ? buildZiWeiPromptSection(ziwei as any) : "";
+  const ziweiSection = ziwei ? buildZiWeiPromptSection(ziwei as any, qType) : "";
 
   // ========================
 
