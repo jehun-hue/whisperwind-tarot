@@ -162,13 +162,13 @@ serve(async (req: Request) => {
     const birthKey = payload.birthInfo
       ? `${payload.birthInfo.year || ""}-${payload.birthInfo.month || ""}-${payload.birthInfo.day || ""}-${payload.birthInfo.hour || ""}-${payload.birthInfo.gender || ""}`
       : "noBirth";
-    const questionCategory = payload.questionCategory || payload.category || "general";
+    const clientCategoryHint = payload.questionCategory || payload.category || "general";
     const spreadHash = [
       (payload.cards || []).map((c: any) => c.name || "card").join("-"),
       style,
       locale,
       birthKey,
-      questionCategory,
+      clientCategoryHint,
       (question || "").slice(0, 50),
     ].join("_");
     const { data: cached } = await supabase

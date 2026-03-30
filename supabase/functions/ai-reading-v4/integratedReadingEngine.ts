@@ -678,9 +678,15 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
       }
     }
 
-    const finalTopic = topicResult?.primary_topic || input.questionType || "general_future";
+    // P1-3: 서버 분류 결과(topicResult)를 엔진 분석의 유일한 기준으로 확정
+    // 클라이언트 분류는 UI 표시용 힌트로만 간주하며 엔진 로직에서 배제합니다.
+    const finalTopic = topicResult?.primary_topic || "general_future";
     const secondaryTopic = topicResult?.secondary_topic || null;
     const detectedSubtopic = topicResult?.subtopic || null;
+    
+    if (input.questionType && input.questionType !== finalTopic) {
+      console.log(`[INFO][P1-3] Client Category Hint (${input.questionType}) differs from Server Canonical (${finalTopic}). Using Server Result.`);
+    }
     const isDualTopic = secondaryTopic !== null && secondaryTopic !== finalTopic;
 
     // B-171: TCVE™ Lite 교차검증 실행
