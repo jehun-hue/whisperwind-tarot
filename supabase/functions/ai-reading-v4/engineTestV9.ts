@@ -17,6 +17,10 @@ import { classifyQuestion } from "./questionClassifier.ts";
 import { getStyleForTopic, STYLE_PRESETS } from "./lib/geminiClient.ts";
 import { buildReadingPrompt } from "./lib/promptBuilder.ts";
 import { INTERACTION_DEEP } from "./lib/interpretations/index.ts";
+import { calculateZiWei } from "./lib/ziweiEngine.ts";
+import { buildZiWeiPromptSection } from "./lib/ziweiPromptBuilder.ts";
+import { calculateServerAstrology } from "./lib/astrologyEngine.ts";
+
 
 
 // ═══════════════════════════════════════
@@ -86,7 +90,7 @@ async function runAllTests() {
   console.log("══════════════════════════════════════\n");
 
   // ── TEST 1: 사주 계산 ──
-  console.log("[1/21] 사주 계산 정확도...");
+  console.log("[1/24] 사주 계산 정확도...");
   for (const tc of TEST_CASES) {
     const saju = calculateSaju(tc.year, tc.month, tc.day, tc.hour, tc.minute, tc.gender);
     assert(`${tc.id} 사주 4주 생성`, !!(saju.year && saju.month && saju.day && saju.hour), `pillars missing for ${tc.id}`);
@@ -95,7 +99,7 @@ async function runAllTests() {
   }
 
   // ── TEST 2: 사주 분석 ──
-  console.log("[2/21] 사주 분석 (십성/신강신약/충합형)...");
+  console.log("[2/24] 사주 분석 (십성/신강신약/충합형)...");
   for (const tc of TEST_CASES) {
     const saju = calculateSaju(tc.year, tc.month, tc.day, tc.hour, tc.minute, tc.gender);
     const analysis = await analyzeSajuStructure(saju);
@@ -106,7 +110,7 @@ async function runAllTests() {
   }
 
   // ── TEST 3: 타로 심볼릭 엔진 ──
-  console.log("[3/21] 타로 심볼릭 엔진 (78장 벡터)...");
+  console.log("[3/24] 타로 심볼릭 엔진 (78장 벡터)...");
   const totalCards = Object.keys(TAROT_PATTERN_DATASET).length;
   assert("78장 벡터 등록 수", totalCards >= 78, `only ${totalCards} cards registered`);
   
@@ -123,7 +127,7 @@ async function runAllTests() {
   assert("역방향 보정 작동", (uprightResult.dominant_patterns.fulfillment || 0) > (reversedResult.dominant_patterns.fulfillment || 0), "reversed should reduce positive dimensions");
 
   // ── TEST 4: 심볼 매핑 엔진 ──
-  console.log("[4/21] 심볼 매핑 엔진 (한국어 매칭)...");
+  console.log("[4/24] 심볼 매핑 엔진 (한국어 매칭)...");
   for (const tc of TEST_CASES) {
     const saju = calculateSaju(tc.year, tc.month, tc.day, tc.hour, tc.minute, tc.gender);
     const analysis = await analyzeSajuStructure(saju);
@@ -145,7 +149,7 @@ async function runAllTests() {
   }
 
   // ── TEST 5: Consensus 엔진 ──
-  console.log("[5/21] Consensus 엔진...");
+  console.log("[5/24] Consensus 엔진...");
   for (const tc of TEST_CASES) {
     const saju = calculateSaju(tc.year, tc.month, tc.day, tc.hour, tc.minute, tc.gender);
     const analysis = await analyzeSajuStructure(saju);
@@ -167,7 +171,7 @@ async function runAllTests() {
   }
 
   // ── TEST 6: Temporal Prediction ──
-  console.log("[6/21] Temporal Prediction (하드코딩 제거 확인)...");
+  console.log("[6/24] Temporal Prediction (하드코딩 제거 확인)...");
   // 서로 다른 사주(충 있는 사람 vs 합 있는 사람)가 다른 확률을 내는지
   const saju1 = calculateSaju(1990, 3, 15, 14, 30, "M");
   const analysis1 = await analyzeSajuStructure(saju1);
@@ -193,7 +197,7 @@ async function runAllTests() {
   assert("contributing_factors 존재", timeline1[0].contributing_factors !== undefined, "missing factors field");
 
   // ── TEST 7: Validation Layer ──
-  console.log("[7/21] Validation Layer...");
+  console.log("[7/24] Validation Layer...");
   const sysV = [
     { system: "saju", elements: { "목": 3, "화": 2, "토": 1, "금": 0, "수": 2 } },
     { system: "tarot", characteristics: ["Sun", "World", "Star"], cards: [1, 2, 3, 4, 5] },
@@ -211,7 +215,7 @@ async function runAllTests() {
   assert("낮은 confidence → validation fail", !lowConfResult.isValid, "should fail with low confidence");
 
   // ── TEST 8: 하이브리드 타로 ──
-  console.log("[8/21] 하이브리드 타로 해석...");
+  console.log("[8/24] 하이브리드 타로 해석...");
   const majorCards = ["The Fool","The Magician","The High Priestess","The Empress","The Emperor",
     "The Hierophant","The Lovers","The Chariot","Strength","The Hermit","Wheel of Fortune",
     "Justice","The Hanged Man","Death","Temperance","The Devil","The Tower","The Star",
@@ -233,14 +237,14 @@ async function runAllTests() {
   assert("역방향 구조 태그", reversedReading[0].structure.startsWith("reversed_"), `got: ${reversedReading[0].structure}`);
 
   // ── TEST 9: 수비학 엔진 ──
-  console.log("[9/21] 수비학 엔진...");
+  console.log("[9/24] 수비학 엔진...");
   const num = calculateNumerology("1990-03-15");
   assert("Life Path 유효", num.life_path_number >= 1 && num.life_path_number <= 33, `invalid: ${num.life_path_number}`);
   assert("Personal Year 유효", num.personal_year >= 1 && num.personal_year <= 33, `invalid: ${num.personal_year}`);
   assert("vibrations 존재", num.vibrations.length > 0, "empty vibrations");
 
   // ── TEST 10: 전체 파이프라인 통합 ──
-  console.log("[10/21] 전체 파이프라인 통합...");
+  console.log("[10/24] 전체 파이프라인 통합...");
   let pipelinePass = 0;
   for (const tc of TEST_CASES) {
     try {
@@ -270,7 +274,7 @@ async function runAllTests() {
   assert(`전체 파이프라인 성공률`, pipelinePass === TEST_CASES.length, `${pipelinePass}/${TEST_CASES.length} passed`);
 
   // ── TEST 11: questionClassifier 분류 정확도 (Phase 2) ──
-  console.log("[11/21] questionClassifier 분류 정확도...");
+  console.log("[11/24] questionClassifier 분류 정확도...");
   const CLASSIFY_CASES: { q: string; expected: string; subtopic?: string }[] = [
     { q: "이직하는 게 좋을까요?", expected: "career", subtopic: "job_change" },
     { q: "좋아하는 사람과 사귈 수 있을까요?", expected: "relationship" },
@@ -292,7 +296,7 @@ async function runAllTests() {
   }
 
   // ── TEST 12: getStyleForTopic 매핑 (Phase 2) ──
-  console.log("[12/21] getStyleForTopic 매핑...");
+  console.log("[12/24] getStyleForTopic 매핑...");
   const STYLE_CASES: { topic: string; expected: string }[] = [
     { topic: "career", expected: "choihanna" },
     { topic: "finance", expected: "monad" },
@@ -310,7 +314,7 @@ async function runAllTests() {
   assert("STYLE_PRESETS 5종 존재", Object.keys(STYLE_PRESETS).length === 5, `got ${Object.keys(STYLE_PRESETS).length}`);
 
   // ── TEST 13: TOPIC_SECTION_BUDGET 커버리지 (Phase 2) ──
-  console.log("[13/21] TOPIC_SECTION_BUDGET 커버리지...");
+  console.log("[13/24] TOPIC_SECTION_BUDGET 커버리지...");
   const BUDGET_TOPICS = ["career", "relationship", "finance", "health", "general_future", "life_change", "migration", "compatibility", "family"];
   // buildReadingPrompt를 직접 호출하지 않고, questionClassifier 결과가 budget에 매핑 가능한지 확인
   for (const topic of BUDGET_TOPICS) {
@@ -319,7 +323,7 @@ async function runAllTests() {
   }
 
   // ── TEST 14: 궁합 엔진 구조 검증 (Phase 2) ──
-  console.log("[14/21] 궁합 엔진 구조 검증...");
+  console.log("[14/24] 궁합 엔진 구조 검증...");
   // PersonSaju 구조 + analyzeCompatibility가 정상 결과를 내는지
   const { analyzeCompatibility } = await import("./lib/compatibilitySajuEngine.ts");
   const personA = {
@@ -341,7 +345,7 @@ async function runAllTests() {
   assert("궁합 summary 존재", compatResult.summary.length > 10, "summary too short");
 
   // ── TEST 15: buildReadingPrompt 출력 구조 (Phase 2) ──
-  console.log("[15/21] buildReadingPrompt 출력 구조...");
+  console.log("[15/24] buildReadingPrompt 출력 구조...");
   const tc15 = TEST_CASES[0];
   const sajuRaw15 = calculateSaju(tc15.year, tc15.month, tc15.day, tc15.hour, tc15.minute, tc15.gender);
   const sajuAnalysis15 = await analyzeSajuStructure(sajuRaw15);
@@ -357,7 +361,7 @@ async function runAllTests() {
   assert("프롬프트 3000자 이상", prompt15.length >= 3000, `only ${prompt15.length} chars`);
 
   // ── TEST 16: 마이너 넘버 카드(40장) 서사 및 구조 검증 (Phase 3) ──
-  console.log("[16/21] 마이너 넘버 카드 서사 및 구조 검증...");
+  console.log("[16/24] 마이너 넘버 카드 서사 및 구조 검증...");
   const minorSample = [
     "Ace of Wands", "Five of Wands", "Ten of Wands",
     "Ace of Cups", "Five of Cups", "Ten of Cups",
@@ -376,7 +380,7 @@ async function runAllTests() {
   }
 
   // ── TEST 17: cardContextMatrix 토픽 커버리지 검증 ──
-  console.log("[17/21] cardContextMatrix 토픽 커버리지 및 패턴 검증...");
+  console.log("[17/24] cardContextMatrix 토픽 커버리지 및 패턴 검증...");
   const { lookupCCM, PATTERN_DB } = await import("./cardContextMatrix.ts");
   const NEW_TOPICS = ["reconciliation", "dating", "marriage", "business", "life_direction", "self_growth", "general_future"];
   for (const topic of NEW_TOPICS) {
@@ -388,7 +392,7 @@ async function runAllTests() {
   // ═══════════════════════════════════════════════════════
   // TEST 19: calculateSaju 리턴 필드 검증 (interactions, gongmang, shinsalGrouped)
   // ═══════════════════════════════════════════════════════
-  console.log("[19/21] calculateSaju 리턴 필드 (interactions/gongmang/shinsalGrouped)...");
+  console.log("[19/24] calculateSaju 리턴 필드 (interactions/gongmang/shinsalGrouped)...");
   for (const tc of TEST_CASES) {
     const saju = calculateSaju(tc.year, tc.month, tc.day, tc.hour, tc.minute, tc.gender);
     
@@ -436,7 +440,7 @@ async function runAllTests() {
   // ═══════════════════════════════════════════════════════
   // TEST 20: promptBuilder 천간/지지 상호작용 섹션 검증
   // ═══════════════════════════════════════════════════════
-  console.log("[20/21] promptBuilder interactions/gongmang/shinsal 프롬프트 포함 확인...");
+  console.log("[20/24] promptBuilder interactions/gongmang/shinsal 프롬프트 포함 확인...");
   
   // 상호작용이 있는 사람의 프롬프트 생성 (T01: 1990-03-15 14:30 M)
   const tc20 = TEST_CASES[0];
@@ -485,7 +489,7 @@ async function runAllTests() {
   // ═══════════════════════════════════════════════════════
   // TEST 21: INTERACTION_DEEP 키 매칭률 검증
   // ═══════════════════════════════════════════════════════
-  console.log("[21/21] INTERACTION_DEEP 키 매칭률...");
+  console.log("[21/24] INTERACTION_DEEP 키 매칭률...");
   let totalInteractions = 0;
   let matchedInteractions = 0;
   
@@ -525,7 +529,7 @@ async function runAllTests() {
   // ═══════════════════════════════════════════════
   {
     const group = "TEST 18: Utility Functions";
-    console.log(`\n[18/21] ${group}...`);
+    console.log(`\n[18/24] ${group}...`);
 
     function addResult(grp: string, name: string, condition: boolean) {
       assert(`${grp}: ${name}`, condition);
@@ -617,6 +621,46 @@ async function runAllTests() {
   }
 
   // ═══════════════════════════════════════
+  // ═══════════════════════════════════════════════════════
+  // TEST 22: calculateZiWei 반환 구조 검증
+  // ═══════════════════════════════════════════════════════
+  console.log("[22/24] calculateZiWei 반환 구조 (음력 기준)...");
+  // 1990-03-15 14:30 (양력) -> 1990-02-19 14:30 (음력)
+  // calculateZiWei 인자: year, month, day, hour, minute, gender
+  const ziwei = calculateZiWei(1990, 2, 19, 14, 30, "male");
+  assert("ziwei.palaces 12개 존재", Array.isArray(ziwei.palaces) && ziwei.palaces.length === 12, `got ${ziwei.palaces?.length}`);
+  assert("ziwei.palaces 구조 유효", ziwei.palaces.every((p: any) => p.name && Array.isArray(p.stars)), "palace name or stars missing");
+  assert("명궁(mingGong) 존재", !!ziwei.mingGong, "mingGong missing");
+  assert("신궁(shenGong) 존재", !!ziwei.shenGong, "shenGong missing");
+  assert("오행국(bureau) 존재", !!ziwei.bureau, "bureau missing");
+  assert("본명 사화(natalTransformations) 존재", Array.isArray(ziwei.natalTransformations), "natalTransformations missing");
+  assert("대한(majorPeriods) 존재", Array.isArray(ziwei.majorPeriods), "majorPeriods missing");
+
+  // ═══════════════════════════════════════════════════════
+  // TEST 23: buildZiWeiPromptSection 출력 검증
+  // ═══════════════════════════════════════════════════════
+  console.log("[23/24] buildZiWeiPromptSection 출력 검증...");
+  const ziweiPrompt = buildZiWeiPromptSection(ziwei as any, "career");
+  assert("프롬프트에 '명궁' 포함", ziweiPrompt.includes("명궁"), "missing '명궁'");
+  assert("프롬프트에 '사화/화록/화권' 중 하나 포함", ziweiPrompt.includes("사화") || ziweiPrompt.includes("화록") || ziweiPrompt.includes("화권"), "missing transformation keywords");
+  assert("프롬프트에 '핵심 궁위' 포함", ziweiPrompt.includes("핵심 궁위"), "missing '핵심 궁위'");
+  assert("프롬프트 길이 500자 이상", ziweiPrompt.length > 500, `too short: ${ziweiPrompt.length}`);
+
+  // ═══════════════════════════════════════════════════════
+  // TEST 24: calculateServerAstrology 반환 구조 검증
+  // ═══════════════════════════════════════════════════════
+  console.log("[24/24] calculateServerAstrology 반환 구조...");
+  // astrologyEngine은 양력 기준
+  const astro = calculateServerAstrology(1990, 3, 15, 14, 30);
+  assert("astro.planets 10개 이상", Array.isArray(astro.planets) && astro.planets.length >= 10, `got ${astro.planets?.length}`);
+  assert("태양(Sun) 존재", !!astro.planets.find((p: any) => p.planet === "태양"), "Sun missing");
+  assert("달(Moon) 존재", !!astro.planets.find((p: any) => p.planet === "달"), "Moon missing");
+  assert("astro.aspects 존재", Array.isArray(astro.aspects), "aspects missing");
+  assert("sunSign 존재", !!astro.sunSign, "sunSign missing");
+  assert("moonSign 존재", !!astro.moonSign, "moonSign missing");
+  assert("astro.transits(운세) 존재", Array.isArray(astro.transits), "transits missing");
+  assert("astro.houses(12궁) 유효", astro.houses === null || (astro.houses?.cusps?.length === 12), "invalid houses structure");
+
   // 결과 출력
   // ═══════════════════════════════════════
   console.log("\n══════════════════════════════════════");
