@@ -4,6 +4,10 @@ import { buildZiWeiPromptSection } from "./ziweiPromptBuilder.ts";
 import { runCrossValidation } from "./crossValidationEngine.ts";
 import { CrossValidationResult } from "./inferenceLayer.ts";
 import { UnifiedTimeline } from "./timelineEngine.ts";
+import { SajuAnalysisResult } from "../aiSajuAnalysis.ts";
+import { ServerZiWeiResult } from "../ziweiEngine.ts";
+import { NumerologyResult } from "../numerologyEngine.ts";
+import { TarotResult } from "../hybridTarotEngine.ts";
 
 function line(label: string, value: any): string {
   if (!value || value === '?' || value === '없음' || value === '') return '';
@@ -20,11 +24,11 @@ export interface UserInfo {
   language?: string;
 }
 
-interface SajuAnalysisResult { [key: string]: any; }
+// interface SajuAnalysisResult { [key: string]: any; }
 interface AstrologyResult { [key: string]: any; }
-interface ServerZiWeiResult { [key: string]: any; }
-interface NumerologyResult { [key: string]: any; }
-interface TarotResult { [key: string]: any; }
+// interface ServerZiWeiResult { [key: string]: any; }
+// interface NumerologyResult { [key: string]: any; }
+// interface TarotResult { [key: string]: any; }
 
 // ─── 질문 유형별 자미두수 핵심 궁 매핑 ───
 const ZIWEI_PALACE_MAP: Record<string, string[]> = {
@@ -150,7 +154,7 @@ export function buildReadingPrompt(
 - 건강 유의: ${iljuProfile.health}
 - 핵심 조언: ${iljuProfile.advice}
 ` : '';
-  const dw = s.daewoon || {} as any;
+  const dw = (s as any).daewoon || {} as any;
   const currentDw = dw.currentDaewoon || {};
   const currentSeun = dw.current_seun || {};
   const crossInt = s.cross_interactions || {} as any;
@@ -161,7 +165,7 @@ export function buildReadingPrompt(
   const seunTwelveStage = s.twelve_stages?.seun || {} as any;
   const dwTwelveStage = currentDw.twelveStageEnergy || {} as any;
 
-  const z = ziwei || {} as any;
+  const z = (ziwei as any) || {} as any;
   const zRaw = z.rawData || z;
   const palaces = zRaw.palaces || [];
 
@@ -210,19 +214,19 @@ export function buildReadingPrompt(
   const tl = timeline || {} as any;
   
   // 대운 정보
-  const dwInfo = s.currentDaewoon || s.daewoon || {};
+  const dwInfo = (s as any).currentDaewoon || (s as any).daewoon || {};
   const daewoonStr = dwInfo.full 
     ? `▶ 대운(10년 흐름): ${dwInfo.full} (${dwInfo.tenGodStem || ''}/${dwInfo.tenGodBranch || ''}) - ${dwInfo.startAge || '?'}세~${dwInfo.endAge || '?'}세`
     : '';
 
   // 세운 정보
-  const swInfo = s.sewoon || {};
+  const swInfo = (s as any).sewoon || {};
   const sewoonStr = swInfo.full
-    ? `▶ 세운(올해): ${swInfo.full} - 12운성: ${swInfo.twelveStage || s.twelveStage?.stage || '?'} (에너지 ${swInfo.score || s.twelveStage?.score || '?'}점)`
+    ? `▶ 세운(올해): ${swInfo.full} - 12운성: ${swInfo.twelveStage || (s as any).twelveStage?.stage || '?'} (에너지 ${swInfo.score || (s as any).twelveStage?.score || '?'}점)`
     : '';
 
   // 월운 정보 (timelineEngine의 months 배열)
-  const monthEntries = tl.months || tl.entries || tl.timeline || [];
+  const monthEntries = tl.months || (tl as any).entries || (tl as any).timeline || [];
   const monthlyStr = Array.isArray(monthEntries) && monthEntries.length > 0
     ? monthEntries?.map((m: any) => {
         const month = m.month || m.label || '';
@@ -233,8 +237,8 @@ export function buildReadingPrompt(
     : '월별 상세 데이터 없음';
 
   // 대운 전환기 특별 안내
-  const dwTransition = dwInfo.startAge && Math.abs((s.currentAge || 0) - dwInfo.startAge) <= 2
-    ? `\n⚠ 대운 전환기(±2년): 현재 ${s.currentAge}세로 대운 시작(${dwInfo.startAge}세)과 가까워 에너지 변동이 큰 시기입니다.`
+  const dwTransition = dwInfo.startAge && Math.abs(((s as any).currentAge || 0) - dwInfo.startAge) <= 2
+    ? `\n⚠ 대운 전환기(±2년): 현재 ${(s as any).currentAge}세로 대운 시작(${dwInfo.startAge}세)과 가까워 에너지 변동이 큰 시기입니다.`
     : '';
 
   const timelineStr = `${daewoonStr}\n${sewoonStr}${dwTransition}\n\n[월별 상세 흐름]\n${monthlyStr}`;
@@ -260,7 +264,7 @@ ${timelineStr}
   const consistencyPct = cv.consistencyScore !== undefined 
     ? Math.round(cv.consistencyScore * 100) : 50;
   
-  const fortuneScore = s.fortune?.seun?.score ?? s.fortune?.score ?? 50;
+  const fortuneScore = (s.fortune as any)?.seun?.score ?? (s.fortune as any)?.score ?? 50;
   
   const decisionLabel = fortuneScore >= 75 ? '긍정적 흐름'
     : fortuneScore >= 55 ? '안정적 흐름'
@@ -412,8 +416,8 @@ ${signalText ? `[시스템별 개별 신호 근거]\n${signalText}\n` : ''}` : '
   // ========================
 
   // === Phase 2: 사주 심층 프로필 주입 ===
-  const gyeokName = s?.gyeokguk?.name || s?.gyeokguk || '';
-  const gyeokProfile = gyeokName ? GYEOKGUK_DEEP[gyeokName] : null;
+  const gyeokName = (s?.gyeokguk?.name || s?.gyeokguk || '') as any;
+  const gyeokProfile = gyeokName ? (GYEOKGUK_DEEP as any)[gyeokName] : null;
   const gyeokBlock = gyeokProfile ? `
 【격국 심층: ${gyeokName}】
 • 본질: ${gyeokProfile.essence}

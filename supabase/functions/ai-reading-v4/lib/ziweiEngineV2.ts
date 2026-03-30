@@ -2181,7 +2181,7 @@ export function calculateZiWei(
 // ─── 질문 유형별 분석 ───
 export function getZiWeiForQuestion(
   ziwei: ZiWeiResult,
-  questionType: "연애" | "재회" | "사업" | "직업" | "금전" | "종합"
+  questionType: "연애" | "재회" | "사업" | "직업" | "금전" | "종합" | "결혼" | "건강" | "가족" | "이사" | "심리" | "relationship" | "career" | "finance" | "health" | "general_future" | "life_change" | "migration" | "compatibility" | "family"
 ): string {
   const palaceMap: Record<string, number> = { "연애": 2, "재회": 2, "사업": 8, "직업": 8, "금전": 4 };
   const idx = palaceMap[questionType];

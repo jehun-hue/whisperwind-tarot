@@ -443,6 +443,14 @@ export interface DrawnCard {
   position: string;
 }
 
+export interface TarotResult {
+  cards: DrawnCard[];
+  insights: CombinationInsight[];
+  vectors?: any;            // Added for promptBuilder
+  combinations?: any;       // Added for promptBuilder
+  polarity?: any;           // Added for promptBuilder
+}
+
 export interface CombinationInsight {
   pattern: string;        // 패턴명
   cards: string[];        // 관련 카드

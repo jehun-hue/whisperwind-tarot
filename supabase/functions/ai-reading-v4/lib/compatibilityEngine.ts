@@ -138,8 +138,8 @@ export async function runCompatibilityEngine(
     const tarot = extraEngines?.tarotResult || {};
 
     // 자미두수: 부처궁 비교
-    const palacesA = (ziweiA.rawData || ziweiA)?.palaces || [];
-    const palacesB = (ziweiB.rawData || ziweiB)?.palaces || [];
+    const palacesA = ((ziweiA as any).rawData || ziweiA)?.palaces || [];
+    const palacesB = ((ziweiB as any).rawData || ziweiB)?.palaces || [];
     const bucheA = palacesA.find((p: any) => p.name === '부처궁');
     const bucheB = palacesB.find((p: any) => p.name === '부처궁');
     const bokdeokA = palacesA.find((p: any) => p.name === '복덕궁');

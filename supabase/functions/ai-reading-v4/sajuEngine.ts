@@ -14,7 +14,7 @@ import { getDayPillar } from "./lib/dayPillar.ts";
 import { getHourPillar } from "./lib/hourPillar.ts";
 import { calculateTenGod, calculateTenGodBranch } from "./lib/tenGods.ts";
 import { getKoreanTimezoneOffset } from "./lib/timeUtils.ts";
-import { getDaewoonInfo } from "./lib/daewoon.ts";
+import { getDaewoonInfo, calculateFullDaewoon, type DaewoonResult } from "./lib/daewoon.ts";
 import { determineGyeokguk } from "./lib/gyeokguk.ts";
 import { calculateFortune } from "./lib/fortuneEngine.ts";
 import { lunarToSolar } from "./lib/lunarConverter.ts";
@@ -159,6 +159,16 @@ export function calculateSaju(
 
   // Daewoon
   const dw = getDaewoonInfo(yP.idx % 10, gender, sunLong, jd, correctedDate.getUTCFullYear());
+
+  // Phase 4-4: 전체 대운 기둥 생성 (타입 완전성 확보)
+  const currentYear = new Date().getFullYear();
+  const birthYear = correctedDate.getUTCFullYear();
+  const currentAge = currentYear - birthYear;
+  const mStemIdx = STEMS.indexOf(mP.stem);
+  const mBranchIdx = BRANCHES.indexOf(mP.branch);
+  const fullDaewoon: DaewoonResult = calculateFullDaewoon(
+    mStemIdx, mBranchIdx, dayMaster, dw.age, dw.isForward, currentAge
+  );
 
   // Hidden Stems
   const hiddenStems = {
@@ -346,8 +356,8 @@ export function calculateSaju(
     dayMaster, yongShin, heeShin, giShin, guShin, hanShin,
     [yP.stem, mP.stem, dP.stem, hP.stem],
     [yP.branch, mP.branch, dP.branch, hP.branch],
-    dw.currentDaewoon?.stem || null,
-    dw.currentDaewoon?.branch || null
+    fullDaewoon.currentDaewoon?.stem || null,
+    fullDaewoon.currentDaewoon?.branch || null
   );
 
   return {
@@ -369,7 +379,7 @@ export function calculateSaju(
     hanShin,
     gyeokguk: gyeokResult,
     fortune: fortune,
-    daewoon: dw,
+    daewoon: fullDaewoon,
     hiddenStems,
     originalInput: { year, month, day, hour, minute, gender, yajasiMode },
     correctedDate: !isNaN(correctedDate.getTime()) ? correctedDate.toISOString() : "Invalid Date"

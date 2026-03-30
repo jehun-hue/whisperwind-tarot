@@ -43,8 +43,15 @@ export interface SajuAnalysisResult {
   element_adjustments?: any[];                         // v2: 합화 오행 변화
   daewoon_transition?: any;                            // v2: 대운 전환기 경고
   daily_pillar?: any;                                  // v2: 일진 분석
-  fortune?: FortuneResult;                             // v3: 세운·월운 운세
+  fortune?: FortuneResult | null;                             // v3: 세운·월운 운세
   fourPillars?: any;                                   // v3: 사주 원국 원본 (일주 추출용)
+  _analysis_ver?: string;                               // v4: 분석 엔진 버전
+  yongsin?: string;                                     // Alias for yongShin
+  tenGods_rounded?: Record<string, number>;             // Rounded tenGods
+  is_daewoon_changing_year?: boolean;                   // Daewoon transition
+  currentAge?: number;                                  // Current age
+  pillars?: any;                                        // Pillars (alias for fourPillars)
+  yinYang?: any;                                        // Added for promptBuilder
 }
 
 import { getDaewoonInfo, calculateFullDaewoon, type DaewoonResult } from "./lib/daewoon.ts";
@@ -253,20 +260,20 @@ const JOHU_TABLE: Record<string, Record<string, string[]>> = {
   }
 };
 
-function determineJohuYong(dm: string, monthBranch: string): { yongsin: string, secondary: string | null, reason: string } {
+function determineJohuYong(dm: string, monthBranch: string): { yongshin: string, secondary: string | null, reason: string } {
   const dmChar = dm.charAt(0);
   const mbChar = monthBranch.charAt(0);
   const recommendations = JOHU_TABLE[dmChar]?.[mbChar] || [];
   const y1 = recommendations[0] ? (STEM_ELEMENT[recommendations[0]] || "불명") : "불명";
   const y2 = recommendations[1] ? (STEM_ELEMENT[recommendations[1]] || null) : null;
   return {
-    yongsin: y1,
+    yongshin: y1,
     secondary: y2,
     reason: `${dmChar}일간 ${mbChar}월생 조후 기준`
   };
 }
 
-function determineTonggwanYong(elements: Record<string, number>): { yongsin: string | null, reason: string } {
+function determineTonggwanYong(elements: Record<string, number>): { yongshin: string | null, reason: string } {
   const pairs = [
     { a: "목", b: "토", bridge: "화", desc: "木 vs 土 대립" },
     { a: "화", b: "금", bridge: "토", desc: "火 vs 金 대립" },
@@ -285,11 +292,11 @@ function determineTonggwanYong(elements: Record<string, number>): { yongsin: str
         .reduce((sum, [_, v]) => sum + v, 0);
       
       if (otherSum < sumAB) {
-        return { yongsin: p.bridge, reason: `${p.desc}, ${p.bridge}가 통관` };
+        return { yongshin: p.bridge, reason: `${p.desc}, ${p.bridge}가 통관` };
       }
     }
   }
-  return { yongsin: null, reason: "뚜렷한 양대 대립 없음" };
+  return { yongshin: null, reason: "뚜렷한 양대 대립 없음" };
 }
 
 // ═══════════════════════════════════════
@@ -326,6 +333,8 @@ export async function analyzeSajuStructure(
       strength_detail: null,
       cross_interactions: null,
       fortune: null,
+      sewoon: null,
+      wolwoon: null,
     };
   }
 
@@ -1183,8 +1192,8 @@ export async function analyzeSajuStructure(
   try {
     const today = new Date("2026-03-19T12:00:00+09:00");
     const todaySaju = calculateSaju(today.getFullYear(), today.getMonth() + 1, today.getDate(), today.getHours(), today.getMinutes());
-    const dailyStem = todaySaju.pillars.day.stem;
-    const dailyBranch = todaySaju.pillars.day.branch;
+    const dailyStem = todaySaju.day.stem;
+    const dailyBranch = todaySaju.day.branch;
     const stemTenGod = calculateTenGod(dm, dailyStem);
     const branchRelations: any[] = [];
     
@@ -1252,7 +1261,7 @@ export async function analyzeSajuStructure(
 
   // ── fortune → sewoon/wolwoon 파생 (단일 출처 보장) ──
   let derivedSewoon = daewoon?.current_seun || (sajuRaw as any).seun || null;
-  let derivedWolwoon = current_wolwoon;
+  let derivedWolwoon: any[] = current_wolwoon ? [current_wolwoon] : [];
 
   if (fortuneResult) {
     derivedSewoon = {

@@ -31,6 +31,8 @@ export interface SeunFortune {
   clashes: string[];
   harmonies: string[];
   summary: string;
+  twelveStage?: string;     // Added for UnifiedTimeline/promptBuilder
+  interpretation?: string;  // Added for promptBuilder
 }
 
 export interface WolwoonFortune {
@@ -45,6 +47,10 @@ export interface WolwoonFortune {
   rating: FortuneRating;
   score: number;
   summary: string;
+  full?: string;            // Added for UnifiedTimeline
+  element?: string;         // Added for UnifiedTimeline
+  twelveStage?: string;     // Added for UnifiedTimeline
+  interpretation?: string;  // Added for promptBuilder 
 }
 
 export interface FortuneResult {
@@ -54,6 +60,9 @@ export interface FortuneResult {
   bestMonths: number[];
   cautionMonths: number[];
   currentMonthFortune: WolwoonFortune | null;
+  score?: number;           // Alias for seun.score
+  rating?: string;           // Alias for seun.rating
+  interpretation?: string;  // Added for promptBuilder
 }
 
 // ═══════════════════════════════════════

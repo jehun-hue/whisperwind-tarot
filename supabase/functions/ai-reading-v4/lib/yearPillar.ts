@@ -5,7 +5,7 @@
 import { findSolarTermJD } from "./solarTerm.ts";
 import { STEMS, BRANCHES } from "./fiveElements.ts";
 
-export function getYearPillar(year: number, jd: number): { stem: string; branch: string; idx: number } {
+export function getYearPillar(year: number, jd: number): { stem: string; branch: string; idx: number; lastJeolJD: number } {
   // Ip-chun JD for current year (UTC based)
   const ipChunJD = findSolarTermJD(year, 315);
   let yearForPillar = year;
@@ -21,6 +21,7 @@ export function getYearPillar(year: number, jd: number): { stem: string; branch:
   return { 
     stem: STEMS[(stemIdx + 10) % 10], 
     branch: BRANCHES[(branchIdx + 12) % 12], 
-    idx 
+    idx,
+    lastJeolJD: ipChunJD 
   };
 }

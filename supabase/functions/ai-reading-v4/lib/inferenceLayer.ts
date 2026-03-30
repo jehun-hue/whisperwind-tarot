@@ -37,6 +37,18 @@ export interface CrossValidationResult {
   commonKeywords: string[];
   divergentPoints: string[];
   summary: string;
+  dominant_vector?: Record<string, number>;
+  dominantVector?: Record<string, number>;
+  conflict_summary?: string;
+  conflictSummary?: string;
+  opportunity_summary?: string;
+  is_high_confidence?: boolean;
+
+  // v3: Compatibility with crossValidationEngine.ts
+  items?: any[];
+  overallAgreement?: number;
+  strongSignals?: string[];
+  conflictSignals?: string[];
 }
 
 /**
@@ -92,8 +104,9 @@ export async function crossValidate(
   });
 
   // 1-3) 자미두수 명궁 ↔ 사주 일주
-  const mingStars = ziwei?.core_palaces?.life_palace?.major_stars || [];
-  const isZiweiStrong = mingStars.some(s => ["자미", "칠살", "파군", "무곡", "태양"].includes(s));
+  const mingPalace = ziwei?.palaces?.find(p => p.name === "명궁");
+  const mingStars = (mingPalace?.stars || []).map(s => s.star);
+  const isZiweiStrong = (mingStars as string[]).some((s: string) => ["자미", "칠살", "파군", "무곡", "태양"].includes(s));
   const isSajuStrong = saju.strength.includes("강");
   const ziweiSajuMatch = isZiweiStrong === isSajuStrong;
 

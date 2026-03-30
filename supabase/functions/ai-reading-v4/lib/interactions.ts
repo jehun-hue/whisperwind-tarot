@@ -99,6 +99,7 @@ const STEM_CONFLICTS: [string, string, string][] = [
 
 export interface Interaction {
   type: "천간합" | "천간극" | "지지충" | "지지삼합" | "지지방합" | "지지육합" | "형" | "파" | "해";
+  name?: string;           // Added for promptBuilder compatibility
   elements: string[];
   result: string;
   meaning_keyword: string;

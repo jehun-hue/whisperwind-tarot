@@ -2,7 +2,7 @@ export const PLANET_SIGN_MEANINGS: Record<string, Record<string, {
   personality: string;
   strength: string;
   challenge: string;
-  shadow: string;
+  shadow?: string;
 }>> = {
   "Sun": {
     "Aries": {

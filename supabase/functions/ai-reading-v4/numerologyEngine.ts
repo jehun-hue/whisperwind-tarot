@@ -16,8 +16,13 @@ export interface NumerologyResult {
   life_path_number: number;
   destiny_number: number | null;
   expressionNumber: number | null;
+  expression_number?: number | null; // Alias
   soulUrgeNumber: number | null;
+  soul_urge_number?: number | null;  // Alias
   personalityNumber: number | null;
+  personality_number?: number | null; // Alias
+  lifePath?: number;                 // Alias
+  personal_year_number?: number;     // Alias
   birthdayNumber: number;
   maturityNumber: number | null;
   personal_year: number;
@@ -301,11 +306,16 @@ export function calculateNumerology(
     life_path_number: lifePath,
     destiny_number: destiny,
     expressionNumber: expression,
+    expression_number: expression,
     soulUrgeNumber: soulUrge,
+    soul_urge_number: soulUrge,
     personalityNumber: personality,
+    personality_number: personality,
+    lifePath: lifePath,
     birthdayNumber,
     maturityNumber,
     personal_year: personalYear,
+    personal_year_number: personalYear,
     personalMonth,
     personalDay,
     pinnacles,
