@@ -13,10 +13,9 @@ import { ZiWeiSummaryCard } from "@/components/ZiWeiSummaryCard";
 import { getCombinationSummary } from "@/data/tarotCombinations";
 import { toast } from "sonner";
 
-// ============================================================
-// ⚠️  사주 재계산 최엄 금지 (SAJU RECALCULATION GUARD)
-// 사주 계산은 ClientPage.tsx getManseryeok()에서만 수행됩니다.
-// 이 파일에서 getManseryeok()을 추가하는 것은 엄격히 금지됩니다.
+// ⚠️  사주 재계산 금지 (SAJU RECALCULATION GUARD)
+// 사주 계산은 ClientPage.tsx calculateSaju(Server)를 통해 수행됩니다.
+// 이 파일에서 직접 계산 로직을 추가하는 것은 엄격히 금지됩니다.
 // 모든 사주 데이터는 session.saju_data를 통해서만 전달합니다.
 // ============================================================
 

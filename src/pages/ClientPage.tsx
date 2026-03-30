@@ -21,7 +21,7 @@ import { useNavigate } from "react-router-dom";
 import { tarotCards, makeDeckCard, type DeckCard } from "@/data/tarotCards";
 import { calculateNatalChart, getAstrologyForQuestion, getCurrentTransits, type AstrologyResult } from "@/lib/astrology";
 import { calculateZiWei, getZiWeiForQuestion, type ZiWeiResult } from "@/lib/ziwei";
-import { getManseryeok } from "@/lib/sajuCalc";
+import { calculateSaju } from "@/lib/saju";
 import { getCombinationSummary } from "@/data/tarotCombinations";
 import { supabase } from "@/integrations/supabase/client";
 import { classifyQuestion, type Category, type ClassificationResult } from "@/lib/classification";
@@ -215,7 +215,7 @@ export default function ClientPage() {
   const hasBirthDate = birthYear && birthMonth && birthDay;
 
   // ─── Birth info calculation ───
-  const calculateBirthData = useCallback(() => {
+  const calculateBirthData = useCallback(async () => {
     if (!hasBirthDate) return;
     const y = parseInt(birthYear);
     const m = parseInt(birthMonth);
@@ -235,10 +235,21 @@ export default function ClientPage() {
     try {
       const isLunarBool = isLunar === true || String(isLunar) === "true";
       const isLeapBool = isLeapMonth === true;
-      console.log("[getManseryeok 호출]", { year: y, month: m, day: d, hour, minute, isLunar: isLunarBool, isLeapMonth: isLeapBool });
-      const ms = getManseryeok(y, m, d, hour, minute, isLunarBool, isLeapBool);
+      console.log("[calculateSaju(Server) 호출]", { year: y, month: m, day: d, hour, minute, isLunar: isLunarBool, gender });
+      
+      const ms = await calculateSaju({
+        year: y,
+        month: m,
+        day: d,
+        hour,
+        minute,
+        gender: (gender as 'male' | 'female' || 'male'),
+        isLunar: isLunarBool,
+        hasTime: birthTime !== "unknown"
+      });
+
       if (!ms) {
-        console.warn("사주 자동 계산 실패: 입력된 날짜/시간으로 만세력을 계산할 수 없습니다.");
+        console.warn("사주 자동 계산 실패: 서버 응답이 없습니다.");
       }
       setManseryeokResult(ms);
 

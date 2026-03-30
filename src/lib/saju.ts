@@ -96,15 +96,36 @@ export async function calculateSaju(input: SajuInput): Promise<SajuResult> {
   // 서버 응답에서 사주 결과 추출 (sajuResult 또는 saju 등 다양한 키 대응)
   const sajuResult: SajuResult = data.sajuResult || data.saju || data;
 
-  if (!sajuResult.pillars || !sajuResult.dayMaster) {
+  if (!sajuResult.year || !sajuResult.dayMaster) {
     console.error("[saju.ts] 부적절한 서버 응답:", data);
-    throw new Error('[saju.ts] 서버 응답에 필수 데이터(pillars/dayMaster) 누락');
+    throw new Error('[saju.ts] 서버 응답에 필수 데이터(year/dayMaster) 누락');
   }
 
-  // 기존 클라이언트 코드에서 기대하는 필드명 보정 (alias 처리)
+  // ─── 하위 호환성 매핑 (P1-1: 클라이언트 UI용 필드 보정) ───
+  const mapPillar = (p: any) => {
+    if (!p) return { cheongan: "", jiji: "", hanja: "", full: "" };
+    const full = `${p.stem}${p.branch}`;
+    return {
+      cheongan: p.stem || "",
+      jiji: p.branch || "",
+      hanja: full, // 서버는 이미 한자 문자열을 제공함
+      full: full
+    };
+  };
+
+  sajuResult.yearPillar = mapPillar(sajuResult.year);
+  sajuResult.monthPillar = mapPillar(sajuResult.month);
+  sajuResult.dayPillar = mapPillar(sajuResult.day);
+  sajuResult.hourPillar = mapPillar(sajuResult.hour);
+
   if (!sajuResult.ilgan) sajuResult.ilgan = sajuResult.dayMaster;
   if (!sajuResult.yongsin) sajuResult.yongsin = sajuResult.yongShin;
   if (!sajuResult.fiveElementDist) sajuResult.fiveElementDist = sajuResult.elements;
+
+  // originalInput 보정
+  if (!sajuResult.originalInput && data.originalInput) {
+    sajuResult.originalInput = data.originalInput;
+  }
 
   return sajuResult;
 }
