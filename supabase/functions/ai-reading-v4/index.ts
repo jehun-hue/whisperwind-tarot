@@ -159,7 +159,17 @@ serve(async (req: Request) => {
     );
 
     const style = payload.style || "hanna";
-    const spreadHash = (payload.cards || []).map((c: any) => c.name || "card").join("-") + `_${style}_${locale}`;
+    const birthKey = payload.birthInfo
+      ? `${payload.birthInfo.year || ""}-${payload.birthInfo.month || ""}-${payload.birthInfo.day || ""}-${payload.birthInfo.hour || ""}-${payload.birthInfo.gender || ""}`
+      : "noBirth";
+    const questionCategory = payload.questionCategory || payload.category || "general";
+    const spreadHash = [
+      (payload.cards || []).map((c: any) => c.name || "card").join("-"),
+      style,
+      locale,
+      birthKey,
+      questionCategory,
+    ].join("_");
     const { data: cached } = await supabase
       .from("reading_results")
       .select("reading_json")
