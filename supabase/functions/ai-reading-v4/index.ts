@@ -127,7 +127,7 @@ serve(async (req: Request) => {
       
       const sajuResult = calculateSaju(
         solarYear, solarMonth, solarDay, hour ?? 12, minute ?? 0,
-        gender || "male", longitude ?? 126.9780, hasTime ?? true
+        gender || "male", longitude ?? 126.9780, hasTime ?? true, 'keep_day'
       );
       
       return new Response(JSON.stringify({ status: "ok", sajuResult }), {

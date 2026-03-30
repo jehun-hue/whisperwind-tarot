@@ -386,7 +386,7 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
         solarBirthInfo.hour, solarBirthInfo.minute, solarBirthInfo.gender,
         solarBirthInfo.longitude,
         hasTime,
-        rawBirth.yajasiMode || 'keep_day',
+        'keep_day',
         false, // isLunar: false (이미 solarBirthInfo가 양력 변환됨)
         false
       );
