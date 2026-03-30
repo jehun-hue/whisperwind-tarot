@@ -1,0 +1,158 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Engine Symbolic Snapshots > Snapshots: Jehun (1987-07-17 15:30 M Solar) > day_master 1`] = `"丁"`;
+
+exports[`Engine Symbolic Snapshots > Snapshots: Jehun (1987-07-17 15:30 M Solar) > elements 1`] = `
+{
+  "earth": 2,
+  "fire": 4,
+  "metal": 0,
+  "water": 0,
+  "wood": 2,
+}
+`;
+
+exports[`Engine Symbolic Snapshots > Snapshots: Jehun (1987-07-17 15:30 M Solar) > saju_day 1`] = `
+{
+  "branch": "卯",
+  "stem": "丁",
+  "tenGod": {
+    "branch": "편인",
+    "stem": "일간",
+  },
+}
+`;
+
+exports[`Engine Symbolic Snapshots > Snapshots: Jehun (1987-07-17 15:30 M Solar) > saju_hour 1`] = `
+{
+  "branch": "未",
+  "stem": "丁",
+  "tenGod": {
+    "branch": "식신",
+    "stem": "비견",
+  },
+}
+`;
+
+exports[`Engine Symbolic Snapshots > Snapshots: Jehun (1987-07-17 15:30 M Solar) > saju_month 1`] = `
+{
+  "branch": "未",
+  "stem": "丁",
+  "tenGod": {
+    "branch": "식신",
+    "stem": "비견",
+  },
+}
+`;
+
+exports[`Engine Symbolic Snapshots > Snapshots: Jehun (1987-07-17 15:30 M Solar) > saju_prompt 1`] = `
+"
+- [구조적 특징] 극음 구조 — 내면적 치밀함, 예민한 감수성, 외면보다 내실 추구
+- 핵심 기운: 화 → [상징: 전문화된 내면 에너지]
+- 요소 균형: wood2 fire4 earth2 metal0 water0
+- 십성(十星) 분포: 비겁(3) 식상(2) 인성(2)
+- 지배 십성: 비겁(자기 힘·독립심·경쟁의식이 강하며, 형제/동료와의 인연이 두드러짐), 식상(표현력·창의력·재능 발산이 활발하며, 자유로운 활동을 추구함), 인성(학문·지혜·내면의 깊이가 있으며, 보호와 지원을 받는 경향) — AI는 이 십성의 의미를 질문 주제와 연결하여 해석하세요.
+- 십성 해석 지침: 정관·편관 강하면 직업/조직 압박, 식신·상관 강하면 창의/표현 욕구, 편재·정재 강하면 재물 흐름 활성, 편인·정인 강하면 학습/지원 에너지.
+"
+`;
+
+exports[`Engine Symbolic Snapshots > Snapshots: Jehun (1987-07-17 15:30 M Solar) > saju_year 1`] = `
+{
+  "branch": "卯",
+  "stem": "丁",
+  "tenGod": {
+    "branch": "편인",
+    "stem": "비견",
+  },
+}
+`;
+
+exports[`Engine Symbolic Snapshots > Snapshots: Jehun (1987-07-17 15:30 M Solar) > ziwei_bureau 1`] = `"금사국"`;
+
+exports[`Engine Symbolic Snapshots > Snapshots: Jehun (1987-07-17 15:30 M Solar) > ziwei_minggong 1`] = `"해"`;
+
+exports[`Engine Symbolic Snapshots > Snapshots: Jehun (1987-07-17 15:30 M Solar) > ziwei_prompt 1`] = `
+"
+[자미두수 엔진 호출 결과 - 상징화 완료]
+
+- 명궁(해): 데이터 부족 좌정.
+- 국: 금사국
+- 성별: 음남(陰男)
+- 지침: 제공된 명반의 국과 주성 의미를 중심으로 리딩을 전개하시오.
+
+- 기본정보: 1987년 7월 17일 15시 30분 (음남 陰男)
+- 현재 대한: 34-43세 대한: 자녀궁(신궁). 천기, 태음 좌정. 매우 길한 시기. 재물과 기회가 풍부하며 주요 성취 가능.
+- 소한: 40세 소한궁: 자녀궁(신) | 주성: 천기,태음 | 소한사화: 화록(탐랑),화권(태음),화과(천부),화기(천기) | ⚡대한교차: 화록-탐랑,화권-태음,화과-천부,화기-천기 | 판정: 대흉
+- 선천사화: 데이터 부족
+- B-175 압축: 주요궁(명/관록/부처/질액/천이) + 공궁만 표시
+  * 명궁(undefined): 공궁(空宮)
+  * 부처궁(undefined): 공궁(空宮)
+  * 질액궁(undefined): 공궁(空宮)
+  * 천이궁(undefined): 공궁(空宮)
+  * 관록궁(undefined): 공궁(空宮)
+"
+`;
+
+exports[`Engine Symbolic Snapshots > Snapshots: Lunar Profile (1990-05-05 10:00 F Lunar) > lunar_saju_prompt 1`] = `
+"
+- 핵심 기운: 화 → [상징: 전문화된 내면 에너지]
+- 요소 균형: wood1 fire4 earth1 metal2 water0
+- 십성(十星) 분포: 식상(4) 관성(2) 재성(1)
+- 지배 십성: 식상(표현력·창의력·재능 발산이 활발하며, 자유로운 활동을 추구함), 관성(책임감·규율·사회적 지위에 대한 의식이 강하며, 조직 내 역할을 중시함), 재성(재물·현실 감각·실용성이 뛰어나며, 대인관계와 사교에 능함) — AI는 이 십성의 의미를 질문 주제와 연결하여 해석하세요.
+- 십성 해석 지침: 정관·편관 강하면 직업/조직 압박, 식신·상관 강하면 창의/표현 욕구, 편재·정재 강하면 재물 흐름 활성, 편인·정인 강하면 학습/지원 에너지.
+"
+`;
+
+exports[`Engine Symbolic Snapshots > Snapshots: Lunar Profile (1990-05-05 10:00 F Lunar) > lunar_saju_year 1`] = `
+{
+  "branch": "午",
+  "stem": "庚",
+  "tenGod": {
+    "branch": "상관",
+    "stem": "편관",
+  },
+}
+`;
+
+exports[`Engine Symbolic Snapshots > Snapshots: Lunar Profile (1990-05-05 10:00 F Lunar) > lunar_ziwei_prompt 1`] = `
+"
+[자미두수 엔진 호출 결과 - 상징화 완료]
+
+- 명궁(축): 데이터 부족 좌정.
+- 국: 화육국
+- 성별: 양녀(陽女)
+- 지침: 제공된 명반의 국과 주성 의미를 중심으로 리딩을 전개하시오.
+
+- 기본정보: 1990년 5월 5일 10시 0분 (양녀 陽女)
+- 현재 대한: 36-45세 대한: 자녀궁(술궁). 태양 좌정. 주의가 필요한 시기. 장애물과 소모가 예상되므로 신중한 판단 필요.
+- 소한: 37세 소한궁: 명궁(축) | 주성: 자미,파군,천월 | 소한사화: 화록(무곡),화권(탐랑),화과(천량),화기(천상) | 판정: 대흉
+- 선천사화: 데이터 부족
+- B-175 압축: 주요궁(명/관록/부처/질액/천이) + 공궁만 표시
+  * 명궁(undefined): 공궁(空宮)
+  * 부처궁(undefined): 공궁(空宮)
+  * 질액궁(undefined): 공궁(空宮)
+  * 천이궁(undefined): 공궁(空宮)
+  * 관록궁(undefined): 공궁(空宮)
+"
+`;
+
+exports[`Engine Symbolic Snapshots > Snapshots: Midnight Transition (2000-01-01 00:01 F Solar) > midnight_saju_prompt 1`] = `
+"
+- 핵심 기운: 화 → [상징: 전문화된 내면 에너지]
+- 요소 균형: wood1 fire3 earth1 metal1 water2
+- 십성(十星) 분포: 비겁(2) 관성(2) 식상(1) 재성(1) 인성(1)
+- 지배 십성: 비겁(자기 힘·독립심·경쟁의식이 강하며, 형제/동료와의 인연이 두드러짐), 관성(책임감·규율·사회적 지위에 대한 의식이 강하며, 조직 내 역할을 중시함), 식상(표현력·창의력·재능 발산이 활발하며, 자유로운 활동을 추구함) — AI는 이 십성의 의미를 질문 주제와 연결하여 해석하세요.
+- 십성 해석 지침: 정관·편관 강하면 직업/조직 압박, 식신·상관 강하면 창의/표현 욕구, 편재·정재 강하면 재물 흐름 활성, 편인·정인 강하면 학습/지원 에너지.
+"
+`;
+
+exports[`Engine Symbolic Snapshots > Snapshots: Midnight Transition (2000-01-01 00:01 F Solar) > midnight_saju_year 1`] = `
+{
+  "branch": "卯",
+  "stem": "己",
+  "tenGod": {
+    "branch": "편인",
+    "stem": "식신",
+  },
+}
+`;
