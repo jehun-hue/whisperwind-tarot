@@ -391,7 +391,6 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
         false
       );
       if (!sajuRaw) throw new Error("사주 계산 결과가 유효하지 않습니다.");
-      if (!sajuRaw) throw new Error("사주 계산 결과가 유효하지 않습니다.");
     } catch (e: any) {
       console.error("[ENGINE-SAFE] 사주 계산 실패:", e);
       throw new Error(`사주 분석 엔진 오류: ${e.message}`);

@@ -1,5 +1,6 @@
 // questionClassifier.ts
 // #91 — 질문 유형 자동 분류기
+import { safeParseGeminiJSON } from "./jsonUtils.ts";
 
 export interface ClassificationResult {
   primary_topic: string;
@@ -405,7 +406,7 @@ export async function classifyWithFallback(
     const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
     const match = text.match(/\{.*\}/s);
     if (match) {
-      const parsed = JSON.parse(match[0]);
+      const parsed = safeParseGeminiJSON(match[0]);
       if (parsed.primary_topic) {
         const CATEGORY_MAP: Record<string, string> = {
           career: "life_work", relationship: "life_love", finance: "life_wealth", compatibility: "life_love",

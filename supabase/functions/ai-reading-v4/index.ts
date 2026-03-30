@@ -169,6 +169,7 @@ serve(async (req: Request) => {
       locale,
       birthKey,
       questionCategory,
+      (question || "").slice(0, 50),
     ].join("_");
     const { data: cached } = await supabase
       .from("reading_results")
@@ -235,7 +236,7 @@ serve(async (req: Request) => {
     }
 
     // Cache logic
-    if (sessionId && question && result.status === "success") {
+    if (sessionId && question && result.status === "success" && result.result_status !== "degraded") {
       await supabase.from("reading_results").insert({
         session_id: sessionId,
         question,
@@ -285,7 +286,6 @@ serve(async (req: Request) => {
       result_status: "degraded",
       error_type: "engine_exception",
       error_message: err.message,
-      stack_trace: err.stack,
       error: err.message,
       debug_raw: err.rawNarrative || "", 
       reading: {
