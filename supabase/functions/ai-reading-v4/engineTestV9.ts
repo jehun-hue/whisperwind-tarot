@@ -16,6 +16,8 @@ import { calculateNumerology } from "./numerologyEngine.ts";
 import { classifyQuestion } from "./questionClassifier.ts";
 import { getStyleForTopic, STYLE_PRESETS } from "./lib/geminiClient.ts";
 import { buildReadingPrompt } from "./lib/promptBuilder.ts";
+import { INTERACTION_DEEP } from "./lib/interpretations/index.ts";
+
 
 // ═══════════════════════════════════════
 // 테스트 데이터셋 (10명)
@@ -84,7 +86,7 @@ async function runAllTests() {
   console.log("══════════════════════════════════════\n");
 
   // ── TEST 1: 사주 계산 ──
-  console.log("[1/18] 사주 계산 정확도...");
+  console.log("[1/21] 사주 계산 정확도...");
   for (const tc of TEST_CASES) {
     const saju = calculateSaju(tc.year, tc.month, tc.day, tc.hour, tc.minute, tc.gender);
     assert(`${tc.id} 사주 4주 생성`, !!(saju.year && saju.month && saju.day && saju.hour), `pillars missing for ${tc.id}`);
@@ -93,7 +95,7 @@ async function runAllTests() {
   }
 
   // ── TEST 2: 사주 분석 ──
-  console.log("[2/18] 사주 분석 (십성/신강신약/충합형)...");
+  console.log("[2/21] 사주 분석 (십성/신강신약/충합형)...");
   for (const tc of TEST_CASES) {
     const saju = calculateSaju(tc.year, tc.month, tc.day, tc.hour, tc.minute, tc.gender);
     const analysis = await analyzeSajuStructure(saju);
@@ -104,7 +106,7 @@ async function runAllTests() {
   }
 
   // ── TEST 3: 타로 심볼릭 엔진 ──
-  console.log("[3/18] 타로 심볼릭 엔진 (78장 벡터)...");
+  console.log("[3/21] 타로 심볼릭 엔진 (78장 벡터)...");
   const totalCards = Object.keys(TAROT_PATTERN_DATASET).length;
   assert("78장 벡터 등록 수", totalCards >= 78, `only ${totalCards} cards registered`);
   
@@ -121,7 +123,7 @@ async function runAllTests() {
   assert("역방향 보정 작동", (uprightResult.dominant_patterns.fulfillment || 0) > (reversedResult.dominant_patterns.fulfillment || 0), "reversed should reduce positive dimensions");
 
   // ── TEST 4: 심볼 매핑 엔진 ──
-  console.log("[4/18] 심볼 매핑 엔진 (한국어 매칭)...");
+  console.log("[4/21] 심볼 매핑 엔진 (한국어 매칭)...");
   for (const tc of TEST_CASES) {
     const saju = calculateSaju(tc.year, tc.month, tc.day, tc.hour, tc.minute, tc.gender);
     const analysis = await analyzeSajuStructure(saju);
@@ -143,7 +145,7 @@ async function runAllTests() {
   }
 
   // ── TEST 5: Consensus 엔진 ──
-  console.log("[5/18] Consensus 엔진...");
+  console.log("[5/21] Consensus 엔진...");
   for (const tc of TEST_CASES) {
     const saju = calculateSaju(tc.year, tc.month, tc.day, tc.hour, tc.minute, tc.gender);
     const analysis = await analyzeSajuStructure(saju);
@@ -165,7 +167,7 @@ async function runAllTests() {
   }
 
   // ── TEST 6: Temporal Prediction ──
-  console.log("[6/18] Temporal Prediction (하드코딩 제거 확인)...");
+  console.log("[6/21] Temporal Prediction (하드코딩 제거 확인)...");
   // 서로 다른 사주(충 있는 사람 vs 합 있는 사람)가 다른 확률을 내는지
   const saju1 = calculateSaju(1990, 3, 15, 14, 30, "M");
   const analysis1 = await analyzeSajuStructure(saju1);
@@ -191,7 +193,7 @@ async function runAllTests() {
   assert("contributing_factors 존재", timeline1[0].contributing_factors !== undefined, "missing factors field");
 
   // ── TEST 7: Validation Layer ──
-  console.log("[7/18] Validation Layer...");
+  console.log("[7/21] Validation Layer...");
   const sysV = [
     { system: "saju", elements: { "목": 3, "화": 2, "토": 1, "금": 0, "수": 2 } },
     { system: "tarot", characteristics: ["Sun", "World", "Star"], cards: [1, 2, 3, 4, 5] },
@@ -209,7 +211,7 @@ async function runAllTests() {
   assert("낮은 confidence → validation fail", !lowConfResult.isValid, "should fail with low confidence");
 
   // ── TEST 8: 하이브리드 타로 ──
-  console.log("[8/18] 하이브리드 타로 해석...");
+  console.log("[8/21] 하이브리드 타로 해석...");
   const majorCards = ["The Fool","The Magician","The High Priestess","The Empress","The Emperor",
     "The Hierophant","The Lovers","The Chariot","Strength","The Hermit","Wheel of Fortune",
     "Justice","The Hanged Man","Death","Temperance","The Devil","The Tower","The Star",
@@ -231,14 +233,14 @@ async function runAllTests() {
   assert("역방향 구조 태그", reversedReading[0].structure.startsWith("reversed_"), `got: ${reversedReading[0].structure}`);
 
   // ── TEST 9: 수비학 엔진 ──
-  console.log("[9/18] 수비학 엔진...");
+  console.log("[9/21] 수비학 엔진...");
   const num = calculateNumerology("1990-03-15");
   assert("Life Path 유효", num.life_path_number >= 1 && num.life_path_number <= 33, `invalid: ${num.life_path_number}`);
   assert("Personal Year 유효", num.personal_year >= 1 && num.personal_year <= 33, `invalid: ${num.personal_year}`);
   assert("vibrations 존재", num.vibrations.length > 0, "empty vibrations");
 
   // ── TEST 10: 전체 파이프라인 통합 ──
-  console.log("[10/18] 전체 파이프라인 통합...");
+  console.log("[10/21] 전체 파이프라인 통합...");
   let pipelinePass = 0;
   for (const tc of TEST_CASES) {
     try {
@@ -268,7 +270,7 @@ async function runAllTests() {
   assert(`전체 파이프라인 성공률`, pipelinePass === TEST_CASES.length, `${pipelinePass}/${TEST_CASES.length} passed`);
 
   // ── TEST 11: questionClassifier 분류 정확도 (Phase 2) ──
-  console.log("[11/18] questionClassifier 분류 정확도...");
+  console.log("[11/21] questionClassifier 분류 정확도...");
   const CLASSIFY_CASES: { q: string; expected: string; subtopic?: string }[] = [
     { q: "이직하는 게 좋을까요?", expected: "career", subtopic: "job_change" },
     { q: "좋아하는 사람과 사귈 수 있을까요?", expected: "relationship" },
@@ -290,7 +292,7 @@ async function runAllTests() {
   }
 
   // ── TEST 12: getStyleForTopic 매핑 (Phase 2) ──
-  console.log("[12/18] getStyleForTopic 매핑...");
+  console.log("[12/21] getStyleForTopic 매핑...");
   const STYLE_CASES: { topic: string; expected: string }[] = [
     { topic: "career", expected: "choihanna" },
     { topic: "finance", expected: "monad" },
@@ -308,7 +310,7 @@ async function runAllTests() {
   assert("STYLE_PRESETS 5종 존재", Object.keys(STYLE_PRESETS).length === 5, `got ${Object.keys(STYLE_PRESETS).length}`);
 
   // ── TEST 13: TOPIC_SECTION_BUDGET 커버리지 (Phase 2) ──
-  console.log("[13/18] TOPIC_SECTION_BUDGET 커버리지...");
+  console.log("[13/21] TOPIC_SECTION_BUDGET 커버리지...");
   const BUDGET_TOPICS = ["career", "relationship", "finance", "health", "general_future", "life_change", "migration", "compatibility", "family"];
   // buildReadingPrompt를 직접 호출하지 않고, questionClassifier 결과가 budget에 매핑 가능한지 확인
   for (const topic of BUDGET_TOPICS) {
@@ -317,7 +319,7 @@ async function runAllTests() {
   }
 
   // ── TEST 14: 궁합 엔진 구조 검증 (Phase 2) ──
-  console.log("[14/18] 궁합 엔진 구조 검증...");
+  console.log("[14/21] 궁합 엔진 구조 검증...");
   // PersonSaju 구조 + analyzeCompatibility가 정상 결과를 내는지
   const { analyzeCompatibility } = await import("./lib/compatibilitySajuEngine.ts");
   const personA = {
@@ -339,13 +341,13 @@ async function runAllTests() {
   assert("궁합 summary 존재", compatResult.summary.length > 10, "summary too short");
 
   // ── TEST 15: buildReadingPrompt 출력 구조 (Phase 2) ──
-  console.log("[15/18] buildReadingPrompt 출력 구조...");
+  console.log("[15/21] buildReadingPrompt 출력 구조...");
   const tc15 = TEST_CASES[0];
   const sajuRaw15 = calculateSaju(tc15.year, tc15.month, tc15.day, tc15.hour, tc15.minute, tc15.gender);
   const sajuAnalysis15 = await analyzeSajuStructure(sajuRaw15);
   const prompt15 = buildReadingPrompt(
     { name: "테스트", birthDate: "1990-03-15", birthTime: "14:30", gender: "male", question: tc15.question, questionType: "relationship" },
-    sajuAnalysis15, {}, {}, {}, {}, {}, {},
+    sajuAnalysis15, {} as any, {} as any, {} as any, {} as any, {} as any, {} as any,
     [], undefined, undefined, undefined, undefined
   );
   assert("프롬프트 SECTION 0 포함", prompt15.includes("[SECTION 0]"), "SECTION 0 missing");
@@ -355,7 +357,7 @@ async function runAllTests() {
   assert("프롬프트 3000자 이상", prompt15.length >= 3000, `only ${prompt15.length} chars`);
 
   // ── TEST 16: 마이너 넘버 카드(40장) 서사 및 구조 검증 (Phase 3) ──
-  console.log("[16/18] 마이너 넘버 카드 서사 및 구조 검증...");
+  console.log("[16/21] 마이너 넘버 카드 서사 및 구조 검증...");
   const minorSample = [
     "Ace of Wands", "Five of Wands", "Ten of Wands",
     "Ace of Cups", "Five of Cups", "Ten of Cups",
@@ -374,7 +376,7 @@ async function runAllTests() {
   }
 
   // ── TEST 17: cardContextMatrix 토픽 커버리지 검증 ──
-  console.log("[17/18] cardContextMatrix 토픽 커버리지 및 패턴 검증...");
+  console.log("[17/21] cardContextMatrix 토픽 커버리지 및 패턴 검증...");
   const { lookupCCM, PATTERN_DB } = await import("./cardContextMatrix.ts");
   const NEW_TOPICS = ["reconciliation", "dating", "marriage", "business", "life_direction", "self_growth", "general_future"];
   for (const topic of NEW_TOPICS) {
@@ -383,12 +385,147 @@ async function runAllTests() {
   }
   assert("PATTERN_DB 25개 이상", PATTERN_DB.length >= 25, `only ${PATTERN_DB.length} patterns`);
 
+  // ═══════════════════════════════════════════════════════
+  // TEST 19: calculateSaju 리턴 필드 검증 (interactions, gongmang, shinsalGrouped)
+  // ═══════════════════════════════════════════════════════
+  console.log("[19/21] calculateSaju 리턴 필드 (interactions/gongmang/shinsalGrouped)...");
+  for (const tc of TEST_CASES) {
+    const saju = calculateSaju(tc.year, tc.month, tc.day, tc.hour, tc.minute, tc.gender);
+    
+    // interactions: 배열이어야 함
+    assert(`${tc.id} saju.interactions is array`, Array.isArray(saju.interactions), 
+      `interactions is ${typeof saju.interactions}`);
+    
+    // interactions 내부 구조 (비어있지 않은 경우)
+    if (Array.isArray(saju.interactions) && saju.interactions.length > 0) {
+      const first = saju.interactions[0];
+      assert(`${tc.id} interaction.type exists`, !!first.type, `type missing`);
+      assert(`${tc.id} interaction.elements is array`, Array.isArray(first.elements), `elements not array`);
+      assert(`${tc.id} interaction.severity exists`, !!first.severity, `severity missing`);
+    }
+    
+    // gongmang: 객체, emptied 배열 포함
+    assert(`${tc.id} saju.gongmang exists`, !!saju.gongmang, `gongmang missing`);
+    assert(`${tc.id} gongmang.emptied is array`, Array.isArray(saju.gongmang?.emptied), 
+      `emptied is ${typeof saju.gongmang?.emptied}`);
+    assert(`${tc.id} gongmang.emptied.length === 2`, (saju.gongmang?.emptied?.length || 0) === 2, 
+      `emptied length: ${saju.gongmang?.emptied?.length}`);
+    assert(`${tc.id} gongmang.affectedPillars is array`, Array.isArray(saju.gongmang?.affectedPillars), 
+      `affectedPillars not array`);
+    
+    // shinsalGrouped: 객체, year/month/day/hour/general 키 포함
+    assert(`${tc.id} saju.shinsalGrouped exists`, !!saju.shinsalGrouped, `shinsalGrouped missing`);
+    if (saju.shinsalGrouped) {
+      for (const pillar of ['year', 'month', 'day', 'hour', 'general'] as const) {
+        assert(`${tc.id} shinsalGrouped.${pillar} is array`, 
+          Array.isArray((saju.shinsalGrouped as any)[pillar]), 
+          `${pillar} not array`);
+      }
+    }
+  }
+
+  // analyzeSajuStructure 리턴도 동일 필드 포함 확인
+  console.log("  └─ analyzeSajuStructure 패스스루 확인...");
+  const saju19 = calculateSaju(1990, 3, 15, 14, 30, "M");
+  const analysis19 = await analyzeSajuStructure(saju19);
+  assert("analysis.interactions is array", Array.isArray(analysis19.interactions), 
+    `analysis interactions: ${typeof analysis19.interactions}`);
+  assert("analysis.gongmang exists", !!(analysis19 as any).gongmang, "gongmang not passed through");
+  assert("analysis.shinsal_grouped exists", !!(analysis19 as any).shinsal_grouped, "shinsal_grouped not passed through");
+
+  // ═══════════════════════════════════════════════════════
+  // TEST 20: promptBuilder 천간/지지 상호작용 섹션 검증
+  // ═══════════════════════════════════════════════════════
+  console.log("[20/21] promptBuilder interactions/gongmang/shinsal 프롬프트 포함 확인...");
+  
+  // 상호작용이 있는 사람의 프롬프트 생성 (T01: 1990-03-15 14:30 M)
+  const tc20 = TEST_CASES[0];
+  const sajuRaw20 = calculateSaju(tc20.year, tc20.month, tc20.day, tc20.hour, tc20.minute, tc20.gender);
+  const sajuAnalysis20 = await analyzeSajuStructure(sajuRaw20);
+  const prompt20 = buildReadingPrompt(
+    { name: "테스트20", birthDate: "1990-03-15", birthTime: "14:30", gender: "male", question: tc20.question, questionType: "relationship" },
+    sajuAnalysis20, {} as any, {} as any, {} as any, {} as any, {} as any, {} as any,
+    [], undefined, undefined, undefined, undefined
+  );
+  
+  // 상호작용 섹션 존재 확인 (interactions가 1개 이상이면 블록이 있어야 함)
+  const hasInteractions = Array.isArray(sajuAnalysis20.interactions) && sajuAnalysis20.interactions.length > 0;
+  if (hasInteractions) {
+    assert("프롬프트 상호작용 헤더", prompt20.includes("천간/지지 상호작용"), 
+      "interactions header missing despite having interactions data");
+    assert("프롬프트 상호작용 불릿(•)", (prompt20.match(/•.*(?:합|충|형|육합|삼합|방합|극|해|파|중립)/g) || []).length >= 1,
+      "no interaction bullet points found in prompt");
+  }
+  
+  // 공망 섹션 확인
+  assert("프롬프트 공망 표시", prompt20.includes("공망"), "공망 section missing in prompt");
+  
+  // 신살 섹션 확인
+  assert("프롬프트 신살 표시", prompt20.includes("신살"), "신살 section missing in prompt");
+  
+  // 전체 10명에 대해 프롬프트 생성이 에러 없이 완료되는지
+  let promptSuccessCount = 0;
+  for (const tc of TEST_CASES) {
+    try {
+      const raw = calculateSaju(tc.year, tc.month, tc.day, tc.hour, tc.minute, tc.gender);
+      const anal = await analyzeSajuStructure(raw);
+      const p = buildReadingPrompt(
+        { name: `test_${tc.id}`, birthDate: `${tc.year}-${tc.month}-${tc.day}`, birthTime: `${tc.hour}:${tc.minute}`, gender: tc.gender === "M" ? "male" : "female", question: tc.question, questionType: tc.expectedCategory },
+        anal, {} as any, {} as any, {} as any, {} as any, {} as any, {} as any,
+        [], undefined, undefined, undefined, undefined
+      );
+      if (p.length > 1000) promptSuccessCount++;
+    } catch (e: any) {
+      assert(`${tc.id} 프롬프트 생성 에러`, false, e.message);
+    }
+  }
+  assert("전체 10명 프롬프트 생성 성공", promptSuccessCount === TEST_CASES.length, 
+    `${promptSuccessCount}/${TEST_CASES.length}`);
+
+  // ═══════════════════════════════════════════════════════
+  // TEST 21: INTERACTION_DEEP 키 매칭률 검증
+  // ═══════════════════════════════════════════════════════
+  console.log("[21/21] INTERACTION_DEEP 키 매칭률...");
+  let totalInteractions = 0;
+  let matchedInteractions = 0;
+  
+  for (const tc of TEST_CASES) {
+    const raw = calculateSaju(tc.year, tc.month, tc.day, tc.hour, tc.minute, tc.gender);
+    const anal = await analyzeSajuStructure(raw);
+    const inters = anal.interactions || [];
+    
+    for (const it of inters) {
+      if (typeof it === 'string') continue;
+      totalInteractions++;
+      
+      const elStr = Array.isArray(it.elements) ? it.elements.join('') : '';
+      const candidates = [
+        elStr,
+        it.type === '천간합' ? elStr + '합' : null,
+        it.type === '지지육합' ? elStr + '합' : null,
+        it.type === '지지삼합' ? elStr : null,
+        it.type === '지지방합' ? elStr : null,
+        it.name,
+        it.type
+      ].filter(Boolean);
+      
+      const matched = candidates.some(key => !!(INTERACTION_DEEP as any)[key as string]);
+      if (matched) matchedInteractions++;
+    }
+  }
+  
+  const matchRate = totalInteractions > 0 ? matchedInteractions / totalInteractions : 1;
+  assert("INTERACTION_DEEP 매칭률 ≥ 50%", matchRate >= 0.5, 
+    `${matchedInteractions}/${totalInteractions} (${(matchRate * 100).toFixed(1)}%) — 사전 키 확장 필요`);
+  assert("interactions 데이터 존재", totalInteractions > 0, 
+    "10명 테스트 케이스 중 interactions가 전혀 없음");
+
   // ═══════════════════════════════════════════════
   // TEST 18: Utility Functions & Core Engine Verification
   // ═══════════════════════════════════════════════
   {
     const group = "TEST 18: Utility Functions";
-    console.log(`\n[18/18] ${group}...`);
+    console.log(`\n[18/21] ${group}...`);
 
     function addResult(grp: string, name: string, condition: boolean) {
       assert(`${grp}: ${name}`, condition);
