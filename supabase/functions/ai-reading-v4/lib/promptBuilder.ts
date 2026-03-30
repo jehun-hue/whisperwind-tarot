@@ -57,6 +57,19 @@ const TOPIC_SECTION_BUDGET: Record<string, TopicSectionConfig> = {
   family:          { saju: 'full',    ziwei: 'full',    astrology: 'summary', numerology: 'skip',    tarot: 'summary' },
 };
 
+const ASTRO_HOUSE_MAP: Record<string, number[]> = {
+  relationship:   [7, 5, 8, 1, 11],     // 파트너십, 연애, 변환, 자아, 우정
+  career:         [10, 6, 2, 1, 11],     // 직업, 일상, 재물, 자아, 목표
+  health:         [6, 1, 8, 12, 4],      // 건강, 자아, 변환, 잠재의식, 가정
+  finance:        [2, 8, 10, 11, 6],     // 재물, 공유재물, 직업, 목표, 일상
+  life_change:    [1, 10, 4, 7, 9],      // 자아, 직업, 뿌리, 파트너, 철학
+  migration:      [9, 3, 4, 1, 12],      // 해외, 이동, 뿌리, 자아, 카르마
+  family:         [4, 5, 10, 7, 1],      // 가정, 자녀, 부모, 배우자, 자아
+  compatibility:  [7, 5, 1, 8, 11],      // 파트너십, 연애, 자아, 심층, 우정
+  general_future: [1, 10, 7, 4, 2],      // 자아, 직업, 관계, 가정, 재물
+  default:        [1, 10, 7, 4, 2],
+};
+
 // ─── 정규식 스크래퍼 방식 요약 함수들 ───
 function summarizeSaju(full: string): string {
   const lines = full.split('\n');
@@ -656,6 +669,12 @@ ${ziweiSection}
   const srAsc = sr.ascendant?.sign || '?';
   const srMoonHouse = sr.moon?.house || '?';
 
+  // 질문 유형별 핵심 하우스 추출 (P1-6)
+  const priorityHouses = ASTRO_HOUSE_MAP[qType] || ASTRO_HOUSE_MAP.default;
+  const priorityHousePlanets = planets
+    .filter((p: any) => priorityHouses.includes(p.house))
+    .sort((a: any, b: any) => priorityHouses.indexOf(a.house) - priorityHouses.indexOf(b.house));
+
   const formatPlanet = (p: any) => p ? `${p.planet} ${p.sign} ${p.degree}° ${p.house}하우스${p.dignity && p.dignity !== '없음' ? ` [${p.dignity}]` : ''}` : '?';
 
   const progressionBlock = aRaw.progression?.moon
@@ -666,11 +685,16 @@ ${ziweiSection}
   const section3 = `
 === [SECTION 3] 서양 점성술 (핵심) ===
 ${line('태양', formatPlanet(sun))}${line('달', formatPlanet(moon))}${line('토성', formatPlanet(saturn))}• ASC: ${ascSign} ${ascDeg}°
-${dignityPlanets.length > 0 ? `• 디그니티: ${dignityPlanets?.map((p: any) => `${p.planet} ${p.sign} [${p.dignity}]`).join(', ')}\n` : ''}• 주요 어스펙트 (orb 순):
+${dignityPlanets.length > 0 ? `• 디그니티: ${dignityPlanets?.map((p: any) => `${p.planet} ${p.sign} [${p.dignity}]`).join(', ')}\n` : ''}• 질문 관련 핵심 하우스 분석:
+${priorityHousePlanets.map((p: any) => `  - ${formatPlanet(p)} ◆ 핵심 하우스`).join('\n') || '  - 관련 하우스에 행성 배치 없음'}
+
+• 주요 어스펙트 (orb 순):
 ${topAspects}
 • 트랜짓 핵심:
 ${topTransits}
 ${progressionBlock}${line(`솔라리턴(${sr.year || ''})`, `ASC ${srAsc}, 달 ${srMoonHouse}하우스`)}
+
+★ 점성학 해석 우선순위: 질문 유형="${qType}"에 따라 위 [핵심 하우스]의 배치를 최우선적으로 고려하여 리딩을 전개하십시오.
 `;
 
   // ========================
