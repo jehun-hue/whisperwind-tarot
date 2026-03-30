@@ -10,6 +10,7 @@ import { processChat } from "./interactivityLayer.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { runCompatibilityEngine } from "./lib/compatibilityEngine.ts";
 import { calculateSaju } from "./calculateSaju.ts";
+import { classifyWithFallback, classifyQuestion } from "./questionClassifier.ts";
 import { lunarToSolar as lunarToSolarAccurate } from "./lib/lunarConverter.ts";
 
 const corsHeaders = {
@@ -162,13 +163,15 @@ serve(async (req: Request) => {
     const birthKey = payload.birthInfo
       ? `${payload.birthInfo.year || ""}-${payload.birthInfo.month || ""}-${payload.birthInfo.day || ""}-${payload.birthInfo.hour || ""}-${payload.birthInfo.gender || ""}`
       : "noBirth";
+    const serverCategory = classifyQuestion(question || "").primary_topic;
     const clientCategoryHint = payload.questionCategory || payload.category || "general";
     const spreadHash = [
       (payload.cards || []).map((c: any) => c.name || "card").join("-"),
       style,
       locale,
       birthKey,
-      clientCategoryHint,
+      serverCategory,
+      clientCategoryHint, // P1-4: 보조 힌트로 유지하여 기존 캐시 최대한 활용
       (question || "").slice(0, 50),
     ].join("_");
     const { data: cached } = await supabase
