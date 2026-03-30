@@ -18,7 +18,7 @@ import { getDaewoonInfo, calculateFullDaewoon, type DaewoonResult } from "./lib/
 import { determineGyeokguk } from "./lib/gyeokguk.ts";
 import { calculateFortune } from "./lib/fortuneEngine.ts";
 import { lunarToSolar } from "./lib/lunarConverter.ts";
-import { calculateInteractions, calculateShinsalGrouped, calculateGongmang } from "./lib/interactions.ts";
+import { calculateInteractions, calculateShinsalGrouped, calculateGongmang, calculateGwimunWonjin } from "./lib/interactions.ts";
 
 export type YajasiMode = 'change_day' | 'keep_day';
 
