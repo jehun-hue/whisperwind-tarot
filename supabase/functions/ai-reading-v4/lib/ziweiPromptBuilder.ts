@@ -134,6 +134,23 @@ export function buildZiWeiPromptSection(ziwei: ZiweiResult): string {
       const BRANCHES_LIST = ["자", "축", "인", "묘", "진", "사", "오", "미", "신", "유", "술", "해"];
       const palaceBranchIdx = BRANCHES_LIST.indexOf(palace.branch);
       if (palaceBranchIdx >= 0) {
+        // ── P1-1 추가: 공궁 차성(借星) 처리 ──
+        const isMajorEmpty = !majorStars; // 주성이 없는 빈궁
+        if (isMajorEmpty) {
+          const oppositeIdx = (palaceBranchIdx + 6) % 12;
+          const oppPalace = (ziwei.palaces || []).find(pp => pp.branch === BRANCHES_LIST[oppositeIdx]);
+          if (oppPalace) {
+            const borrowedStars = (oppPalace.stars || [])
+              .filter(s => ["자미","천기","태양","무곡","천동","염정","천부","태음","탐랑","거문","천상","천량","칠살","파군"].includes(s.star))
+              .map(s => `${s.star}(${s.brightness})`)
+              .join(", ");
+            if (borrowedStars) {
+              lines.push(`    ★ 빈궁 차성: 대궁 ${oppPalace.name}(${oppPalace.branch})에서 차용 → ${borrowedStars}`);
+              lines.push(`    ★ 차성 해석 지침: 빈궁은 대궁의 별을 빌려 해석합니다. 단, 빌린 별의 영향력은 원래 궁에 있을 때의 약 60~70% 수준입니다. 빈궁 자체는 '비어있는 가능성'으로, 후천적 노력에 따라 결과가 크게 달라질 수 있음을 뜻합니다.`);
+            }
+          }
+        }
+
         const oppositeIdx = (palaceBranchIdx + 6) % 12;
         const trine1Idx = (palaceBranchIdx + 4) % 12;
         const trine2Idx = (palaceBranchIdx + 8) % 12;
@@ -153,6 +170,8 @@ export function buildZiWeiPromptSection(ziwei: ZiweiResult): string {
 
         if (oppStars || tri1Stars || tri2Stars) {
           lines.push(`    삼방사정: 대궁[${oppStars || "빈"}] 삼합[${tri1Stars || "빈"}, ${tri2Stars || "빈"}]`);
+          // ── P1-1 추가: 삼방사정 해석 지침 ──
+          lines.push(`    ★ 삼방사정 해석: 본궁의 주성이 약하거나 빈궁이더라도, 삼방사정의 길성(좌보/우필/문창/문곡/록존/천괴/천월)이 많으면 외부 도움과 기회가 풍부합니다. 흉성(경양/타라/화성/영성/지공/지겁)이 집중되면 장애와 변동이 큽니다.`);
         }
       }
     }
