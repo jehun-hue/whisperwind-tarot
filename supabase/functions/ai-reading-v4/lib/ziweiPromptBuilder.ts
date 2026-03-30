@@ -1,5 +1,19 @@
 import { type ZiweiResult, STAR_PALACE_MEANINGS } from "./ziweiEngine.ts";
 
+export const ZIWEI_PALACE_MAP: Record<string, string[]> = {
+  relationship:   ["부처궁", "복덕궁", "천이궁", "명궁", "재백궁", "관록궁"],
+  career:         ["관록궁", "천이궁", "재백궁", "명궁", "복덕궁", "부처궁"],
+  health:         ["질액궁", "복덕궁", "명궁", "부모궁", "재백궁", "관록궁"],
+  finance:        ["재백궁", "전택궁", "관록궁", "명궁", "복덕궁", "부처궁"],
+  life_change:    ["천이궁", "명궁", "관록궁", "복덕궁", "재백궁", "부처궁"],
+  migration:      ["천이궁", "명궁", "부모궁", "복덕궁", "재백궁", "관록궁"],
+  family:         ["부모궁", "자녀궁", "형제궁", "부처궁", "명궁", "복덕궁"],
+  compatibility:  ["부처궁", "복덕궁", "명궁", "천이궁", "재백궁", "관록궁"],
+  general_future: ["명궁", "관록궁", "재백궁", "부처궁", "질액궁", "복덕궁"],
+  default:        ["명궁", "관록궁", "재백궁", "부처궁", "질액궁", "복덕궁"],
+};
+
+
 /**
  * 자미두수 분석 결과를 AI 프롬프트용 구조화 텍스트로 변환
  */
@@ -103,17 +117,7 @@ export function buildZiWeiPromptSection(ziwei: ZiweiResult, questionType?: strin
   // ── 12궁 요약 (명궁, 재백궁, 관록궁, 부처궁, 질액궁만 핵심) ──
   lines.push("");
   // ── P1-3: 질문 유형별 핵심 궁 우선순위 ──
-  const ZIWEI_PRIORITY_MAP: Record<string, string[]> = {
-    relationship:    ["부처궁", "복덕궁", "천이궁", "명궁", "재백궁", "관록궁"],
-    career:          ["관록궁", "천이궁", "재백궁", "명궁", "복덕궁", "부처궁"],
-    health:          ["질액궁", "복덕궁", "명궁", "부모궁", "재백궁", "관록궁"],
-    finance:         ["재백궁", "전택궁", "관록궁", "명궁", "복덕궁", "부처궁"],
-    life_change:     ["천이궁", "명궁", "관록궁", "복덕궁", "재백궁", "부처궁"],
-    family:          ["부모궁", "자녀궁", "형제궁", "부처궁", "명궁", "복덕궁"],
-    compatibility:   ["부처궁", "복덕궁", "명궁", "천이궁", "재백궁", "관록궁"],
-    general_future:  ["명궁", "관록궁", "재백궁", "부처궁", "질액궁", "복덕궁"],
-  };
-  const keyPalaces = ZIWEI_PRIORITY_MAP[questionType || ""] || ZIWEI_PRIORITY_MAP.general_future;
+  const keyPalaces = ZIWEI_PALACE_MAP[questionType || ""] || ZIWEI_PALACE_MAP.default;
   const primaryPalaces = keyPalaces.slice(0, 3); // 상위 3궁은 상세 분석
 
   lines.push(`[핵심 궁위 분석] (질문 유형: ${questionType || "종합"}, 우선궁: ${primaryPalaces.join("→")})`);
