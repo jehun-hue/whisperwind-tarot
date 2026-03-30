@@ -234,5 +234,68 @@ export function buildZiWeiPromptSection(ziwei: ZiweiResult): string {
     lines.push(`  해석: ${ya.interpretation.slice(0, 200)}`);
   }
 
+  // ── P1-2: 사화 클러스터 분석 (궁별 사화 중첩 감지) ──
+  const natalTrans = ziwei.natalTransformations || [];
+  const dahanTrans = ziwei.currentMajorPeriod?.transformations || [];
+  const flowTrans = (ziwei as any).currentYearAnalysis?.flowYearTransformations || [];
+  
+  // 궁별 사화 수집
+  const palaceCluster: Record<string, { natal: string[]; dahan: string[]; flow: string[] }> = {};
+  
+  for (const t of natalTrans) {
+    if (!palaceCluster[t.palace]) palaceCluster[t.palace] = { natal: [], dahan: [], flow: [] };
+    palaceCluster[t.palace].natal.push(`${t.type}(${t.star})`);
+  }
+  for (const t of dahanTrans) {
+    if (!palaceCluster[t.palace]) palaceCluster[t.palace] = { natal: [], dahan: [], flow: [] };
+    palaceCluster[t.palace].dahan.push(`${t.type}(${t.star})`);
+  }
+  for (const t of flowTrans) {
+    if (!palaceCluster[t.palace]) palaceCluster[t.palace] = { natal: [], dahan: [], flow: [] };
+    palaceCluster[t.palace].flow.push(`${t.type}(${t.star})`);
+  }
+  
+  // 2개 이상 레이어에서 사화가 겹치는 궁만 추출
+  const clusterEntries = Object.entries(palaceCluster)
+    .filter(([_, v]) => [v.natal.length > 0, v.dahan.length > 0, v.flow.length > 0].filter(Boolean).length >= 2);
+  
+  if (clusterEntries.length > 0) {
+    lines.push("");
+    lines.push("[사화 클러스터 분석 — 궁별 사화 중첩]");
+    
+    for (const [palace, cluster] of clusterEntries) {
+      const layers: string[] = [];
+      if (cluster.natal.length > 0) layers.push(`본명: ${cluster.natal.join(", ")}`);
+      if (cluster.dahan.length > 0) layers.push(`대한: ${cluster.dahan.join(", ")}`);
+      if (cluster.flow.length > 0) layers.push(`유년: ${cluster.flow.join(", ")}`);
+      
+      const allTypes = [...cluster.natal, ...cluster.dahan, ...cluster.flow].map(s => s.split("(")[0]);
+      const giCount = allTypes.filter(t => t === "화기").length;
+      const rokCount = allTypes.filter(t => t === "화록").length;
+      
+      let severity = "주의";
+      let interpretation = "";
+      
+      if (giCount >= 2) {
+        severity = "⚠ 위험";
+        interpretation = "다중 화기 중첩 — 이 궁의 영역에서 심각한 장애, 손실, 집착이 예상됩니다. 최우선 주의 대상입니다.";
+      } else if (rokCount >= 2) {
+        severity = "★ 대길";
+        interpretation = "다중 화록 중첩 — 이 궁의 영역에서 큰 재물운과 기회가 집중됩니다. 적극적으로 활용하세요.";
+      } else if (giCount >= 1 && rokCount >= 1) {
+        severity = "⚡ 복합";
+        interpretation = "화록+화기 공존 — 기회와 장애가 동시에 옵니다. 이익을 취하되 리스크 관리가 필수입니다.";
+      } else {
+        interpretation = "다중 레이어 사화 중첩 — 이 궁의 에너지 변동이 큰 시기입니다.";
+      }
+      
+      lines.push(`  ${palace} [${severity}]: ${layers.join(" | ")}`);
+      lines.push(`    → ${interpretation}`);
+    }
+    
+    lines.push("");
+    lines.push("★ 사화 클러스터 해석 지침: 같은 궁에 본명·대한·유년 사화가 겹치면 그 궁의 에너지가 극대화됩니다. 화기 2중첩은 '반드시 경고', 화록 2중첩은 '핵심 기회', 화록+화기 공존은 '양날의 검'으로 해석하세요. 클러스터가 없는 궁보다 클러스터가 있는 궁을 우선 해석하십시오.");
+  }
+
   return lines.join("\n");
 }
