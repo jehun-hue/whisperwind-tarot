@@ -512,13 +512,18 @@ ${deepShinsalLines}` : '';
       
       // 키 후보 순서: elements 연결 ("巳申") → elements+type접미사 ("巳申합") → name → type
       const candidates = [
-        elStr,                                              // "巳申" or "申子辰"
-        it.type === '천간합' ? elStr + '합' : null,          // "甲己합"
-        it.type === '지지육합' ? elStr + '합' : null,        // "巳申합"  
-        it.type === '지지삼합' ? elStr : null,               // "申子辰"
-        it.type === '지지방합' ? elStr : null,               // "寅卯辰"
+        elStr,
+        it.type === '천간합' && it.result !== '병존' ? elStr + '합' : null,
+        it.type === '지지육합' ? elStr + '합' : null,
+        it.type === '지지충' ? elStr + '충' : null,
+        it.type === '지지삼합' ? elStr : null,
+        it.type === '지지방합' ? elStr : null,
+        it.type === '형' ? elStr : null,
+        it.type === '파' ? elStr + '파' : null,
+        it.type === '해' ? elStr + '해' : null,
+        it.result === '병존' ? '병존' : null,
         it.name,
-        it.type
+        it.type,
       ].filter(Boolean);
       
       for (const key of candidates) {
