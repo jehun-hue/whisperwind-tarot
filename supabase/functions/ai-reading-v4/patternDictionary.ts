@@ -144,7 +144,7 @@ export const SYMBOL_MAPPINGS: SymbolMapping[] = [
 
   // 궁(宮) 벡터 추가
   { symbol_id: "Z021", system: "Ziwei", symbol_name: "관록궁", linked_patterns: [], semantic_values: { career: 1.0, authority: 0.7, stability: 0.6 } },
-  { symbol_id: "Z022", system: "Ziwei", symbol_name: "재백궁", linked_patterns: [], semantic_values: { finance: 1.0, money: 0.9, stability: 0.5 } },
+  { symbol_id: "Z022", system: "Ziwei", symbol_name: "재백궁", linked_patterns: [], semantic_values: { finance: 1.0, stability: 0.5 } },
   { symbol_id: "Z023", system: "Ziwei", symbol_name: "부처궁", linked_patterns: [], semantic_values: { relationship: 1.0, emotion: 0.8, stability: 0.6 } },
   { symbol_id: "Z024", system: "Ziwei", symbol_name: "천이궁", linked_patterns: [], semantic_values: { change: 0.9, transition: 0.8, growth: 0.5 } },
   { symbol_id: "Z025", system: "Ziwei", symbol_name: "복덕궁", linked_patterns: [], semantic_values: { career: 0.7, growth: 0.7, stability: 0.6 } },

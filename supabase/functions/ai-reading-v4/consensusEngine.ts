@@ -441,7 +441,7 @@ export function calculateConsensusV8(
 export type QuestionTopic =
   | "relationship" | "career" | "finance" | "health"
   | "spirituality" | "family" | "decision" | "general"
-  | "migration" | "life_change" | "money";
+  | "migration" | "life_change";
 
 const TOPIC_WEIGHTS: Record<QuestionTopic, Record<string, number>> = {
   relationship: { tarot: 0.45, astrology: 0.25, saju: 0.15, ziwei: 0.10, numerology: 0.05 },
@@ -453,7 +453,6 @@ const TOPIC_WEIGHTS: Record<QuestionTopic, Record<string, number>> = {
   decision:     { tarot: 0.45, saju: 0.20, astrology: 0.20, ziwei: 0.10, numerology: 0.05 },
   migration:    { tarot: 0.35, ziwei: 0.30, astrology: 0.20, saju: 0.10, numerology: 0.05 },
   life_change:  { tarot: 0.35, saju: 0.25, ziwei: 0.20, astrology: 0.15, numerology: 0.05 },
-  money:        { tarot: 0.20, saju: 0.40, ziwei: 0.25, astrology: 0.10, numerology: 0.05 },
   general:      { tarot: 0.40, saju: 0.25, ziwei: 0.20, astrology: 0.10, numerology: 0.05 },
 };
 

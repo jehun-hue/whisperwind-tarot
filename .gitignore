@@ -36,3 +36,5 @@ phase*_*.js
 final_*.js
 diff_*.patch
 lint_*.json
+.env
+.env.local

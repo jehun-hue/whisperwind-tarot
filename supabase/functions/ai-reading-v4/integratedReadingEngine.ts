@@ -65,70 +65,70 @@ const READING_VERSION = "v9_symbolic_prediction_engine";
 function transformAstrologyData(frontAstro: any): any {
   if (!frontAstro) return createFallbackAstrology();
 
-  const planets = frontAstro.planets || [];
-  const planet_positions = planets?.map((p: any) => ({
-    planet: p.name || p.planet,
-    sign: p.sign,
-    house: p.house,
-    degree: p.degree,
-    dignity: p.dignity || "없음",
-    interpretation: p.interpretation || ""
+  const planets = frontAstro?.planets ?? [];
+  const planet_positions = (planets ?? []).map((p: any) => ({
+    planet: p?.name || p?.planet,
+    sign: p?.sign,
+    house: p?.house,
+    degree: p?.degree,
+    dignity: p?.dignity || "없음",
+    interpretation: p?.interpretation || ""
   }));
 
   const characteristics: string[] = [];
   
-  if (frontAstro.transits) {
-    frontAstro.transits.forEach((t: any) => {
-      if (t.planet && t.sign) {
+  if (frontAstro?.transits) {
+    (frontAstro?.transits ?? []).forEach((t: any) => {
+      if (t?.planet && t?.sign) {
         characteristics.push(`${t.planet} Transit`);
       }
-      if (t.aspectAlerts) {
-        t.aspectAlerts.forEach((alert: string) => characteristics.push(alert));
+      if (t?.aspectAlerts) {
+        (t?.aspectAlerts ?? []).forEach((alert: string) => characteristics.push(alert));
       }
     });
   }
 
-  if (frontAstro.keyAspects) {
-    frontAstro.keyAspects.forEach((aspect: string) => characteristics.push(aspect));
-  } else if (frontAstro.aspects) {
-    frontAstro.aspects.slice(0, 5).forEach((a: any) => {
-      const label = `${a.planet1} ${a.type} ${a.planet2}`;
+  if (frontAstro?.keyAspects) {
+    (frontAstro?.keyAspects ?? []).forEach((aspect: string) => characteristics.push(aspect));
+  } else if (frontAstro?.aspects) {
+    (frontAstro?.aspects ?? []).slice(0, 5).forEach((a: any) => {
+      const label = `${a?.planet1} ${a?.type} ${a?.planet2}`;
       characteristics.push(label);
     });
   }
 
-  if (frontAstro.dignityReport) {
-    frontAstro.dignityReport.forEach((d: any) => {
-      if (d.dignity === "본좌" || d.dignity === "고양") {
+  if (frontAstro?.dignityReport) {
+    (frontAstro?.dignityReport ?? []).forEach((d: any) => {
+      if (d?.dignity === "본좌" || d?.dignity === "고양") {
         characteristics.push(`${d.planet} ${d.dignity}`);
       }
     });
   }
 
-  if (frontAstro.dominantElement) {
-    characteristics.push(`${frontAstro.dominantElement} element dominant`);
+  if (frontAstro?.dominantElement) {
+    characteristics.push(`${frontAstro?.dominantElement} element dominant`);
   }
 
   return {
     system: "astrology",
     characteristics,
     planet_positions,
-    house_positions: frontAstro.housePositions || {
-      ASC: frontAstro.risingSign || "Unknown",
+    house_positions: frontAstro?.housePositions || {
+      ASC: frontAstro?.risingSign || "Unknown",
       MC: "Unknown",
       IC: "Unknown",
       DESC: "Unknown"
     },
-    major_aspects: (frontAstro.keyAspects || []).slice(0, 5),
-    sunSign: frontAstro.sunSign,
-    moonSign: frontAstro.moonSign,
-    risingSign: frontAstro.risingSign,
-    elementDistribution: frontAstro.elementDistribution || {},
-    qualityDistribution: frontAstro.qualityDistribution || {},
-    questionAnalysis: frontAstro.questionAnalysis || null,
-    transits: frontAstro.transits || [],
-    progression: frontAstro.progression || frontAstro.secondaryProgression || null,
-    solarReturn: frontAstro.solarReturn || frontAstro.solar_return || null
+    major_aspects: (frontAstro?.keyAspects || []).slice(0, 5),
+    sunSign: frontAstro?.sunSign,
+    moonSign: frontAstro?.moonSign,
+    risingSign: frontAstro?.risingSign,
+    elementDistribution: frontAstro?.elementDistribution || {},
+    qualityDistribution: frontAstro?.qualityDistribution || {},
+    questionAnalysis: frontAstro?.questionAnalysis || null,
+    transits: frontAstro?.transits || [],
+    progression: frontAstro?.progression || frontAstro?.secondaryProgression || null,
+    solarReturn: frontAstro?.solarReturn || frontAstro?.solar_return || null
   };
 }
 
@@ -139,17 +139,17 @@ function transformAstrologyData(frontAstro: any): any {
 function transformZiweiData(frontZiwei: any): any {
   if (!frontZiwei) return createFallbackZiwei();
 
-  const palaces = (frontZiwei.palaces || []).map((p: any) => ({
-    name: p.name,
-    main_stars: p.main_stars || p.mainStars || (p.stars ? p.stars?.map((s: any) => s.star) : []),
-    location: p.branch || p.location || ""
+  const palaces = (frontZiwei?.palaces ?? []).map((p: any) => ({
+    name: p?.name,
+    main_stars: p?.main_stars || p?.mainStars || (p?.stars ? (p?.stars ?? []).map((s: any) => s?.star) : []),
+    location: p?.branch || p?.location || ""
   }));
 
   const characteristics: string[] = [];
 
-  palaces.forEach((p: any) => {
-    if (p.main_stars && p.main_stars.length > 0) {
-      p.main_stars.forEach((star: string) => {
+  (palaces ?? []).forEach((p: any) => {
+    if (p?.main_stars && (p.main_stars ?? []).length > 0) {
+      (p.main_stars ?? []).forEach((star: string) => {
         if (["파군", "자미", "천부", "칠살", "무곡", "태양", "천기", "염정"].includes(star)) {
           characteristics.push(star);
         }
@@ -157,21 +157,21 @@ function transformZiweiData(frontZiwei: any): any {
     }
   });
 
-  if (frontZiwei.fourTransformations || frontZiwei.siHwa) {
-    const ft = frontZiwei.fourTransformations || frontZiwei.siHwa;
-    if (ft.rok || ft.화록) characteristics.push("화록 active");
-    if (ft.gwon || ft.화권) characteristics.push("화권 active");
-    if (ft.gwa || ft.화과) characteristics.push("화과 active");
-    if (ft.gi || ft.화기) characteristics.push("화기 active");
+  if (frontZiwei?.fourTransformations || frontZiwei?.siHwa) {
+    const ft = frontZiwei?.fourTransformations || frontZiwei?.siHwa;
+    if (ft?.rok || ft?.화록) characteristics.push("화록 active");
+    if (ft?.gwon || ft?.화권) characteristics.push("화권 active");
+    if (ft?.gwa || ft?.화과) characteristics.push("화과 active");
+    if (ft?.gi || ft?.화기) characteristics.push("화기 active");
   }
 
-  const mingGong = palaces.find((p: any) => p.name === "명궁");
-  if (mingGong && mingGong.main_stars.length > 0) {
+  const mingGong = (palaces ?? []).find((p: any) => p?.name === "명궁");
+  if (mingGong && (mingGong?.main_stars ?? []).length > 0) {
     characteristics.push("Main star active");
   }
 
-  const caiBai = palaces.find((p: any) => p.name === "재백궁" || p.name === "재帛궁");
-  if (caiBai && caiBai.main_stars.length > 0) {
+  const caiBai = (palaces ?? []).find((p: any) => p?.name === "재백궁" || p?.name === "재帛궁");
+  if (caiBai && (caiBai?.main_stars ?? []).length > 0) {
     characteristics.push("Financial palace growth");
   }
 
@@ -179,12 +179,12 @@ function transformZiweiData(frontZiwei: any): any {
     system: "ziwei",
     characteristics,
     palaces,
-    mingGong: frontZiwei.mingGong || "Unknown",
-    bureau: frontZiwei.bureau || "Unknown",
-    four_transformations: frontZiwei.fourTransformations || frontZiwei.siHwa || frontZiwei.natalTransformations || {},
+    mingGong: frontZiwei?.mingGong || "Unknown",
+    bureau: frontZiwei?.bureau || "Unknown",
+    four_transformations: frontZiwei?.fourTransformations || frontZiwei?.siHwa || frontZiwei?.natalTransformations || {},
     currentMajorPeriod: frontZiwei?.currentMajorPeriod || null,
-    currentMinorPeriod: frontZiwei.currentMinorPeriod || null,
-    questionAnalysis: frontZiwei.questionAnalysis || null
+    currentMinorPeriod: frontZiwei?.currentMinorPeriod || null,
+    questionAnalysis: frontZiwei?.questionAnalysis || null
   };
 }
 
@@ -270,7 +270,7 @@ const SYMBOLIC_MEANINGS: Record<string, string> = {
 const TOPIC_MAPPING: Record<string, string[]> = {
   "relationship": ["relationship_union", "emotional_connection", "mutual_relationship", "partnership", "relationship_start", "emotional_opening", "marriage", "연애", "사랑", "인연", "궁합"],
   "reconciliation": ["endings", "transformation", "recovery", "patience", "introspection", "재회", "이별", "그리움"],
-  "money": ["abundance", "financial_stability", "financial_adjustment", "financial_struggle", "wealth", "finance", "재물", "금전", "투자", "수익"],
+  "finance": ["abundance", "financial_stability", "financial_adjustment", "financial_struggle", "wealth", "finance", "재물", "금전", "투자", "수익"],
   "career": ["victory", "authority", "leadership", "structure", "initiative", "skill_use", "manifestation", "control", "planning", "career", "business", "직장", "성공", "명예"],
   "self_growth": ["intuition", "inner_guidance", "wisdom", "introspection", "healing", "renewal", "transformation", "hope", "self_growth", "study", "성장", "공부", "시험"],
   "life_direction": ["sudden_change", "collapse", "endings", "life_reset", "life_transition", "cycle_change", "uncertainty", "movement", "timing_event", "방향", "인생", "운세"],
@@ -280,7 +280,7 @@ const TOPIC_MAPPING: Record<string, string[]> = {
 const CATEGORY_KOREAN: Record<string, string> = {
   "relationship": "연애/궁합",
   "reconciliation": "재회/인연",
-  "money": "재물/금전",
+  "finance": "재물/금전",
   "career": "학업/커리어",
   "self_growth": "자아/성장",
   "life_direction": "인생의 방향",
@@ -289,7 +289,7 @@ const CATEGORY_KOREAN: Record<string, string> = {
 };
 
 const TOPIC_PATTERNS: Record<string, Record<string, string[]>> = {
-  money: {
+  finance: {
     saju: ["재성", "식상", "재물"],
     ziwei: ["재백궁"],
     astrology: ["2하우스", "목성"],
@@ -361,9 +361,9 @@ export function buildEnginePrompts(input: any, sajuRaw: any, sajuAnalysis: any, 
   const BRANCH_LIST = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
   
   const getPPol = (p: any) => {
-    if (!p || !p.stem || !p.branch) return { s: 0, b: 0 };
-    const sI = STEM_LIST.indexOf(p.stem);
-    const bI = BRANCH_LIST.indexOf(p.branch);
+    if (!p || !p?.stem || !p?.branch) return { s: 0, b: 0 };
+    const sI = STEM_LIST.indexOf(p?.stem);
+    const bI = BRANCH_LIST.indexOf(p?.branch);
     return {
       s: sI !== -1 ? (sI % 2 === 0 ? 1 : -1) : 0,
       b: bI !== -1 ? (bI % 2 === 0 ? 1 : -1) : 0
@@ -374,7 +374,7 @@ export function buildEnginePrompts(input: any, sajuRaw: any, sajuAnalysis: any, 
   const pM = getPPol(sajuRaw?.month);
   const pD = getPPol(sajuRaw?.day);
   const pH = getPPol(sajuRaw?.hour);
-  const pols = [pY.s, pY.b, pM.s, pM.b, pD.s, pD.b, pH.s, pH.b];
+  const pols = [pY?.s ?? 0, pY?.b ?? 0, pM?.s ?? 0, pM?.b ?? 0, pD?.s ?? 0, pD?.b ?? 0, pH?.s ?? 0, pH?.b ?? 0];
   const yangCount = pols.filter(v => v === 1).length;
   const yinCount = pols.filter(v => v === -1).length;
 
@@ -391,15 +391,15 @@ export function buildEnginePrompts(input: any, sajuRaw: any, sajuAnalysis: any, 
   }
   const sajuDisplay = {
     fourPillars: sajuRaw?.year ? 
-      `년주 ${sajuRaw.year.stem}${sajuRaw.year.branch}, 월주 ${sajuRaw.month.stem}${sajuRaw.month.branch}, 일주 ${sajuRaw.day.stem}${sajuRaw.day.branch}, 시주 ${sajuRaw.hour.stem}${sajuRaw.hour.branch}` :
+      `년주 ${sajuRaw?.year?.stem ?? ""}${sajuRaw?.year?.branch ?? ""}, 월주 ${sajuRaw?.month?.stem ?? ""}${sajuRaw?.month?.branch ?? ""}, 일주 ${sajuRaw?.day?.stem ?? ""}${sajuRaw?.day?.branch ?? ""}, 시주 ${sajuRaw?.hour?.stem ?? ""}${sajuRaw?.hour?.branch ?? ""}` :
       (dbSaju?.pillar?.data ? 
-        `년주 ${getPillarFromData(dbSaju.pillar.data, 3)}, 월주 ${getPillarFromData(dbSaju.pillar.data, 2)}, 일주 ${getPillarFromData(dbSaju.pillar.data, 1)}, 시주 ${getPillarFromData(dbSaju.pillar.data, 0)}` : 
-        (dbSaju?.yearPillar ? `년주 ${dbSaju.yearPillar.hanja}, 월주 ${dbSaju.monthPillar.hanja}, 일주 ${dbSaju.dayPillar.hanja}, 시주 ${dbSaju.hourPillar.hanja}` : "데이터 없음")),
-    dayMaster: (sajuRaw?.dayMaster && sajuRaw.dayMaster !== "Unknown") ? sajuRaw.dayMaster :
-      (sajuAnalysis?.dayMaster && sajuAnalysis.dayMaster !== "Unknown") ? sajuAnalysis.dayMaster : 
-      (dbSaju?.pillar?.data ? getDayMasterFromData(dbSaju.pillar.data) : (dbSaju?.dayPillar?.cheongan || "Unknown")),
-    elements: (sajuAnalysis?.elements && Object.keys(sajuAnalysis.elements).length > 0) ? 
-      Object.entries(sajuAnalysis.elements).map(([k, v]) => `${k}${v}`).join(" ") : 
+        `년주 ${getPillarFromData(dbSaju?.pillar?.data, 3)}, 월주 ${getPillarFromData(dbSaju?.pillar?.data, 2)}, 일주 ${getPillarFromData(dbSaju?.pillar?.data, 1)}, 시주 ${getPillarFromData(dbSaju?.pillar?.data, 0)}` : 
+        (dbSaju?.yearPillar ? `년주 ${dbSaju?.yearPillar?.hanja}, 월주 ${dbSaju?.monthPillar?.hanja}, 일주 ${dbSaju?.dayPillar?.hanja}, 시주 ${dbSaju?.hourPillar?.hanja}` : "데이터 없음")),
+    dayMaster: (sajuRaw?.dayMaster && sajuRaw?.dayMaster !== "Unknown") ? sajuRaw?.dayMaster :
+      (sajuAnalysis?.dayMaster && sajuAnalysis?.dayMaster !== "Unknown") ? sajuAnalysis?.dayMaster : 
+      (dbSaju?.pillar?.data ? getDayMasterFromData(dbSaju?.pillar?.data) : (dbSaju?.dayPillar?.cheongan || "Unknown")),
+    elements: (sajuAnalysis?.elements && Object.keys(sajuAnalysis.elements as Record<string, any>).length > 0) ? 
+      Object.entries(sajuAnalysis.elements as Record<string, number>).map(([k, v]) => `${k}${v}`).join(" ") : 
       (dbSaju?.yinyang?.data ? `목${dbSaju.yinyang.data.wood || 0} 화${dbSaju.yinyang.data.fire || 0} 토${dbSaju.yinyang.data.earth || 0} 금${dbSaju.yinyang.data.metal || 0} 수${dbSaju.yinyang.data.water || 0}` : "분석 불가"),
     yongShin: (sajuAnalysis?.yongShin && sajuAnalysis.yongShin !== "Unknown") ? sajuAnalysis.yongShin : 
       (dbSaju?.yongsin?.data ? getYongShinFromData(dbSaju.yongsin.data, 'yong') : "데이터 부족"),
@@ -413,8 +413,8 @@ export function buildEnginePrompts(input: any, sajuRaw: any, sajuAnalysis: any, 
     nextDaewoon: (() => {
       const dw = (sajuRaw as any)?.daewoon;
       if (!dw?.is_daeun_changing_year || !dw?.pillars) return null;
-      const cur = dw.currentDaewoon;
-      const next = dw.pillars.find((p: any) => p.index === (cur?.index || 0) + 1);
+      const cur = dw?.currentDaewoon;
+      const next = (dw?.pillars ?? []).find((p: any) => p?.index === (cur?.index || 0) + 1);
       return next?.full || null;
     })(),
     has_time: !!sajuRaw?.has_time
@@ -423,13 +423,13 @@ export function buildEnginePrompts(input: any, sajuRaw: any, sajuAnalysis: any, 
   const luckyFactors = LUCKY_MAP[sajuDisplay.yongShin] || { color: "다양함", number: "전체", direction: "중앙" };
 
   // 엔진 상징화 결과 (Calculated Symbolic Results)
-  const mingGong = ziweiAnalysis?.palaces?.find((p: any) => p.name === "명궁");
-  const mingStars = mingGong?.main_stars?.join(", ") || "데이터 부족";
+  const mingGong = ziweiAnalysis?.palaces?.find((p: any) => p?.name === "명궁");
+  const mingStars = (mingGong?.main_stars ?? []).join(", ") || "데이터 부족";
   
-  const ziweiSymbolic = ziweiAnalysis?.skipped ? `(자미두수 데이터 없음: ${ziweiAnalysis.reason})` : `
+  const ziweiSymbolic = ziweiAnalysis?.skipped ? `(자미두수 데이터 없음: ${ziweiAnalysis?.reason})` : `
 - 명궁(${ziweiAnalysis?.mingGong || "미상"}): ${mingStars} 좌정.
 - 국: ${ziweiAnalysis?.bureau || "분석 불가"}
-- 성별: ${birthInfo.gender === 'M' ? '음남(陰男)' : '양녀(陽女)'}
+- 성별: ${birthInfo?.gender === 'M' ? '음남(陰男)' : '양녀(陽女)'}
 - 지침: 제공된 명반의 국과 주성 의미를 중심으로 리딩을 전개하시오.
 `;
 
@@ -440,21 +440,21 @@ export function buildEnginePrompts(input: any, sajuRaw: any, sajuAnalysis: any, 
 
 
 
-  const ziweiPrompt = ziweiAnalysis?.skipped ? ziweiAnalysis.reason : `
+  const ziweiPrompt = ziweiAnalysis?.skipped ? ziweiAnalysis?.reason : `
 [자미두수 엔진 호출 결과 - 상징화 완료]
 ${ziweiSymbolic}
-- 기본정보: ${birthInfo.year}년 ${birthInfo.month}월 ${birthInfo.day}일 ${birthInfo.hour}시 ${birthInfo.minute}분 (${birthInfo.gender === 'M' ? '음남 陰男' : '양녀 陽女'})
+- 기본정보: ${birthInfo?.year}년 ${birthInfo?.month}월 ${birthInfo?.day}일 ${birthInfo?.hour}시 ${birthInfo?.minute}분 (${birthInfo?.gender === 'M' ? '음남 陰男' : '양녀 陽女'})
 - 현재 대한: ${ziweiAnalysis?.currentMajorPeriod?.interpretation || "데이터 부족"}
 - 소한: ${ziweiAnalysis?.currentMinorPeriod?.interpretation || "데이터 부족"}
-- 선천사화: ${Array.isArray(ziweiAnalysis?.natal_transformations) ? ziweiAnalysis.natal_transformations.slice(0,4).map((t: any) => `${t.type}(${t.star}→${t.palace})`).join(", ") : "데이터 부족"}
+- 선천사화: ${(ziweiAnalysis?.natal_transformations ?? []).length > 0 ? (ziweiAnalysis?.natal_transformations ?? []).slice(0,4).map((t: any) => `${t?.type}(${t?.star}→${t?.palace})`).join(", ") : "데이터 부족"}
 - B-175 압축: 주요궁(명/관록/부처/질액/천이) + 공궁만 표시
-${(ziweiAnalysis?.palaces || []).filter((p: any) => 
-  ["명궁","관록궁","부처궁","질액궁","천이궁"].includes(p.name) || p.is_empty
+${(ziweiAnalysis?.palaces ?? []).filter((p: any) => 
+  ["명궁","관록궁","부처궁","질액궁","천이궁"].includes(p?.name) || p?.is_empty
 ).map((p: any) => {
-  const starInfo = p.main_stars?.length > 0 ? p.main_stars.join(", ") : "공궁(空宮)";
-  const borrowedNote = p.is_borrowed_stars ? ` ※차성안궁(${p.borrowed_from || "대궁"}에서 차용)` : "";
-  const emptyNote = p.is_empty ? " [공궁]" : "";
-  return `  * ${p.name}(${p.location}): ${starInfo}${emptyNote}${borrowedNote}`;
+  const starInfo = (p?.main_stars ?? []).length > 0 ? (p?.main_stars ?? []).join(", ") : "공궁(空宮)";
+  const borrowedNote = p?.is_borrowed_stars ? ` ※차성안궁(${p?.borrowed_from || "대궁"}에서 차용)` : "";
+  const emptyNote = p?.is_empty ? " [공궁]" : "";
+  return `  * ${p?.name}(${p?.location}): ${starInfo}${emptyNote}${borrowedNote}`;
 }).join("\n")}
 `;
 
@@ -464,10 +464,10 @@ ${astrologySymbolic}
 - 태양: ${astrologyAnalysis?.sunSign || "미상"} / 달: ${astrologyAnalysis?.moonSign || "미상"} / 상승궁: ${astrologyAnalysis?.risingSign || "미상(출생시간 필요)"}
 - 지배 원소: ${astrologyAnalysis?.dominant_element || astrologyAnalysis?.dominantElement || "미상"} / 특질: ${astrologyAnalysis?.dominantQuality || "미상"}
 - 네이탈 주요 어스펙트(상위 5개):
-${(astrologyAnalysis?.keyAspects || astrologyAnalysis?.major_aspects || []).slice(0, 5).map((a: string) => `  • ${a}`).join("\n") || "  • 데이터 없음"}
-- 디그니티(품위): ${astrologyAnalysis?.dignityReport?.join(", ") || "없음"}
+${(astrologyAnalysis?.keyAspects ?? astrologyAnalysis?.major_aspects ?? []).slice(0, 5).map((a: string) => `  • ${a}`).join("\n") || "  • 데이터 없음"}
+- 디그니티(품위): ${(astrologyAnalysis?.dignityReport ?? []).join(", ") || "없음"}
 - 현재 트랜짓(외행성 → 네이탈 어스펙트):
-${(astrologyAnalysis?.transits || []).slice(0, 8).map((t: string) => `  • ${t}`).join("\n") || "  • 데이터 없음"}
+${(astrologyAnalysis?.transits ?? []).slice(0, 8).map((t: string) => `  • ${t}`).join("\n") || "  • 데이터 없음"}
 
 [트랜짓 해석 지침] 합=활성화, 사각=긴장/성장, 삼합=흐름/기회, 충=충돌/균형, 육분=소기회. 정점일 가까울수록 강함.
 `;
@@ -525,27 +525,27 @@ ${yinyangMessage}- 핵심 기운: ${sajuDisplay.yongShin} → [상징: ${SYMBOLI
 
 export async function runFullProductionEngineV8(supabaseClient: any, apiKey: string, input: any) {
   const pipelineStart = Date.now();
-  const sessionId = input.sessionId;
-  const style = input.style || "hanna";
-  console.log(`[PlatformV9] Analysis Started. Mode: ${input.mode || 'standard'}`);
-  const tarotCards = input.cards || [];
-  const combinationClues = tarotCards
-    .map((c: any) => `- ${c.korean}: ${c.cardCombination || "정보 없음"}`)
+  const sessionId = input?.sessionId;
+  const style = input?.style || "hanna";
+  console.log(`[PlatformV9] Analysis Started. Mode: ${input?.mode || 'standard'}`);
+  const tarotCards = input?.cards ?? [];
+  const combinationClues = (tarotCards ?? [])
+    .map((c: any) => `- ${c?.korean ?? "미상"}: ${c?.cardCombination || "정보 없음"}`)
     .join('\n');
 
   // Normalize birthInfo: client sends {birthDate:"1987-07-17", birthTime:"15:30", gender:"male"}
-  const rawBirth = input.birthInfo || {};
+  const rawBirth = input?.birthInfo ?? {};
   // B-228 + B-225: 출생시간 "모름" 처리 표준화
-  const rawBirthTime = rawBirth.birthTime || rawBirth.birth_time || rawBirth.time;
+  const rawBirthTime = rawBirth?.birthTime ?? rawBirth?.birth_time ?? rawBirth?.time;
   const hasTime = rawBirthTime !== "" && rawBirthTime !== null && rawBirthTime !== undefined && rawBirthTime !== "모름";
 
   let birthInfo: any;
 
-  if (rawBirth.year !== undefined) {
+  if (rawBirth?.year !== undefined) {
     birthInfo = rawBirth;
   } else {
     // 1) birthDate 정규화 — 다양한 소스 대응
-    let rawDate: string = rawBirth.birthDate ?? rawBirth.birth_date ?? rawBirth.date ?? "";
+    let rawDate: string = rawBirth?.birthDate ?? rawBirth?.birth_date ?? rawBirth?.date ?? "";
     rawDate = rawDate.toString().trim();
     let y: number, m: number, d: number;
 
@@ -574,7 +574,7 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     }
 
     // 2) birthTime 정규화
-    let rawTime: string = rawBirth.birthTime ?? rawBirth.birth_time ?? rawBirth.time ?? "";
+    let rawTime: string = rawBirth?.birthTime ?? rawBirth?.birth_time ?? rawBirth?.time ?? "";
     rawTime = rawTime.toString().trim();
     let hr: number, mn: number;
     if (/^\d{1,2}:\d{2}$/.test(rawTime)) {
@@ -600,9 +600,9 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
       isLeapMonth: rawBirth.isLeapMonth,
       // B-123 fix: birthPlace 텍스트 → 위도/경도 자동 변환 (주요 도시 테이블)
       ...(() => {
-        let bPlace = rawBirth.birthPlace || "";
-        let lat = rawBirth.latitude;
-        let lng = rawBirth.longitude;
+        let bPlace = rawBirth?.birthPlace || "";
+        let lat = rawBirth?.latitude;
+        let lng = rawBirth?.longitude;
         
         // 출생지 기본값 처리 (서울)
         if (!bPlace || bPlace.trim() === "") {
@@ -641,8 +641,8 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
   const birthDate = new Date(Date.UTC(birthInfo.year, birthInfo.month - 1, birthInfo.day, birthInfo.hour, birthInfo.minute, 0));
 
   // 음력→양력 변환 적용
-  const isLunar = !!(rawBirth.isLunar || rawBirth.isLunarDate);
-  const isLeapMonthInput = !!rawBirth.isLeapMonth;
+  const isLunar = !!(rawBirth?.isLunar || rawBirth?.isLunarDate);
+  const isLeapMonthInput = !!rawBirth?.isLeapMonth;
   
   const solarBirthInfo = isLunar
     ? (() => {
@@ -695,16 +695,16 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     }
 
     // 타로 심볼릭 (동기)
-    const tarotSymbolic = runTarotSymbolicEngine(input.cards || [], input.question);
+    const tarotSymbolic = runTarotSymbolicEngine(input?.cards || [], input?.question);
     // B-113: Card Context Matrix (CCM) — 동적 카드 의미 분석
     let ccmResult: ReturnType<typeof analyzeSpreadCCM> | null = null;
     try {
-      const cardNames: string[] = (input.cards || []).map((c: any) => c.name).filter(Boolean);
+      const cardNames: string[] = (input?.cards || []).map((c: any) => c?.name).filter(Boolean);
       // B-142 fix: 카드 원본 position 필드 우선 사용, 없으면 인덱스 기반 폴백
       const positionFallback = ["past","present","future","advice","obstacle","outcome"];
       const cardPositions: Array<"past"|"present"|"future"|"advice"|"obstacle"|"outcome"> =
-        (input.cards || []).map((c: any, i: number) => {
-          const rawPos = (c.position || "").toLowerCase().trim();
+        (input?.cards || []).map((c: any, i: number) => {
+          const rawPos = (c?.position || "").toLowerCase().trim();
           const posMap: Record<string, "past"|"present"|"future"|"advice"|"obstacle"|"outcome"> = {
             "past": "past", "과거": "past", "현재 상황": "present", "present": "present",
             "future": "future", "미래": "future", "가까운 결과": "future",
@@ -715,7 +715,7 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
           return posMap[rawPos] ?? (positionFallback[i] ?? "present") as "past"|"present"|"future"|"advice"|"obstacle"|"outcome";
         });
       if (cardNames.length > 0) {
-        ccmResult = analyzeSpreadCCM(cardNames, cardPositions, (input.questionType || "general"));
+        ccmResult = analyzeSpreadCCM(cardNames, cardPositions, (input?.questionType || "general"));
       }
     } catch (e) {
       console.warn("[B-113] CCM error:", e);
@@ -805,8 +805,8 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     let numerologyResult: any = null;
     try {
       // ──── 수비학 연산 (표준 엔진 통합) ────
-      const koreanName = rawBirth.name || input.userName || "이름없음";
-      const englishName = rawBirth.englishName || input.englishName || "";
+      const koreanName = rawBirth?.name || input?.userName || "이름없음";
+      const englishName = rawBirth?.englishName || input?.englishName || "";
 
       const baseResult = calculateNumerology(
         `${solarBirthInfo.year}-${String(solarBirthInfo.month).padStart(2,'0')}-${String(solarBirthInfo.day).padStart(2,'0')}`,
@@ -823,33 +823,33 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
 
       // === 현재 나이 기준 피너클/챌린지 추출 ===
       const currentAgeVal = new Date().getFullYear() - new Date(birthDate).getFullYear();
-      const currentPinnacle = (baseResult.pinnacles || []).find((p: any) => {
-        if (!p.period) return false;
-        const match = p.period.match(/(\d+)\s*~\s*(종료|\d+)/);
+      const currentPinnacle = (baseResult?.pinnacles || []).find((p: any) => {
+        if (!p?.period) return false;
+        const match = p?.period.match(/(\d+)\s*~\s*(종료|\d+)/);
         if (!match) return false;
         const start = parseInt(match[1]);
         const end = match[2] === '종료' ? 999 : parseInt(match[2]);
         return currentAgeVal >= start && currentAgeVal <= end;
-      }) || (baseResult.pinnacles || [])[0] || null;
+      }) || (baseResult?.pinnacles || [])[0] || null;
 
-      const currentChallenge = (baseResult.challenges || []).find((c: any) => {
-        if (!c.period) return false;
-        const match = c.period.match(/(\d+)\s*~\s*(종료|\d+)/);
+      const currentChallenge = (baseResult?.challenges || []).find((c: any) => {
+        if (!c?.period) return false;
+        const match = c?.period.match(/(\d+)\s*~\s*(종료|\d+)/);
         if (!match) return false;
         const start = parseInt(match[1]);
         const end = match[2] === '종료' ? 999 : parseInt(match[2]);
         return currentAgeVal >= start && currentAgeVal <= end;
-      }) || (baseResult.challenges || [])[0] || null;
+      }) || (baseResult?.challenges || [])[0] || null;
 
       numerologyResult = {
         ...baseResult,
-        lifePath: baseResult.life_path_number,
-        expression: englishName ? baseResult.expressionNumber : koreanDestiny,
-        soul: englishName ? baseResult.soulUrgeNumber : null,
-        personality: englishName ? baseResult.personalityNumber : null,
+        lifePath: baseResult?.life_path_number,
+        expression: englishName ? baseResult?.expressionNumber : koreanDestiny,
+        soul: englishName ? baseResult?.soulUrgeNumber : null,
+        personality: englishName ? baseResult?.personalityNumber : null,
         koreanDestiny,
         karmic_debts: finalKarmicDebts,
-        has_karmic_debt: finalKarmicDebts.length > 0,
+        has_karmic_debt: (finalKarmicDebts ?? []).length > 0,
         currentPinnacle,
         currentChallenge,
         data_quality_score: 0.85
@@ -869,13 +869,12 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
       const birthHourBranch = hasTime ? (sajuRaw?.hour?.branch || "午") : "午";
 
       serverZiwei = calculateZiwei(
-        ziweiYearStem,
-        ziweiYearBranch,
+        solarBirthInfo.year,
         ziweiLunarMonth,
         ziweiLunarDay,
-        birthHourBranch,
-        genderZiwei,
-        solarBirthInfo.year
+        birthInfo?.hour || 0,
+        birthInfo?.minute || 0,
+        genderZiwei
       );
     } catch (e) {
       console.error("[ENGINE-SAFE] 자미두수 계산 실패:", e);
@@ -889,11 +888,11 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
         warning: "출생 시간 미확인으로 명궁 정확도가 낮을 수 있습니다"
       };
     } else if (serverZiwei) {
-      const ziweiPalaces = (serverZiwei.palaces || []).map((data: any) => ({
-        name: data.name,
-        main_stars: data.main_stars || [],
-        location: data.branch,
-        is_empty: (data.main_stars || []).length === 0,
+      const ziweiPalaces = (serverZiwei?.palaces || []).map((data: any) => ({
+        name: data?.name,
+        main_stars: data?.main_stars || [],
+        location: data?.branch,
+        is_empty: (data?.main_stars || []).length === 0,
         is_borrowed_stars: false,
         borrowed_from: null
       }));
@@ -902,10 +901,10 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
         life_structure: "", 
         palaces: ziweiPalaces,
         key_insights: [],
-        major_period: serverZiwei.dahan?.[0] || {},
+        major_period: serverZiwei?.dahan?.[0] || {},
         characteristics: [
-          ...ziweiPalaces.flatMap(p => p.main_stars),
-          ...Object.values(serverZiwei.siHua || {}),
+          ...ziweiPalaces.flatMap((p: any) => p?.main_stars ?? []),
+          ...Object.values(serverZiwei?.siHua || {}),
         ].filter(Boolean) as string[],
         period_analysis: "",
         // B-108 compatibility: 뱀케이스와 카멜케이스 모두 제공
@@ -918,17 +917,17 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
         patterns: [],
         
         // promptBuilder용 필드
-        mingGong: serverZiwei.mingGong,
-        lifePalace: serverZiwei.mingGong,
-        shenGong: serverZiwei.shenGong,
-        bureau: serverZiwei.bureau,
-        fiveElementFrame: serverZiwei.bureau,
-        currentMajorPeriod: serverZiwei.currentMajorPeriod || serverZiwei.dahan?.[0] || null,
-        current_major_period: serverZiwei.currentMajorPeriod || serverZiwei.dahan?.[0] || null,
-        currentMinorPeriod: serverZiwei.currentMinorPeriod || serverZiwei.liunian || serverZiwei.liuNian || null,
-        current_minor_period: serverZiwei.liunian || serverZiwei.liuNian || null,
-        annualTransformations: serverZiwei.annualTransformations || serverZiwei.siHua?.annual || [],
-        annual_transformations: serverZiwei.annualTransformations || serverZiwei.siHua?.annual || [],
+        mingGong: serverZiwei?.mingGong,
+        lifePalace: serverZiwei?.mingGong,
+        shenGong: serverZiwei?.shenGong,
+        bureau: serverZiwei?.bureau,
+        fiveElementFrame: serverZiwei?.bureau,
+        currentMajorPeriod: serverZiwei?.currentMajorPeriod || serverZiwei?.dahan?.[0] || null,
+        current_major_period: serverZiwei?.currentMajorPeriod || serverZiwei?.dahan?.[0] || null,
+        currentMinorPeriod: serverZiwei?.currentMinorPeriod || serverZiwei?.liunian || serverZiwei?.liuNian || null,
+        current_minor_period: serverZiwei?.liunian || serverZiwei?.liuNian || null,
+        annualTransformations: serverZiwei?.annualTransformations || serverZiwei?.siHua?.annual || [],
+        annual_transformations: serverZiwei?.annualTransformations || serverZiwei?.siHua?.annual || [],
         rawData: serverZiwei
       };
     }
@@ -939,22 +938,22 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
         console.error("[ENGINE-SAFE] 사주 구조 분석 실패:", e);
         return {
           characteristics: [], narrative: "분석 실패", elements: {}, tenGods: {},
-          yongShin: "Unknown", heeShin: "Unknown", daewoon: null, interactions: [], shinsal: [],
-          health_risk_tags: [], topic_shinsal_map: {}, strength: "Unknown", fortune: null
+          yongShin: "Unknown", heeShin: "Unknown", daewoon: [], interactions: [], shinsal: [],
+          health_risk_tags: [], topic_shinsal_map: {}, strength: "Unknown", fortune: undefined
         } as any;
       }),
-      classifyWithFallback(input.question || "", apiKey).catch(e => {
+      classifyWithFallback(input?.question || "", apiKey).catch(e => {
         console.error("[ENGINE-SAFE] 질문 분류 실패:", e);
-        return classifyQuestion(input.question || "");
+        return classifyQuestion(input?.question || "");
       })
     ]);
 
     // B-268: fortune 연결 확인 및 누락 시 세이프티 계산 (fortuneEngine v3 통합)
-    if (!sajuAnalysis.fortune && sajuAnalysis.dayMaster && sajuAnalysis.dayMaster !== "Unknown" && sajuAnalysis.yongShin !== "Unknown") {
+    if (!sajuAnalysis.fortune && sajuAnalysis?.dayMaster && sajuAnalysis?.dayMaster !== "Unknown" && sajuAnalysis?.yongShin !== "Unknown") {
       try {
-        const pillars = sajuRaw.pillars || { year: sajuRaw.year, month: sajuRaw.month, day: sajuRaw.day, hour: sajuRaw.hour };
-        const stems = [pillars.year?.stem, pillars.month?.stem, pillars.day?.stem, pillars.hour?.stem].filter(Boolean);
-        const branches = [pillars.year?.branch, pillars.month?.branch, pillars.day?.branch, pillars.hour?.branch].filter(Boolean);
+        const pillars = sajuRaw?.pillars || { year: sajuRaw?.year, month: sajuRaw?.month, day: sajuRaw?.day, hour: sajuRaw?.hour };
+        const stems = [pillars?.year?.stem, pillars?.month?.stem, pillars?.day?.stem, pillars?.hour?.stem].filter(Boolean);
+        const branches = [pillars?.year?.branch, pillars?.month?.branch, pillars?.day?.branch, pillars?.hour?.branch].filter(Boolean);
         const currentDaewoon = sajuAnalysis.daewoon?.currentDaewoon;
 
         sajuAnalysis.fortune = calculateFortune(
@@ -982,7 +981,7 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
 
     // B-171: TCVE™ Lite 교차검증 실행
     const tcveResult = tcveCrossCheck(
-      input.cards || [],
+      input?.cards || [],
       sajuAnalysis,
       astrologyAnalysis,
       ziweiAnalysis,
@@ -1005,8 +1004,8 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
       // 카드별 벡터 계산 (포지션 가중치 + 역방향 + 용신 보정)
       const wuxingMap: Record<string, number> = { "목": 1, "화": 2, "토": 3, "금": 4, "수": 5 };
       const yongshinWuxing: number = wuxingMap[sajuAnalysis?.yongShin] ?? 3;
-      const enrichedCardVectors = (input.cards || []).map((c: any, idx: number) => {
-        const baseVec = getCardVector(c.name);
+      const enrichedCardVectors = (input?.cards || []).map((c: any, idx: number) => {
+        const baseVec = getCardVector(c?.name);
         if (!baseVec) return null;
 
         // 역방향 + 포지션 가중치 적용
@@ -1020,22 +1019,22 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
         );
 
         // 용신 오행 보정
-        const cardWuxing = getCardWuxing(c.name);
+        const cardWuxing = getCardWuxing(c?.name);
         const compatibility = getElementCompatibility(cardWuxing, yongshinWuxing);
         const adjusted: Record<string, number> = {};
         for (const [key, val] of Object.entries(processed)) {
           adjusted[key] = Math.min(1.0, Math.max(-1.0, (val as number) + compatibility * 0.5));
         }
 
-        return { name: c.name, position: idx + 1, isReversed: c.isReversed, vector: adjusted };
+        return { name: c?.name, position: idx + 1, isReversed: c?.isReversed, vector: adjusted };
       }).filter(Boolean);
 
       return {
         system: "tarot",
         category: tarotSymbolic.category,
         characteristics: [
-          ...Object.keys(tarotSymbolic.dominant_patterns),
-          ...(input.cards || []).map((c: any) => c.name)
+          ...Object.keys(tarotSymbolic?.dominant_patterns ?? {}),
+          ...(input?.cards || []).map((c: any) => c?.name)
         ],
         card_vectors: enrichedCardVectors,
         yongshin_wuxing: yongshinWuxing
@@ -1074,29 +1073,29 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
 
   const rawVectors = generatePatternVectors(systemResults);
   // Symbol 기준 중복 제거 (Set/filter)
-  const patternVectors = rawVectors.filter((v, i, a) => 
-    a.findIndex(t => t.symbol === v.symbol) === i
+  const patternVectors = (rawVectors ?? []).filter((v, i, a) => 
+    a.findIndex(t => t?.symbol === v?.symbol) === i
   );
   // console.log(`📊 [Vector Merge] 중복 제거 완료: ${rawVectors.length} -> ${patternVectors.length}`);
 
   // Step 2: Cross-System Topic Validation (Voting System)
   const systemWins: Record<string, string> = {};
-  const activeSystems = [...new Set((patternVectors||[]).map(v => (v.system || "").toLowerCase()))].filter(Boolean);
+  const activeSystems = [...new Set((patternVectors ?? []).map(v => (v?.system || "").toLowerCase()))].filter(Boolean);
   
   activeSystems.forEach(sys => {
-    const sysVectors = patternVectors.filter(v => (v.system || "").toLowerCase() === sys);
+    const sysVectors = (patternVectors ?? []).filter(v => (v?.system || "").toLowerCase() === sys);
     const votes: Record<string, number> = {};
     
     sysVectors.forEach(v => {
       // Vector-based voting
-      Object.entries(v.vector).forEach(([dim, val]) => {
+      Object.entries(v?.vector ?? {}).forEach(([dim, val]) => {
         Object.entries(TOPIC_MAPPING).forEach(([topic, dims]) => {
-          if (dims.includes(dim)) votes[topic] = (votes[topic] || 0) + val;
+          if ((dims as string[]).includes(dim)) votes[topic] = (votes[topic] || 0) + (val as number);
         });
       });
       // Symbol-based voting
       Object.entries(TOPIC_MAPPING).forEach(([topic, keywords]) => {
-        if (keywords.some(k => v.symbol.includes(k))) votes[topic] = (votes[topic] || 0) + 0.5;
+        if ((keywords as string[]).some(k => v?.symbol?.includes(k))) votes[topic] = (votes[topic] || 0) + 0.5;
       });
     });
     
@@ -1136,8 +1135,8 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     allKeys.forEach(k => {
       blendedWeights![k] = ((w1[k] || 0) * 0.6 + (w2[k] || 0) * 0.4);
     });
-    const total = Object.values(blendedWeights).reduce((s, v) => s + v, 0);
-    if (total > 0) Object.keys(blendedWeights).forEach(k => blendedWeights![k] /= total);
+    const total = Object.values(blendedWeights as Record<string, number>).reduce((s: number, v: number) => s + v, 0);
+    if (total > 0) Object.keys(blendedWeights as Record<string, number>).forEach(k => blendedWeights![k] /= total);
   }
 
   const consensusResult = calculateConsensusWithTopic(
@@ -1150,7 +1149,7 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
   );
   const temporalResult = predictTemporalV8(consensusResult, systemResults, questionType);
   // B-164 fix: data-only 모드에서는 타로 없으므로 validation 강제 통과 처리
-  const validationResult = input.mode === "data-only"
+  const validationResult = input?.mode === "data-only"
     ? { isValid: true, message: "Validation Passed (Data-Only Mode)", reasons: [] }
     : validateEngineOutput(consensusResult, patternVectors, systemResults, questionType);
 
@@ -1160,7 +1159,7 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     : consensusResult.consensus_score >= 0.3 ? "B" : "C";
 
   // 타로 카드 조합 감지 로직 (#92)
-  const cardNamesForCombos = (tarotCards||[]).map((c: any) => c.name).filter(Boolean);
+  const cardNamesForCombos = (tarotCards ?? []).map((c: any) => c?.name).filter(Boolean);
   const matchedCombinations = detectCombinations(cardNamesForCombos, finalTopic);
   const detectedCombinations = matchedCombinations.length;
   const combinationBonus = aggregateCombinationScore(matchedCombinations);
@@ -1169,7 +1168,7 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
   const birthContext = {
     solar_date: `${solarBirthInfo.year}-${String(solarBirthInfo.month).padStart(2,"0")}-${String(solarBirthInfo.day).padStart(2,"0")}`,
     lunar_date: (rawBirth?.isLunar || rawBirth?.isLunarDate)
-      ? `${birthInfo.year}-${String(birthInfo.month).padStart(2,"0")}-${String(birthInfo.day).padStart(2,"0")}`
+      ? `${birthInfo?.year}-${String(birthInfo?.month).padStart(2,"0")}-${String(birthInfo?.day).padStart(2,"0")}`
       : null,
     is_lunar: !!(rawBirth?.isLunar || rawBirth?.isLunarDate),
     is_leap_month: rawBirth?.isLeapMonth ?? false,
@@ -1254,11 +1253,11 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     language: input.locale === 'ja' ? 'ja' : input.locale === 'en' ? 'en' : 'ko'
   };
 
-  const normalizedCards: DrawnCard[] = (tarotCards||[]).map((c: any) => ({
-    name: c.name,
-    isMajor: ["The Fool", "The Magician", "The High Priestess", "The Empress", "The Emperor", "The Hierophant", "The Lovers", "The Chariot", "Strength", "The Hermit", "Wheel of Fortune", "Justice", "The Hanged Man", "Death", "Temperance", "The Devil", "The Tower", "The Star", "The Moon", "The Sun", "Judgement", "The World"].includes(c.name),
-    isReversed: !!c.isReversed,
-    position: c.position || "current",
+  const normalizedCards: DrawnCard[] = (tarotCards ?? []).map((c: any) => ({
+    name: c?.name,
+    isMajor: ["The Fool", "The Magician", "The High Priestess", "The Empress", "The Emperor", "The Hierophant", "The Lovers", "The Chariot", "Strength", "The Hermit", "Wheel of Fortune", "Justice", "The Hanged Man", "Death", "Temperance", "The Devil", "The Tower", "The Star", "The Moon", "The Sun", "Judgement", "The World"].includes(c?.name),
+    isReversed: !!c?.isReversed,
+    position: c?.position || "current",
     suit: c.suit,
     rank: c.rank
   }));
@@ -1279,19 +1278,19 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
     ageContext.international_age,
     new Date().getFullYear(),
     { 
-      daewoon: sajuAnalysis?.daewoon || [], 
-      sewoon: sajuAnalysis?.sewoon || [], 
-      wolwoon: sajuAnalysis?.wolwoon || [],
-      fortune: sajuAnalysis?.fortune || null
+      daewoon: (sajuAnalysis?.daewoon ?? (sajuAnalysis as any)?.majorPeriods ?? []), 
+      sewoon: (sajuAnalysis?.sewoon ?? []), 
+      wolwoon: (sajuAnalysis?.wolwoon ?? []),
+      fortune: (sajuAnalysis?.fortune ?? undefined) as any
     },
     { 
-      transits: astrologyAnalysis?.transits || [] || [], 
-      transitAspects: astrologyAnalysis?.aspects || [] || [], 
-      progressions: (astrologyAnalysis as any)?.progressions || [] 
+      transits: (astrologyAnalysis?.transits ?? []), 
+      transitAspects: (astrologyAnalysis?.aspects ?? []), 
+      progressions: (astrologyAnalysis as any)?.progressions ?? [] 
     },
     { 
-      dahan: ziweiAnalysis?.dahan || [] || [], 
-      sohan: ziweiAnalysis?.currentMinorPeriod || ziweiAnalysis?.liunian || null 
+      dahan: (ziweiAnalysis?.dahan ?? []), 
+      sohan: ziweiAnalysis?.currentMinorPeriod || ziweiAnalysis?.liunian || undefined 
     },
     { 
       personalYear: numerologyResult?.personal_year || 0, 
@@ -1310,10 +1309,10 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
   );
 
   // 5. 통합 프롬프트 빌드
-  const isTransitioning = sajuAnalysis.daewoon_transition?.isTransitioning ?? false;
+  const isTransitioning = sajuAnalysis?.daewoon_transition?.isTransitioning ?? false;
   const tarotPolarity = calculateTarotPolarity(normalizedCards);
   const decisionResult = computeDecision(
-    consensusResult.consensus_score || 0,
+    consensusResult?.consensus_score || 0,
     signalData.crossSignals,
     signalData.signals, // v11: 모든 원시 신호 추가
     isTransitioning,
@@ -1435,8 +1434,8 @@ ${focusLines ? `\n[질문 주제 핵심 키워드]\n${focusLines}` : ''}
       } else {
         console.log(`[E1-B] hybrid 실패: ${hybridRes.error}`);
         const dv = consensusResult?.dominant_vector || {};
-        const growthDir = (dv.growth || 0) > 0.5 ? '성장과 확장' : '안정과 유지';
-        const riskLevel = (dv.risk || 0) > 0.5 ? '높은 리스크 관리 필요' : '비교적 안정적';
+        const growthDir = (dv?.growth || 0) > 0.5 ? '성장과 확장' : '안정과 유지';
+        const riskLevel = (dv?.risk || 0) > 0.5 ? '높은 리스크 관리 필요' : '비교적 안정적';
         thirdNarrative = `2026년은 ${growthDir}의 흐름이 지배적이며, ${riskLevel}한 시기입니다. ` +
           `사주 용신 ${sajuAnalysis?.yongShin || ''}의 에너지를 활용하고, ` +
           `내면의 성찰과 외부 실행의 균형을 맞추는 것이 핵심입니다. ` +
@@ -1515,9 +1514,9 @@ ${focusLines ? `\n[질문 주제 핵심 키워드]\n${focusLines}` : ''}
     grade,
     total_systems: validSystemCount,
     converged_count: Math.round(((consensusResult.consensus_score + 1) / 2) * validSystemCount),
-    internal_validation: validationResult.isValid ? "통과" : "경고",
-    conflict_summary: consensusResult.conflict_summary,
-    conflict_log: consensusResult.conflict_log
+    internal_validation: validationResult?.isValid ? "통과" : "경고",
+    conflict_summary: consensusResult?.conflict_summary,
+    conflict_log: (consensusResult?.conflict_log ?? [])
   };
   parsed.scores = scores;
   // B-228: data-only 모드 시 system_calculations에 원본 데이터 보존 (프론트 표시용)
@@ -1546,16 +1545,16 @@ ${focusLines ? `\n[질문 주제 핵심 키워드]\n${focusLines}` : ''}
   parsed.practical_advice = parsed.action_guide || { do_list: [], dont_list: [], lucky: {} };
   parsed.system_calculations = {
     ...parsed.convergence,
-    consensus_score: Math.round(consensusResult.consensus_score * 100),
-    confidence_score: Math.round(consensusResult.confidence_score * 100),
-    prediction_strength: consensusResult.prediction_strength,
-    engine_reliability: consensusResult.engine_reliability,
+    consensus_score: Math.round((consensusResult?.consensus_score ?? 0) * 100),
+    confidence_score: Math.round((consensusResult?.confidence_score ?? 0) * 100),
+    prediction_strength: consensusResult?.prediction_strength,
+    engine_reliability: consensusResult?.engine_reliability,
     timeline: temporalResult,
     validation: validationResult,
     vectors: patternVectors,
-    system_weights: (consensusResult as any).topic_weights_used || { tarot: 0.40, saju: 0.25, ziwei: 0.20, astrology: 0.10, numerology: 0.05 },
+    system_weights: (consensusResult as any)?.topic_weights_used || { tarot: 0.40, saju: 0.25, ziwei: 0.20, astrology: 0.10, numerology: 0.05 },
     // B-163 fix: topic_weights_used 별도 필드로 추가 (프론트엔드 참조용)
-    topic_weights_used: (consensusResult as any).topic_weights_used || null,
+    topic_weights_used: (consensusResult as any)?.topic_weights_used || null,
   };
 
   // Professional V4 Detail Mapping (Required by ReaderPage.tsx)
@@ -1622,7 +1621,7 @@ ${parsed.action_guide?.do_list?.map((item: string) => `- ${item}`).join('\n') ||
             stars.includes("식상") ? "식상 활성 → 창의·표현 에너지 증가" : null,
             stars.includes("재성") ? "재성 활성 → 재물 흐름 변동" : null,
           ].filter(Boolean),
-          key_pillars: Object.entries(pillars).filter(([k]) => ["year", "month", "day", "hour"].includes(k)).map(([k, v]: [string, any]) => `${k}: ${v.stem}${v.branch}`),
+          key_pillars: Object.entries(pillars as any).filter(([k]) => ["year", "month", "day", "hour"].includes(k)).map(([k, v]: [string, any]) => `${k}: ${v?.stem || ""}${v?.branch || ""}`),
           topic_alignment: (localBestSystem as any)?.saju === questionTopic ? "high" : "medium"
         };
       })(),
@@ -1633,16 +1632,16 @@ ${parsed.action_guide?.do_list?.map((item: string) => `- ${item}`).join('\n') ||
           signals: [
             careerP ? `관록궁: ${careerP.main_stars?.join("·")}` : null,
             (ziweiAnalysis as any).currentMajorPeriod?.interpretation ? `대한: ${(ziweiAnalysis as any).currentMajorPeriod.interpretation}` : null,
-            (ziweiAnalysis as any).currentMinorPeriod?.interpretation ? `소한: ${(ziweiAnalysis as any).currentMinorPeriod.interpretation}` : null,
+            (ziweiAnalysis as any).currentMinorPeriod?.interpretation ? `소한: ${(ziweiAnalysis as any)?.currentMinorPeriod?.interpretation}` : null,
             (ziweiAnalysis as any).annualTransformations?.length > 0
-              ? `${(ziweiAnalysis as any).annualYear}년 유년사화: ${(ziweiAnalysis as any).annualTransformations?.map((t: any) => t.description).join(", ")}`
+              ? `${(ziweiAnalysis as any)?.annualYear}년 유년사화: ${(ziweiAnalysis as any)?.annualTransformations?.map((t: any) => t?.description).join(", ")}`
               : null,
             (ziweiAnalysis as any).natalTransformations?.length > 0
-              ? `선천사화: ${(ziweiAnalysis as any).natalTransformations.slice(0, 3).map((t: any) => `${t.type}(${t.star}→${t.palace})`).join(", ")}`
+              ? `선천사화: ${(ziweiAnalysis as any)?.natalTransformations?.slice(0, 3).map((t: any) => `${t?.type}(${t?.star}→${t?.palace})`).join(", ")}`
               : null,
             (ziweiAnalysis as any).is_daewoon_changing_year ? "대한 교체기(교운기) 주의" : null,
           ].filter(Boolean),
-          key_palaces: (ziweiAnalysis as any).palaces?.map((p: any) => p.name) || [],
+          key_palaces: (ziweiAnalysis as any)?.palaces?.map((p: any) => p?.name) || [],
           topic_alignment: "medium"
         };
       })(),
@@ -1650,8 +1649,8 @@ ${parsed.action_guide?.do_list?.map((item: string) => `- ${item}`).join('\n') ||
         if (!astrologyAnalysis) return null;
         return {
           signals: [
-            (astrologyAnalysis as any).house_positions?.["10"] ? `10하우스(직업궁): ${(astrologyAnalysis as any).house_positions["10"]}` : null,
-            (astrologyAnalysis as any).transits?.length > 0 ? `주요 트랜짓: ${(astrologyAnalysis as any).transits[0]}` : null,
+            (astrologyAnalysis as any)?.house_positions?.["10"] ? `10하우스(직업궁): ${(astrologyAnalysis as any)?.house_positions["10"]}` : null,
+            (astrologyAnalysis as any)?.transits?.length > 0 ? `주요 트랜짓: ${(astrologyAnalysis as any)?.transits[0]}` : null,
           ].filter(Boolean),
           topic_alignment: "medium"
         };
@@ -1660,8 +1659,8 @@ ${parsed.action_guide?.do_list?.map((item: string) => `- ${item}`).join('\n') ||
         const careerCards = ["The Emperor", "The Chariot", "Ace of Pentacles", "Knight of Swords"];
         const matchedCards = input?.cards?.filter((c: any) => careerCards.includes(c.name)) || [];
         return {
-          signals: matchedCards?.map((c: any) => `${c.name}(${c.isReversed ? '역방향' : '정방향'}) → ${questionTopic} 관련 카드`),
-          topic_alignment: matchedCards.length > 0 ? "high" : "low"
+          signals: (matchedCards ?? []).map((c: any) => `${c?.name}(${c?.isReversed ? '역방향' : '정방향'}) → ${questionTopic} 관련 카드`),
+          topic_alignment: (matchedCards ?? []).length > 0 ? "high" : "low"
         };
       })(),
       numerology: (() => {
@@ -1704,19 +1703,19 @@ ${parsed.action_guide?.do_list?.map((item: string) => `- ${item}`).join('\n') ||
     // 1. 사주 대운 (daewoon)
     try {
       const sajuPeriods = sajuAnalysis?.daewoon || (sajuAnalysis as any)?.majorPeriods || [];
-      const sajuPillars = Array.isArray(sajuPeriods) ? sajuPeriods : (sajuPeriods.pillars || []);
-      sajuPillars.forEach((p: any) => {
-        const isCurrent = p.isCurrent === true ||
-          (p.startAge <= currentAge && p.endAge > currentAge);
+      const sajuPillars = Array.isArray(sajuPeriods) ? sajuPeriods : ((sajuPeriods as any)?.pillars ?? []);
+      (sajuPillars ?? []).forEach((p: any) => {
+        const isCurrent = p?.isCurrent === true ||
+          (p?.startAge <= currentAge && p?.endAge > currentAge);
         entries.push({
           system: "saju",
           type: "major_period",
-          label: p.full || p.label || "대운",
-          age_range: `${p.startAge}~${p.endAge}세`,
+          label: p?.full || p?.label || "대운",
+          age_range: `${p?.startAge}~${p?.endAge}세`,
           current: isCurrent,
-          interpretation: p.tenGodStem
-            ? `천간 ${p.tenGodStem} · 지지 ${p.tenGodBranch}`
-            : p.interpretation || ""
+          interpretation: p?.tenGodStem
+            ? `천간 ${p?.tenGodStem} · 지지 ${p?.tenGodBranch}`
+            : p?.interpretation || ""
         });
       });
     } catch (_) {}
@@ -1728,10 +1727,10 @@ ${parsed.action_guide?.do_list?.map((item: string) => `- ${item}`).join('\n') ||
         entries.push({
           system: "ziwei",
           type: "major_period",
-          label: `대한 ${ziweiMajor.branch || ""}궁 (${ziweiMajor.palace || ""})`,
-          age_range: `${ziweiMajor.startAge}~${ziweiMajor.endAge}세`,
+          label: `대한 ${ziweiMajor?.branch || ""}궁 (${ziweiMajor?.palace || ""})`,
+          age_range: `${ziweiMajor?.startAge}~${ziweiMajor?.endAge}세`,
           current: true,
-          interpretation: ziweiMajor.interpretation || ""
+          interpretation: ziweiMajor?.interpretation || ""
         });
       }
       const ziweiMinor = ziweiAnalysis?.currentMinorPeriod;
@@ -1739,10 +1738,10 @@ ${parsed.action_guide?.do_list?.map((item: string) => `- ${item}`).join('\n') ||
         entries.push({
           system: "ziwei",
           type: "minor_period",
-          label: `소한 ${ziweiMinor.branch || ""}`,
-          age_range: `${ziweiMinor.age}세`,
+          label: `소한 ${ziweiMinor?.branch || ""}`,
+          age_range: `${ziweiMinor?.age}세`,
           current: true,
-          interpretation: ziweiMinor.interpretation || ""
+          interpretation: ziweiMinor?.interpretation || ""
         });
       }
     } catch (_) {}
@@ -1750,9 +1749,9 @@ ${parsed.action_guide?.do_list?.map((item: string) => `- ${item}`).join('\n') ||
     // 3. 점성술 트랜짓
     try {
       const transits = astrologyAnalysis?.transits || [];
-      transits.slice(0, 5).forEach((t: any) => {
-        const label = typeof t === "string" ? t : (t.label || t.planet || "트랜짓");
-        const interp = typeof t === "string" ? t : (t.interpretation || t.aspect || "");
+      (transits ?? []).slice(0, 5).forEach((t: any) => {
+        const label = typeof t === "string" ? t : (t?.label || t?.planet || "트랜짓");
+        const interp = typeof t === "string" ? t : (t?.interpretation || t?.aspect || "");
         entries.push({
           system: "astrology",
           type: "transit",
@@ -1778,12 +1777,12 @@ ${parsed.action_guide?.do_list?.map((item: string) => `- ${item}`).join('\n') ||
       current_age: currentAge,
       entries: sorted,
       summary: {
-        saju_major: entries.find(e => e.system === "saju" && e.current)?.label || null,
-        ziwei_major: entries.find(e => e.system === "ziwei" && e.type === "major_period")?.label || null,
-        ziwei_minor: entries.find(e => e.system === "ziwei" && e.type === "minor_period")?.label || null,
+        saju_major: entries.find(e => e?.system === "saju" && e?.current)?.label || undefined,
+        ziwei_major: entries.find(e => e?.system === "ziwei" && e?.type === "major_period")?.label || undefined,
+        ziwei_minor: entries.find(e => e?.system === "ziwei" && e?.type === "minor_period")?.label || undefined,
         astrology_transits: entries
-          .filter(e => e.system === "astrology")
-          .map(e => e.label)
+          .filter(e => e?.system === "astrology")
+          .map(e => e?.label)
           .slice(0, 3)
       }
     };
@@ -1792,9 +1791,9 @@ ${parsed.action_guide?.do_list?.map((item: string) => `- ${item}`).join('\n') ||
   // B-108: Life Timeline Engine 연동 (Consensus → Timeline → Narrative 파이프라인)
   let lifeTimelineResult: LifeTimelineResult | null = null;
   try {
-    const tarotSymbolList: string[] = patternVectors
-      .filter(v => v.system === "tarot")
-      .flatMap(v => Object.keys(v.vector ?? {}).filter(k => (v.vector[k] ?? 0) > 0.3));
+    const tarotSymbolList: string[] = (patternVectors ?? [])
+      .filter(v => v?.system === "tarot")
+      .flatMap(v => Object.keys(v?.vector ?? {}).filter(k => (v?.vector[k] ?? 0) > 0.3));
 
     lifeTimelineResult = runLifeTimelineEngine(
       solarBirthInfo.year,
@@ -1860,13 +1859,13 @@ ${parsed.action_guide?.do_list?.map((item: string) => `- ${item}`).join('\n') ||
     // 각 시스템별 벡터 집계
     const systemNames = ["tarot", "saju", "ziwei", "astrology", "numerology"];
     for (const sysName of systemNames) {
-      const pts = patternVectors.filter(
-        (v: any) => v.system?.toLowerCase() === sysName
+      const pts = (patternVectors ?? []).filter(
+        (v: any) => v?.system?.toLowerCase() === sysName
       );
       const agg: Record<string, number> = {};
       pts.forEach((p: any) => {
-        Object.entries(p.vector || {}).forEach(([dim, val]) => {
-          agg[dim] = (agg[dim] || 0) + (val as number);
+        Object.entries(p?.vector ?? {}).forEach(([dim, val]) => {
+          agg[dim] = (agg[dim] ?? 0) + (val as number);
         });
       });
 
@@ -1876,12 +1875,12 @@ ${parsed.action_guide?.do_list?.map((item: string) => `- ${item}`).join('\n') ||
         normalized[dim] = Math.min(1.0, Math.max(-1.0, val / Math.max(pts.length, 1)));
       }
 
-      const w = systemWeights[sysName];
+      const w = systemWeights[sysName] ?? 0;
       result[sysName] = {
         contribution: parseFloat((w / totalWeight).toFixed(3)),
         vectors: normalized,
         weight: parseFloat(w.toFixed(3)),
-        confidence: parseFloat(((scores as any)[sysName]?.confidence ?? 0).toFixed(3))
+        confidence: parseFloat(((scores as any)?.[sysName]?.confidence ?? 0).toFixed(3))
       };
     }
 
@@ -1909,11 +1908,11 @@ ${parsed.action_guide?.do_list?.map((item: string) => `- ${item}`).join('\n') ||
 
   // B-61: edge_case_tags 생성
   const edgeCaseTags: string[] = [];
-  if (birthInfo.hour === 23) edgeCaseTags.push("야자시(夜子時)");
-  if (!birthInfo.birthTime) edgeCaseTags.push("출생시 미입력");
-  if (!birthInfo.birthPlace) edgeCaseTags.push("출생지 미입력");
-  if (consensusResult.conflict_log?.some(c => c.conflict_level === "severe")) edgeCaseTags.push("엔진간 심각 충돌");
-  if (consensusResult.conflict_log?.some(c => c.conflict_level === "moderate")) edgeCaseTags.push("엔진간 중간 충돌");
+  if (birthInfo?.hour === 23) edgeCaseTags.push("야자시(夜子時)");
+  if (!birthInfo?.birthTime) edgeCaseTags.push("출생시 미입력");
+  if (!birthInfo?.birthPlace) edgeCaseTags.push("출생지 미입력");
+  if ((consensusResult?.conflict_log ?? []).some(c => c?.conflict_level === "severe")) edgeCaseTags.push("엔진간 심각 충돌");
+  if ((consensusResult?.conflict_log ?? []).some(c => c?.conflict_level === "moderate")) edgeCaseTags.push("엔진간 중간 충돌");
   if (sajuRaw?.termIdx === 0 || sajuRaw?.termIdx === 11) edgeCaseTags.push("절기 경계 근처");
 
   // B-61: final_decision_logic 생성
@@ -1967,8 +1966,8 @@ ${parsed.action_guide?.do_list?.map((item: string) => `- ${item}`).join('\n') ||
     // B-61: 스키마 개선
     edge_case_tags: edgeCaseTags,
     final_decision_logic: finalDecisionLogic,
-    conflict_log: consensusResult.conflict_log || [],
-    conflict_summary: consensusResult.conflict_summary || "",
+    conflict_log: (consensusResult?.conflict_log ?? []),
+    conflict_summary: consensusResult?.conflict_summary || "",
     // B-62: 원시 엔진 데이터 병렬 저장
     system_calculations: {
       saju: sajuAnalysis,
@@ -2024,16 +2023,16 @@ ${parsed.action_guide?.do_list?.map((item: string) => `- ${item}`).join('\n') ||
       decision_result: decisionResult,
       tarot_polarity: tarotPolarity,
       is_transitioning: isTransitioning,
-      cross_signals: signalData.crossSignals,
-      topic_weights: (consensusResult as any).topic_weights_used ?? {},
-      engine_contributions: (patternVectors||[]).map(v => ({
-        system: v.system,
-        dominant_dimension: Object.entries(v.vector ?? {}).sort((a: any, b: any) => b[1] - a[1])[0]?.[0] ?? "unknown",
-        top_score: Object.values(v.vector ?? {}).sort((a: any, b: any) => b - a)[0] ?? 0
+      cross_signals: signalData?.crossSignals,
+      topic_weights: (consensusResult as any)?.topic_weights_used ?? {},
+      engine_contributions: (patternVectors ?? []).map(v => ({
+        system: v?.system,
+        dominant_dimension: Object.entries(v?.vector ?? {}).sort((a: any, b: any) => b[1] - a[1])[0]?.[0] ?? "unknown",
+        top_score: Object.values(v?.vector ?? {}).sort((a: any, b: any) => (b as number) - (a as number))[0] ?? 0
       })),
-      conflict_summary: consensusResult.conflict_summary,
-      confidence_score: consensusResult.confidence_score,
-      consensus_score: consensusResult.consensus_score,
+      conflict_summary: consensusResult?.conflict_summary,
+      confidence_score: consensusResult?.confidence_score,
+      consensus_score: consensusResult?.consensus_score,
       is_time_unknown: (consensusResult as any).is_time_unknown ?? !birthTimeProvided,
       reasoning_steps: [
         `1. 토픽 감지: ${finalTopic} → 가중치 조정`,
@@ -2093,13 +2092,13 @@ function calculateSystemScore(
   // 벡터 명확도 (0~0.3)
   const aggregated: Record<string, number> = {};
   dataPoints.forEach((p: SymbolicVector) => {
-    Object.entries(p.vector).forEach(([dim, val]) => {
+    Object.entries(p?.vector ?? {}).forEach(([dim, val]) => {
       aggregated[dim] = (aggregated[dim] || 0) + (val as number);
     });
   });
-  const vals = Object.values(aggregated) as number[];
+  const vals = Object.values(aggregated as Record<string, number>) as number[];
   const magnitude = vals.length > 0
-    ? Math.sqrt(vals.reduce((sum, x) => sum + x * x, 0))
+    ? Math.sqrt(vals.reduce((sum: number, x: number) => sum + x * x, 0))
     : 0;
   const scoreClarity = Math.min(0.3, (magnitude / 3.0) * 0.3);
 

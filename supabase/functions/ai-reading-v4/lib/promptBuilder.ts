@@ -2,6 +2,8 @@ import { Signal, CrossSignal } from './signalExtractor.ts';
 import { ILJU_MEANINGS, TENGO_DEEP, GYEOKGUK_DEEP, TWELVE_STAGES_DEEP, YONGSIN_ADVICE, SINSAL_DEEP, DAEWOON_INTERACTION, INTERACTION_DEEP, LIFE_PATH_MEANINGS, EXPRESSION_MEANINGS } from "./interpretations/index.ts";
 import { buildZiWeiPromptSection } from "./ziweiPromptBuilder.ts";
 import { runCrossValidation } from "./crossValidationEngine.ts";
+import { CrossValidationResult } from "./inferenceLayer.ts";
+import { UnifiedTimeline } from "./timelineEngine.ts";
 
 function line(label: string, value: any): string {
   if (!value || value === '?' || value === '없음' || value === '') return '';
@@ -23,8 +25,6 @@ interface AstrologyResult { [key: string]: any; }
 interface ServerZiWeiResult { [key: string]: any; }
 interface NumerologyResult { [key: string]: any; }
 interface TarotResult { [key: string]: any; }
-interface CrossValidationResult { [key: string]: any; }
-interface UnifiedTimeline { [key: string]: any; }
 
 // ─── 질문 유형별 자미두수 핵심 궁 매핑 ───
 const ZIWEI_PALACE_MAP: Record<string, string[]> = {
@@ -32,7 +32,6 @@ const ZIWEI_PALACE_MAP: Record<string, string[]> = {
   career: ['관록궁', '천이궁', '재백궁'],
   health: ['질액궁', '복덕궁', '명궁'],
   finance:      ['재백궁', '전택궁', '관록궁'],
-  money:        ['재백궁', '전택궁', '관록궁'],
   life_change:  ['천이궁', '명궁', '관록궁'],
   migration:    ['천이궁', '명궁', '부모궁'],
   compatibility:['부처궁', '복덕궁', '명궁'],
