@@ -1,7 +1,18 @@
+import { solarToLunar as solarToLunarCore } from "./lunarConverter.ts";
+
 /**
  * lib/dataTransform.ts
  * - Phase 6-1: Extract constants from integratedReadingEngine.ts
+ * - Phase 6-2: Extract transform functions from integratedReadingEngine.ts
  */
+
+export interface LunarResult {
+  lunarYear: number;
+  lunarMonth: number;
+  lunarDay: number;
+  is_leap_month: boolean;
+  is_leap_month_adjusted: boolean;
+}
 
 export const CITY_COORDINATES: Record<string, [number, number]> = {
   "서울": [37.5665, 126.978], "Seoul": [37.5665, 126.978], "seoul": [37.5665, 126.978],
@@ -104,3 +115,188 @@ export const SYMBOLIC_MEANINGS: Record<string, string> = {
   "Metal_Keum": "금(金) 기운: 결단력, 의리, 숙살지기(정리하는 힘). 부족 시 맺고 끊음이 약해질 수 있음.",
   "Water_Su": "수(水) 기운: 유연함, 지혜, 침투력. 과다 시 생각이 깊어 정체될 수 있고, 부족 시 융통성이 부족해짐."
 };
+
+/**
+ * 프론트에서 전달받은 점성술 데이터를 엔진 내부 포맷으로 변환
+ */
+export function transformAstrologyData(frontAstro: any): any {
+  if (!frontAstro) return generateFallbackAstrology();
+
+  const planets = frontAstro?.planets ?? [];
+  const planet_positions = (planets ?? []).map((p: any) => ({
+    planet: p?.name || p?.planet,
+    sign: p?.sign,
+    house: p?.house,
+    degree: p?.degree,
+    dignity: p?.dignity || "없음",
+    interpretation: p?.interpretation || ""
+  }));
+
+  const characteristics: string[] = [];
+  
+  if (frontAstro?.transits) {
+    (frontAstro?.transits ?? []).forEach((t: any) => {
+      if (t?.planet && t?.sign) {
+        characteristics.push(`${t.planet} Transit`);
+      }
+      if (t?.aspectAlerts) {
+        (t?.aspectAlerts ?? []).forEach((alert: string) => characteristics.push(alert));
+      }
+    });
+  }
+
+  if (frontAstro?.keyAspects) {
+    (frontAstro?.keyAspects ?? []).forEach((aspect: string) => characteristics.push(aspect));
+  } else if (frontAstro?.aspects) {
+    (frontAstro?.aspects ?? []).slice(0, 5).forEach((a: any) => {
+      const label = `${a?.planet1} ${a?.type} ${a?.planet2}`;
+      characteristics.push(label);
+    });
+  }
+
+  if (frontAstro?.dignityReport) {
+    (frontAstro?.dignityReport ?? []).forEach((d: any) => {
+      if (d?.dignity === "본좌" || d?.dignity === "고양") {
+        characteristics.push(`${d.planet} ${d.dignity}`);
+      }
+    });
+  }
+
+  if (frontAstro?.dominantElement) {
+    characteristics.push(`${frontAstro?.dominantElement} element dominant`);
+  }
+
+  return {
+    system: "astrology",
+    characteristics,
+    planet_positions,
+    house_positions: frontAstro?.housePositions || {
+      ASC: frontAstro?.risingSign || "Unknown",
+      MC: "Unknown",
+      IC: "Unknown",
+      DESC: "Unknown"
+    },
+    major_aspects: (frontAstro?.keyAspects || []).slice(0, 5),
+    sunSign: frontAstro?.sunSign,
+    moonSign: frontAstro?.moonSign,
+    risingSign: frontAstro?.risingSign,
+    elementDistribution: frontAstro?.elementDistribution || {},
+    qualityDistribution: frontAstro?.qualityDistribution || {},
+    questionAnalysis: frontAstro?.questionAnalysis || null,
+    transits: frontAstro?.transits || [],
+    progression: frontAstro?.progression || frontAstro?.secondaryProgression || null,
+    solarReturn: frontAstro?.solarReturn || frontAstro?.solar_return || null
+  };
+}
+
+/**
+ * 프론트에서 전달받은 자미두수 데이터를 엔진 내부 포맷으로 변환
+ */
+export function transformZiweiData(frontZiwei: any): any {
+  if (!frontZiwei) return generateFallbackZiwei();
+
+  const palaces = (frontZiwei?.palaces ?? []).map((p: any) => ({
+    name: p?.name,
+    main_stars: p?.main_stars || p?.mainStars || (p?.stars ? (p?.stars ?? []).map((s: any) => s?.star) : []),
+    location: p?.branch || p?.location || ""
+  }));
+
+  const characteristics: string[] = [];
+
+  (palaces ?? []).forEach((p: any) => {
+    if (p?.main_stars && (p.main_stars ?? []).length > 0) {
+      (p.main_stars ?? []).forEach((star: string) => {
+        if (["파군", "자미", "천부", "칠살", "무곡", "태양", "천기", "염정"].includes(star)) {
+          characteristics.push(star);
+        }
+      });
+    }
+  });
+
+  if (frontZiwei?.fourTransformations || frontZiwei?.siHwa) {
+    const ft = frontZiwei?.fourTransformations || frontZiwei?.siHwa;
+    if (ft?.rok || ft?.화록) characteristics.push("화록 active");
+    if (ft?.gwon || ft?.화권) characteristics.push("화권 active");
+    if (ft?.gwa || ft?.화과) characteristics.push("화과 active");
+    if (ft?.gi || ft?.화기) characteristics.push("화기 active");
+  }
+
+  const mingGong = (palaces ?? []).find((p: any) => p?.name === "명궁");
+  if (mingGong && (mingGong?.main_stars ?? []).length > 0) {
+    characteristics.push("Main star active");
+  }
+
+  const caiBai = (palaces ?? []).find((p: any) => p?.name === "재백궁" || p?.name === "재帛궁");
+  if (caiBai && (caiBai?.main_stars ?? []).length > 0) {
+    characteristics.push("Financial palace growth");
+  }
+
+  return {
+    system: "ziwei",
+    characteristics,
+    palaces,
+    mingGong: frontZiwei?.mingGong || "Unknown",
+    bureau: frontZiwei?.bureau || "Unknown",
+    four_transformations: frontZiwei?.fourTransformations || frontZiwei?.siHwa || frontZiwei?.natalTransformations || {},
+    currentMajorPeriod: frontZiwei?.currentMajorPeriod || null,
+    currentMinorPeriod: frontZiwei?.currentMinorPeriod || null,
+    questionAnalysis: frontZiwei?.questionAnalysis || null
+  };
+}
+
+/** 점성술 데이터 미전달 시 안전한 fallback */
+export function generateFallbackAstrology() {
+  return {
+    system: "astrology",
+    characteristics: [],
+    planet_positions: [],
+    house_positions: { ASC: "Unknown", MC: "Unknown", IC: "Unknown", DESC: "Unknown" },
+    major_aspects: [],
+    sunSign: "Unknown",
+    moonSign: "Unknown",
+    risingSign: "Unknown"
+  };
+}
+
+/** 자미두수 데이터 미전달 시 안전한 fallback */
+export function generateFallbackZiwei() {
+  return {
+    system: "ziwei",
+    characteristics: [],
+    palaces: [],
+    four_transformations: {}
+  };
+}
+
+export const getPillarFromData = (data: any, row: number) => {
+  if (!data || !data[row]) return "";
+  return (data[row][1] || "") + (data[row][2] || "");
+};
+
+export const getDayMasterFromData = (data: any) => {
+  if (!data || !data[1]) return "Unknown";
+  return data[1][1] || "Unknown";
+};
+
+export const getYongShinFromData = (data: any, type: 'yong' | 'hee') => {
+  if (!data) return "Unknown";
+  if (Array.isArray(data)) {
+    const row = type === 'yong' ? 0 : 1;
+    if (data[row] && Array.isArray(data[row])) {
+      return data[row].find((v: any) => v && typeof v === 'string' && v.length === 1) || "Unknown";
+    }
+    return "Unknown";
+  }
+  return data[type] || "Unknown";
+};
+
+export function convertLunarToSolar(solarYear: number, solarMonth: number, solarDay: number): LunarResult {
+  const result = solarToLunarCore(solarYear, solarMonth, solarDay);
+  return {
+    lunarYear: result.year,
+    lunarMonth: result.month,
+    lunarDay: result.day,
+    is_leap_month: result.isLeapMonth,
+    is_leap_month_adjusted: false
+  };
+}
