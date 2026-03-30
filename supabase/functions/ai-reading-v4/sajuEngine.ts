@@ -18,6 +18,7 @@ import { getDaewoonInfo, calculateFullDaewoon, type DaewoonResult } from "./lib/
 import { determineGyeokguk } from "./lib/gyeokguk.ts";
 import { calculateFortune } from "./lib/fortuneEngine.ts";
 import { lunarToSolar } from "./lib/lunarConverter.ts";
+import { calculateInteractions, calculateShinsalGrouped, calculateGongmang } from "./lib/interactions.ts";
 
 export type YajasiMode = 'change_day' | 'keep_day';
 
@@ -360,6 +361,21 @@ export function calculateSaju(
     fullDaewoon.currentDaewoon?.branch || null
   );
 
+  // ─── 5. 상호작용 및 부가 분석 ────
+  const stems = [yP.stem, mP.stem, dP.stem, hP.stem];
+  const branches = [yP.branch, mP.branch, dP.branch, hP.branch];
+  const interactions = calculateInteractions(stems, branches);
+
+  const gongmang = calculateGongmang(dP.stem, dP.branch, {
+    year: yP.branch, month: mP.branch, day: dP.branch, hour: hP.branch
+  });
+
+  const shinsalGrouped = calculateShinsalGrouped(
+    dayMaster, dP.branch,
+    { year: yP.branch, month: mP.branch, day: dP.branch, hour: hP.branch },
+    stems
+  );
+
   return {
     year: { stem: yP.stem, branch: yP.branch, tenGod: yearTG },
     month: { stem: mP.stem, branch: mP.branch, tenGod: monthTG },
@@ -381,6 +397,9 @@ export function calculateSaju(
     fortune: fortune,
     daewoon: fullDaewoon,
     hiddenStems,
+    interactions,        // ← 신규: 형충회합 배열
+    gongmang,           // ← 신규: 공망
+    shinsalGrouped,     // ← 신규: 주별 분류 신살
     originalInput: { year, month, day, hour, minute, gender, yajasiMode },
     correctedDate: !isNaN(correctedDate.getTime()) ? correctedDate.toISOString() : "Invalid Date"
   };

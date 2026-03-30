@@ -500,10 +500,10 @@ ${deepShinsalLines}` : '';
 • 핵심 조언: ${dwInteraction.advice}` : '';
 
   const interactions = s?.interactions || s?.characteristics || [];
-  const interactionLines = (Array.isArray(interactions) ? interactions : []).slice(0, 3)
-    .map(it => {
-      const key = typeof it === 'string' ? it : it.name || '';
-      const p = INTERACTION_DEEP[key];
+    const interactionLines = (Array.isArray(interactions) ? interactions : []).slice(0, 3)
+      .map(it => {
+        const key = typeof it === 'string' ? it : (it.name || it.type || '');
+        const p = INTERACTION_DEEP[key];
       return p ? `  • ${key}: ${p.meaning}` : null;
     })
     .filter(Boolean)

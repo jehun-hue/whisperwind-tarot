@@ -116,25 +116,25 @@ export function calculateInteractions(
   const interactions: Interaction[] = [];
   for (const [s1, s2, result, keyword] of STEM_COMBINATIONS) {
     if (stems.includes(s1) && stems.includes(s2)) {
-      interactions.push({ type: "천간합", elements: [s1, s2], result, meaning_keyword: keyword, severity: "길" });
+      interactions.push({ type: "천간합", name: `${s1}${s2}합`, elements: [s1, s2], result, meaning_keyword: keyword, severity: "길" });
     }
   }
   for (const [b1, b2, keyword] of BRANCH_CONFLICTS) {
     if (branches.includes(b1) && branches.includes(b2)) {
-      interactions.push({ type: "지지충", elements: [b1, b2], result: "충(沖)", meaning_keyword: keyword, severity: "흉" });
+      interactions.push({ type: "지지충", name: `${b1}${b2}충`, elements: [b1, b2], result: "충(沖)", meaning_keyword: keyword, severity: "흉" });
     }
   }
   for (const [combo, result, keyword] of BRANCH_THREE_COMBINATIONS) {
     const matchCount = combo.filter(b => branches.includes(b)).length;
     if (matchCount === 3) {
-      interactions.push({ type: "지지삼합", elements: combo.filter(b => branches.includes(b)), result, meaning_keyword: keyword, severity: "길" });
+      interactions.push({ type: "지지삼합", name: combo.join(""), elements: combo.filter(b => branches.includes(b)), result, meaning_keyword: keyword, severity: "길" });
     } else if (matchCount === 2) {
-      interactions.push({ type: "지지삼합", elements: combo.filter(b => branches.includes(b)), result: `${result}(반합·약)`, meaning_keyword: `${keyword} (반합, 효력 약함)`, severity: "중립" });
+      interactions.push({ type: "지지삼합", name: combo.filter(b => branches.includes(b)).join(""), elements: combo.filter(b => branches.includes(b)), result: `${result}(반합·약)`, meaning_keyword: `${keyword} (반합, 효력 약함)`, severity: "중립" });
     }
   }
   for (const [b1, b2, result, keyword] of BRANCH_SIX_COMBINATIONS) {
     if (branches.includes(b1) && branches.includes(b2)) {
-      interactions.push({ type: "지지육합", elements: [b1, b2], result, meaning_keyword: keyword, severity: "길" });
+      interactions.push({ type: "지지육합", name: `${b1}${b2}합`, elements: [b1, b2], result, meaning_keyword: keyword, severity: "길" });
     }
   }
   for (const [combo, keyword] of PENALTIES) {
@@ -142,13 +142,13 @@ export function calculateInteractions(
       // 자형(自刑) 체크: 같은 글자가 2개 필요
       const count = branches.filter(b => b === combo[0]).length;
       if (count >= 2) {
-        interactions.push({ type: "형", elements: [combo[0], combo[0]], result: "자형", meaning_keyword: keyword, severity: "흉" });
+        interactions.push({ type: "형", name: `${combo[0]}${combo[0]}자형`, elements: [combo[0], combo[0]], result: "자형", meaning_keyword: keyword, severity: "흉" });
       }
     } else {
       // 일반 형살: 구성 요소가 모두 존재해야 함
       const hits = combo.filter(b => branches.includes(b)).length;
       if (hits >= combo.length) {
-        interactions.push({ type: "형", elements: combo, result: "형살", meaning_keyword: keyword, severity: "흉" });
+        interactions.push({ type: "형", name: `${combo.join("")}형`, elements: combo, result: "형살", meaning_keyword: keyword, severity: "흉" });
       }
     }
   }
@@ -161,7 +161,7 @@ export function calculateInteractions(
   }
   for (const [combo, result, keyword] of BRANCH_DIRECTION_COMBINATIONS) {
     if (combo.every(b => branches.includes(b))) {
-      interactions.push({ type: "지지방합", elements: combo, result, meaning_keyword: keyword, severity: "길" });
+      interactions.push({ type: "지지방합", name: combo.join(""), elements: combo, result, meaning_keyword: keyword, severity: "길" });
     }
   }
   return interactions;
