@@ -500,11 +500,35 @@ ${deepShinsalLines}` : '';
 • 핵심 조언: ${dwInteraction.advice}` : '';
 
   const interactions = s?.interactions || s?.characteristics || [];
-    const interactionLines = (Array.isArray(interactions) ? interactions : []).slice(0, 3)
-      .map(it => {
-        const key = typeof it === 'string' ? it : (it.name || it.type || '');
-        const p = INTERACTION_DEEP[key];
-      return p ? `  • ${key}: ${p.meaning}` : null;
+  const interactionLines = (Array.isArray(interactions) ? interactions : []).slice(0, 5)
+    .map(it => {
+      if (typeof it === 'string') {
+        const p = INTERACTION_DEEP[it];
+        return p ? `  • ${it}: ${p.meaning}` : null;
+      }
+      // INTERACTION_DEEP 키 형식: "巳申합", "申子辰", "午未합" 등
+      // interactions 객체: { type: "지지육합", elements: ["巳","申"], name: "巳申" }
+      const elStr = Array.isArray(it.elements) ? it.elements.join('') : '';
+      
+      // 키 후보 순서: elements 연결 ("巳申") → elements+type접미사 ("巳申합") → name → type
+      const candidates = [
+        elStr,                                              // "巳申" or "申子辰"
+        it.type === '천간합' ? elStr + '합' : null,          // "甲己합"
+        it.type === '지지육합' ? elStr + '합' : null,        // "巳申합"  
+        it.type === '지지삼합' ? elStr : null,               // "申子辰"
+        it.type === '지지방합' ? elStr : null,               // "寅卯辰"
+        it.name,
+        it.type
+      ].filter(Boolean);
+      
+      for (const key of candidates) {
+        const p = INTERACTION_DEEP[key as string];
+        if (p) return `  • ${elStr || it.type}(${it.result || it.type}): ${p.meaning}`;
+      }
+      
+      // INTERACTION_DEEP에 없어도 기본 정보는 출력
+      const fallback = it.meaning_keyword || it.result || '';
+      return fallback ? `  • ${elStr || it.type}: ${fallback} (${it.severity || ''})` : null;
     })
     .filter(Boolean)
     .join('\n');
