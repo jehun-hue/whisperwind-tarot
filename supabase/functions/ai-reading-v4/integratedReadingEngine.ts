@@ -594,6 +594,8 @@ export async function runFullProductionEngineV8(supabaseClient: any, apiKey: str
       const ziweiPalaces = (serverZiwei?.palaces || []).map((data: any) => ({
         name: data?.name,
         main_stars: data?.main_stars || [],
+        stars: data?.stars || [],
+        branch: data?.branch,
         location: data?.branch,
         is_empty: (data?.main_stars || []).length === 0,
         is_borrowed_stars: false,

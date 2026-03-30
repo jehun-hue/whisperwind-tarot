@@ -164,6 +164,16 @@ export function calculateInteractions(
       interactions.push({ type: "지지방합", name: combo.join(""), elements: combo, result, meaning_keyword: keyword, severity: "길" });
     }
   }
+  for (const [b1, b2, keyword] of BRANCH_DESTRUCTIONS) {
+    if (branches.includes(b1) && branches.includes(b2)) {
+      interactions.push({ type: "파", name: `${b1}${b2}파`, elements: [b1, b2], result: "파(破)", meaning_keyword: keyword, severity: "흉" });
+    }
+  }
+  for (const [b1, b2, keyword] of BRANCH_HARM) {
+    if (branches.includes(b1) && branches.includes(b2)) {
+      interactions.push({ type: "해", name: `${b1}${b2}해`, elements: [b1, b2], result: "해(害)", meaning_keyword: keyword, severity: "흉" });
+    }
+  }
   return interactions;
 }
 
